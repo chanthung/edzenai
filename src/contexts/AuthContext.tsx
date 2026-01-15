@@ -7,7 +7,6 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, schoolName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -41,49 +40,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signUp = async (email: string, password: string, schoolName: string) => {
-    // Sign up the user
-    const { data: authData, error: authError } = await supabase.auth.signUp({ 
-      email, 
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`
-      }
-    });
-    
-    if (authError || !authData.user) {
-      return { error: authError as Error | null };
-    }
-
-    // CRITICAL: Wait for the session to be properly set before database operations
-    // With auto-confirm enabled, signUp returns a session immediately
-    if (authData.session) {
-      await supabase.auth.setSession({
-        access_token: authData.session.access_token,
-        refresh_token: authData.session.refresh_token,
-      });
-    } else {
-      return { error: new Error('Session not created. Please try logging in.') };
-    }
-
-    // Use secure RPC function to atomically create school + admin + default fee categories
-    // This bypasses RLS issues and prevents race conditions
-    const { error: rpcError } = await supabase
-      .rpc('create_school_with_primary_admin', { _school_name: schoolName });
-
-    if (rpcError) {
-      return { error: rpcError as Error | null };
-    }
-
-    return { error: null };
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

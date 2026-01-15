@@ -448,6 +448,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -469,9 +490,18 @@ export type Database = {
         }[]
       }
       get_user_school_ids: { Args: never; Returns: string[] }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_platform_admin: { Args: never; Returns: boolean }
       is_school_admin: { Args: { _school_id: string }; Returns: boolean }
     }
     Enums: {
+      app_role: "platform_admin" | "school_admin"
       fee_status: "upcoming" | "due" | "overdue" | "paid"
     }
     CompositeTypes: {
@@ -600,6 +630,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["platform_admin", "school_admin"],
       fee_status: ["upcoming", "due", "overdue", "paid"],
     },
   },
