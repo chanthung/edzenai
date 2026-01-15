@@ -30,6 +30,7 @@ export interface ParentViewData {
       amount: number;
       due_date: string;
       paid_amount: number;
+      payment_date: string | null;
       status: 'paid' | 'upcoming' | 'due' | 'overdue';
     }[];
   }[];
@@ -81,19 +82,26 @@ export function useParentView(accessToken: string | undefined) {
 
       if (feesError) throw feesError;
 
-      // Get all payments for this student (public access allowed via RLS)
+      // Get all payments for this student with payment_date (public access allowed via RLS)
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
-        .select('installment_id, amount_paid')
-        .eq('student_id', student.id);
+        .select('installment_id, amount_paid, payment_date')
+        .eq('student_id', student.id)
+        .order('payment_date', { ascending: false });
 
       if (paymentsError) throw paymentsError;
 
-      // Create payment lookup by installment
+      // Create payment lookup by installment (amount and latest payment date)
       const paymentsByInstallment = payments?.reduce((acc, payment) => {
-        acc[payment.installment_id] = (acc[payment.installment_id] || 0) + Number(payment.amount_paid);
+        if (!acc[payment.installment_id]) {
+          acc[payment.installment_id] = {
+            amount: 0,
+            payment_date: payment.payment_date // Latest date due to ordering
+          };
+        }
+        acc[payment.installment_id].amount += Number(payment.amount_paid);
         return acc;
-      }, {} as Record<string, number>) ?? {};
+      }, {} as Record<string, { amount: number; payment_date: string }>) ?? {};
 
       // Process fee data
       const fees = (studentFees ?? []).map((sf: any) => {
@@ -103,7 +111,8 @@ export function useParentView(accessToken: string | undefined) {
         const installments = (structure.installments ?? [])
           .sort((a: any, b: any) => a.display_order - b.display_order)
           .map((inst: any) => {
-            const paidAmount = paymentsByInstallment[inst.id] || 0;
+            const paymentInfo = paymentsByInstallment[inst.id];
+            const paidAmount = paymentInfo?.amount || 0;
             const isPaid = paidAmount >= inst.amount;
             
             return {
@@ -112,6 +121,7 @@ export function useParentView(accessToken: string | undefined) {
               amount: Number(inst.amount),
               due_date: inst.due_date,
               paid_amount: paidAmount,
+              payment_date: isPaid ? paymentInfo?.payment_date : null,
               status: getInstallmentStatus(inst.due_date, isPaid),
             };
           });
