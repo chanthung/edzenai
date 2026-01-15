@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchool, useUpdateSchool } from "@/hooks/useSchool";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Save, Loader2, Building, QrCode, Phone, Mail } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock } from "lucide-react";
 
 export default function Settings() {
   const { data: school, isLoading } = useSchool();
   const updateSchool = useUpdateSchool();
+  const { changePassword } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -22,6 +24,12 @@ export default function Settings() {
     upi_id: "",
     qr_code_url: "",
   });
+
+  const [passwordData, setPasswordData] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     if (school) {
@@ -42,6 +50,29 @@ export default function Settings() {
       toast.success("Settings saved successfully");
     } catch (error: any) {
       toast.error("Failed to save settings", { description: error.message });
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const { error } = await changePassword(passwordData.newPassword);
+      if (error) throw error;
+      toast.success("Password changed successfully");
+      setPasswordData({ newPassword: "", confirmPassword: "" });
+    } catch (error: any) {
+      toast.error("Failed to change password", { description: error.message });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -196,6 +227,60 @@ export default function Settings() {
                 />
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Account Security - Change Password */}
+        <Card className="card-elevated">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                <Lock className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <CardTitle>Account Security</CardTitle>
+                <CardDescription>Change your account password</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  placeholder="Enter new password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Password must be at least 6 characters long.
+            </p>
+            <Button 
+              onClick={handleChangePassword} 
+              disabled={isChangingPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+              variant="destructive"
+            >
+              {isChangingPassword ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Lock className="h-4 w-4 mr-2" />
+              )}
+              Change Password
+            </Button>
           </CardContent>
         </Card>
       </div>
