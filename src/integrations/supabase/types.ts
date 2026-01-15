@@ -398,8 +398,10 @@ export type Database = {
       students: {
         Row: {
           access_token: string
+          address: string | null
           class_name: string | null
           created_at: string
+          guardian: string | null
           id: string
           name: string
           parent_email: string | null
@@ -412,8 +414,10 @@ export type Database = {
         }
         Insert: {
           access_token?: string
+          address?: string | null
           class_name?: string | null
           created_at?: string
+          guardian?: string | null
           id?: string
           name: string
           parent_email?: string | null
@@ -426,8 +430,10 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          address?: string | null
           class_name?: string | null
           created_at?: string
+          guardian?: string | null
           id?: string
           name?: string
           parent_email?: string | null
