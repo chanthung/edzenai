@@ -1,13 +1,11 @@
 import { useParams } from "react-router-dom";
 import { useParentView } from "@/hooks/useParentView";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { AmountDisplay } from "@/components/ui/amount-display";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency, formatDate, getDaysMessage } from "@/lib/format";
-import { GraduationCap, Phone, Mail, QrCode, CreditCard, AlertCircle } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { GraduationCap, Phone, Mail, QrCode, CreditCard, AlertCircle, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+import { format, parseISO, isBefore, isAfter, startOfDay } from "date-fns";
 export default function ParentView() {
   const { token } = useParams<{ token: string }>();
   const { data, isLoading, error } = useParentView(token);
@@ -137,30 +135,70 @@ export default function ParentView() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="space-y-2">
-                  {fee.installments.map((inst) => (
-                    <div 
-                      key={inst.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium">{inst.name}</p>
-                          <StatusBadge status={inst.status} size="sm" />
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {getDaysMessage(inst.due_date, inst.status === 'paid')}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">{formatCurrency(inst.amount)}</p>
-                        {inst.paid_amount > 0 && inst.paid_amount < inst.amount && (
-                          <p className="text-xs text-status-paid">
-                            Paid: {formatCurrency(inst.paid_amount)}
+                  {fee.installments.map((inst) => {
+                    const isPaid = inst.status === 'paid';
+                    const dueDate = parseISO(inst.due_date);
+                    const today = startOfDay(new Date());
+                    const isOverdue = !isPaid && isBefore(dueDate, today);
+                    const isMonthlyFee = fee.category.toLowerCase().includes('monthly') || 
+                                         fee.category.toLowerCase().includes('activity');
+                    
+                    return (
+                      <div 
+                        key={inst.id}
+                        className={`flex items-center justify-between p-3 rounded-lg ${
+                          isPaid 
+                            ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' 
+                            : isOverdue 
+                              ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800'
+                              : 'bg-muted/50'
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {isPaid ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            ) : isOverdue ? (
+                              <AlertTriangle className="h-4 w-4 text-red-600" />
+                            ) : (
+                              <Clock className="h-4 w-4 text-amber-600" />
+                            )}
+                            <p className="font-medium">{inst.name}</p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              isPaid 
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                : isOverdue 
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
+                            }`}>
+                              {isPaid ? 'Cleared' : isOverdue ? 'Overdue' : 'Pending'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {isPaid ? (
+                              `Paid on ${formatDate(inst.due_date)}`
+                            ) : isMonthlyFee ? (
+                              <span className="font-medium text-amber-700 dark:text-amber-400">
+                                Due by 10th of the month
+                              </span>
+                            ) : (
+                              `Due: ${format(dueDate, 'dd MMM yyyy')}`
+                            )}
                           </p>
-                        )}
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-semibold ${isPaid ? 'text-green-700 dark:text-green-400' : ''}`}>
+                            {formatCurrency(inst.amount)}
+                          </p>
+                          {inst.paid_amount > 0 && inst.paid_amount < inst.amount && (
+                            <p className="text-xs text-green-600">
+                              Paid: {formatCurrency(inst.paid_amount)}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
