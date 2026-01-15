@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,15 @@ export default function Login() {
     if (error) {
       toast.error("Login failed", { description: error.message });
       setLoading(false);
+      return;
+    }
+
+    // Check if user is platform admin
+    const { data: isPlatformAdmin } = await supabase.rpc('is_platform_admin');
+    
+    if (isPlatformAdmin) {
+      toast.success("Welcome, Platform Admin!");
+      navigate("/platform");
     } else {
       toast.success("Welcome back!");
       navigate("/admin");
@@ -44,7 +54,7 @@ export default function Login() {
         <Card className="border-border/50 shadow-card">
           <CardHeader className="text-center">
             <CardTitle>Welcome back</CardTitle>
-            <CardDescription>Sign in to your school admin account</CardDescription>
+            <CardDescription>Sign in to your account</CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
@@ -71,20 +81,18 @@ export default function Login() {
                 />
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
+            <CardFooter>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
-              <p className="text-sm text-muted-foreground text-center">
-                Don't have an account?{" "}
-                <Link to="/register" className="text-primary hover:underline">
-                  Register your school
-                </Link>
-              </p>
             </CardFooter>
           </form>
         </Card>
+
+        <p className="text-sm text-muted-foreground text-center mt-6">
+          Contact your administrator if you need access.
+        </p>
       </div>
     </div>
   );

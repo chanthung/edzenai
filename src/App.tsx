@@ -8,13 +8,13 @@ import { AuthProvider } from "@/contexts/AuthContext";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
 import Dashboard from "./pages/admin/Dashboard";
 import Students from "./pages/admin/Students";
 import AcademicYears from "./pages/admin/AcademicYears";
 import FeeSetup from "./pages/admin/FeeSetup";
 import Settings from "./pages/admin/Settings";
 import ParentView from "./pages/parent/ParentView";
+import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,12 +30,14 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             
             {/* Parent view - unique link access */}
             <Route path="/view/:token" element={<ParentView />} />
             
-            {/* Admin routes */}
+            {/* Platform Admin routes */}
+            <Route path="/platform" element={<PlatformDashboard />} />
+            
+            {/* School Admin routes */}
             <Route path="/admin" element={<Dashboard />} />
             <Route path="/admin/students" element={<Students />} />
             <Route path="/admin/academic-years" element={<AcademicYears />} />
