@@ -176,7 +176,9 @@ export default function ParentView() {
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {isPaid ? (
-                              `Paid on ${formatDate(inst.due_date)}`
+                              inst.payment_date 
+                                ? `Paid on ${format(parseISO(inst.payment_date), 'dd MMM yyyy')}`
+                                : 'Paid'
                             ) : isMonthlyFee ? (
                               <span className="font-medium text-amber-700 dark:text-amber-400">
                                 Due by 10th of the month

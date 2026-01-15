@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useStudentFees, useStudentPayments, useRecordPayment, useDeletePayment, Payment } from "@/hooks/useStudentFees";
 import { formatCurrency, formatDate, getInstallmentStatus, getStatusLabel } from "@/lib/format";
 import { toast } from "sonner";
-import { Loader2, IndianRupee, Check, Clock, AlertCircle, Trash2 } from "lucide-react";
+import { Loader2, IndianRupee, Check, Clock, AlertCircle, Trash2, Calendar } from "lucide-react";
 import { Student } from "@/hooks/useStudents";
+import { format } from "date-fns";
 
 interface PaymentRecorderProps {
   student: Student;
@@ -38,72 +40,115 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
   const recordPayment = useRecordPayment();
   const deletePayment = useDeletePayment();
   
-  const [selectedInstallment, setSelectedInstallment] = useState<string>("");
-  const [paymentAmount, setPaymentAmount] = useState<string>("");
+  const [selectedInstallments, setSelectedInstallments] = useState<string[]>([]);
   const [paymentMode, setPaymentMode] = useState<string>("cash");
   const [referenceNumber, setReferenceNumber] = useState<string>("");
   const [isRecording, setIsRecording] = useState(false);
 
-  // Process fee data to get installments with payment status
-  const processedInstallments: InstallmentWithPayment[] = [];
-  
-  const paymentsByInstallment = payments?.reduce((acc, payment) => {
-    acc[payment.installment_id] = (acc[payment.installment_id] || 0) + Number(payment.amount_paid);
-    return acc;
-  }, {} as Record<string, number>) ?? {};
+  // Current date for payment
+  const today = new Date();
+  const paymentDate = format(today, "yyyy-MM-dd");
+  const displayDate = format(today, "dd MMM yyyy");
 
-  studentFees?.forEach((sf: any) => {
-    const structure = sf.fee_structure;
-    const category = structure?.fee_category;
+  // Process fee data to get installments with payment status
+  const processedInstallments: InstallmentWithPayment[] = useMemo(() => {
+    const result: InstallmentWithPayment[] = [];
     
-    structure?.installments?.forEach((inst: any) => {
-      const paidAmount = paymentsByInstallment[inst.id] || 0;
-      const isPaid = paidAmount >= inst.amount;
+    const paymentsByInstallment = payments?.reduce((acc, payment) => {
+      acc[payment.installment_id] = (acc[payment.installment_id] || 0) + Number(payment.amount_paid);
+      return acc;
+    }, {} as Record<string, number>) ?? {};
+
+    studentFees?.forEach((sf: any) => {
+      const structure = sf.fee_structure;
+      const category = structure?.fee_category;
       
-      processedInstallments.push({
-        id: inst.id,
-        name: inst.name,
-        amount: Number(inst.amount),
-        due_date: inst.due_date,
-        paid_amount: paidAmount,
-        pending_amount: Math.max(0, Number(inst.amount) - paidAmount),
-        status: getInstallmentStatus(inst.due_date, isPaid),
-        categoryName: category?.name || "Unknown",
-        feeStructureId: structure.id,
+      structure?.installments?.forEach((inst: any) => {
+        const paidAmount = paymentsByInstallment[inst.id] || 0;
+        const isPaid = paidAmount >= inst.amount;
+        
+        result.push({
+          id: inst.id,
+          name: inst.name,
+          amount: Number(inst.amount),
+          due_date: inst.due_date,
+          paid_amount: paidAmount,
+          pending_amount: Math.max(0, Number(inst.amount) - paidAmount),
+          status: getInstallmentStatus(inst.due_date, isPaid),
+          categoryName: category?.name || "Unknown",
+          feeStructureId: structure.id,
+        });
       });
     });
-  });
 
-  // Sort by due date
-  processedInstallments.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+    // Sort by due date
+    result.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+    return result;
+  }, [studentFees, payments]);
 
-  const selectedInst = processedInstallments.find(i => i.id === selectedInstallment);
+  // Unpaid installments for selection
+  const unpaidInstallments = useMemo(() => 
+    processedInstallments.filter(i => i.status !== 'paid'),
+    [processedInstallments]
+  );
+
+  // Calculate total for selected installments
+  const selectedTotal = useMemo(() => {
+    return selectedInstallments.reduce((sum, id) => {
+      const inst = processedInstallments.find(i => i.id === id);
+      return sum + (inst?.pending_amount || 0);
+    }, 0);
+  }, [selectedInstallments, processedInstallments]);
+
+  // Reset selections when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSelectedInstallments([]);
+      setReferenceNumber("");
+    }
+  }, [open]);
+
+  const handleInstallmentToggle = (installmentId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedInstallments(prev => [...prev, installmentId]);
+    } else {
+      setSelectedInstallments(prev => prev.filter(id => id !== installmentId));
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedInstallments.length === unpaidInstallments.length) {
+      setSelectedInstallments([]);
+    } else {
+      setSelectedInstallments(unpaidInstallments.map(i => i.id));
+    }
+  };
 
   const handleRecordPayment = async () => {
-    if (!selectedInstallment || !paymentAmount) {
-      toast.error("Please select an installment and enter amount");
-      return;
-    }
-
-    const amount = parseFloat(paymentAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error("Please enter a valid amount");
+    if (selectedInstallments.length === 0) {
+      toast.error("Please select at least one installment");
       return;
     }
 
     setIsRecording(true);
     try {
-      await recordPayment.mutateAsync({
-        student_id: student.id,
-        installment_id: selectedInstallment,
-        amount_paid: amount,
-        payment_date: new Date().toISOString().split('T')[0],
-        payment_mode: paymentMode,
-        reference_number: referenceNumber || undefined,
-      });
-      toast.success("Payment recorded successfully");
-      setSelectedInstallment("");
-      setPaymentAmount("");
+      // Record payment for each selected installment
+      for (const installmentId of selectedInstallments) {
+        const inst = processedInstallments.find(i => i.id === installmentId);
+        if (!inst) continue;
+
+        await recordPayment.mutateAsync({
+          student_id: student.id,
+          installment_id: installmentId,
+          amount_paid: inst.pending_amount,
+          payment_date: paymentDate,
+          payment_mode: paymentMode,
+          reference_number: referenceNumber || undefined,
+        });
+      }
+      
+      toast.success(`${selectedInstallments.length} payment${selectedInstallments.length > 1 ? 's' : ''} recorded successfully`);
+      setSelectedInstallments([]);
       setReferenceNumber("");
     } catch (error: any) {
       toast.error("Failed to record payment", { description: error.message });
@@ -187,72 +232,106 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
             </div>
 
             {/* Record Payment Form */}
-            <div className="p-4 border rounded-lg mb-6 bg-muted/30">
-              <h3 className="font-medium mb-4">Record New Payment</h3>
-              <div className="grid gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Select Installment</Label>
-                    <Select value={selectedInstallment} onValueChange={setSelectedInstallment}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose installment" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {processedInstallments
-                          .filter(i => i.status !== 'paid')
-                          .map((inst) => (
-                            <SelectItem key={inst.id} value={inst.id}>
-                              {inst.categoryName} - {inst.name} ({formatCurrency(inst.pending_amount)} pending)
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+            {unpaidInstallments.length > 0 && (
+              <div className="p-4 border rounded-lg mb-6 bg-muted/30">
+                <h3 className="font-medium mb-4">Record New Payment</h3>
+                <div className="grid gap-4">
+                  {/* Payment Date Display */}
+                  <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Payment Date:</span>
+                    <span className="text-sm">{displayDate} (Today)</span>
                   </div>
+
+                  {/* Installment Selection */}
                   <div className="space-y-2">
-                    <Label>Amount</Label>
-                    <Input
-                      type="number"
-                      placeholder={selectedInst ? `Max: ${selectedInst.pending_amount}` : "Enter amount"}
-                      value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label>Select Installments to Pay</Label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleSelectAll}
+                        className="h-auto py-1 text-xs"
+                      >
+                        {selectedInstallments.length === unpaidInstallments.length ? "Deselect All" : "Select All"}
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
+                      {unpaidInstallments.map((inst) => (
+                        <div 
+                          key={inst.id} 
+                          className="flex items-center gap-3 p-3 hover:bg-muted/50"
+                        >
+                          <Checkbox
+                            id={`inst-${inst.id}`}
+                            checked={selectedInstallments.includes(inst.id)}
+                            onCheckedChange={(checked) => 
+                              handleInstallmentToggle(inst.id, checked as boolean)
+                            }
+                          />
+                          <label 
+                            htmlFor={`inst-${inst.id}`}
+                            className="flex-1 flex items-center justify-between cursor-pointer"
+                          >
+                            <div>
+                              <p className="font-medium text-sm">{inst.categoryName} - {inst.name}</p>
+                              <p className="text-xs text-muted-foreground">Due: {formatDate(inst.due_date)}</p>
+                            </div>
+                            <span className="font-semibold text-sm">{formatCurrency(inst.pending_amount)}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Selected Total */}
+                  {selectedInstallments.length > 0 && (
+                    <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+                      <span className="font-medium">
+                        Total Amount ({selectedInstallments.length} installment{selectedInstallments.length > 1 ? 's' : ''})
+                      </span>
+                      <span className="text-lg font-bold text-primary">{formatCurrency(selectedTotal)}</span>
+                    </div>
+                  )}
+
+                  {/* Payment Mode & Reference */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Payment Mode</Label>
+                      <Select value={paymentMode} onValueChange={setPaymentMode}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash">Cash</SelectItem>
+                          <SelectItem value="upi">UPI</SelectItem>
+                          <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                          <SelectItem value="cheque">Cheque</SelectItem>
+                          <SelectItem value="card">Card</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Reference Number (Optional)</Label>
+                      <Input
+                        placeholder="Transaction ID / Cheque No."
+                        value={referenceNumber}
+                        onChange={(e) => setReferenceNumber(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={handleRecordPayment} 
+                    disabled={isRecording || selectedInstallments.length === 0}
+                    className="w-full"
+                  >
+                    {isRecording && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Record Payment{selectedInstallments.length > 1 ? ` for ${selectedInstallments.length} Installments` : ''}
+                  </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Payment Mode</Label>
-                    <Select value={paymentMode} onValueChange={setPaymentMode}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="upi">UPI</SelectItem>
-                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                        <SelectItem value="cheque">Cheque</SelectItem>
-                        <SelectItem value="card">Card</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Reference Number (Optional)</Label>
-                    <Input
-                      placeholder="Transaction ID / Cheque No."
-                      value={referenceNumber}
-                      onChange={(e) => setReferenceNumber(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleRecordPayment} 
-                  disabled={isRecording || !selectedInstallment || !paymentAmount}
-                  className="w-full"
-                >
-                  {isRecording && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Record Payment
-                </Button>
               </div>
-            </div>
+            )}
 
             {/* Installments List */}
             <div className="space-y-3">
