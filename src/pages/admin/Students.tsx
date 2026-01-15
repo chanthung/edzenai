@@ -13,16 +13,44 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStudents, useCreateStudent, useDeleteStudent, Student } from "@/hooks/useStudents";
+import { useStudentFees } from "@/hooks/useStudentFees";
 import { StudentFeeManager } from "@/components/admin/StudentFeeManager";
 import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useSchool } from "@/hooks/useSchool";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Students() {
   const { data: students, isLoading } = useStudents();
   const createStudent = useCreateStudent();
   const deleteStudent = useDeleteStudent();
+  const { data: school } = useSchool();
+
+  // Fetch all student fees to show assignment indicators
+  const { data: allStudentFees } = useQuery({
+    queryKey: ['all-student-fees', school?.id],
+    queryFn: async () => {
+      if (!school?.id) return [];
+      const { data, error } = await supabase
+        .from('student_fees')
+        .select('student_id, fee_structure_id');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!school?.id,
+  });
+
+  // Create a map of student_id -> count of assigned fees
+  const studentFeeCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    allStudentFees?.forEach(sf => {
+      map.set(sf.student_id, (map.get(sf.student_id) || 0) + 1);
+    });
+    return map;
+  }, [allStudentFees]);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
@@ -326,14 +354,28 @@ export default function Students() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setFeeManagerStudent(student)}
-                        >
-                          <IndianRupee className="h-4 w-4 mr-1" />
-                          Fees
-                        </Button>
+                        {studentFeeCountMap.get(student.id) ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFeeManagerStudent(student)}
+                            className="border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/50"
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1 text-green-600" />
+                            <span className="text-green-700 dark:text-green-400">
+                              Fees ({studentFeeCountMap.get(student.id)})
+                            </span>
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFeeManagerStudent(student)}
+                          >
+                            <IndianRupee className="h-4 w-4 mr-1" />
+                            Fees
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
