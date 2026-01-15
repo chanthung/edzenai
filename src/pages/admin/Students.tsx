@@ -13,8 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStudents, useCreateStudent, useDeleteStudent, Student } from "@/hooks/useStudents";
+import { StudentFeeManager } from "@/components/admin/StudentFeeManager";
+import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2 } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Students() {
@@ -25,6 +27,8 @@ export default function Students() {
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [feeManagerStudent, setFeeManagerStudent] = useState<Student | null>(null);
+  const [paymentRecorderStudent, setPaymentRecorderStudent] = useState<Student | null>(null);
   const [newStudent, setNewStudent] = useState({
     name: "",
     roll_number: "",
@@ -291,6 +295,7 @@ export default function Students() {
                   <TableHead>Student</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Parent</TableHead>
+                  <TableHead>Fees</TableHead>
                   <TableHead>Parent Link</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -317,6 +322,26 @@ export default function Students() {
                       <div className="text-sm">
                         <p>{student.parent_name || "—"}</p>
                         <p className="text-muted-foreground">{student.parent_phone || ""}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setFeeManagerStudent(student)}
+                        >
+                          <IndianRupee className="h-4 w-4 mr-1" />
+                          Fees
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPaymentRecorderStudent(student)}
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          Payments
+                        </Button>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -357,6 +382,24 @@ export default function Students() {
           </div>
         )}
       </Card>
+
+      {/* Fee Manager Dialog */}
+      {feeManagerStudent && (
+        <StudentFeeManager
+          student={feeManagerStudent}
+          open={!!feeManagerStudent}
+          onOpenChange={(open) => !open && setFeeManagerStudent(null)}
+        />
+      )}
+
+      {/* Payment Recorder Dialog */}
+      {paymentRecorderStudent && (
+        <PaymentRecorder
+          student={paymentRecorderStudent}
+          open={!!paymentRecorderStudent}
+          onOpenChange={(open) => !open && setPaymentRecorderStudent(null)}
+        />
+      )}
     </AdminLayout>
   );
 }
