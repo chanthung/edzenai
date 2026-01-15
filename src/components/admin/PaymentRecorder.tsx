@@ -194,8 +194,8 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Record Payment - {student.name}</DialogTitle>
           <DialogDescription>
             View fee status and record payments for this student
@@ -214,7 +214,7 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
             <p className="text-sm mt-1">Use "Manage Fees" to assign fee structures first</p>
           </div>
         ) : (
-          <ScrollArea className="flex-1 max-h-[65vh] pr-4">
+          <ScrollArea className="flex-1 min-h-0 pr-4">
             {/* Summary Cards */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="p-4 rounded-lg bg-muted/50 text-center">
