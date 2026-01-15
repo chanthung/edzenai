@@ -2,95 +2,132 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* SchoolFees - Design System
+   A calm, trustworthy, professional design for school fee transparency
+   Inspired by modern fintech and healthcare apps
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core colors - Calm teal/blue palette for trust */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Trustworthy teal */
+    --primary: 174 60% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Soft neutral */
+    --secondary: 210 15% 95%;
+    --secondary-foreground: 215 25% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 15% 93%;
+    --muted-foreground: 215 15% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Warm gold for highlights */
+    --accent: 38 90% 55%;
+    --accent-foreground: 215 25% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 174 60% 40%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Status colors */
+    --status-paid: 152 60% 42%;
+    --status-paid-bg: 152 60% 95%;
+    --status-upcoming: 210 60% 50%;
+    --status-upcoming-bg: 210 60% 95%;
+    --status-due: 38 90% 50%;
+    --status-due-bg: 38 90% 95%;
+    --status-overdue: 0 72% 51%;
+    --status-overdue-bg: 0 72% 96%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Special surfaces */
+    --surface-elevated: 0 0% 100%;
+    --surface-sunken: 210 20% 96%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(174 60% 40%), hsl(174 60% 50%));
+    --gradient-header: linear-gradient(180deg, hsl(174 60% 40%), hsl(174 55% 35%));
+    --gradient-accent: linear-gradient(135deg, hsl(38 90% 55%), hsl(38 80% 50%));
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(215 25% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.07), 0 2px 4px -2px hsl(215 25% 15% / 0.07);
+    --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.08), 0 4px 6px -4px hsl(215 25% 15% / 0.08);
+    --shadow-card: 0 1px 3px 0 hsl(215 25% 15% / 0.06), 0 1px 2px -1px hsl(215 25% 15% / 0.06);
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: 174 40% 98%;
+    --sidebar-foreground: 215 25% 25%;
+    --sidebar-primary: 174 60% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 174 40% 94%;
+    --sidebar-accent-foreground: 174 60% 30%;
+    --sidebar-border: 174 30% 88%;
+    --sidebar-ring: 174 60% 40%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 215 30% 10%;
+    --foreground: 210 20% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 215 25% 13%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 215 25% 13%;
+    --popover-foreground: 210 20% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 174 55% 50%;
+    --primary-foreground: 215 30% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 215 20% 18%;
+    --secondary-foreground: 210 20% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 215 20% 20%;
+    --muted-foreground: 210 15% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 38 80% 55%;
+    --accent-foreground: 215 30% 10%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 215 20% 20%;
+    --input: 215 20% 20%;
+    --ring: 174 55% 50%;
+
+    --status-paid: 152 55% 50%;
+    --status-paid-bg: 152 40% 15%;
+    --status-upcoming: 210 55% 55%;
+    --status-upcoming-bg: 210 40% 15%;
+    --status-due: 38 80% 55%;
+    --status-due-bg: 38 50% 15%;
+    --status-overdue: 0 65% 55%;
+    --status-overdue-bg: 0 50% 15%;
+
+    --surface-elevated: 215 25% 15%;
+    --surface-sunken: 215 30% 8%;
+
+    --sidebar-background: 215 30% 12%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 174 55% 50%;
+    --sidebar-primary-foreground: 215 30% 10%;
+    --sidebar-accent: 215 25% 18%;
+    --sidebar-accent-foreground: 174 55% 60%;
+    --sidebar-border: 215 20% 20%;
+    --sidebar-ring: 174 55% 50%;
   }
 }
 
@@ -100,6 +137,97 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight text-foreground;
+  }
+}
+
+@layer components {
+  /* Fee status badges */
+  .status-paid {
+    @apply bg-[hsl(var(--status-paid-bg))] text-[hsl(var(--status-paid))] border border-[hsl(var(--status-paid)/0.2)];
+  }
+
+  .status-upcoming {
+    @apply bg-[hsl(var(--status-upcoming-bg))] text-[hsl(var(--status-upcoming))] border border-[hsl(var(--status-upcoming)/0.2)];
+  }
+
+  .status-due {
+    @apply bg-[hsl(var(--status-due-bg))] text-[hsl(var(--status-due))] border border-[hsl(var(--status-due)/0.2)];
+  }
+
+  .status-overdue {
+    @apply bg-[hsl(var(--status-overdue-bg))] text-[hsl(var(--status-overdue))] border border-[hsl(var(--status-overdue)/0.2)];
+  }
+
+  /* Card variants */
+  .card-elevated {
+    @apply bg-card shadow-[var(--shadow-card)] border border-border/50 rounded-xl;
+  }
+
+  .card-summary {
+    @apply bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-2xl p-6 shadow-lg;
+  }
+
+  /* Amount display */
+  .amount-large {
+    @apply text-3xl md:text-4xl font-bold tracking-tight;
+  }
+
+  .amount-medium {
+    @apply text-xl md:text-2xl font-semibold;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-200 ease-out;
+  }
+}
+
+@layer utilities {
+  /* Animation keyframes */
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.4s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out forwards;
+  }
+
+  /* Stagger children animations */
+  .stagger-children > * {
+    animation: slide-up 0.4s ease-out forwards;
+    opacity: 0;
+  }
+
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
 }
