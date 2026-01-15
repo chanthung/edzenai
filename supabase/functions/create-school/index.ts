@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { schoolName, schoolEmail, schoolPhone, adminEmail, adminPassword } = await req.json()
+    const { schoolName, schoolEmail, schoolPhone, schoolAddress, adminEmail, adminPassword } = await req.json()
 
     if (!schoolName || !adminEmail || !adminPassword) {
       return new Response(
@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
         name: schoolName,
         email: schoolEmail || null,
         phone: schoolPhone || null,
+        address: schoolAddress || null,
       })
       .select()
       .single()

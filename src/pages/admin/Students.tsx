@@ -114,7 +114,7 @@ export default function Students() {
                 Enter student and parent details. A unique link will be generated for parent access.
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-1 pr-4">
+            <ScrollArea className="flex-1 max-h-[60vh] overflow-auto pr-4">
               <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
