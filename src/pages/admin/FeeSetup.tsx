@@ -1,0 +1,482 @@
+import { useState } from "react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
+import { useFeeCategories, useCreateFeeCategory, useUpdateFeeCategory, useDeleteFeeCategory } from "@/hooks/useFeeCategories";
+import { useFeeStructures, useCreateFeeStructure, useCreateInstallment, useDeleteFeeStructure, useDeleteInstallment, FeeStructure } from "@/hooks/useFeeStructures";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { toast } from "sonner";
+import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+export default function FeeSetup() {
+  const { data: academicYears } = useAcademicYears();
+  const activeYear = useActiveAcademicYear();
+  const [selectedYearId, setSelectedYearId] = useState<string | undefined>(undefined);
+  
+  const currentYearId = selectedYearId || activeYear?.id;
+  
+  const { data: feeCategories, isLoading: categoriesLoading } = useFeeCategories();
+  const { data: feeStructures, isLoading: structuresLoading } = useFeeStructures(currentYearId);
+  
+  const createCategory = useCreateFeeCategory();
+  const updateCategory = useUpdateFeeCategory();
+  const deleteCategory = useDeleteFeeCategory();
+  const createStructure = useCreateFeeStructure();
+  const createInstallment = useCreateInstallment();
+  const deleteStructure = useDeleteFeeStructure();
+  const deleteInstallment = useDeleteInstallment();
+
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [structureDialogOpen, setStructureDialogOpen] = useState(false);
+  const [installmentDialogOpen, setInstallmentDialogOpen] = useState(false);
+  const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
+  
+  const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true });
+  const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "" });
+  const [newInstallment, setNewInstallment] = useState({ name: "", amount: "", due_date: "" });
+
+  const handleCreateCategory = async () => {
+    if (!newCategory.name.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+    try {
+      await createCategory.mutateAsync(newCategory);
+      toast.success("Category created");
+      setCategoryDialogOpen(false);
+      setNewCategory({ name: "", description: "", is_mandatory: true });
+    } catch (error: any) {
+      toast.error("Failed to create category", { description: error.message });
+    }
+  };
+
+  const handleCreateStructure = async () => {
+    if (!newStructure.fee_category_id || !newStructure.total_amount || !currentYearId) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    try {
+      await createStructure.mutateAsync({
+        academic_year_id: currentYearId,
+        fee_category_id: newStructure.fee_category_id,
+        total_amount: parseFloat(newStructure.total_amount),
+      });
+      toast.success("Fee structure created");
+      setStructureDialogOpen(false);
+      setNewStructure({ fee_category_id: "", total_amount: "" });
+    } catch (error: any) {
+      toast.error("Failed to create structure", { description: error.message });
+    }
+  };
+
+  const handleCreateInstallment = async () => {
+    if (!selectedStructureId || !newInstallment.name || !newInstallment.amount || !newInstallment.due_date) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    try {
+      await createInstallment.mutateAsync({
+        fee_structure_id: selectedStructureId,
+        name: newInstallment.name,
+        amount: parseFloat(newInstallment.amount),
+        due_date: newInstallment.due_date,
+      });
+      toast.success("Installment added");
+      setInstallmentDialogOpen(false);
+      setNewInstallment({ name: "", amount: "", due_date: "" });
+    } catch (error: any) {
+      toast.error("Failed to add installment", { description: error.message });
+    }
+  };
+
+  const usedCategoryIds = feeStructures?.map(s => s.fee_category_id) || [];
+  const availableCategories = feeCategories?.filter(c => !usedCategoryIds.includes(c.id)) || [];
+
+  return (
+    <AdminLayout>
+      <PageHeader title="Fee Setup" description="Configure fee categories and installment schedules">
+        <Select value={currentYearId} onValueChange={setSelectedYearId}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select year" />
+          </SelectTrigger>
+          <SelectContent>
+            {academicYears?.map((year) => (
+              <SelectItem key={year.id} value={year.id}>
+                {year.name} {year.is_active && "(Active)"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </PageHeader>
+
+      <Tabs defaultValue="structures" className="mt-6">
+        <TabsList>
+          <TabsTrigger value="structures">Fee Structures</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="structures" className="mt-4">
+          {!currentYearId ? (
+            <Card className="card-elevated">
+              <EmptyState
+                icon={Calendar}
+                title="No academic year selected"
+                description="Create an academic year first to set up fee structures"
+              />
+            </Card>
+          ) : (
+            <>
+              <div className="flex justify-end mb-4">
+                <Dialog open={structureDialogOpen} onOpenChange={setStructureDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button disabled={availableCategories.length === 0}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Fee
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Fee Structure</DialogTitle>
+                      <DialogDescription>
+                        Set the total amount for a fee category
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Fee Category</Label>
+                        <Select 
+                          value={newStructure.fee_category_id}
+                          onValueChange={(value) => setNewStructure({ ...newStructure, fee_category_id: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableCategories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name} {cat.is_mandatory ? "(Mandatory)" : "(Optional)"}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Total Amount (₹)</Label>
+                        <Input
+                          type="number"
+                          placeholder="50000"
+                          value={newStructure.total_amount}
+                          onChange={(e) => setNewStructure({ ...newStructure, total_amount: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setStructureDialogOpen(false)}>Cancel</Button>
+                      <Button onClick={handleCreateStructure} disabled={createStructure.isPending}>
+                        {createStructure.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Add Fee
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {structuresLoading ? (
+                <div className="space-y-4">
+                  {[1, 2].map((i) => (
+                    <Card key={i} className="card-elevated">
+                      <CardContent className="p-6">
+                        <Skeleton className="h-6 w-40 mb-2" />
+                        <Skeleton className="h-4 w-24" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : feeStructures?.length === 0 ? (
+                <Card className="card-elevated">
+                  <EmptyState
+                    icon={Receipt}
+                    title="No fee structures"
+                    description="Add fee structures to define amounts and installments"
+                  />
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {feeStructures?.map((structure) => (
+                    <FeeStructureCard
+                      key={structure.id}
+                      structure={structure}
+                      onAddInstallment={() => {
+                        setSelectedStructureId(structure.id);
+                        setInstallmentDialogOpen(true);
+                      }}
+                      onDelete={() => deleteStructure.mutate({ id: structure.id, academicYearId: currentYearId! })}
+                      onDeleteInstallment={(id) => deleteInstallment.mutate(id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="categories" className="mt-4">
+          <div className="flex justify-end mb-4">
+            <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Fee Category</DialogTitle>
+                  <DialogDescription>Create a new fee category like Transport or Activities</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Category Name</Label>
+                    <Input
+                      placeholder="Library Fee"
+                      value={newCategory.name}
+                      onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Input
+                      placeholder="Annual library subscription"
+                      value={newCategory.description}
+                      onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Mandatory Fee</Label>
+                      <p className="text-sm text-muted-foreground">Required for all students</p>
+                    </div>
+                    <Switch
+                      checked={newCategory.is_mandatory}
+                      onCheckedChange={(checked) => setNewCategory({ ...newCategory, is_mandatory: checked })}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={handleCreateCategory} disabled={createCategory.isPending}>
+                    {createCategory.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Create
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {categoriesLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="card-elevated">
+                  <CardContent className="p-4">
+                    <Skeleton className="h-5 w-32" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : feeCategories?.length === 0 ? (
+            <Card className="card-elevated">
+              <EmptyState
+                icon={Receipt}
+                title="No fee categories"
+                description="Create categories like Tuition, Transport, Activities"
+              />
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {feeCategories?.map((category) => (
+                <Card key={category.id} className="card-elevated">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{category.name}</p>
+                        <Badge variant={category.is_mandatory ? "default" : "secondary"}>
+                          {category.is_mandatory ? "Mandatory" : "Optional"}
+                        </Badge>
+                      </div>
+                      {category.description && (
+                        <p className="text-sm text-muted-foreground">{category.description}</p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => deleteCategory.mutate(category.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Installment Dialog */}
+      <Dialog open={installmentDialogOpen} onOpenChange={setInstallmentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Installment</DialogTitle>
+            <DialogDescription>Define a payment installment with due date</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Installment Name</Label>
+              <Input
+                placeholder="Q1 Payment"
+                value={newInstallment.name}
+                onChange={(e) => setNewInstallment({ ...newInstallment, name: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Amount (₹)</Label>
+                <Input
+                  type="number"
+                  placeholder="12500"
+                  value={newInstallment.amount}
+                  onChange={(e) => setNewInstallment({ ...newInstallment, amount: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Due Date</Label>
+                <Input
+                  type="date"
+                  value={newInstallment.due_date}
+                  onChange={(e) => setNewInstallment({ ...newInstallment, due_date: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInstallmentDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateInstallment} disabled={createInstallment.isPending}>
+              {createInstallment.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Add Installment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </AdminLayout>
+  );
+}
+
+function FeeStructureCard({ 
+  structure, 
+  onAddInstallment, 
+  onDelete,
+  onDeleteInstallment 
+}: { 
+  structure: FeeStructure; 
+  onAddInstallment: () => void;
+  onDelete: () => void;
+  onDeleteInstallment: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const installments = structure.installments?.sort((a, b) => a.display_order - b.display_order) || [];
+  const installmentTotal = installments.reduce((sum, i) => sum + Number(i.amount), 0);
+  const remaining = Number(structure.total_amount) - installmentTotal;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="card-elevated">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <div>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-lg">{structure.fee_category?.name}</CardTitle>
+                  <Badge variant={structure.fee_category?.is_mandatory ? "default" : "secondary"}>
+                    {structure.fee_category?.is_mandatory ? "Mandatory" : "Optional"}
+                  </Badge>
+                </div>
+                <CardDescription>
+                  Total: {formatCurrency(Number(structure.total_amount))}
+                  {installments.length > 0 && (
+                    <span className="ml-2">
+                      • {installments.length} installment{installments.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </CardDescription>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            {installments.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {installments.map((inst) => (
+                  <div key={inst.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div>
+                      <p className="font-medium">{inst.name}</p>
+                      <p className="text-sm text-muted-foreground">Due: {formatDate(inst.due_date)}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="font-semibold">{formatCurrency(Number(inst.amount))}</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => onDeleteInstallment(inst.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {remaining > 0 && (
+              <p className="text-sm text-amber-600 mb-3">
+                ₹{remaining.toLocaleString()} remaining to be assigned to installments
+              </p>
+            )}
+
+            <Button variant="outline" size="sm" onClick={onAddInstallment}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Installment
+            </Button>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+}
