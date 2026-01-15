@@ -235,103 +235,102 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
             {unpaidInstallments.length > 0 && (
               <div className="p-4 border rounded-lg mb-6 bg-muted/30">
                 <h3 className="font-medium mb-4">Record New Payment</h3>
-                <ScrollArea className="max-h-80">
-                  <div className="grid gap-4 pr-4">
-                    {/* Payment Date Display */}
-                    <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">Payment Date:</span>
-                      <span className="text-sm">{displayDate} (Today)</span>
-                    </div>
-
-                    {/* Installment Selection */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label>Select Installments to Pay</Label>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={handleSelectAll}
-                          className="h-auto py-1 text-xs"
-                        >
-                          {selectedInstallments.length === unpaidInstallments.length ? "Deselect All" : "Select All"}
-                        </Button>
-                      </div>
-                      <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
-                        {unpaidInstallments.map((inst) => (
-                          <div 
-                            key={inst.id} 
-                            className="flex items-center gap-3 p-3 hover:bg-muted/50"
-                          >
-                            <Checkbox
-                              id={`inst-${inst.id}`}
-                              checked={selectedInstallments.includes(inst.id)}
-                              onCheckedChange={(checked) => 
-                                handleInstallmentToggle(inst.id, checked as boolean)
-                              }
-                            />
-                            <label 
-                              htmlFor={`inst-${inst.id}`}
-                              className="flex-1 flex items-center justify-between cursor-pointer"
-                            >
-                              <div>
-                                <p className="font-medium text-sm">{inst.categoryName} - {inst.name}</p>
-                                <p className="text-xs text-muted-foreground">Due: {formatDate(inst.due_date)}</p>
-                              </div>
-                              <span className="font-semibold text-sm">{formatCurrency(inst.pending_amount)}</span>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Selected Total */}
-                    {selectedInstallments.length > 0 && (
-                      <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
-                        <span className="font-medium">
-                          Total Amount ({selectedInstallments.length} installment{selectedInstallments.length > 1 ? 's' : ''})
-                        </span>
-                        <span className="text-lg font-bold text-primary">{formatCurrency(selectedTotal)}</span>
-                      </div>
-                    )}
-
-                    {/* Payment Mode & Reference */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Payment Mode</Label>
-                        <Select value={paymentMode} onValueChange={setPaymentMode}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="cash">Cash</SelectItem>
-                            <SelectItem value="upi">UPI</SelectItem>
-                            <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="cheque">Cheque</SelectItem>
-                            <SelectItem value="card">Card</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Reference Number (Optional)</Label>
-                        <Input
-                          placeholder="Transaction ID / Cheque No."
-                          value={referenceNumber}
-                          onChange={(e) => setReferenceNumber(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <Button 
-                      onClick={handleRecordPayment} 
-                      disabled={isRecording || selectedInstallments.length === 0}
-                      className="w-full"
-                    >
-                      {isRecording && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Record Payment{selectedInstallments.length > 1 ? ` for ${selectedInstallments.length} Installments` : ''}
-                    </Button>
+                <div className="grid gap-4">
+                  {/* Payment Date Display */}
+                  <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Payment Date:</span>
+                    <span className="text-sm">{displayDate} (Today)</span>
                   </div>
-                </ScrollArea>
+
+                  {/* Installment Selection */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Select Installments to Pay</Label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleSelectAll}
+                        className="h-auto py-1 text-xs"
+                      >
+                        {selectedInstallments.length === unpaidInstallments.length ? "Deselect All" : "Select All"}
+                      </Button>
+                    </div>
+                    {/* Only the installment list scrolls */}
+                    <div className="border rounded-lg divide-y max-h-40 overflow-y-auto">
+                      {unpaidInstallments.map((inst) => (
+                        <div 
+                          key={inst.id} 
+                          className="flex items-center gap-3 p-3 hover:bg-muted/50"
+                        >
+                          <Checkbox
+                            id={`inst-${inst.id}`}
+                            checked={selectedInstallments.includes(inst.id)}
+                            onCheckedChange={(checked) => 
+                              handleInstallmentToggle(inst.id, checked as boolean)
+                            }
+                          />
+                          <label 
+                            htmlFor={`inst-${inst.id}`}
+                            className="flex-1 flex items-center justify-between cursor-pointer"
+                          >
+                            <div>
+                              <p className="font-medium text-sm">{inst.categoryName} - {inst.name}</p>
+                              <p className="text-xs text-muted-foreground">Due: {formatDate(inst.due_date)}</p>
+                            </div>
+                            <span className="font-semibold text-sm">{formatCurrency(inst.pending_amount)}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Selected Total */}
+                  {selectedInstallments.length > 0 && (
+                    <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+                      <span className="font-medium">
+                        Total Amount ({selectedInstallments.length} installment{selectedInstallments.length > 1 ? 's' : ''})
+                      </span>
+                      <span className="text-lg font-bold text-primary">{formatCurrency(selectedTotal)}</span>
+                    </div>
+                  )}
+
+                  {/* Payment Mode & Reference */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Payment Mode</Label>
+                      <Select value={paymentMode} onValueChange={setPaymentMode}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash">Cash</SelectItem>
+                          <SelectItem value="upi">UPI</SelectItem>
+                          <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                          <SelectItem value="cheque">Cheque</SelectItem>
+                          <SelectItem value="card">Card</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Reference Number (Optional)</Label>
+                      <Input
+                        placeholder="Transaction ID / Cheque No."
+                        value={referenceNumber}
+                        onChange={(e) => setReferenceNumber(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={handleRecordPayment} 
+                    disabled={isRecording || selectedInstallments.length === 0}
+                    className="w-full"
+                  >
+                    {isRecording && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Record Payment{selectedInstallments.length > 1 ? ` for ${selectedInstallments.length} Installments` : ''}
+                  </Button>
+                </div>
               </div>
             )}
 
