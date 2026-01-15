@@ -142,30 +142,7 @@ export default function Students() {
                 </div>
               </div>
               <div className="border-t pt-4 mt-2">
-                <p className="text-sm font-medium mb-3">Guardian & Address</p>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="guardian">Guardian</Label>
-                    <Input
-                      id="guardian"
-                      placeholder="Mr. Ramesh Sharma (Uncle)"
-                      value={newStudent.guardian}
-                      onChange={(e) => setNewStudent({ ...newStudent, guardian: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      placeholder="123, Main Street, City"
-                      value={newStudent.address}
-                      onChange={(e) => setNewStudent({ ...newStudent, address: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="border-t pt-4 mt-2">
-                <p className="text-sm font-medium mb-3">Parent Details</p>
+                <p className="text-sm font-medium mb-3">Parent & Contact Details</p>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="parentName">Parent Name</Label>
@@ -197,6 +174,27 @@ export default function Students() {
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      placeholder="123, Main Street, City"
+                      value={newStudent.address}
+                      onChange={(e) => setNewStudent({ ...newStudent, address: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="border-t pt-4 mt-2">
+                <p className="text-sm font-medium mb-3">Guardian Details (if different from parent)</p>
+                <div className="space-y-2">
+                  <Label htmlFor="guardian">Guardian Name & Relation</Label>
+                  <Input
+                    id="guardian"
+                    placeholder="Mr. Ramesh Sharma (Uncle)"
+                    value={newStudent.guardian}
+                    onChange={(e) => setNewStudent({ ...newStudent, guardian: e.target.value })}
+                  />
                 </div>
               </div>
             </div>

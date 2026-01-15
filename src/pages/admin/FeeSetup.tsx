@@ -14,10 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
 import { useFeeCategories, useCreateFeeCategory, useUpdateFeeCategory, useDeleteFeeCategory } from "@/hooks/useFeeCategories";
-import { useFeeStructures, useCreateFeeStructure, useCreateInstallment, useDeleteFeeStructure, useDeleteInstallment, FeeStructure } from "@/hooks/useFeeStructures";
+import { useFeeStructures, useCreateFeeStructure, useUpdateFeeStructure, useCreateInstallment, useUpdateInstallment, useDeleteFeeStructure, useDeleteInstallment, FeeStructure, Installment } from "@/hooks/useFeeStructures";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function FeeSetup() {
@@ -34,7 +34,9 @@ export default function FeeSetup() {
   const updateCategory = useUpdateFeeCategory();
   const deleteCategory = useDeleteFeeCategory();
   const createStructure = useCreateFeeStructure();
+  const updateStructure = useUpdateFeeStructure();
   const createInstallment = useCreateInstallment();
+  const updateInstallment = useUpdateInstallment();
   const deleteStructure = useDeleteFeeStructure();
   const deleteInstallment = useDeleteInstallment();
 
@@ -42,6 +44,7 @@ export default function FeeSetup() {
   const [structureDialogOpen, setStructureDialogOpen] = useState(false);
   const [installmentDialogOpen, setInstallmentDialogOpen] = useState(false);
   const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
+  const [editingInstallment, setEditingInstallment] = useState<Installment | null>(null);
   
   const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true });
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "" });
@@ -99,6 +102,45 @@ export default function FeeSetup() {
     } catch (error: any) {
       toast.error("Failed to add installment", { description: error.message });
     }
+  };
+
+  const handleUpdateInstallment = async () => {
+    if (!editingInstallment || !newInstallment.name || !newInstallment.amount || !newInstallment.due_date) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    try {
+      await updateInstallment.mutateAsync({
+        id: editingInstallment.id,
+        name: newInstallment.name,
+        amount: parseFloat(newInstallment.amount),
+        due_date: newInstallment.due_date,
+      });
+      toast.success("Installment updated");
+      setInstallmentDialogOpen(false);
+      setEditingInstallment(null);
+      setNewInstallment({ name: "", amount: "", due_date: "" });
+    } catch (error: any) {
+      toast.error("Failed to update installment", { description: error.message });
+    }
+  };
+
+  const openEditInstallment = (installment: Installment, structureId: string) => {
+    setEditingInstallment(installment);
+    setSelectedStructureId(structureId);
+    setNewInstallment({
+      name: installment.name,
+      amount: String(installment.amount),
+      due_date: installment.due_date,
+    });
+    setInstallmentDialogOpen(true);
+  };
+
+  const openAddInstallment = (structureId: string) => {
+    setEditingInstallment(null);
+    setSelectedStructureId(structureId);
+    setNewInstallment({ name: "", amount: "", due_date: "" });
+    setInstallmentDialogOpen(true);
   };
 
   const usedCategoryIds = feeStructures?.map(s => s.fee_category_id) || [];
@@ -218,10 +260,8 @@ export default function FeeSetup() {
                     <FeeStructureCard
                       key={structure.id}
                       structure={structure}
-                      onAddInstallment={() => {
-                        setSelectedStructureId(structure.id);
-                        setInstallmentDialogOpen(true);
-                      }}
+                      onAddInstallment={() => openAddInstallment(structure.id)}
+                      onEditInstallment={(inst) => openEditInstallment(inst, structure.id)}
                       onDelete={() => deleteStructure.mutate({ id: structure.id, academicYearId: currentYearId! })}
                       onDeleteInstallment={(id) => deleteInstallment.mutate(id)}
                     />
@@ -336,17 +376,25 @@ export default function FeeSetup() {
       </Tabs>
 
       {/* Installment Dialog */}
-      <Dialog open={installmentDialogOpen} onOpenChange={setInstallmentDialogOpen}>
+      <Dialog open={installmentDialogOpen} onOpenChange={(open) => {
+        setInstallmentDialogOpen(open);
+        if (!open) {
+          setEditingInstallment(null);
+          setNewInstallment({ name: "", amount: "", due_date: "" });
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Installment</DialogTitle>
-            <DialogDescription>Define a payment installment with due date</DialogDescription>
+            <DialogTitle>{editingInstallment ? "Edit Installment" : "Add Installment"}</DialogTitle>
+            <DialogDescription>
+              {editingInstallment ? "Update the installment amount or due date" : "Define a payment installment with due date"}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label>Installment Name</Label>
               <Input
-                placeholder="Q1 Payment"
+                placeholder="Q1 Payment / April / 1st Installment"
                 value={newInstallment.name}
                 onChange={(e) => setNewInstallment({ ...newInstallment, name: e.target.value })}
               />
@@ -373,10 +421,17 @@ export default function FeeSetup() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setInstallmentDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateInstallment} disabled={createInstallment.isPending}>
-              {createInstallment.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Installment
-            </Button>
+            {editingInstallment ? (
+              <Button onClick={handleUpdateInstallment} disabled={updateInstallment.isPending}>
+                {updateInstallment.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Update Installment
+              </Button>
+            ) : (
+              <Button onClick={handleCreateInstallment} disabled={createInstallment.isPending}>
+                {createInstallment.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Add Installment
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -387,11 +442,13 @@ export default function FeeSetup() {
 function FeeStructureCard({ 
   structure, 
   onAddInstallment, 
+  onEditInstallment,
   onDelete,
   onDeleteInstallment 
 }: { 
   structure: FeeStructure; 
   onAddInstallment: () => void;
+  onEditInstallment: (installment: Installment) => void;
   onDelete: () => void;
   onDeleteInstallment: (id: string) => void;
 }) {
@@ -448,8 +505,16 @@ function FeeStructureCard({
                       <p className="font-medium">{inst.name}</p>
                       <p className="text-sm text-muted-foreground">Due: {formatDate(inst.due_date)}</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <p className="font-semibold">{formatCurrency(Number(inst.amount))}</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        onClick={() => onEditInstallment(inst)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
