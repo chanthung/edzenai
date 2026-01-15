@@ -25,14 +25,9 @@ export default function Index() {
             </div>
             <span className="font-bold text-lg">SchoolFees</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link to="/login">Sign In</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/register">Get Started</Link>
-            </Button>
-          </div>
+          <Button asChild>
+            <Link to="/login">Sign In</Link>
+          </Button>
         </div>
       </nav>
 
@@ -51,19 +46,12 @@ export default function Index() {
             Stop the endless phone calls about fee status. Give parents a clear, 
             real-time view of their child's fees — no login required.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" asChild className="min-w-[200px]">
-              <Link to="/register">
-                Register Your School
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link to="/login">
-                Sign In
-              </Link>
-            </Button>
-          </div>
+          <Button size="lg" asChild className="min-w-[200px]">
+            <Link to="/login">
+              School Admin Login
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       </section>
 
@@ -198,12 +186,12 @@ export default function Index() {
             Ready to reduce fee-related stress?
           </h2>
           <p className="text-primary-foreground/80 text-lg mb-8 max-w-2xl mx-auto">
-            Join schools that have transformed their fee communication. 
+            Contact our team to get your school onboarded. 
             Set up in minutes, not weeks.
           </p>
           <Button size="lg" variant="secondary" asChild>
-            <Link to="/register">
-              Register Your School — Free
+            <Link to="/login">
+              Sign In to Dashboard
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
