@@ -45,7 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Sign up the user
     const { data: authData, error: authError } = await supabase.auth.signUp({ 
       email, 
-      password 
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`
+      }
     });
     
     if (authError || !authData.user) {
@@ -63,40 +66,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('Session not created. Please try logging in.') };
     }
 
-    // Create the school
-    const { data: schoolData, error: schoolError } = await supabase
-      .from('schools')
-      .insert({ name: schoolName })
-      .select()
-      .single();
+    // Use secure RPC function to atomically create school + admin + default fee categories
+    // This bypasses RLS issues and prevents race conditions
+    const { error: rpcError } = await supabase
+      .rpc('create_school_with_primary_admin', { _school_name: schoolName });
 
-    if (schoolError || !schoolData) {
-      return { error: schoolError as Error | null };
+    if (rpcError) {
+      return { error: rpcError as Error | null };
     }
-
-    // Link user as admin of the school
-    const { error: adminError } = await supabase
-      .from('school_admins')
-      .insert({ 
-        user_id: authData.user.id, 
-        school_id: schoolData.id,
-        is_primary: true 
-      });
-
-    if (adminError) {
-      return { error: adminError as Error | null };
-    }
-
-    // Create default fee categories
-    const defaultCategories = [
-      { name: 'Tuition Fee', description: 'Annual tuition fees', is_mandatory: true, display_order: 1 },
-      { name: 'Transport Fee', description: 'School bus/transport charges', is_mandatory: false, display_order: 2 },
-      { name: 'Activities Fee', description: 'Sports, arts, and extracurricular activities', is_mandatory: false, display_order: 3 },
-    ];
-
-    await supabase
-      .from('fee_categories')
-      .insert(defaultCategories.map(cat => ({ ...cat, school_id: schoolData.id })));
 
     return { error: null };
   };

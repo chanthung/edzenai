@@ -453,6 +453,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_school_with_primary_admin: {
+        Args: { _school_name: string }
+        Returns: string
+      }
       get_student_by_access_token: {
         Args: { _access_token: string }
         Returns: {
