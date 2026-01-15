@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStudents, useCreateStudent, useDeleteStudent, Student } from "@/hooks/useStudents";
 import { toast } from "sonner";
 import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2 } from "lucide-react";
@@ -21,6 +23,7 @@ export default function Students() {
   const deleteStudent = useDeleteStudent();
   
   const [searchQuery, setSearchQuery] = useState("");
+  const [classFilter, setClassFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newStudent, setNewStudent] = useState({
     name: "",
@@ -34,11 +37,22 @@ export default function Students() {
     address: "",
   });
 
-  const filteredStudents = students?.filter(student =>
-    student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    student.roll_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    student.class_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Get unique classes for filter dropdown
+  const uniqueClasses = useMemo(() => {
+    if (!students) return [];
+    const classes = new Set(students.map(s => s.class_name).filter(Boolean));
+    return Array.from(classes).sort();
+  }, [students]);
+
+  const filteredStudents = students?.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.roll_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.class_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesClass = classFilter === "all" || student.class_name === classFilter;
+    
+    return matchesSearch && matchesClass;
+  });
 
   const handleCreateStudent = async () => {
     if (!newStudent.name.trim()) {
@@ -93,14 +107,15 @@ export default function Students() {
               Add Student
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Add New Student</DialogTitle>
               <DialogDescription>
                 Enter student and parent details. A unique link will be generated for parent access.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <ScrollArea className="flex-1 pr-4">
+              <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Student Name *</Label>
@@ -197,7 +212,8 @@ export default function Students() {
                   />
                 </div>
               </div>
-            </div>
+              </div>
+            </ScrollArea>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancel
@@ -211,15 +227,30 @@ export default function Students() {
         </Dialog>
       </PageHeader>
 
-      {/* Search */}
-      <div className="relative mt-6 max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search students..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and Filter */}
+      <div className="flex flex-col sm:flex-row gap-4 mt-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search students..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={classFilter} onValueChange={setClassFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Filter by class" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Classes</SelectItem>
+            {uniqueClasses.map((className) => (
+              <SelectItem key={className} value={className as string}>
+                {className}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Students list */}
