@@ -3,19 +3,25 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStudents } from "@/hooks/useStudents";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useFeeCategories } from "@/hooks/useFeeCategories";
 import { useSchool } from "@/hooks/useSchool";
+import { useFeeReports } from "@/hooks/useFeeReports";
 import { formatCurrency } from "@/lib/format";
-import { Users, CalendarDays, Receipt, ArrowRight, CheckCircle2, Clock } from "lucide-react";
+import { Users, CalendarDays, Receipt, ArrowRight, CheckCircle2, Clock, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { FeesSummaryCards } from "@/components/admin/reports/FeesSummaryCards";
+import { ClassWiseReport } from "@/components/admin/reports/ClassWiseReport";
+import { StudentPendingReport } from "@/components/admin/reports/StudentPendingReport";
 
 export default function Dashboard() {
   const { data: students, isLoading: studentsLoading } = useStudents();
   const { data: academicYears, isLoading: yearsLoading } = useAcademicYears();
   const { data: feeCategories, isLoading: categoriesLoading } = useFeeCategories();
   const { data: school } = useSchool();
+  const { data: feeReports, isLoading: reportsLoading } = useFeeReports();
 
   const activeYear = academicYears?.find(y => y.is_active) ?? academicYears?.[0];
   const isSetupComplete = students && students.length > 0 && academicYears && academicYears.length > 0;
@@ -27,8 +33,18 @@ export default function Dashboard() {
         description={`Welcome to ${school?.name || 'your school'} fee management`}
       />
 
-      {/* Quick stats */}
-      <div className="grid gap-4 md:grid-cols-3 mt-6 stagger-children">
+      <Tabs defaultValue="overview" className="mt-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Fee Reports
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6 mt-6">
+          {/* Quick stats */}
+          <div className="grid gap-4 md:grid-cols-3 stagger-children">
         <Card className="card-elevated">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -78,9 +94,9 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Setup checklist for new schools */}
-      {!isSetupComplete && (
-        <Card className="mt-6 border-primary/20 bg-primary/5">
+          {/* Setup checklist for new schools */}
+          {!isSetupComplete && (
+            <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
@@ -117,49 +133,75 @@ export default function Dashboard() {
                 href="/admin/settings"
               />
             </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+          )}
 
-      {/* Quick actions */}
-      <div className="grid gap-4 md:grid-cols-2 mt-6">
-        <Card className="card-elevated">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button asChild variant="outline" className="w-full justify-between">
-              <Link to="/admin/students">
-                Add New Student
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full justify-between">
-              <Link to="/admin/fee-setup">
-                Manage Fee Structure
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full justify-between">
-              <Link to="/admin/settings">
-                School Settings
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+          {/* Quick actions */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="card-elevated">
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button asChild variant="outline" className="w-full justify-between">
+                  <Link to="/admin/students">
+                    Add New Student
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full justify-between">
+                  <Link to="/admin/fee-setup">
+                    Manage Fee Structure
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full justify-between">
+                  <Link to="/admin/settings">
+                    School Settings
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
 
-        <Card className="card-elevated">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Activity feed will appear here as you record payments and add students.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card className="card-elevated">
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Activity feed will appear here as you record payments and add students.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6 mt-6">
+          {/* Fee Summary Cards */}
+          <FeesSummaryCards
+            isLoading={reportsLoading}
+            totalStudents={feeReports?.totalStudents || 0}
+            studentsWithPending={feeReports?.studentsWithPending || 0}
+            totalCollected={feeReports?.totalCollected || 0}
+            totalPending={feeReports?.totalPending || 0}
+            collectionRate={feeReports?.collectionRate || 0}
+          />
+
+          {/* Class-wise Report */}
+          <ClassWiseReport
+            data={feeReports?.classWiseReports || []}
+            isLoading={reportsLoading}
+          />
+
+          {/* Student-wise Pending Report */}
+          <StudentPendingReport
+            data={feeReports?.studentReports || []}
+            isLoading={reportsLoading}
+          />
+        </TabsContent>
+      </Tabs>
     </AdminLayout>
   );
 }
