@@ -52,6 +52,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: authError as Error | null };
     }
 
+    // CRITICAL: Wait for the session to be properly set before database operations
+    // With auto-confirm enabled, signUp returns a session immediately
+    if (authData.session) {
+      await supabase.auth.setSession({
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
+      });
+    } else {
+      return { error: new Error('Session not created. Please try logging in.') };
+    }
+
     // Create the school
     const { data: schoolData, error: schoolError } = await supabase
       .from('schools')
