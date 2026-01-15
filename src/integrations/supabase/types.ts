@@ -453,6 +453,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_student_by_access_token: {
+        Args: { _access_token: string }
+        Returns: {
+          class_name: string
+          id: string
+          name: string
+          roll_number: string
+          school_id: string
+          section: string
+        }[]
+      }
       get_user_school_ids: { Args: never; Returns: string[] }
       is_school_admin: { Args: { _school_id: string }; Returns: boolean }
     }

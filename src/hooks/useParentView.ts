@@ -44,25 +44,29 @@ export function useParentView(accessToken: string | undefined) {
   return useQuery({
     queryKey: ['parent-view', accessToken],
     queryFn: async (): Promise<ParentViewData> => {
-      // Get student by access token
-      const { data: student, error: studentError } = await supabase
-        .from('students')
-        .select(`
-          id,
-          name,
-          class_name,
-          section,
-          roll_number,
-          school:schools(id, name, upi_id, qr_code_url, phone, email)
-        `)
-        .eq('access_token', accessToken!)
-        .single();
+      // SECURE: Use RPC function to get student by access token
+      // This prevents enumeration of all student access tokens
+      const { data: studentData, error: studentError } = await supabase
+        .rpc('get_student_by_access_token', { _access_token: accessToken });
       
-      if (studentError || !student) {
+      if (studentError || !studentData || studentData.length === 0) {
         throw new Error('Student not found');
       }
 
-      // Get student's fee assignments
+      const student = studentData[0];
+
+      // Get school info (public access is allowed)
+      const { data: school, error: schoolError } = await supabase
+        .from('schools')
+        .select('id, name, upi_id, qr_code_url, phone, email')
+        .eq('id', student.school_id)
+        .single();
+
+      if (schoolError || !school) {
+        throw new Error('School not found');
+      }
+
+      // Get student's fee assignments (public access allowed via RLS)
       const { data: studentFees, error: feesError } = await supabase
         .from('student_fees')
         .select(`
@@ -77,7 +81,7 @@ export function useParentView(accessToken: string | undefined) {
 
       if (feesError) throw feesError;
 
-      // Get all payments for this student
+      // Get all payments for this student (public access allowed via RLS)
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
         .select('installment_id, amount_paid')
@@ -134,8 +138,6 @@ export function useParentView(accessToken: string | undefined) {
         { total_fee: 0, total_paid: 0, total_pending: 0 }
       );
 
-      const schoolData = Array.isArray(student.school) ? student.school[0] : student.school;
-
       return {
         student: {
           id: student.id,
@@ -144,7 +146,7 @@ export function useParentView(accessToken: string | undefined) {
           section: student.section,
           roll_number: student.roll_number,
         },
-        school: schoolData,
+        school,
         fees,
         summary,
       };
