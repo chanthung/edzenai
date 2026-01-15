@@ -12,6 +12,8 @@ export interface Student {
   parent_name: string | null;
   parent_phone: string | null;
   parent_email: string | null;
+  guardian: string | null;
+  address: string | null;
   access_token: string;
   created_at: string;
   updated_at: string;
@@ -25,6 +27,8 @@ export interface StudentInsert {
   parent_name?: string;
   parent_phone?: string;
   parent_email?: string;
+  guardian?: string;
+  address?: string;
 }
 
 export function useStudents() {
