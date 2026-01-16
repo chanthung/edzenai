@@ -194,7 +194,7 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>Record Payment - {student.name}</DialogTitle>
           <DialogDescription>
@@ -214,7 +214,7 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
             <p className="text-sm mt-1">Use "Manage Fees" to assign fee structures first</p>
           </div>
         ) : (
-          <ScrollArea className="flex-1 min-h-0 pr-4">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-2">
             {/* Summary Cards */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="p-4 rounded-lg bg-muted/50 text-center">
@@ -256,8 +256,8 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
                         {selectedInstallments.length === unpaidInstallments.length ? "Deselect All" : "Select All"}
                       </Button>
                     </div>
-                    {/* Only the installment list scrolls */}
-                    <div className="border rounded-lg divide-y max-h-40 overflow-y-auto">
+                    {/* Installments list with independent scroll */}
+                    <div className="border rounded-lg divide-y max-h-[180px] overflow-y-auto">
                       {unpaidInstallments.map((inst) => (
                         <div 
                           key={inst.id} 
@@ -420,7 +420,7 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
                 ))}
               </Accordion>
             </div>
-          </ScrollArea>
+          </div>
         )}
         
         <div className="pt-4 border-t flex justify-end">
