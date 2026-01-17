@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchool, useUpdateSchool } from "@/hooks/useSchool";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Save, Loader2, Building, QrCode, Phone, Mail, Lock } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2 } from "lucide-react";
 
 export default function Settings() {
   const { data: school, isLoading } = useSchool();
@@ -30,6 +31,8 @@ export default function Settings() {
     confirmPassword: "",
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isUploadingQr, setIsUploadingQr] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (school) {
@@ -50,6 +53,74 @@ export default function Settings() {
       toast.success("Settings saved successfully");
     } catch (error: any) {
       toast.error("Failed to save settings", { description: error.message });
+    }
+  };
+
+  const handleQrUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !school) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB");
+      return;
+    }
+
+    setIsUploadingQr(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${school.id}/qr-code.${fileExt}`;
+
+      // Delete old file if exists
+      if (formData.qr_code_url) {
+        const oldPath = formData.qr_code_url.split('/school-qr-codes/')[1];
+        if (oldPath) {
+          await supabase.storage.from('school-qr-codes').remove([oldPath]);
+        }
+      }
+
+      // Upload new file
+      const { error: uploadError } = await supabase.storage
+        .from('school-qr-codes')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('school-qr-codes')
+        .getPublicUrl(fileName);
+
+      setFormData({ ...formData, qr_code_url: publicUrl });
+      toast.success("QR code uploaded successfully");
+    } catch (error: any) {
+      toast.error("Failed to upload QR code", { description: error.message });
+    } finally {
+      setIsUploadingQr(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveQr = async () => {
+    if (!school || !formData.qr_code_url) return;
+
+    try {
+      const path = formData.qr_code_url.split('/school-qr-codes/')[1];
+      if (path) {
+        await supabase.storage.from('school-qr-codes').remove([path]);
+      }
+      setFormData({ ...formData, qr_code_url: '' });
+      toast.success("QR code removed");
+    } catch (error: any) {
+      toast.error("Failed to remove QR code", { description: error.message });
     }
   };
 
@@ -202,31 +273,71 @@ export default function Settings() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="qr_code_url">QR Code Image URL</Label>
-              <Input
-                id="qr_code_url"
-                placeholder="https://example.com/qr-code.png"
-                value={formData.qr_code_url}
-                onChange={(e) => setFormData({ ...formData, qr_code_url: e.target.value })}
+              <Label>Payment QR Code</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleQrUpload}
+                className="hidden"
               />
+              
+              {formData.qr_code_url ? (
+                <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                  <p className="text-sm font-medium">QR Code Preview</p>
+                  <img 
+                    src={formData.qr_code_url} 
+                    alt="Payment QR Code" 
+                    className="max-w-[200px] rounded-lg border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingQr}
+                    >
+                      {isUploadingQr ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-2" />
+                      )}
+                      Replace
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveQr}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {isUploadingQr ? (
+                    <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  )}
+                  <p className="text-sm font-medium">Click to upload QR code</p>
+                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 2MB</p>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
-                Upload your payment QR code somewhere and paste the URL here. Parents can scan this to pay.
+                Upload your payment QR code. Parents can scan this to pay fees.
               </p>
             </div>
-            
-            {formData.qr_code_url && (
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm font-medium mb-3">QR Code Preview</p>
-                <img 
-                  src={formData.qr_code_url} 
-                  alt="Payment QR Code" 
-                  className="max-w-[200px] rounded-lg border"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
           </CardContent>
         </Card>
 
