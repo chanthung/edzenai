@@ -3,12 +3,18 @@ import { useParentView } from "@/hooks/useParentView";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { GraduationCap, Phone, Mail, QrCode, CreditCard, AlertCircle, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { GraduationCap, Phone, Mail, QrCode, CreditCard, AlertCircle, CheckCircle2, Clock, AlertTriangle, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, parseISO, isBefore, isAfter, startOfDay } from "date-fns";
+import { format, parseISO, isBefore, startOfDay } from "date-fns";
+import { PaymentProofUploader } from "@/components/parent/PaymentProofUploader";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+
 export default function ParentView() {
   const { token } = useParams<{ token: string }>();
   const { data, isLoading, error } = useParentView(token);
+  const queryClient = useQueryClient();
+  const [expandedInstallment, setExpandedInstallment] = useState<string | null>(null);
 
   if (isLoading) {
     return <ParentViewSkeleton />;
@@ -34,6 +40,11 @@ export default function ParentView() {
   const paidPercentage = summary.total_fee > 0 
     ? Math.round((summary.total_paid / summary.total_fee) * 100) 
     : 0;
+
+  const handleProofSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['parent-view', token] });
+    setExpandedInstallment(null);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,7 +185,7 @@ export default function ParentView() {
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {fee.installments.map((inst) => {
                     const isPaid = inst.status === 'paid';
                     const dueDate = parseISO(inst.due_date);
@@ -183,61 +194,128 @@ export default function ParentView() {
                     const isMonthlyFee = fee.category.toLowerCase().includes('monthly') || 
                                          fee.category.toLowerCase().includes('activity');
                     
+                    const hasProof = !!inst.proof;
+                    const proofPending = inst.proof?.status === 'pending';
+                    const proofRejected = inst.proof?.status === 'rejected';
+                    const proofVerified = inst.proof?.status === 'verified';
+                    
+                    const isExpanded = expandedInstallment === inst.id;
+                    const canUploadProof = !isPaid && !proofPending && !proofVerified;
+                    
                     return (
-                      <div 
-                        key={inst.id}
-                        className={`flex items-center justify-between p-3 rounded-lg ${
-                          isPaid 
-                            ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' 
-                            : isOverdue 
-                              ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800'
-                              : 'bg-muted/50'
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {isPaid ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-600" />
-                            ) : isOverdue ? (
-                              <AlertTriangle className="h-4 w-4 text-red-600" />
-                            ) : (
-                              <Clock className="h-4 w-4 text-amber-600" />
-                            )}
-                            <p className="font-medium">{inst.name}</p>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              isPaid 
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                                : isOverdue 
-                                  ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
-                            }`}>
-                              {isPaid ? 'Cleared' : isOverdue ? 'Overdue' : 'Pending'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {isPaid ? (
-                              inst.payment_date 
-                                ? `Paid on ${format(parseISO(inst.payment_date), 'dd MMM yyyy')}`
-                                : 'Paid'
-                            ) : isMonthlyFee ? (
-                              <span className="font-medium text-amber-700 dark:text-amber-400">
-                                Due by 10th of the month
+                      <div key={inst.id} className="space-y-2">
+                        <div 
+                          className={`flex items-center justify-between p-3 rounded-lg ${
+                            isPaid || proofVerified
+                              ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' 
+                              : proofPending
+                                ? 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'
+                                : proofRejected
+                                  ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800'
+                                  : isOverdue 
+                                    ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800'
+                                    : 'bg-muted/50'
+                          }`}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              {isPaid || proofVerified ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              ) : proofPending ? (
+                                <Clock className="h-4 w-4 text-blue-600" />
+                              ) : isOverdue || proofRejected ? (
+                                <AlertTriangle className="h-4 w-4 text-red-600" />
+                              ) : (
+                                <Clock className="h-4 w-4 text-amber-600" />
+                              )}
+                              <p className="font-medium">{inst.name}</p>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                isPaid || proofVerified
+                                  ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                  : proofPending
+                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                    : proofRejected
+                                      ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                      : isOverdue 
+                                        ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
+                              }`}>
+                                {isPaid || proofVerified 
+                                  ? 'Cleared' 
+                                  : proofPending 
+                                    ? 'Proof Submitted'
+                                    : proofRejected
+                                      ? 'Proof Rejected'
+                                      : isOverdue 
+                                        ? 'Overdue' 
+                                        : 'Pending'}
                               </span>
-                            ) : (
-                              `Due: ${format(dueDate, 'dd MMM yyyy')}`
-                            )}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className={`font-semibold ${isPaid ? 'text-green-700 dark:text-green-400' : ''}`}>
-                            {formatCurrency(inst.amount)}
-                          </p>
-                          {inst.paid_amount > 0 && inst.paid_amount < inst.amount && (
-                            <p className="text-xs text-green-600">
-                              Paid: {formatCurrency(inst.paid_amount)}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {isPaid || proofVerified ? (
+                                inst.payment_date 
+                                  ? `Paid on ${format(parseISO(inst.payment_date), 'dd MMM yyyy')}`
+                                  : 'Paid'
+                              ) : proofPending ? (
+                                <span className="text-blue-600 dark:text-blue-400">
+                                  Awaiting verification
+                                </span>
+                              ) : isMonthlyFee ? (
+                                <span className="font-medium text-amber-700 dark:text-amber-400">
+                                  Due by 10th of the month
+                                </span>
+                              ) : (
+                                `Due: ${format(dueDate, 'dd MMM yyyy')}`
+                              )}
                             </p>
-                          )}
+                          </div>
+                          <div className="text-right flex items-center gap-2">
+                            <div>
+                              <p className={`font-semibold ${isPaid || proofVerified ? 'text-green-700 dark:text-green-400' : ''}`}>
+                                {formatCurrency(inst.amount)}
+                              </p>
+                              {inst.paid_amount > 0 && inst.paid_amount < inst.amount && (
+                                <p className="text-xs text-green-600">
+                                  Paid: {formatCurrency(inst.paid_amount)}
+                                </p>
+                              )}
+                            </div>
+                            {canUploadProof && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedInstallment(isExpanded ? null : inst.id)}
+                                className="ml-2"
+                              >
+                                <Upload className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
+                        
+                        {/* Proof upload section */}
+                        {isExpanded && canUploadProof && (
+                          <div className="ml-4 animate-slide-up">
+                            <PaymentProofUploader
+                              studentId={student.id}
+                              installmentId={inst.id}
+                              existingProof={inst.proof}
+                              onSuccess={handleProofSuccess}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Show rejection details inline if not expanded */}
+                        {proofRejected && !isExpanded && (
+                          <div className="ml-4">
+                            <PaymentProofUploader
+                              studentId={student.id}
+                              installmentId={inst.id}
+                              existingProof={inst.proof}
+                              onSuccess={handleProofSuccess}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -256,7 +334,7 @@ export default function ParentView() {
                 <CardTitle className="text-lg">Payment Options</CardTitle>
               </div>
               <CardDescription>
-                Payments are recorded manually by the school after you pay
+                After payment, upload proof for each installment above for faster verification
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -322,7 +400,7 @@ export default function ParentView() {
       {/* Footer */}
       <footer className="max-w-2xl mx-auto px-4 pb-8 text-center">
         <p className="text-xs text-muted-foreground">
-          This is a read-only view of your fee status. For questions, please contact the school directly.
+          Upload payment proof after making a payment for faster verification by the school.
         </p>
       </footer>
     </div>
