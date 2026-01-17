@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import { FeesSummaryCards } from "@/components/admin/reports/FeesSummaryCards";
 import { ClassWiseReport } from "@/components/admin/reports/ClassWiseReport";
 import { StudentPendingReport } from "@/components/admin/reports/StudentPendingReport";
+import { MonthWiseCollectionReport } from "@/components/admin/reports/MonthWiseCollectionReport";
 
 export default function Dashboard() {
   const { data: students, isLoading: studentsLoading } = useStudents();
@@ -188,6 +189,9 @@ export default function Dashboard() {
             totalPending={feeReports?.totalPending || 0}
             collectionRate={feeReports?.collectionRate || 0}
           />
+
+          {/* Month-wise Collection Report */}
+          <MonthWiseCollectionReport />
 
           {/* Class-wise Report */}
           <ClassWiseReport

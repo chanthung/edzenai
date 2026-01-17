@@ -16,8 +16,9 @@ import { useStudents, useCreateStudent, useDeleteStudent, Student } from "@/hook
 import { useStudentFees } from "@/hooks/useStudentFees";
 import { StudentFeeManager } from "@/components/admin/StudentFeeManager";
 import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
+import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2 } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
@@ -57,6 +58,7 @@ export default function Students() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [feeManagerStudent, setFeeManagerStudent] = useState<Student | null>(null);
   const [paymentRecorderStudent, setPaymentRecorderStudent] = useState<Student | null>(null);
+  const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [newStudent, setNewStudent] = useState({
     name: "",
     roll_number: "",
@@ -324,6 +326,7 @@ export default function Students() {
                   <TableHead>Class</TableHead>
                   <TableHead>Parent</TableHead>
                   <TableHead>Fees</TableHead>
+                  <TableHead>Actions</TableHead>
                   <TableHead>Parent Link</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -387,6 +390,16 @@ export default function Students() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditStudent(student)}
+                      >
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
@@ -442,6 +455,13 @@ export default function Students() {
           onOpenChange={(open) => !open && setPaymentRecorderStudent(null)}
         />
       )}
+
+      {/* Edit Student Dialog */}
+      <EditStudentDialog
+        student={editStudent}
+        open={!!editStudent}
+        onOpenChange={(open) => !open && setEditStudent(null)}
+      />
     </AdminLayout>
   );
 }

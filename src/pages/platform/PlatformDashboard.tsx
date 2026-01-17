@@ -6,12 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Building2, Users, LogOut, Shield } from "lucide-react";
+import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { CreateSchoolDialog } from "@/components/platform/CreateSchoolDialog";
+import { EditSchoolDialog } from "@/components/platform/EditSchoolDialog";
 import type { Tables } from "@/integrations/supabase/types";
 
-type School = Tables<"schools">;
+type School = Tables<"schools"> & {
+  subscription_type?: string | null;
+  subscription_status?: string | null;
+  subscription_start_date?: string | null;
+  subscription_renewal_date?: string | null;
+};
 
 export default function PlatformDashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -20,6 +26,7 @@ export default function PlatformDashboard() {
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingSchool, setEditingSchool] = useState<School | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -180,8 +187,10 @@ export default function PlatformDashboard() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
+                    <TableHead>Subscription</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -191,10 +200,31 @@ export default function PlatformDashboard() {
                       <TableCell>{school.email || "-"}</TableCell>
                       <TableCell>{school.phone || "-"}</TableCell>
                       <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {school.subscription_type || "monthly"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         {new Date(school.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">Active</Badge>
+                        <Badge 
+                          variant={school.subscription_status === 'active' ? 'secondary' : 'outline'}
+                          className={school.subscription_status === 'inactive' ? 'text-muted-foreground' : ''}
+                        >
+                          {school.subscription_status === 'active' ? 'Active' : 
+                           school.subscription_status === 'trial' ? 'Trial' : 
+                           school.subscription_status === 'inactive' ? 'Inactive' : 'Active'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingSchool(school)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -208,6 +238,13 @@ export default function PlatformDashboard() {
       <CreateSchoolDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
+        onSuccess={fetchSchools}
+      />
+
+      <EditSchoolDialog
+        school={editingSchool}
+        open={!!editingSchool}
+        onOpenChange={(open) => !open && setEditingSchool(null)}
         onSuccess={fetchSchools}
       />
     </div>

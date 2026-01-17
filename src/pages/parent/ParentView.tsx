@@ -99,6 +99,46 @@ export default function ParentView() {
         </Card>
       </div>
 
+      {/* Payment QR Code - Always visible if available and pending fees */}
+      {school.qr_code_url && summary.total_pending > 0 && (
+        <div className="max-w-2xl mx-auto px-4 mt-4">
+          <Card className="card-elevated border-primary/20 bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col items-center p-3 bg-background rounded-xl border">
+                  <img 
+                    src={school.qr_code_url} 
+                    alt="Payment QR Code"
+                    className="w-24 h-24 object-contain rounded-lg"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <QrCode className="h-4 w-4 text-primary" />
+                    <p className="font-semibold text-primary">Scan to Pay School Fees</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Pending: {formatCurrency(summary.total_pending)}
+                  </p>
+                  {school.upi_id && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={`upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`}>
+                        Open UPI App
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {school.upi_id && (
+                <p className="text-xs text-muted-foreground text-center mt-3 border-t pt-2">
+                  UPI ID: {school.upi_id}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Fee Details */}
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         {fees.length === 0 ? (
