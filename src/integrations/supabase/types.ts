@@ -288,6 +288,10 @@ export type Database = {
           name: string
           phone: string | null
           qr_code_url: string | null
+          subscription_renewal_date: string | null
+          subscription_start_date: string | null
+          subscription_status: string | null
+          subscription_type: string | null
           updated_at: string
           upi_id: string | null
         }
@@ -300,6 +304,10 @@ export type Database = {
           name: string
           phone?: string | null
           qr_code_url?: string | null
+          subscription_renewal_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_type?: string | null
           updated_at?: string
           upi_id?: string | null
         }
@@ -312,6 +320,10 @@ export type Database = {
           name?: string
           phone?: string | null
           qr_code_url?: string | null
+          subscription_renewal_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_type?: string | null
           updated_at?: string
           upi_id?: string | null
         }
