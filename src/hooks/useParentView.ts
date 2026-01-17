@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { getInstallmentStatus } from '@/lib/format';
+import { PaymentProof } from './usePaymentProofs';
 
 export interface ParentViewData {
   student: {
@@ -32,6 +33,7 @@ export interface ParentViewData {
       paid_amount: number;
       payment_date: string | null;
       status: 'paid' | 'upcoming' | 'due' | 'overdue';
+      proof: PaymentProof | null;
     }[];
   }[];
   summary: {
@@ -91,6 +93,24 @@ export function useParentView(accessToken: string | undefined) {
 
       if (paymentsError) throw paymentsError;
 
+      // Get all payment proofs for this student
+      const { data: proofs, error: proofsError } = await supabase
+        .from('payment_proofs')
+        .select('*')
+        .eq('student_id', student.id)
+        .order('created_at', { ascending: false });
+
+      if (proofsError) throw proofsError;
+
+      // Create proof lookup by installment (latest proof per installment)
+      const proofsByInstallment = (proofs ?? []).reduce((acc, proof) => {
+        // Keep only the latest proof for each installment
+        if (!acc[proof.installment_id]) {
+          acc[proof.installment_id] = proof as PaymentProof;
+        }
+        return acc;
+      }, {} as Record<string, PaymentProof>);
+
       // Create payment lookup by installment (amount and latest payment date)
       const paymentsByInstallment = payments?.reduce((acc, payment) => {
         if (!acc[payment.installment_id]) {
@@ -123,6 +143,7 @@ export function useParentView(accessToken: string | undefined) {
               paid_amount: paidAmount,
               payment_date: isPaid ? paymentInfo?.payment_date : null,
               status: getInstallmentStatus(inst.due_date, isPaid),
+              proof: proofsByInstallment[inst.id] || null,
             };
           });
 

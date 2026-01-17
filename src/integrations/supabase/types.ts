@@ -189,6 +189,78 @@ export type Database = {
           },
         ]
       }
+      payment_proofs: {
+        Row: {
+          admin_notes: string | null
+          bank_verified: boolean | null
+          created_at: string
+          file_url: string
+          id: string
+          installment_id: string
+          reference_number: string | null
+          rejection_message: string | null
+          rejection_reason:
+            | Database["public"]["Enums"]["proof_rejection_reason"]
+            | null
+          status: Database["public"]["Enums"]["proof_status"]
+          student_id: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          bank_verified?: boolean | null
+          created_at?: string
+          file_url: string
+          id?: string
+          installment_id: string
+          reference_number?: string | null
+          rejection_message?: string | null
+          rejection_reason?:
+            | Database["public"]["Enums"]["proof_rejection_reason"]
+            | null
+          status?: Database["public"]["Enums"]["proof_status"]
+          student_id: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          bank_verified?: boolean | null
+          created_at?: string
+          file_url?: string
+          id?: string
+          installment_id?: string
+          reference_number?: string | null
+          rejection_message?: string | null
+          rejection_reason?:
+            | Database["public"]["Enums"]["proof_rejection_reason"]
+            | null
+          status?: Database["public"]["Enums"]["proof_status"]
+          student_id?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_proofs_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_proofs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_paid: number
@@ -521,6 +593,15 @@ export type Database = {
     Enums: {
       app_role: "platform_admin" | "school_admin"
       fee_status: "upcoming" | "due" | "overdue" | "paid"
+      proof_rejection_reason:
+        | "amount_mismatch"
+        | "old_reused_screenshot"
+        | "payment_not_received"
+        | "wrong_month_selected"
+        | "screenshot_unclear"
+        | "incorrect_reference"
+        | "other"
+      proof_status: "pending" | "verified" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -650,6 +731,16 @@ export const Constants = {
     Enums: {
       app_role: ["platform_admin", "school_admin"],
       fee_status: ["upcoming", "due", "overdue", "paid"],
+      proof_rejection_reason: [
+        "amount_mismatch",
+        "old_reused_screenshot",
+        "payment_not_received",
+        "wrong_month_selected",
+        "screenshot_unclear",
+        "incorrect_reference",
+        "other",
+      ],
+      proof_status: ["pending", "verified", "rejected"],
     },
   },
 } as const
