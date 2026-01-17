@@ -97,16 +97,16 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Add New School</DialogTitle>
           <DialogDescription>
             Create a new school and its admin account. The admin will receive login credentials.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <ScrollArea className="flex-1 max-h-[60vh] pr-4">
-            <div className="grid gap-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-2">
+            <div className="grid gap-4 py-4 pr-2">
               <div className="space-y-4">
                 <h4 className="text-sm font-medium text-muted-foreground">School Details</h4>
                 <div className="space-y-2">
@@ -182,7 +182,7 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
                 </div>
               </div>
             </div>
-          </ScrollArea>
+          </div>
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
