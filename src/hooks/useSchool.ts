@@ -13,6 +13,18 @@ export interface School {
   qr_code_url: string | null;
   created_at: string;
   updated_at: string;
+  // Subscription fields
+  subscription_type: string | null;
+  subscription_status: string | null;
+  subscription_start_date: string | null;
+  subscription_renewal_date: string | null;
+  // Trial fields
+  trial_start_date: string | null;
+  trial_end_date: string | null;
+  system_state: string | null;
+  payment_verified: boolean | null;
+  payment_verified_at: string | null;
+  payment_verified_by: string | null;
 }
 
 export function useSchool() {
@@ -39,7 +51,7 @@ export function useUpdateSchool() {
   const { user } = useAuth();
   
   return useMutation({
-    mutationFn: async (updates: Partial<School>) => {
+    mutationFn: async (updates: Partial<Omit<School, 'system_state'>> & { system_state?: 'trial_active' | 'trial_expired' | 'subscription_active' | 'restricted_mode' }) => {
       const { data: school } = await supabase
         .from('schools')
         .select('id')

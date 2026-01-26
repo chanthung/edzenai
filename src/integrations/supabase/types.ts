@@ -358,12 +358,20 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          payment_verified: boolean | null
+          payment_verified_at: string | null
+          payment_verified_by: string | null
           phone: string | null
           qr_code_url: string | null
           subscription_renewal_date: string | null
           subscription_start_date: string | null
           subscription_status: string | null
           subscription_type: string | null
+          system_state:
+            | Database["public"]["Enums"]["school_system_state"]
+            | null
+          trial_end_date: string | null
+          trial_start_date: string | null
           updated_at: string
           upi_id: string | null
         }
@@ -374,12 +382,20 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          payment_verified?: boolean | null
+          payment_verified_at?: string | null
+          payment_verified_by?: string | null
           phone?: string | null
           qr_code_url?: string | null
           subscription_renewal_date?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_type?: string | null
+          system_state?:
+            | Database["public"]["Enums"]["school_system_state"]
+            | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string
           upi_id?: string | null
         }
@@ -390,12 +406,20 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          payment_verified?: boolean | null
+          payment_verified_at?: string | null
+          payment_verified_by?: string | null
           phone?: string | null
           qr_code_url?: string | null
           subscription_renewal_date?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_type?: string | null
+          system_state?:
+            | Database["public"]["Enums"]["school_system_state"]
+            | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string
           upi_id?: string | null
         }
@@ -568,6 +592,10 @@ export type Database = {
         Args: { _school_name: string }
         Returns: string
       }
+      get_school_effective_state: {
+        Args: { _school_id: string }
+        Returns: Database["public"]["Enums"]["school_system_state"]
+      }
       get_student_by_access_token: {
         Args: { _access_token: string }
         Returns: {
@@ -589,6 +617,7 @@ export type Database = {
       }
       is_platform_admin: { Args: never; Returns: boolean }
       is_school_admin: { Args: { _school_id: string }; Returns: boolean }
+      is_school_restricted: { Args: { _school_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "platform_admin" | "school_admin"
@@ -602,6 +631,11 @@ export type Database = {
         | "incorrect_reference"
         | "other"
       proof_status: "pending" | "verified" | "rejected"
+      school_system_state:
+        | "trial_active"
+        | "trial_expired"
+        | "subscription_active"
+        | "restricted_mode"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -741,6 +775,12 @@ export const Constants = {
         "other",
       ],
       proof_status: ["pending", "verified", "rejected"],
+      school_system_state: [
+        "trial_active",
+        "trial_expired",
+        "subscription_active",
+        "restricted_mode",
+      ],
     },
   },
 } as const

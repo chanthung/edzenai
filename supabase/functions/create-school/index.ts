@@ -94,7 +94,14 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Create the school
+    // Calculate trial dates (30-day trial by default)
+    const today = new Date()
+    const trialEndDate = new Date(today)
+    trialEndDate.setDate(trialEndDate.getDate() + 30)
+    
+    const formatDate = (date: Date) => date.toISOString().split('T')[0]
+
+    // Create the school with trial period
     const { data: school, error: schoolError } = await supabaseAdmin
       .from('schools')
       .insert({
@@ -102,6 +109,11 @@ Deno.serve(async (req) => {
         email: schoolEmail || null,
         phone: schoolPhone || null,
         address: schoolAddress || null,
+        trial_start_date: formatDate(today),
+        trial_end_date: formatDate(trialEndDate),
+        system_state: 'trial_active',
+        payment_verified: false,
+        subscription_status: 'trial',
       })
       .select()
       .single()

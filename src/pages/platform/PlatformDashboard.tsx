@@ -6,18 +6,43 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil } from "lucide-react";
+import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { CreateSchoolDialog } from "@/components/platform/CreateSchoolDialog";
 import { EditSchoolDialog } from "@/components/platform/EditSchoolDialog";
+import { ActivateSchoolDialog } from "@/components/platform/ActivateSchoolDialog";
+import { SystemStateBadge } from "@/components/ui/system-state-badge";
+import { format, differenceInDays } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 
-type School = Tables<"schools"> & {
-  subscription_type?: string | null;
-  subscription_status?: string | null;
-  subscription_start_date?: string | null;
-  subscription_renewal_date?: string | null;
-};
+type School = Tables<"schools">;
+
+function calculateEffectiveState(school: School): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (school.payment_verified && school.subscription_status === 'active') {
+    return 'subscription_active';
+  }
+  
+  if (!school.trial_end_date) {
+    return 'trial_active';
+  }
+  
+  const trialEnd = new Date(school.trial_end_date);
+  trialEnd.setHours(0, 0, 0, 0);
+  
+  if (today <= trialEnd) {
+    return 'trial_active';
+  }
+  
+  return 'trial_expired';
+}
+
+function getDaysRemaining(trialEndDate: string | null): number | null {
+  if (!trialEndDate) return null;
+  return differenceInDays(new Date(trialEndDate), new Date());
+}
 
 export default function PlatformDashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -27,6 +52,7 @@ export default function PlatformDashboard() {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
+  const [activatingSchool, setActivatingSchool] = useState<School | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -77,6 +103,11 @@ export default function PlatformDashboard() {
     await signOut();
     navigate("/login");
   };
+
+  // Calculate stats
+  const activeSchools = schools.filter(s => calculateEffectiveState(s) === 'subscription_active').length;
+  const trialSchools = schools.filter(s => calculateEffectiveState(s) === 'trial_active').length;
+  const expiredSchools = schools.filter(s => calculateEffectiveState(s) === 'trial_expired').length;
 
   if (authLoading || loading) {
     return (
@@ -136,7 +167,7 @@ export default function PlatformDashboard() {
       {/* Main content */}
       <main className="container mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Schools</CardTitle>
@@ -148,11 +179,29 @@ export default function PlatformDashboard() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Schools</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
+              <Zap className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{schools.length}</div>
+              <div className="text-2xl font-bold text-green-600">{activeSchools}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">In Trial</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{trialSchools}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Expired/Restricted</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{expiredSchools}</div>
             </CardContent>
           </Card>
         </div>
@@ -181,55 +230,77 @@ export default function PlatformDashboard() {
                 </Button>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Subscription</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {schools.map((school) => (
-                    <TableRow key={school.id}>
-                      <TableCell className="font-medium">{school.name}</TableCell>
-                      <TableCell>{school.email || "-"}</TableCell>
-                      <TableCell>{school.phone || "-"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {school.subscription_type || "monthly"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(school.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={school.subscription_status === 'active' ? 'secondary' : 'outline'}
-                          className={school.subscription_status === 'inactive' ? 'text-muted-foreground' : ''}
-                        >
-                          {school.subscription_status === 'active' ? 'Active' : 
-                           school.subscription_status === 'trial' ? 'Trial' : 
-                           school.subscription_status === 'inactive' ? 'Inactive' : 'Active'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingSchool(school)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Trial End</TableHead>
+                      <TableHead>State</TableHead>
+                      <TableHead>Days Left</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="w-[140px]">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {schools.map((school) => {
+                      const effectiveState = calculateEffectiveState(school);
+                      const daysRemaining = getDaysRemaining(school.trial_end_date);
+                      const needsActivation = effectiveState === 'trial_expired';
+
+                      return (
+                        <TableRow key={school.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{school.name}</p>
+                              <p className="text-xs text-muted-foreground">{school.email || "-"}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {school.trial_end_date 
+                              ? format(new Date(school.trial_end_date), "MMM d, yyyy")
+                              : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <SystemStateBadge state={effectiveState} size="sm" />
+                          </TableCell>
+                          <TableCell>
+                            {daysRemaining !== null ? (
+                              <span className={daysRemaining <= 0 ? 'text-destructive font-medium' : daysRemaining <= 7 ? 'text-amber-600 font-medium' : ''}>
+                                {daysRemaining <= 0 ? 'Expired' : `${daysRemaining} days`}
+                              </span>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(new Date(school.created_at), "MMM d, yyyy")}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingSchool(school)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {needsActivation && (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => setActivatingSchool(school)}
+                                >
+                                  <Zap className="h-4 w-4 mr-1" />
+                                  Activate
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -245,6 +316,13 @@ export default function PlatformDashboard() {
         school={editingSchool}
         open={!!editingSchool}
         onOpenChange={(open) => !open && setEditingSchool(null)}
+        onSuccess={fetchSchools}
+      />
+
+      <ActivateSchoolDialog
+        school={activatingSchool}
+        open={!!activatingSchool}
+        onOpenChange={(open) => !open && setActivatingSchool(null)}
         onSuccess={fetchSchools}
       />
     </div>
