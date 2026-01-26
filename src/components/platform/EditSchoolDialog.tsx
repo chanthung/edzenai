@@ -7,14 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SystemStateBadge } from "@/components/ui/system-state-badge";
 import type { Tables } from "@/integrations/supabase/types";
 
-type School = Tables<"schools"> & {
-  subscription_type?: string | null;
-  subscription_status?: string | null;
-  subscription_start_date?: string | null;
-  subscription_renewal_date?: string | null;
-};
+type School = Tables<"schools">;
 
 interface EditSchoolDialogProps {
   school: School | null;
@@ -36,6 +32,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     subscription_status: "active",
     subscription_start_date: "",
     subscription_renewal_date: "",
+    trial_start_date: "",
+    trial_end_date: "",
   });
 
   useEffect(() => {
@@ -51,6 +49,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
         subscription_status: school.subscription_status || "active",
         subscription_start_date: school.subscription_start_date || "",
         subscription_renewal_date: school.subscription_renewal_date || "",
+        trial_start_date: school.trial_start_date || "",
+        trial_end_date: school.trial_end_date || "",
       });
     }
   }, [school]);
@@ -78,6 +78,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
           subscription_status: formData.subscription_status,
           subscription_start_date: formData.subscription_start_date || null,
           subscription_renewal_date: formData.subscription_renewal_date || null,
+          trial_start_date: formData.trial_start_date || null,
+          trial_end_date: formData.trial_end_date || null,
         })
         .eq('id', school.id);
 
@@ -97,10 +99,17 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Edit School</DialogTitle>
-          <DialogDescription>
-            Update school details and subscription information.
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>Edit School</DialogTitle>
+              <DialogDescription>
+                Update school details and subscription information.
+              </DialogDescription>
+            </div>
+            {school?.system_state && (
+              <SystemStateBadge state={school.system_state} size="sm" />
+            )}
+          </div>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-2">
           <div className="grid gap-4 py-4 pr-2">
@@ -164,6 +173,31 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                   value={formData.qr_code_url}
                   onChange={(e) => setFormData({ ...formData, qr_code_url: e.target.value })}
                 />
+              </div>
+            </div>
+
+            {/* Trial Period */}
+            <div className="border-t pt-4 space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Trial Period</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-trial-start">Trial Start Date</Label>
+                  <Input
+                    id="edit-trial-start"
+                    type="date"
+                    value={formData.trial_start_date}
+                    onChange={(e) => setFormData({ ...formData, trial_start_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-trial-end">Trial End Date</Label>
+                  <Input
+                    id="edit-trial-end"
+                    type="date"
+                    value={formData.trial_end_date}
+                    onChange={(e) => setFormData({ ...formData, trial_end_date: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
 

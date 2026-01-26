@@ -1,9 +1,11 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Navigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSchool } from "@/hooks/useSchool";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SubscriptionBanner } from "@/components/admin/SubscriptionBanner";
 import { 
   GraduationCap, 
   Users, 
@@ -15,7 +17,6 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -32,6 +33,7 @@ const navItems = [
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
   const { data: school, isLoading: schoolLoading } = useSchool();
+  const { effectiveState, daysRemaining, isRestricted } = useSubscriptionStatus();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -166,6 +168,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         {/* Main content */}
         <main className="flex-1 lg:pl-64">
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+            {/* Subscription Banner */}
+            <SubscriptionBanner 
+              effectiveState={effectiveState} 
+              daysRemaining={daysRemaining} 
+              className="mb-6"
+            />
             {children}
           </div>
         </main>
