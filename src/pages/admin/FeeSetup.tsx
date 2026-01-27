@@ -15,6 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
 import { useFeeCategories, useCreateFeeCategory, useUpdateFeeCategory, useDeleteFeeCategory } from "@/hooks/useFeeCategories";
 import { useFeeStructures, useCreateFeeStructure, useUpdateFeeStructure, useCreateInstallment, useUpdateInstallment, useDeleteFeeStructure, useDeleteInstallment, FeeStructure, Installment } from "@/hooks/useFeeStructures";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil } from "lucide-react";
@@ -24,6 +26,7 @@ export default function FeeSetup() {
   const { data: academicYears } = useAcademicYears();
   const activeYear = useActiveAcademicYear();
   const [selectedYearId, setSelectedYearId] = useState<string | undefined>(undefined);
+  const { isRestricted } = useSubscriptionStatus();
   
   const currentYearId = selectedYearId || activeYear?.id;
   
@@ -181,13 +184,14 @@ export default function FeeSetup() {
           ) : (
             <>
               <div className="flex justify-end mb-4">
-                <Dialog open={structureDialogOpen} onOpenChange={setStructureDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button disabled={availableCategories.length === 0}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Fee
-                    </Button>
-                  </DialogTrigger>
+                <RestrictedButton isRestricted={isRestricted}>
+                  <Dialog open={structureDialogOpen} onOpenChange={setStructureDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button disabled={availableCategories.length === 0 || isRestricted}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Fee
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Add Fee Structure</DialogTitle>
@@ -233,6 +237,7 @@ export default function FeeSetup() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+              </RestrictedButton>
               </div>
 
               {structuresLoading ? (
@@ -274,13 +279,14 @@ export default function FeeSetup() {
 
         <TabsContent value="categories" className="mt-4">
           <div className="flex justify-end mb-4">
-            <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Category
-                </Button>
-              </DialogTrigger>
+            <RestrictedButton isRestricted={isRestricted}>
+              <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button disabled={isRestricted}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add Fee Category</DialogTitle>
@@ -323,6 +329,7 @@ export default function FeeSetup() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </RestrictedButton>
           </div>
 
           {categoriesLoading ? (

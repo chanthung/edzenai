@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscriptionStatus } from './useSubscriptionStatus';
 
 export interface StudentFee {
   id: string;
@@ -74,9 +75,14 @@ export function useStudentPayments(studentId: string | undefined) {
 
 export function useAssignFeeStructure() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async ({ studentId, feeStructureId }: { studentId: string; feeStructureId: string }) => {
+      if (isRestricted && !canPerform('assign_fee_structure')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('student_fees')
         .insert({ student_id: studentId, fee_structure_id: feeStructureId })
@@ -94,9 +100,14 @@ export function useAssignFeeStructure() {
 
 export function useRemoveFeeStructure() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async ({ studentId, feeStructureId }: { studentId: string; feeStructureId: string }) => {
+      if (isRestricted && !canPerform('remove_fee_structure')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { error } = await supabase
         .from('student_fees')
         .delete()
@@ -114,9 +125,14 @@ export function useRemoveFeeStructure() {
 
 export function useRecordPayment() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (payment: PaymentInsert) => {
+      if (isRestricted && !canPerform('record_payment')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('payments')
         .insert(payment)
@@ -135,9 +151,14 @@ export function useRecordPayment() {
 
 export function useDeletePayment() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async ({ id, studentId }: { id: string; studentId: string }) => {
+      if (isRestricted && !canPerform('delete_payment')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { error } = await supabase
         .from('payments')
         .delete()

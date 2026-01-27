@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchool, useUpdateSchool } from "@/hooks/useSchool";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { RestrictedButton, RestrictedOverlay } from "@/components/admin/RestrictedOverlay";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2 } from "lucide-react";
@@ -16,6 +18,7 @@ export default function Settings() {
   const { data: school, isLoading } = useSchool();
   const updateSchool = useUpdateSchool();
   const { changePassword } = useAuth();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -48,6 +51,11 @@ export default function Settings() {
   }, [school]);
 
   const handleSave = async () => {
+    if (isRestricted) {
+      toast.error("Operation not permitted", { description: "School is in restricted mode." });
+      return;
+    }
+    
     try {
       await updateSchool.mutateAsync(formData);
       toast.success("Settings saved successfully");
@@ -57,6 +65,11 @@ export default function Settings() {
   };
 
   const handleQrUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (isRestricted) {
+      toast.error("Operation not permitted", { description: "School is in restricted mode." });
+      return;
+    }
+    
     const file = event.target.files?.[0];
     if (!file || !school) return;
 
@@ -110,6 +123,11 @@ export default function Settings() {
   };
 
   const handleRemoveQr = async () => {
+    if (isRestricted) {
+      toast.error("Operation not permitted", { description: "School is in restricted mode." });
+      return;
+    }
+    
     if (!school || !formData.qr_code_url) return;
 
     try {
@@ -125,6 +143,11 @@ export default function Settings() {
   };
 
   const handleChangePassword = async () => {
+    if (isRestricted) {
+      toast.error("Operation not permitted", { description: "School is in restricted mode." });
+      return;
+    }
+    
     if (passwordData.newPassword.length < 6) {
       toast.error("Password must be at least 6 characters");
       return;
@@ -172,14 +195,16 @@ export default function Settings() {
   return (
     <AdminLayout>
       <PageHeader title="Settings" description="Manage your school information and payment settings">
-        <Button onClick={handleSave} disabled={updateSchool.isPending}>
-          {updateSchool.isPending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          Save Changes
-        </Button>
+        <RestrictedButton isRestricted={isRestricted}>
+          <Button onClick={handleSave} disabled={updateSchool.isPending || isRestricted}>
+            {updateSchool.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Save Changes
+          </Button>
+        </RestrictedButton>
       </PageHeader>
 
       <div className="mt-6 space-y-6">
@@ -204,6 +229,7 @@ export default function Settings() {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  disabled={isRestricted}
                 />
               </div>
               <div className="space-y-2">
@@ -213,6 +239,7 @@ export default function Settings() {
                   placeholder="123 School Street, City"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  disabled={isRestricted}
                 />
               </div>
             </div>
@@ -227,6 +254,7 @@ export default function Settings() {
                   placeholder="+91 98765 43210"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  disabled={isRestricted}
                 />
               </div>
               <div className="space-y-2">
@@ -240,6 +268,7 @@ export default function Settings() {
                   placeholder="info@school.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  disabled={isRestricted}
                 />
               </div>
             </div>
@@ -267,77 +296,84 @@ export default function Settings() {
                 placeholder="school@upi"
                 value={formData.upi_id}
                 onChange={(e) => setFormData({ ...formData, upi_id: e.target.value })}
+                disabled={isRestricted}
               />
               <p className="text-sm text-muted-foreground">
                 This will be shown to parents for making payments via GPay, PhonePe, etc.
               </p>
             </div>
-            <div className="space-y-2">
-              <Label>Payment QR Code</Label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleQrUpload}
-                className="hidden"
-              />
-              
-              {formData.qr_code_url ? (
-                <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-                  <p className="text-sm font-medium">QR Code Preview</p>
-                  <img 
-                    src={formData.qr_code_url} 
-                    alt="Payment QR Code" 
-                    className="max-w-[200px] rounded-lg border"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploadingQr}
-                    >
-                      {isUploadingQr ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4 mr-2" />
-                      )}
-                      Replace
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRemoveQr}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remove
-                    </Button>
+            <RestrictedOverlay isRestricted={isRestricted}>
+              <div className="space-y-2">
+                <Label>Payment QR Code</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleQrUpload}
+                  className="hidden"
+                  disabled={isRestricted}
+                />
+                
+                {formData.qr_code_url ? (
+                  <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                    <p className="text-sm font-medium">QR Code Preview</p>
+                    <img 
+                      src={formData.qr_code_url} 
+                      alt="Payment QR Code" 
+                      className="max-w-[200px] rounded-lg border"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingQr || isRestricted}
+                      >
+                        {isUploadingQr ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4 mr-2" />
+                        )}
+                        Replace
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveQr}
+                        className="text-destructive hover:text-destructive"
+                        disabled={isRestricted}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remove
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div 
-                  className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {isUploadingQr ? (
-                    <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-muted-foreground" />
-                  ) : (
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  )}
-                  <p className="text-sm font-medium">Click to upload QR code</p>
-                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 2MB</p>
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground">
-                Upload your payment QR code. Parents can scan this to pay fees.
-              </p>
-            </div>
+                ) : (
+                  <div 
+                    className={`border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center transition-colors ${
+                      isRestricted ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-primary/50'
+                    }`}
+                    onClick={() => !isRestricted && fileInputRef.current?.click()}
+                  >
+                    {isUploadingQr ? (
+                      <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    )}
+                    <p className="text-sm font-medium">Click to upload QR code</p>
+                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 2MB</p>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  Upload your payment QR code. Parents can scan this to pay fees.
+                </p>
+              </div>
+            </RestrictedOverlay>
           </CardContent>
         </Card>
 
@@ -364,6 +400,7 @@ export default function Settings() {
                   placeholder="Enter new password"
                   value={passwordData.newPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  disabled={isRestricted}
                 />
               </div>
               <div className="space-y-2">
@@ -374,24 +411,27 @@ export default function Settings() {
                   placeholder="Confirm new password"
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  disabled={isRestricted}
                 />
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
               Password must be at least 6 characters long.
             </p>
-            <Button 
-              onClick={handleChangePassword} 
-              disabled={isChangingPassword || !passwordData.newPassword || !passwordData.confirmPassword}
-              variant="destructive"
-            >
-              {isChangingPassword ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Lock className="h-4 w-4 mr-2" />
-              )}
-              Change Password
-            </Button>
+            <RestrictedButton isRestricted={isRestricted}>
+              <Button 
+                onClick={handleChangePassword} 
+                disabled={isChangingPassword || !passwordData.newPassword || !passwordData.confirmPassword || isRestricted}
+                variant="destructive"
+              >
+                {isChangingPassword ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Lock className="h-4 w-4 mr-2" />
+                )}
+                Change Password
+              </Button>
+            </RestrictedButton>
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from './useSchool';
+import { useSubscriptionStatus } from './useSubscriptionStatus';
 
 export interface AcademicYear {
   id: string;
@@ -47,9 +48,14 @@ export function useActiveAcademicYear() {
 export function useCreateAcademicYear() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (year: AcademicYearInsert) => {
+      if (isRestricted && !canPerform('add_academic_year')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('academic_years')
         .insert({ ...year, school_id: school!.id })
@@ -68,9 +74,14 @@ export function useCreateAcademicYear() {
 export function useUpdateAcademicYear() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<AcademicYear> & { id: string }) => {
+      if (isRestricted && !canPerform('update_academic_year')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('academic_years')
         .update(updates)
@@ -90,9 +101,14 @@ export function useUpdateAcademicYear() {
 export function useDeleteAcademicYear() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isRestricted && !canPerform('delete_academic_year')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { error } = await supabase
         .from('academic_years')
         .delete()

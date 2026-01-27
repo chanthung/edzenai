@@ -14,9 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStudents, useCreateStudent, useDeleteStudent, Student } from "@/hooks/useStudents";
 import { useStudentFees } from "@/hooks/useStudentFees";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { StudentFeeManager } from "@/components/admin/StudentFeeManager";
 import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
 import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
+import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { toast } from "sonner";
 import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -29,6 +31,7 @@ export default function Students() {
   const createStudent = useCreateStudent();
   const deleteStudent = useDeleteStudent();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
 
   // Fetch all student fees to show assignment indicators
   const { data: allStudentFees } = useQuery({
@@ -134,131 +137,133 @@ export default function Students() {
   return (
     <AdminLayout>
       <PageHeader title="Students" description="Manage student records and parent access links">
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Student
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle>Add New Student</DialogTitle>
-              <DialogDescription>
-                Enter student and parent details. A unique link will be generated for parent access.
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="flex-1 max-h-[60vh] overflow-auto pr-4">
-              <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Student Name *</Label>
-                  <Input
-                    id="name"
-                    placeholder="Rahul Sharma"
-                    value={newStudent.name}
-                    onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="roll">Roll Number</Label>
-                  <Input
-                    id="roll"
-                    placeholder="2024001"
-                    value={newStudent.roll_number}
-                    onChange={(e) => setNewStudent({ ...newStudent, roll_number: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="class">Class</Label>
-                  <Input
-                    id="class"
-                    placeholder="10th"
-                    value={newStudent.class_name}
-                    onChange={(e) => setNewStudent({ ...newStudent, class_name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="section">Section</Label>
-                  <Input
-                    id="section"
-                    placeholder="A"
-                    value={newStudent.section}
-                    onChange={(e) => setNewStudent({ ...newStudent, section: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="border-t pt-4 mt-2">
-                <p className="text-sm font-medium mb-3">Parent & Contact Details</p>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="parentName">Parent Name</Label>
-                    <Input
-                      id="parentName"
-                      placeholder="Mr. Vijay Sharma"
-                      value={newStudent.parent_name}
-                      onChange={(e) => setNewStudent({ ...newStudent, parent_name: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="parentPhone">Phone</Label>
-                      <Input
-                        id="parentPhone"
-                        placeholder="9876543210"
-                        value={newStudent.parent_phone}
-                        onChange={(e) => setNewStudent({ ...newStudent, parent_phone: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="parentEmail">Email</Label>
-                      <Input
-                        id="parentEmail"
-                        type="email"
-                        placeholder="parent@email.com"
-                        value={newStudent.parent_email}
-                        onChange={(e) => setNewStudent({ ...newStudent, parent_email: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      placeholder="123, Main Street, City"
-                      value={newStudent.address}
-                      onChange={(e) => setNewStudent({ ...newStudent, address: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="border-t pt-4 mt-2">
-                <p className="text-sm font-medium mb-3">Guardian Details (if different from parent)</p>
-                <div className="space-y-2">
-                  <Label htmlFor="guardian">Guardian Name & Relation</Label>
-                  <Input
-                    id="guardian"
-                    placeholder="Mr. Ramesh Sharma (Uncle)"
-                    value={newStudent.guardian}
-                    onChange={(e) => setNewStudent({ ...newStudent, guardian: e.target.value })}
-                  />
-                </div>
-              </div>
-              </div>
-            </ScrollArea>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateStudent} disabled={createStudent.isPending}>
-                {createStudent.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+        <RestrictedButton isRestricted={isRestricted}>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={isRestricted}>
+                <Plus className="h-4 w-4 mr-2" />
                 Add Student
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Add New Student</DialogTitle>
+                <DialogDescription>
+                  Enter student and parent details. A unique link will be generated for parent access.
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="flex-1 max-h-[60vh] overflow-auto pr-4">
+                <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Student Name *</Label>
+                    <Input
+                      id="name"
+                      placeholder="Rahul Sharma"
+                      value={newStudent.name}
+                      onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="roll">Roll Number</Label>
+                    <Input
+                      id="roll"
+                      placeholder="2024001"
+                      value={newStudent.roll_number}
+                      onChange={(e) => setNewStudent({ ...newStudent, roll_number: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="class">Class</Label>
+                    <Input
+                      id="class"
+                      placeholder="10th"
+                      value={newStudent.class_name}
+                      onChange={(e) => setNewStudent({ ...newStudent, class_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="section">Section</Label>
+                    <Input
+                      id="section"
+                      placeholder="A"
+                      value={newStudent.section}
+                      onChange={(e) => setNewStudent({ ...newStudent, section: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="border-t pt-4 mt-2">
+                  <p className="text-sm font-medium mb-3">Parent & Contact Details</p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="parentName">Parent Name</Label>
+                      <Input
+                        id="parentName"
+                        placeholder="Mr. Vijay Sharma"
+                        value={newStudent.parent_name}
+                        onChange={(e) => setNewStudent({ ...newStudent, parent_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="parentPhone">Phone</Label>
+                        <Input
+                          id="parentPhone"
+                          placeholder="9876543210"
+                          value={newStudent.parent_phone}
+                          onChange={(e) => setNewStudent({ ...newStudent, parent_phone: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="parentEmail">Email</Label>
+                        <Input
+                          id="parentEmail"
+                          type="email"
+                          placeholder="parent@email.com"
+                          value={newStudent.parent_email}
+                          onChange={(e) => setNewStudent({ ...newStudent, parent_email: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Address</Label>
+                      <Input
+                        id="address"
+                        placeholder="123, Main Street, City"
+                        value={newStudent.address}
+                        onChange={(e) => setNewStudent({ ...newStudent, address: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t pt-4 mt-2">
+                  <p className="text-sm font-medium mb-3">Guardian Details (if different from parent)</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="guardian">Guardian Name & Relation</Label>
+                    <Input
+                      id="guardian"
+                      placeholder="Mr. Ramesh Sharma (Uncle)"
+                      value={newStudent.guardian}
+                      onChange={(e) => setNewStudent({ ...newStudent, guardian: e.target.value })}
+                    />
+                  </div>
+                </div>
+                </div>
+              </ScrollArea>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateStudent} disabled={createStudent.isPending}>
+                  {createStudent.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Add Student
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </RestrictedButton>
       </PageHeader>
 
       {/* Search and Filter */}
@@ -309,7 +314,7 @@ export default function Students() {
             title={searchQuery ? "No students found" : "No students yet"}
             description={searchQuery ? "Try a different search term" : "Add your first student to get started"}
             action={
-              !searchQuery && (
+              !searchQuery && !isRestricted && (
                 <Button onClick={() => setDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Student
@@ -357,47 +362,57 @@ export default function Students() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        {studentFeeCountMap.get(student.id) ? (
+                        <RestrictedButton isRestricted={isRestricted}>
+                          {studentFeeCountMap.get(student.id) ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => !isRestricted && setFeeManagerStudent(student)}
+                              disabled={isRestricted}
+                              className="border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/50"
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1 text-green-600" />
+                              <span className="text-green-700 dark:text-green-400">
+                                Fees ({studentFeeCountMap.get(student.id)})
+                              </span>
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => !isRestricted && setFeeManagerStudent(student)}
+                              disabled={isRestricted}
+                            >
+                              <IndianRupee className="h-4 w-4 mr-1" />
+                              Fees
+                            </Button>
+                          )}
+                        </RestrictedButton>
+                        <RestrictedButton isRestricted={isRestricted}>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setFeeManagerStudent(student)}
-                            className="border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/50"
+                            onClick={() => !isRestricted && setPaymentRecorderStudent(student)}
+                            disabled={isRestricted}
                           >
-                            <CheckCircle2 className="h-4 w-4 mr-1 text-green-600" />
-                            <span className="text-green-700 dark:text-green-400">
-                              Fees ({studentFeeCountMap.get(student.id)})
-                            </span>
+                            <CreditCard className="h-4 w-4 mr-1" />
+                            Payments
                           </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setFeeManagerStudent(student)}
-                          >
-                            <IndianRupee className="h-4 w-4 mr-1" />
-                            Fees
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPaymentRecorderStudent(student)}
-                        >
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          Payments
-                        </Button>
+                        </RestrictedButton>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditStudent(student)}
-                      >
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
+                      <RestrictedButton isRestricted={isRestricted}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => !isRestricted && setEditStudent(student)}
+                          disabled={isRestricted}
+                        >
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </RestrictedButton>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -421,14 +436,17 @@ export default function Students() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteStudent(student.id, student.name)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <RestrictedButton isRestricted={isRestricted}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => !isRestricted && handleDeleteStudent(student.id, student.name)}
+                          disabled={isRestricted}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </RestrictedButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -457,11 +475,13 @@ export default function Students() {
       )}
 
       {/* Edit Student Dialog */}
-      <EditStudentDialog
-        student={editStudent}
-        open={!!editStudent}
-        onOpenChange={(open) => !open && setEditStudent(null)}
-      />
+      {editStudent && (
+        <EditStudentDialog
+          student={editStudent}
+          open={!!editStudent}
+          onOpenChange={(open) => !open && setEditStudent(null)}
+        />
+      )}
     </AdminLayout>
   );
 }
