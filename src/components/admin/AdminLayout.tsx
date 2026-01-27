@@ -6,6 +6,7 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SubscriptionBanner } from "@/components/admin/SubscriptionBanner";
+import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { 
   GraduationCap, 
   Users, 
@@ -121,7 +122,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <div className="w-12 h-12 rounded-xl bg-sidebar-primary flex items-center justify-center">
                   <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <h1 className="font-bold text-sidebar-foreground">SchoolFees</h1>
                   {schoolLoading ? (
                     <Skeleton className="h-3 w-24 mt-1" />
@@ -129,6 +130,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     <p className="text-xs text-muted-foreground truncate max-w-[140px]">{school?.name}</p>
                   )}
                 </div>
+              </div>
+              {/* School Status Badge */}
+              <div className="mt-3">
+                <SchoolStatusBadge effectiveState={effectiveState} />
               </div>
             </div>
 

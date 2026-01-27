@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from './useSchool';
+import { useSubscriptionStatus } from './useSubscriptionStatus';
 
 export interface FeeStructure {
   id: string;
@@ -69,9 +70,14 @@ export function useFeeStructures(academicYearId: string | undefined) {
 export function useCreateFeeStructure() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (structure: FeeStructureInsert) => {
+      if (isRestricted && !canPerform('add_fee_structure')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('fee_structures')
         .insert({ ...structure, school_id: school!.id })
@@ -110,9 +116,14 @@ export function useUpdateFeeStructure() {
 
 export function useDeleteFeeStructure() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async ({ id, academicYearId }: { id: string; academicYearId: string }) => {
+      if (isRestricted && !canPerform('delete_fee_structure')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { error } = await supabase
         .from('fee_structures')
         .delete()
@@ -130,9 +141,14 @@ export function useDeleteFeeStructure() {
 // Installment mutations
 export function useCreateInstallment() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (installment: InstallmentInsert) => {
+      if (isRestricted && !canPerform('add_installment')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('installments')
         .insert(installment)
@@ -150,9 +166,14 @@ export function useCreateInstallment() {
 
 export function useUpdateInstallment() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Installment> & { id: string }) => {
+      if (isRestricted && !canPerform('edit_installment')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('installments')
         .update(updates)
@@ -171,9 +192,14 @@ export function useUpdateInstallment() {
 
 export function useDeleteInstallment() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isRestricted && !canPerform('delete_installment')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { error } = await supabase
         .from('installments')
         .delete()

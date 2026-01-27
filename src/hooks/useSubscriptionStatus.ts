@@ -20,22 +20,52 @@ export interface SubscriptionInfo {
 type RestrictedAction = 
   | 'add_student'
   | 'edit_student'
+  | 'delete_student'
   | 'record_payment'
+  | 'delete_payment'
   | 'add_fee_structure'
+  | 'delete_fee_structure'
+  | 'assign_fee_structure'
+  | 'remove_fee_structure'
+  | 'add_installment'
+  | 'edit_installment'
+  | 'delete_installment'
+  | 'add_fee_category'
+  | 'delete_fee_category'
+  | 'add_academic_year'
+  | 'delete_academic_year'
+  | 'update_academic_year'
   | 'verify_proof'
+  | 'reject_proof'
   | 'generate_parent_link'
-  | 'modify_settings'
-  | 'add_academic_year';
+  | 'update_school_settings'
+  | 'upload_qr_code'
+  | 'change_password';
 
 const RESTRICTED_ACTIONS: RestrictedAction[] = [
   'add_student',
   'edit_student',
+  'delete_student',
   'record_payment',
+  'delete_payment',
   'add_fee_structure',
-  'verify_proof',
-  'generate_parent_link',
-  'modify_settings',
+  'delete_fee_structure',
+  'assign_fee_structure',
+  'remove_fee_structure',
+  'add_installment',
+  'edit_installment',
+  'delete_installment',
+  'add_fee_category',
+  'delete_fee_category',
   'add_academic_year',
+  'delete_academic_year',
+  'update_academic_year',
+  'verify_proof',
+  'reject_proof',
+  'generate_parent_link',
+  'update_school_settings',
+  'upload_qr_code',
+  'change_password',
 ];
 
 function calculateEffectiveState(school: {

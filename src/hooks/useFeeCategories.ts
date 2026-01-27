@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from './useSchool';
+import { useSubscriptionStatus } from './useSubscriptionStatus';
 
 export interface FeeCategory {
   id: string;
@@ -42,9 +43,14 @@ export function useFeeCategories() {
 export function useCreateFeeCategory() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (category: FeeCategoryInsert) => {
+      if (isRestricted && !canPerform('add_fee_category')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('fee_categories')
         .insert({ ...category, school_id: school!.id })
@@ -85,9 +91,14 @@ export function useUpdateFeeCategory() {
 export function useDeleteFeeCategory() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isRestricted && !canPerform('delete_fee_category')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { error } = await supabase
         .from('fee_categories')
         .delete()

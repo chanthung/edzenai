@@ -11,6 +11,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear } from "@/hooks/useAcademicYears";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import { Plus, CalendarDays, Trash2, Loader2 } from "lucide-react";
@@ -20,6 +22,7 @@ export default function AcademicYears() {
   const createYear = useCreateAcademicYear();
   const updateYear = useUpdateAcademicYear();
   const deleteYear = useDeleteAcademicYear();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newYear, setNewYear] = useState({
@@ -46,6 +49,11 @@ export default function AcademicYears() {
   };
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
+    if (isRestricted) {
+      toast.error("Operation not permitted", { description: "School is in restricted mode." });
+      return;
+    }
+    
     try {
       await updateYear.mutateAsync({ id, is_active: isActive });
       toast.success(isActive ? "Year activated" : "Year deactivated");
@@ -68,73 +76,75 @@ export default function AcademicYears() {
   return (
     <AdminLayout>
       <PageHeader title="Academic Years" description="Manage academic years and their fee structures">
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Year
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Academic Year</DialogTitle>
-              <DialogDescription>
-                Add a new academic year for fee management
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="yearName">Year Name</Label>
-                <Input
-                  id="yearName"
-                  placeholder="2025-26"
-                  value={newYear.name}
-                  onChange={(e) => setNewYear({ ...newYear, name: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+        <RestrictedButton isRestricted={isRestricted}>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={isRestricted}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Year
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Academic Year</DialogTitle>
+                <DialogDescription>
+                  Add a new academic year for fee management
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
+                  <Label htmlFor="yearName">Year Name</Label>
                   <Input
-                    id="startDate"
-                    type="date"
-                    value={newYear.start_date}
-                    onChange={(e) => setNewYear({ ...newYear, start_date: e.target.value })}
+                    id="yearName"
+                    placeholder="2025-26"
+                    value={newYear.name}
+                    onChange={(e) => setNewYear({ ...newYear, name: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={newYear.end_date}
-                    onChange={(e) => setNewYear({ ...newYear, end_date: e.target.value })}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">Start Date</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={newYear.start_date}
+                      onChange={(e) => setNewYear({ ...newYear, start_date: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endDate">End Date</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={newYear.end_date}
+                      onChange={(e) => setNewYear({ ...newYear, end_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                  <div>
+                    <Label htmlFor="isActive">Set as active year</Label>
+                    <p className="text-sm text-muted-foreground">Active year is shown by default</p>
+                  </div>
+                  <Switch
+                    id="isActive"
+                    checked={newYear.is_active}
+                    onCheckedChange={(checked) => setNewYear({ ...newYear, is_active: checked })}
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2">
-                <div>
-                  <Label htmlFor="isActive">Set as active year</Label>
-                  <p className="text-sm text-muted-foreground">Active year is shown by default</p>
-                </div>
-                <Switch
-                  id="isActive"
-                  checked={newYear.is_active}
-                  onCheckedChange={(checked) => setNewYear({ ...newYear, is_active: checked })}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateYear} disabled={createYear.isPending}>
-                {createYear.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Create Year
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateYear} disabled={createYear.isPending}>
+                  {createYear.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Create Year
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </RestrictedButton>
       </PageHeader>
 
       <div className="mt-6 grid gap-4">
@@ -159,10 +169,12 @@ export default function AcademicYears() {
               title="No academic years"
               description="Create your first academic year to start managing fees"
               action={
-                <Button onClick={() => setDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Year
-                </Button>
+                !isRestricted && (
+                  <Button onClick={() => setDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Year
+                  </Button>
+                )
               }
             />
           </Card>
@@ -198,16 +210,20 @@ export default function AcademicYears() {
                         id={`active-${year.id}`}
                         checked={year.is_active}
                         onCheckedChange={(checked) => handleToggleActive(year.id, checked)}
+                        disabled={isRestricted}
                       />
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDeleteYear(year.id, year.name)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <RestrictedButton isRestricted={isRestricted}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => !isRestricted && handleDeleteYear(year.id, year.name)}
+                        disabled={isRestricted}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </RestrictedButton>
                   </div>
                 </div>
               </CardContent>

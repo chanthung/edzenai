@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from './useSchool';
+import { useSubscriptionStatus } from './useSubscriptionStatus';
 
 export interface Student {
   id: string;
@@ -70,9 +71,14 @@ export function useStudent(studentId: string | undefined) {
 export function useCreateStudent() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (student: StudentInsert) => {
+      if (isRestricted && !canPerform('add_student')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('students')
         .insert({ ...student, school_id: school!.id })
@@ -91,9 +97,14 @@ export function useCreateStudent() {
 export function useUpdateStudent() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Student> & { id: string }) => {
+      if (isRestricted && !canPerform('edit_student')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data, error } = await supabase
         .from('students')
         .update(updates)
@@ -113,9 +124,14 @@ export function useUpdateStudent() {
 export function useDeleteStudent() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isRestricted && !canPerform('delete_student')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { error } = await supabase
         .from('students')
         .delete()

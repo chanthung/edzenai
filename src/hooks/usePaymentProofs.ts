@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscriptionStatus } from './useSubscriptionStatus';
 
 // Types for payment proofs (since types.ts may not be updated yet)
 export type ProofStatus = 'pending' | 'verified' | 'rejected';
@@ -198,9 +199,14 @@ export function useSubmitPaymentProof() {
 // Verify a payment proof (admin action)
 export function useVerifyPaymentProof() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
 
   return useMutation({
     mutationFn: async ({ proofId, bankVerified, adminNotes, studentId, installmentId, amount }: VerifyProofData) => {
+      if (isRestricted && !canPerform('verify_proof')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -250,9 +256,14 @@ export function useVerifyPaymentProof() {
 // Reject a payment proof (admin action)
 export function useRejectPaymentProof() {
   const queryClient = useQueryClient();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
 
   return useMutation({
     mutationFn: async ({ proofId, rejectionReason, rejectionMessage }: RejectProofData) => {
+      if (isRestricted && !canPerform('reject_proof')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { error } = await supabase
         .from('payment_proofs')
         .update({

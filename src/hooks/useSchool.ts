@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscriptionStatus } from './useSubscriptionStatus';
 
 export interface School {
   id: string;
@@ -49,9 +50,16 @@ export function useSchool() {
 export function useUpdateSchool() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { isRestricted, canPerform } = useSubscriptionStatus();
   
   return useMutation({
     mutationFn: async (updates: Partial<Omit<School, 'system_state'>> & { system_state?: 'trial_active' | 'trial_expired' | 'subscription_active' | 'restricted_mode' }) => {
+      // Only check restriction for non-system state updates
+      const isSystemUpdate = 'system_state' in updates || 'payment_verified' in updates || 'subscription_status' in updates;
+      if (!isSystemUpdate && isRestricted && !canPerform('update_school_settings')) {
+        throw new Error('Operation not permitted. School is in restricted mode.');
+      }
+      
       const { data: school } = await supabase
         .from('schools')
         .select('id')
@@ -72,6 +80,7 @@ export function useUpdateSchool() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['school', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['subscription-status', user?.id] });
     },
   });
 }
