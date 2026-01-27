@@ -1,195 +1,202 @@
 
-# Platform Admin - Trial & Subscription Control System
+# Inactive Schools - Full View-Only Mode Implementation
 
 ## Overview
-Implement a comprehensive trial period system that tracks school subscription states, automatically enforces restrictions when trials expire, and allows only Platform Admins to reactivate schools after payment verification.
+Implement comprehensive restrictions for inactive schools (trial_expired/restricted_mode), enforcing view-only access at UI, API, and permission levels. All modification actions will be disabled/hidden with clear visual indicators.
 
 ## Current State Analysis
-- The `schools` table already has basic subscription fields:
-  - `subscription_type` (monthly/annual)
-  - `subscription_status` (active/inactive/trial)
-  - `subscription_start_date`
-  - `subscription_renewal_date`
-- Schools are created through the `create-school` edge function
-- The Platform Admin dashboard (`/platform`) displays schools with subscription info
-- School Admins access their features through `AdminLayout`
 
-## What We Need to Add
+The project has foundational components already in place:
+- `useSubscriptionStatus` hook with `isRestricted` flag and `canPerform(action)` method
+- `RestrictedOverlay` and `RestrictedButton` wrapper components
+- `SubscriptionBanner` for displaying trial status
+- `SystemStateBadge` for state visualization
 
-### 1. Database Schema Changes
+**What's Missing:**
+- Restrictions are NOT applied to admin pages (Students, FeeSetup, Settings, AcademicYears)
+- No mutation-level checks (API calls can still be made)
+- No clear "School Status: Inactive (View Only)" label
+- Action buttons are not hidden/disabled
 
-Add new fields to the `schools` table:
+## Implementation Plan
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `trial_start_date` | date | When the trial period begins |
-| `trial_end_date` | date | When the trial period ends |
-| `system_state` | enum | TRIAL_ACTIVE, TRIAL_EXPIRED, SUBSCRIPTION_ACTIVE, RESTRICTED_MODE |
-| `payment_verified` | boolean | Whether payment has been verified by Platform Admin |
-| `payment_verified_at` | timestamp | When payment was verified |
-| `payment_verified_by` | uuid | Platform Admin who verified payment |
+### 1. Create School Status Header Component
 
-Create a new enum type for system states:
+A new component to display the clear status label at the top of restricted pages:
+
+| Element | Description |
+|---------|-------------|
+| Status Label | "School Status: Inactive (View Only)" |
+| Icon | Lock icon for restricted, CheckCircle for active |
+| Color | Red/destructive for inactive, green for active |
+| Tooltip | "This school is inactive. Editing and actions are disabled." |
+
+### 2. Expand Restricted Actions List
+
+Add more restricted actions to the `useSubscriptionStatus` hook:
+
+| New Actions |
+|-------------|
+| `delete_student` |
+| `assign_fee_structure` |
+| `remove_fee_structure` |
+| `delete_payment` |
+| `add_installment` |
+| `edit_installment` |
+| `delete_installment` |
+| `add_fee_category` |
+| `delete_fee_category` |
+| `delete_academic_year` |
+| `update_school_settings` |
+| `upload_qr_code` |
+| `change_password` |
+
+### 3. Update Admin Pages with Restrictions
+
+#### Students Page
+| Action | Restriction |
+|--------|-------------|
+| "Add Student" button | Wrap with `RestrictedButton` |
+| Edit button | Wrap with `RestrictedButton` |
+| Delete button | Wrap with `RestrictedButton` |
+| "Fees" button | Wrap with `RestrictedButton` |
+| "Payments" button | Wrap with `RestrictedButton` |
+| Copy/View Parent Link | **Allowed** (view-only) |
+
+#### Fee Setup Page
+| Action | Restriction |
+|--------|-------------|
+| "Add Fee" button | Wrap with `RestrictedButton` |
+| "Add Category" button | Wrap with `RestrictedButton` |
+| "Add Installment" button | Wrap with `RestrictedButton` |
+| Edit/Delete buttons | Wrap with `RestrictedButton` |
+
+#### Academic Years Page
+| Action | Restriction |
+|--------|-------------|
+| "New Year" button | Wrap with `RestrictedButton` |
+| Active toggle switch | Disable when restricted |
+| Delete button | Wrap with `RestrictedButton` |
+
+#### Settings Page
+| Action | Restriction |
+|--------|-------------|
+| "Save Changes" button | Wrap with `RestrictedButton` |
+| QR code upload | Wrap with `RestrictedOverlay` |
+| "Change Password" button | Wrap with `RestrictedButton` |
+
+#### Dashboard Page
+| Action | Restriction |
+|--------|-------------|
+| Payment proof verification | Wrap with `RestrictedOverlay` |
+| Quick action links | Add restriction indicators |
+
+### 4. Mutation-Level Protection
+
+Add restriction checks to all mutation hooks to prevent API-level bypass:
+
 ```text
-school_system_state: 
-  - trial_active
-  - trial_expired  
-  - subscription_active
-  - restricted_mode
+Pattern for each mutation:
+IF isRestricted THEN
+  throw new Error("Operation not permitted. School is in restricted mode.")
 ```
 
-### 2. Automatic State Calculation
+Hooks to update:
+- `useCreateStudent`, `useUpdateStudent`, `useDeleteStudent`
+- `useRecordPayment`, `useDeletePayment`
+- `useAssignFeeStructure`, `useRemoveFeeStructure`
+- `useCreateFeeStructure`, `useDeleteFeeStructure`
+- `useCreateInstallment`, `useUpdateInstallment`, `useDeleteInstallment`
+- `useCreateFeeCategory`, `useDeleteFeeCategory`
+- `useCreateAcademicYear`, `useUpdateAcademicYear`, `useDeleteAcademicYear`
+- `useUpdateSchool`
+- `useUpdatePaymentProofStatus`
 
-Create a database function `get_school_effective_state(school_id)` that calculates the current state based on:
+### 5. Create Restricted Context Provider
 
-```text
-IF trial_end_date IS NULL OR current_date <= trial_end_date
-  THEN state = TRIAL_ACTIVE
-ELSE IF payment_verified = true AND subscription_status = 'active'
-  THEN state = SUBSCRIPTION_ACTIVE  
-ELSE IF current_date > trial_end_date
-  THEN state = TRIAL_EXPIRED / RESTRICTED_MODE
-```
+A context wrapper to share restriction state efficiently across components:
 
-This ensures the state is always computed accurately without relying on manual updates.
+| Benefit | Description |
+|---------|-------------|
+| Centralized state | Single source of truth for restriction status |
+| Optimized re-renders | Prevents unnecessary hook calls |
+| Easy access | All components can check restrictions |
 
-### 3. Restricted Features Definition
+### 6. Enhanced Subscription Banner
 
-When a school is in `TRIAL_EXPIRED` or `RESTRICTED_MODE`:
+Update the existing banner to include:
+- More prominent display for restricted mode
+- Action items list (what's blocked)
+- Contact information
 
-| Feature | Status |
-|---------|--------|
-| View dashboard | Allowed (read-only) |
-| View students list | Allowed |
-| Add/edit students | BLOCKED |
-| Record payments | BLOCKED |
-| Add fee structures | BLOCKED |
-| Verify payment proofs | BLOCKED |
-| Generate parent links | BLOCKED |
-| View settings | Allowed |
-| Modify settings | BLOCKED |
-
-Parents can still:
-- View their fee status
-- Upload payment proofs (for pending verification)
-
-### 4. Component Architecture
+## Component Architecture
 
 ```text
-New Components:
-+-- src/hooks/useSubscriptionStatus.ts          (Hook to check school subscription state)
-+-- src/components/admin/SubscriptionBanner.tsx (Warning banner for restricted mode)
-+-- src/components/platform/ActivateSchoolDialog.tsx (Platform Admin activation modal)
-+-- src/components/admin/RestrictedOverlay.tsx  (Overlay for blocked features)
+Files to Create:
++-- src/components/admin/SchoolStatusBadge.tsx    (Status label component)
++-- src/contexts/RestrictionContext.tsx           (Context for restriction state)
 
-Modified Components:
-+-- AdminLayout.tsx         (Add subscription check + banner)
-+-- PlatformDashboard.tsx   (Add trial info, state badges, activation actions)
-+-- EditSchoolDialog.tsx    (Add trial dates + activation controls)
-+-- create-school/index.ts  (Set default trial period on creation)
+Files to Modify:
++-- src/hooks/useSubscriptionStatus.ts            (Expand restricted actions)
++-- src/pages/admin/Students.tsx                  (Add restrictions)
++-- src/pages/admin/FeeSetup.tsx                  (Add restrictions)
++-- src/pages/admin/Settings.tsx                  (Add restrictions)
++-- src/pages/admin/AcademicYears.tsx             (Add restrictions)
++-- src/pages/admin/Dashboard.tsx                 (Add restrictions)
++-- src/hooks/useStudents.ts                      (Add mutation guards)
++-- src/hooks/useStudentFees.ts                   (Add mutation guards)
++-- src/hooks/useFeeStructures.ts                 (Add mutation guards)
++-- src/hooks/useFeeCategories.ts                 (Add mutation guards)
++-- src/hooks/useAcademicYears.ts                 (Add mutation guards)
++-- src/hooks/useSchool.ts                        (Add mutation guards)
++-- src/hooks/usePaymentProofs.ts                 (Add mutation guards)
++-- src/components/admin/AdminLayout.tsx          (Add status badge)
++-- src/components/admin/SubscriptionBanner.tsx   (Enhanced display)
 ```
 
-### 5. User Interface Changes
+## UI/UX Changes
 
-#### Platform Admin Dashboard Enhancements:
-- Add columns: Trial End Date, System State
-- Color-coded status badges:
-  - Green: SUBSCRIPTION_ACTIVE
-  - Blue: TRIAL_ACTIVE  
-  - Orange: TRIAL_EXPIRED
-  - Red: RESTRICTED_MODE
-- "Activate" button for expired schools
-- Trial days remaining indicator
+### Restricted Mode Visual Indicators
 
-#### School Admin Experience (Restricted Mode):
-- Persistent warning banner at top:
-  > "Your trial has expired. Some features are restricted. Contact your administrator to activate your subscription."
-- Disabled action buttons with tooltip explaining restriction
-- Clear visual indication of what is/isn't available
+1. **Header Status Badge**: Large visible badge showing "Inactive (View Only)"
 
-#### Activation Dialog (Platform Admin):
-- School name and current state
-- Trial dates summary
-- Checklist:
-  - [ ] Payment amount verified
-  - [ ] Payment received in bank account
-  - [ ] Subscription type selected
-- Set subscription dates
-- Confirm activation
+2. **Disabled Buttons**: 
+   - Greyed out appearance (opacity: 50%)
+   - Lock icon overlay
+   - Cursor: not-allowed
 
-### 6. Create School Updates
+3. **Tooltip on hover**: 
+   - "This school is inactive. Editing and actions are disabled."
 
-When a new school is created:
-- Set `trial_start_date` = today
-- Set `trial_end_date` = today + 30 days (configurable)
-- Set `system_state` = trial_active
-- Set `payment_verified` = false
+4. **Banner at top**:
+   - Persistent destructive-colored banner
+   - Clear message explaining restrictions
 
-### 7. Security Considerations
+### Allowed Actions (View Only)
 
-- Only Platform Admins can:
-  - View all schools' subscription states
-  - Activate/reactivate schools
-  - Verify payments
-  - Modify trial dates
+The following remain accessible in restricted mode:
+- View all dashboards and reports
+- View student lists and details
+- View fee structures and installments
+- View payment history
+- View school settings
+- View parent links (but not generate new ones)
+- Navigate between pages
+- Sign out
 
-- RLS policies ensure School Admins:
-  - Can only read their own school's subscription status
-  - Cannot modify subscription/trial fields directly
+## Security Enforcement Layers
 
----
+| Layer | Implementation |
+|-------|----------------|
+| **UI Level** | Buttons hidden/disabled with RestrictedButton/RestrictedOverlay |
+| **Hook Level** | Mutations throw errors if isRestricted |
+| **API Level** | RLS policies already enforce school-level access (existing) |
 
-## Technical Implementation Plan
+## Implementation Order
 
-### Step 1: Database Migration
-- Create `school_system_state` enum
-- Add trial and payment verification columns to schools
-- Create `get_school_effective_state()` function
-- Update RLS policies to protect new fields
-
-### Step 2: Create useSubscriptionStatus Hook
-- Fetch school data including trial/subscription fields
-- Calculate effective state
-- Determine which features are restricted
-- Return helper functions: `isRestricted()`, `canPerform(action)`
-
-### Step 3: Build UI Components
-- SubscriptionBanner component for AdminLayout
-- RestrictedOverlay for blocking actions
-- ActivateSchoolDialog for Platform Admin
-- Update EditSchoolDialog with trial fields
-
-### Step 4: Integrate Restrictions
-- Wrap restricted actions in AdminLayout with checks
-- Add restriction checks to mutation hooks
-- Display appropriate messaging
-
-### Step 5: Update create-school Edge Function
-- Set trial dates on school creation
-- Default 30-day trial period
-
-### Step 6: Platform Dashboard Updates
-- Add trial/state columns to schools table
-- Add activation workflow
-- Add quick stats for trial status
-
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/hooks/useSubscriptionStatus.ts` | Subscription state management |
-| `src/components/admin/SubscriptionBanner.tsx` | Restriction warning UI |
-| `src/components/admin/RestrictedOverlay.tsx` | Block restricted actions |
-| `src/components/platform/ActivateSchoolDialog.tsx` | School activation workflow |
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `supabase/functions/create-school/index.ts` | Add trial dates on creation |
-| `src/components/admin/AdminLayout.tsx` | Add subscription check + banner |
-| `src/pages/platform/PlatformDashboard.tsx` | Trial info, state badges, activation |
-| `src/components/platform/EditSchoolDialog.tsx` | Trial dates + payment verification |
-| `src/hooks/useSchool.ts` | Include new subscription fields |
+1. **Create SchoolStatusBadge component** - Visual indicator
+2. **Update useSubscriptionStatus hook** - Expand restricted actions
+3. **Update AdminLayout** - Add status badge to header
+4. **Update each admin page** - Add restriction wrappers
+5. **Update mutation hooks** - Add guard checks
+6. **Test end-to-end** - Verify all actions blocked
