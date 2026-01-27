@@ -97,6 +97,11 @@ export default function Students() {
       return;
     }
 
+    if (!newStudent.parent_phone.trim()) {
+      toast.error("Parent phone number is required");
+      return;
+    }
+
     try {
       await createStudent.mutateAsync(newStudent);
       toast.success("Student added successfully");
@@ -208,12 +213,13 @@ export default function Students() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="parentPhone">Phone</Label>
+                        <Label htmlFor="parentPhone">Phone *</Label>
                         <Input
                           id="parentPhone"
                           placeholder="9876543210"
                           value={newStudent.parent_phone}
                           onChange={(e) => setNewStudent({ ...newStudent, parent_phone: e.target.value })}
+                          required
                         />
                       </div>
                       <div className="space-y-2">
