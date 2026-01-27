@@ -52,6 +52,11 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
       return;
     }
 
+    if (!formData.parent_phone.trim()) {
+      toast.error("Parent phone number is required");
+      return;
+    }
+
     try {
       await updateStudent.mutateAsync({
         id: student.id,
@@ -129,12 +134,13 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-parentPhone">Phone</Label>
+                    <Label htmlFor="edit-parentPhone">Phone *</Label>
                     <Input
                       id="edit-parentPhone"
                       placeholder="9876543210"
                       value={formData.parent_phone}
                       onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
