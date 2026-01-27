@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -28,7 +29,8 @@ import {
   Calendar, 
   FileText,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Lock
 } from 'lucide-react';
 import { 
   useVerifyPaymentProof, 
@@ -36,6 +38,8 @@ import {
   ProofRejectionReason,
   REJECTION_REASON_LABELS 
 } from '@/hooks/usePaymentProofs';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { RestrictedButton } from '@/components/admin/RestrictedOverlay';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { toast } from 'sonner';
 
@@ -80,6 +84,7 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
   const [adminNotes, setAdminNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState<ProofRejectionReason | ''>('');
   const [rejectionMessage, setRejectionMessage] = useState('');
+  const { isRestricted } = useSubscriptionStatus();
 
   const verifyProof = useVerifyPaymentProof();
   const rejectProof = useRejectPaymentProof();
@@ -161,6 +166,16 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Restriction Banner */}
+          {isRestricted && (
+            <Alert className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+              <Lock className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-700 dark:text-amber-300">
+                School is inactive. Verification actions are disabled.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Student Info */}
           <Card>
             <CardContent className="p-4">
@@ -251,8 +266,9 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
                   id="bank-verified"
                   checked={bankVerified}
                   onCheckedChange={(checked) => setBankVerified(checked === true)}
+                  disabled={isRestricted}
                 />
-                <Label htmlFor="bank-verified" className="text-sm font-medium cursor-pointer">
+                <Label htmlFor="bank-verified" className={`text-sm font-medium ${isRestricted ? 'text-muted-foreground cursor-not-allowed' : 'cursor-pointer'}`}>
                   Verified against bank credit / SMS
                 </Label>
               </div>
@@ -334,25 +350,30 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
         <DialogFooter className="flex-col sm:flex-row gap-2">
           {mode === 'view' ? (
             <>
-              <Button
-                variant="outline"
-                onClick={() => setMode('reject')}
-                className="text-destructive hover:text-destructive"
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Reject Proof
-              </Button>
-              <Button
-                onClick={handleVerify}
-                disabled={verifyProof.isPending}
-              >
-                {verifyProof.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                )}
-                Verify & Mark Paid
-              </Button>
+              <RestrictedButton isRestricted={isRestricted}>
+                <Button
+                  variant="outline"
+                  onClick={() => setMode('reject')}
+                  className="text-destructive hover:text-destructive"
+                  disabled={isRestricted}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Reject Proof
+                </Button>
+              </RestrictedButton>
+              <RestrictedButton isRestricted={isRestricted}>
+                <Button
+                  onClick={handleVerify}
+                  disabled={verifyProof.isPending || isRestricted}
+                >
+                  {verifyProof.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                  )}
+                  Verify & Mark Paid
+                </Button>
+              </RestrictedButton>
             </>
           ) : (
             <>

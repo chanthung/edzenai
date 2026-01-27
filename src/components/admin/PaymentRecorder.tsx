@@ -9,10 +9,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStudentFees, useStudentPayments, useRecordPayment, useDeletePayment, Payment } from "@/hooks/useStudentFees";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { formatCurrency, formatDate, getInstallmentStatus, getStatusLabel } from "@/lib/format";
 import { toast } from "sonner";
-import { Loader2, IndianRupee, Check, Clock, AlertCircle, Trash2, Calendar } from "lucide-react";
+import { Loader2, IndianRupee, Check, Clock, AlertCircle, Trash2, Calendar, Lock } from "lucide-react";
 import { Student } from "@/hooks/useStudents";
 import { format } from "date-fns";
 
@@ -37,6 +40,7 @@ interface InstallmentWithPayment {
 export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorderProps) {
   const { data: studentFees, isLoading: feesLoading } = useStudentFees(student.id);
   const { data: payments, isLoading: paymentsLoading } = useStudentPayments(student.id);
+  const { isRestricted } = useSubscriptionStatus();
   const recordPayment = useRecordPayment();
   const deletePayment = useDeletePayment();
   
@@ -231,8 +235,18 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
               </div>
             </div>
 
+            {/* Restriction Banner */}
+            {isRestricted && (
+              <Alert className="mb-4 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                <Lock className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-700 dark:text-amber-300">
+                  School is inactive. Payment recording is disabled.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Record Payment Form */}
-            {unpaidInstallments.length > 0 && (
+            {unpaidInstallments.length > 0 && !isRestricted && (
               <div className="p-4 border rounded-lg mb-6 bg-muted/30">
                 <h3 className="font-medium mb-4">Record New Payment</h3>
                 <div className="grid gap-4">
@@ -401,14 +415,17 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
                                         {payment.reference_number && ` • Ref: ${payment.reference_number}`}
                                       </p>
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                      onClick={() => handleDeletePayment(payment)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <RestrictedButton isRestricted={isRestricted}>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                        onClick={() => handleDeletePayment(payment)}
+                                        disabled={isRestricted}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </RestrictedButton>
                                   </div>
                                 ))}
                             </div>

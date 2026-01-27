@@ -4,14 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useStudents } from "@/hooks/useStudents";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useFeeCategories } from "@/hooks/useFeeCategories";
 import { useSchool } from "@/hooks/useSchool";
 import { useFeeReports } from "@/hooks/useFeeReports";
 import { usePendingPaymentProofs } from "@/hooks/usePaymentProofs";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { formatCurrency } from "@/lib/format";
-import { Users, CalendarDays, Receipt, ArrowRight, CheckCircle2, Clock, BarChart3, FileCheck } from "lucide-react";
+import { Users, CalendarDays, Receipt, ArrowRight, CheckCircle2, Clock, BarChart3, FileCheck, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { FeesSummaryCards } from "@/components/admin/reports/FeesSummaryCards";
 import { ClassWiseReport } from "@/components/admin/reports/ClassWiseReport";
@@ -27,6 +29,7 @@ export default function Dashboard() {
   const { data: school } = useSchool();
   const { data: feeReports, isLoading: reportsLoading } = useFeeReports();
   const { data: pendingProofs } = usePendingPaymentProofs(school?.id);
+  const { isRestricted } = useSubscriptionStatus();
 
   const activeYear = academicYears?.find(y => y.is_active) ?? academicYears?.[0];
   const isSetupComplete = students && students.length > 0 && academicYears && academicYears.length > 0;
@@ -201,24 +204,57 @@ export default function Dashboard() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="card-elevated">
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Quick Actions
+                  {isRestricted && (
+                    <Badge variant="outline" className="text-xs font-normal text-amber-600 border-amber-300">
+                      <Lock className="h-3 w-3 mr-1" />
+                      View Only
+                    </Badge>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button asChild variant="outline" className="w-full justify-between">
-                  <Link to="/admin/students">
-                    Add New Student
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Button 
+                          asChild={!isRestricted} 
+                          variant="outline" 
+                          className={`w-full justify-between ${isRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          disabled={isRestricted}
+                        >
+                          {isRestricted ? (
+                            <span className="flex items-center justify-between w-full">
+                              Add New Student
+                              <Lock className="h-4 w-4 text-muted-foreground" />
+                            </span>
+                          ) : (
+                            <Link to="/admin/students">
+                              Add New Student
+                              <ArrowRight className="h-4 w-4" />
+                            </Link>
+                          )}
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    {isRestricted && (
+                      <TooltipContent>
+                        <p>School is inactive. Adding students is disabled.</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
                 <Button asChild variant="outline" className="w-full justify-between">
                   <Link to="/admin/fee-setup">
-                    Manage Fee Structure
+                    {isRestricted ? 'View Fee Structure' : 'Manage Fee Structure'}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full justify-between">
                   <Link to="/admin/settings">
-                    School Settings
+                    {isRestricted ? 'View Settings' : 'School Settings'}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
