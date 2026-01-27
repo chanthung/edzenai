@@ -1,202 +1,161 @@
 
-# Inactive Schools - Full View-Only Mode Implementation
+# Complete View-Only Mode for Inactive Schools
 
-## Overview
-Implement comprehensive restrictions for inactive schools (trial_expired/restricted_mode), enforcing view-only access at UI, API, and permission levels. All modification actions will be disabled/hidden with clear visual indicators.
+## Problem Identified
+After thorough analysis, I found that while the mutation hooks have restriction guards, several UI components are missing restriction checks, allowing users to see and interact with action buttons even when the school is inactive.
 
-## Current State Analysis
+## Missing Restrictions Found
 
-The project has foundational components already in place:
-- `useSubscriptionStatus` hook with `isRestricted` flag and `canPerform(action)` method
-- `RestrictedOverlay` and `RestrictedButton` wrapper components
-- `SubscriptionBanner` for displaying trial status
-- `SystemStateBadge` for state visualization
+### Fee Setup Page (`FeeSetup.tsx`)
 
-**What's Missing:**
-- Restrictions are NOT applied to admin pages (Students, FeeSetup, Settings, AcademicYears)
-- No mutation-level checks (API calls can still be made)
-- No clear "School Status: Inactive (View Only)" label
-- Action buttons are not hidden/disabled
+| Component | Missing Restriction |
+|-----------|---------------------|
+| `FeeStructureCard` - Delete structure button | Not wrapped in `RestrictedButton` |
+| `FeeStructureCard` - Add Installment button | Not wrapped in `RestrictedButton` |
+| `FeeStructureCard` - Edit Installment button | Not wrapped in `RestrictedButton` |
+| `FeeStructureCard` - Delete Installment button | Not wrapped in `RestrictedButton` |
+| Categories tab - Delete category button | Not wrapped in `RestrictedButton` |
+
+### Student Fee Manager (`StudentFeeManager.tsx`)
+
+| Element | Missing Restriction |
+|---------|---------------------|
+| Entire dialog content | Not using `isRestricted` check |
+| Fee assignment checkboxes | Should be disabled when restricted |
+
+### Payment Recorder (`PaymentRecorder.tsx`)
+
+| Element | Missing Restriction |
+|---------|---------------------|
+| Record Payment form section | Should be hidden/disabled when restricted |
+| Select installments checkboxes | Should be disabled when restricted |
+| Record Payment button | Should be wrapped in `RestrictedButton` |
+| Delete payment buttons | Should be wrapped in `RestrictedButton` |
+
+### Payment Proof Verifier (`PaymentProofVerifier.tsx`)
+
+| Element | Missing Restriction |
+|---------|---------------------|
+| Verify & Mark Paid button | Should be wrapped in `RestrictedButton` |
+| Reject Proof button | Should be wrapped in `RestrictedButton` |
+| Bank verified checkbox | Should be disabled when restricted |
+
+### Pending Proofs Panel (`PendingProofsPanel.tsx`)
+
+| Element | Missing Restriction |
+|---------|---------------------|
+| Clicking on proof cards | Should show restricted state in verifier |
+
+### Dashboard (`Dashboard.tsx`)
+
+| Element | Missing Restriction |
+|---------|---------------------|
+| Quick Actions section | Links to add students should indicate restriction |
 
 ## Implementation Plan
 
-### 1. Create School Status Header Component
+### Step 1: Update FeeStructureCard Component
 
-A new component to display the clear status label at the top of restricted pages:
-
-| Element | Description |
-|---------|-------------|
-| Status Label | "School Status: Inactive (View Only)" |
-| Icon | Lock icon for restricted, CheckCircle for active |
-| Color | Red/destructive for inactive, green for active |
-| Tooltip | "This school is inactive. Editing and actions are disabled." |
-
-### 2. Expand Restricted Actions List
-
-Add more restricted actions to the `useSubscriptionStatus` hook:
-
-| New Actions |
-|-------------|
-| `delete_student` |
-| `assign_fee_structure` |
-| `remove_fee_structure` |
-| `delete_payment` |
-| `add_installment` |
-| `edit_installment` |
-| `delete_installment` |
-| `add_fee_category` |
-| `delete_fee_category` |
-| `delete_academic_year` |
-| `update_school_settings` |
-| `upload_qr_code` |
-| `change_password` |
-
-### 3. Update Admin Pages with Restrictions
-
-#### Students Page
-| Action | Restriction |
-|--------|-------------|
-| "Add Student" button | Wrap with `RestrictedButton` |
-| Edit button | Wrap with `RestrictedButton` |
-| Delete button | Wrap with `RestrictedButton` |
-| "Fees" button | Wrap with `RestrictedButton` |
-| "Payments" button | Wrap with `RestrictedButton` |
-| Copy/View Parent Link | **Allowed** (view-only) |
-
-#### Fee Setup Page
-| Action | Restriction |
-|--------|-------------|
-| "Add Fee" button | Wrap with `RestrictedButton` |
-| "Add Category" button | Wrap with `RestrictedButton` |
-| "Add Installment" button | Wrap with `RestrictedButton` |
-| Edit/Delete buttons | Wrap with `RestrictedButton` |
-
-#### Academic Years Page
-| Action | Restriction |
-|--------|-------------|
-| "New Year" button | Wrap with `RestrictedButton` |
-| Active toggle switch | Disable when restricted |
-| Delete button | Wrap with `RestrictedButton` |
-
-#### Settings Page
-| Action | Restriction |
-|--------|-------------|
-| "Save Changes" button | Wrap with `RestrictedButton` |
-| QR code upload | Wrap with `RestrictedOverlay` |
-| "Change Password" button | Wrap with `RestrictedButton` |
-
-#### Dashboard Page
-| Action | Restriction |
-|--------|-------------|
-| Payment proof verification | Wrap with `RestrictedOverlay` |
-| Quick action links | Add restriction indicators |
-
-### 4. Mutation-Level Protection
-
-Add restriction checks to all mutation hooks to prevent API-level bypass:
+Pass `isRestricted` prop to `FeeStructureCard` and wrap all action buttons:
 
 ```text
-Pattern for each mutation:
-IF isRestricted THEN
-  throw new Error("Operation not permitted. School is in restricted mode.")
+Changes needed:
+1. Add isRestricted prop to FeeStructureCard interface
+2. Wrap Delete structure button in RestrictedButton
+3. Wrap Add Installment button in RestrictedButton
+4. Wrap Edit Installment button in RestrictedButton
+5. Wrap Delete Installment button in RestrictedButton
+6. Pass isRestricted from FeeSetup to FeeStructureCard
 ```
 
-Hooks to update:
-- `useCreateStudent`, `useUpdateStudent`, `useDeleteStudent`
-- `useRecordPayment`, `useDeletePayment`
-- `useAssignFeeStructure`, `useRemoveFeeStructure`
-- `useCreateFeeStructure`, `useDeleteFeeStructure`
-- `useCreateInstallment`, `useUpdateInstallment`, `useDeleteInstallment`
-- `useCreateFeeCategory`, `useDeleteFeeCategory`
-- `useCreateAcademicYear`, `useUpdateAcademicYear`, `useDeleteAcademicYear`
-- `useUpdateSchool`
-- `useUpdatePaymentProofStatus`
+### Step 2: Update Categories Delete Button
 
-### 5. Create Restricted Context Provider
-
-A context wrapper to share restriction state efficiently across components:
-
-| Benefit | Description |
-|---------|-------------|
-| Centralized state | Single source of truth for restriction status |
-| Optimized re-renders | Prevents unnecessary hook calls |
-| Easy access | All components can check restrictions |
-
-### 6. Enhanced Subscription Banner
-
-Update the existing banner to include:
-- More prominent display for restricted mode
-- Action items list (what's blocked)
-- Contact information
-
-## Component Architecture
+Wrap the delete category button in `RestrictedButton`:
 
 ```text
-Files to Create:
-+-- src/components/admin/SchoolStatusBadge.tsx    (Status label component)
-+-- src/contexts/RestrictionContext.tsx           (Context for restriction state)
-
-Files to Modify:
-+-- src/hooks/useSubscriptionStatus.ts            (Expand restricted actions)
-+-- src/pages/admin/Students.tsx                  (Add restrictions)
-+-- src/pages/admin/FeeSetup.tsx                  (Add restrictions)
-+-- src/pages/admin/Settings.tsx                  (Add restrictions)
-+-- src/pages/admin/AcademicYears.tsx             (Add restrictions)
-+-- src/pages/admin/Dashboard.tsx                 (Add restrictions)
-+-- src/hooks/useStudents.ts                      (Add mutation guards)
-+-- src/hooks/useStudentFees.ts                   (Add mutation guards)
-+-- src/hooks/useFeeStructures.ts                 (Add mutation guards)
-+-- src/hooks/useFeeCategories.ts                 (Add mutation guards)
-+-- src/hooks/useAcademicYears.ts                 (Add mutation guards)
-+-- src/hooks/useSchool.ts                        (Add mutation guards)
-+-- src/hooks/usePaymentProofs.ts                 (Add mutation guards)
-+-- src/components/admin/AdminLayout.tsx          (Add status badge)
-+-- src/components/admin/SubscriptionBanner.tsx   (Enhanced display)
+Location: FeeSetup.tsx, Categories tab section
+Action: Wrap Trash2 button in RestrictedButton, add disabled prop
 ```
 
-## UI/UX Changes
+### Step 3: Update StudentFeeManager Component
 
-### Restricted Mode Visual Indicators
+Add restriction checks to the fee assignment dialog:
 
-1. **Header Status Badge**: Large visible badge showing "Inactive (View Only)"
+```text
+Changes needed:
+1. Import useSubscriptionStatus hook
+2. Disable checkboxes when isRestricted is true
+3. Show a banner message when in restricted mode
+4. Prevent any toggle actions
+```
 
-2. **Disabled Buttons**: 
-   - Greyed out appearance (opacity: 50%)
-   - Lock icon overlay
-   - Cursor: not-allowed
+### Step 4: Update PaymentRecorder Component
 
-3. **Tooltip on hover**: 
-   - "This school is inactive. Editing and actions are disabled."
+Add comprehensive restrictions to the payment recording dialog:
 
-4. **Banner at top**:
-   - Persistent destructive-colored banner
-   - Clear message explaining restrictions
+```text
+Changes needed:
+1. Import useSubscriptionStatus hook
+2. Import RestrictedButton component
+3. Hide/disable "Record New Payment" section when restricted
+4. Wrap delete payment buttons in RestrictedButton
+5. Add banner explaining restrictions when applicable
+```
 
-### Allowed Actions (View Only)
+### Step 5: Update PaymentProofVerifier Component
 
-The following remain accessible in restricted mode:
-- View all dashboards and reports
-- View student lists and details
-- View fee structures and installments
-- View payment history
-- View school settings
-- View parent links (but not generate new ones)
-- Navigate between pages
-- Sign out
+Add restrictions to proof verification actions:
 
-## Security Enforcement Layers
+```text
+Changes needed:
+1. Import useSubscriptionStatus hook
+2. Import RestrictedButton/RestrictedOverlay components
+3. Disable "Verify & Mark Paid" button when restricted
+4. Disable "Reject Proof" button when restricted
+5. Disable bank verified checkbox when restricted
+6. Show restriction banner in dialog
+```
 
-| Layer | Implementation |
-|-------|----------------|
-| **UI Level** | Buttons hidden/disabled with RestrictedButton/RestrictedOverlay |
-| **Hook Level** | Mutations throw errors if isRestricted |
-| **API Level** | RLS policies already enforce school-level access (existing) |
+### Step 6: Update Dashboard Quick Actions
 
-## Implementation Order
+Add visual indicators to Quick Actions when school is restricted:
 
-1. **Create SchoolStatusBadge component** - Visual indicator
-2. **Update useSubscriptionStatus hook** - Expand restricted actions
-3. **Update AdminLayout** - Add status badge to header
-4. **Update each admin page** - Add restriction wrappers
-5. **Update mutation hooks** - Add guard checks
-6. **Test end-to-end** - Verify all actions blocked
+```text
+Changes needed:
+1. Import useSubscriptionStatus hook
+2. Add restriction indicators to action buttons
+3. Show tooltip explaining restrictions
+```
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/admin/FeeSetup.tsx` | Add isRestricted to FeeStructureCard, wrap delete category button |
+| `src/components/admin/StudentFeeManager.tsx` | Add restriction checks to fee checkboxes |
+| `src/components/admin/PaymentRecorder.tsx` | Add restriction checks to payment actions |
+| `src/components/admin/PaymentProofVerifier.tsx` | Add restriction checks to verify/reject buttons |
+| `src/pages/admin/Dashboard.tsx` | Add restriction indicators to quick actions |
+
+## Visual Behavior When Restricted
+
+When a school is in `trial_expired` or `restricted_mode`:
+
+| Action | Behavior |
+|--------|----------|
+| Add/Edit/Delete fee structures | Button disabled, tooltip shows restriction message |
+| Add/Edit/Delete installments | Button disabled, tooltip shows restriction message |
+| Delete categories | Button disabled, tooltip shows restriction message |
+| Assign/Remove fees from students | Checkboxes disabled, banner explains restriction |
+| Record payments | Form section hidden or clearly disabled |
+| Delete payments | Button disabled, tooltip shows restriction message |
+| Verify payment proofs | Button disabled, tooltip shows restriction message |
+| Reject payment proofs | Button disabled, tooltip shows restriction message |
+
+## Expected Outcome
+
+After implementation:
+1. All action buttons will be visually disabled with lock indicators
+2. Tooltips will explain why actions are restricted
+3. Even if someone tries to bypass UI, mutation hooks will block operations
+4. Users can still view all data but cannot modify anything
