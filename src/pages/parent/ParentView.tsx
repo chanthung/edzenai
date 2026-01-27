@@ -116,7 +116,7 @@ export default function ParentView() {
           <Card className={`card-elevated ${summary.total_pending > 0 ? 'border-primary/20 bg-primary/5' : 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'}`}>
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
-                {school.upi_id && summary.total_pending > 0 ? (
+                {school.upi_id ? (
                   <a 
                     href={`upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`}
                     className="flex flex-col items-center p-3 bg-background rounded-xl border hover:border-primary transition-colors cursor-pointer"
