@@ -116,18 +116,29 @@ export default function ParentView() {
           <Card className={`card-elevated ${summary.total_pending > 0 ? 'border-primary/20 bg-primary/5' : 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'}`}>
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
-                {school.upi_id ? (
-                  <a 
-                    href={`upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`}
-                    className="flex flex-col items-center p-3 bg-background rounded-xl border hover:border-primary transition-colors cursor-pointer"
+              {school.upi_id ? (
+                  <div 
+                    onClick={() => {
+                      const upiUrl = `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`;
+                      window.location.href = upiUrl;
+                    }}
+                    className="flex flex-col items-center p-3 bg-background rounded-xl border hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer active:scale-95"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        const upiUrl = `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`;
+                        window.location.href = upiUrl;
+                      }
+                    }}
                   >
                     <img 
                       src={school.qr_code_url} 
                       alt="Payment QR Code - Tap to Pay"
-                      className="w-24 h-24 object-contain rounded-lg"
+                      className="w-24 h-24 object-contain rounded-lg pointer-events-none"
                     />
-                    <span className="text-xs text-primary mt-1 font-medium">Tap to Pay</span>
-                  </a>
+                    <span className="text-xs text-primary mt-1 font-medium">📱 Tap to Pay</span>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center p-3 bg-background rounded-xl border">
                     <img 
