@@ -12,6 +12,16 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useStudents, useCreateStudent, useDeleteStudent, Student } from "@/hooks/useStudents";
 import { useStudentFees } from "@/hooks/useStudentFees";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
@@ -20,7 +30,7 @@ import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
 import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
@@ -62,6 +72,8 @@ export default function Students() {
   const [feeManagerStudent, setFeeManagerStudent] = useState<Student | null>(null);
   const [paymentRecorderStudent, setPaymentRecorderStudent] = useState<Student | null>(null);
   const [editStudent, setEditStudent] = useState<Student | null>(null);
+  const [shareStudent, setShareStudent] = useState<Student | null>(null);
+  const [isSendingLink, setIsSendingLink] = useState<string | null>(null);
   const [newStudent, setNewStudent] = useState({
     name: "",
     roll_number: "",
@@ -137,6 +149,43 @@ export default function Students() {
     const link = `${window.location.origin}/view/${student.access_token}`;
     navigator.clipboard.writeText(link);
     toast.success("Parent link copied!", { description: "Share this link with the parent" });
+  };
+
+  const handleShareLink = async (student: Student) => {
+    setShareStudent(null);
+    setIsSendingLink(student.id);
+    
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error("Please log in to send links");
+        return;
+      }
+
+      const response = await supabase.functions.invoke('send-parent-link', {
+        body: { studentId: student.id },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to send link');
+      }
+
+      const data = response.data;
+      if (data.success) {
+        toast.success("Link sent!", { 
+          description: `Parent link sent to ${student.parent_phone}` 
+        });
+      } else {
+        throw new Error(data.error || 'Failed to send link');
+      }
+    } catch (error: any) {
+      console.error('Share link error:', error);
+      toast.error("Failed to send link", { 
+        description: error.message || "Please try again later" 
+      });
+    } finally {
+      setIsSendingLink(null);
+    }
   };
 
   return (
@@ -421,11 +470,12 @@ export default function Students() {
                       </RestrictedButton>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyParentLink(student)}
+                          title="Copy link"
                         >
                           <Copy className="h-4 w-4 mr-1" />
                           Copy
@@ -433,7 +483,22 @@ export default function Students() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => setShareStudent(student)}
+                          disabled={!student.parent_phone || isSendingLink === student.id}
+                          title={!student.parent_phone ? "Parent phone required" : "Share via WhatsApp/SMS"}
+                        >
+                          {isSendingLink === student.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Share2 className="h-4 w-4 mr-1" />
+                          )}
+                          Share
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           asChild
+                          title="Open parent view"
                         >
                           <Link to={`/view/${student.access_token}`} target="_blank">
                             <ExternalLink className="h-4 w-4" />
@@ -488,6 +553,32 @@ export default function Students() {
           onOpenChange={(open) => !open && setEditStudent(null)}
         />
       )}
+
+      {/* Share Link Confirmation Dialog */}
+      <AlertDialog open={!!shareStudent} onOpenChange={(open) => !open && setShareStudent(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send Parent Link</AlertDialogTitle>
+            <AlertDialogDescription>
+              {shareStudent && (
+                <>
+                  Send the fee details link to <strong>{shareStudent.parent_phone}</strong> for{" "}
+                  <strong>{shareStudent.name}</strong>?
+                  <br /><br />
+                  The parent will receive a WhatsApp/SMS message with the secure link to view their child's fee details.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => shareStudent && handleShareLink(shareStudent)}>
+              <Share2 className="h-4 w-4 mr-2" />
+              Send Link
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
