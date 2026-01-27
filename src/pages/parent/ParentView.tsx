@@ -116,13 +116,27 @@ export default function ParentView() {
           <Card className={`card-elevated ${summary.total_pending > 0 ? 'border-primary/20 bg-primary/5' : 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'}`}>
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
-                <div className="flex flex-col items-center p-3 bg-background rounded-xl border">
-                  <img 
-                    src={school.qr_code_url} 
-                    alt="Payment QR Code"
-                    className="w-24 h-24 object-contain rounded-lg"
-                  />
-                </div>
+                {school.upi_id && summary.total_pending > 0 ? (
+                  <a 
+                    href={`upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`}
+                    className="flex flex-col items-center p-3 bg-background rounded-xl border hover:border-primary transition-colors cursor-pointer"
+                  >
+                    <img 
+                      src={school.qr_code_url} 
+                      alt="Payment QR Code - Tap to Pay"
+                      className="w-24 h-24 object-contain rounded-lg"
+                    />
+                    <span className="text-xs text-primary mt-1 font-medium">Tap to Pay</span>
+                  </a>
+                ) : (
+                  <div className="flex flex-col items-center p-3 bg-background rounded-xl border">
+                    <img 
+                      src={school.qr_code_url} 
+                      alt="Payment QR Code"
+                      className="w-24 h-24 object-contain rounded-lg"
+                    />
+                  </div>
+                )}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <QrCode className={`h-4 w-4 ${summary.total_pending > 0 ? 'text-primary' : 'text-green-600'}`} />
