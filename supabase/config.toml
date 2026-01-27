@@ -1,1 +1,7 @@
 project_id = "fwnvfkaihuqdfdcwkakj"
+
+[functions.create-school]
+verify_jwt = false
+
+[functions.send-parent-link]
+verify_jwt = false
