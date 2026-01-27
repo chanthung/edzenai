@@ -110,10 +110,10 @@ export default function ParentView() {
         </Card>
       </div>
 
-      {/* Payment QR Code - Always visible if available and pending fees */}
-      {school.qr_code_url && summary.total_pending > 0 && (
+      {/* Payment QR Code - Always visible if available */}
+      {school.qr_code_url && (
         <div className="max-w-2xl mx-auto px-4 mt-4">
-          <Card className="card-elevated border-primary/20 bg-primary/5">
+          <Card className={`card-elevated ${summary.total_pending > 0 ? 'border-primary/20 bg-primary/5' : 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'}`}>
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
                 <div className="flex flex-col items-center p-3 bg-background rounded-xl border">
@@ -125,13 +125,18 @@ export default function ParentView() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <QrCode className="h-4 w-4 text-primary" />
-                    <p className="font-semibold text-primary">Scan to Pay School Fees</p>
+                    <QrCode className={`h-4 w-4 ${summary.total_pending > 0 ? 'text-primary' : 'text-green-600'}`} />
+                    <p className={`font-semibold ${summary.total_pending > 0 ? 'text-primary' : 'text-green-700 dark:text-green-400'}`}>
+                      {summary.total_pending > 0 ? 'Scan to Pay School Fees' : 'All Fees Cleared!'}
+                    </p>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Pending: {formatCurrency(summary.total_pending)}
+                    {summary.total_pending > 0 
+                      ? `Pending: ${formatCurrency(summary.total_pending)}`
+                      : 'Save this QR for future payments'
+                    }
                   </p>
-                  {school.upi_id && (
+                  {school.upi_id && summary.total_pending > 0 && (
                     <Button variant="outline" size="sm" asChild>
                       <a href={`upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`}>
                         Open UPI App
