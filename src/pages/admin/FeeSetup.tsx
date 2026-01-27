@@ -265,6 +265,7 @@ export default function FeeSetup() {
                     <FeeStructureCard
                       key={structure.id}
                       structure={structure}
+                      isRestricted={isRestricted}
                       onAddInstallment={() => openAddInstallment(structure.id)}
                       onEditInstallment={(inst) => openEditInstallment(inst, structure.id)}
                       onDelete={() => deleteStructure.mutate({ id: structure.id, academicYearId: currentYearId! })}
@@ -366,14 +367,17 @@ export default function FeeSetup() {
                         <p className="text-sm text-muted-foreground">{category.description}</p>
                       )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={() => deleteCategory.mutate(category.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <RestrictedButton isRestricted={isRestricted}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteCategory.mutate(category.id)}
+                        disabled={isRestricted}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </RestrictedButton>
                   </CardContent>
                 </Card>
               ))}
@@ -448,12 +452,14 @@ export default function FeeSetup() {
 
 function FeeStructureCard({ 
   structure, 
+  isRestricted = false,
   onAddInstallment, 
   onEditInstallment,
   onDelete,
   onDeleteInstallment 
 }: { 
   structure: FeeStructure; 
+  isRestricted?: boolean;
   onAddInstallment: () => void;
   onEditInstallment: (installment: Installment) => void;
   onDelete: () => void;
@@ -492,14 +498,17 @@ function FeeStructureCard({
                 </CardDescription>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-destructive"
-              onClick={onDelete}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <RestrictedButton isRestricted={isRestricted}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={onDelete}
+                disabled={isRestricted}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </RestrictedButton>
           </div>
         </CardHeader>
         <CollapsibleContent>
@@ -514,22 +523,28 @@ function FeeStructureCard({
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{formatCurrency(Number(inst.amount))}</p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        onClick={() => onEditInstallment(inst)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => onDeleteInstallment(inst.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <RestrictedButton isRestricted={isRestricted}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() => onEditInstallment(inst)}
+                          disabled={isRestricted}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </RestrictedButton>
+                      <RestrictedButton isRestricted={isRestricted}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => onDeleteInstallment(inst.id)}
+                          disabled={isRestricted}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </RestrictedButton>
                     </div>
                   </div>
                 ))}
@@ -542,10 +557,12 @@ function FeeStructureCard({
               </p>
             )}
 
-            <Button variant="outline" size="sm" onClick={onAddInstallment}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Installment
-            </Button>
+            <RestrictedButton isRestricted={isRestricted}>
+              <Button variant="outline" size="sm" onClick={onAddInstallment} disabled={isRestricted}>
+                <Plus className="h-4 w-4 mr-1" />
+                Add Installment
+              </Button>
+            </RestrictedButton>
           </CardContent>
         </CollapsibleContent>
       </Card>

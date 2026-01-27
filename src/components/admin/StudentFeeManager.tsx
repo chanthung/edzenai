@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFeeStructures } from "@/hooks/useFeeStructures";
 import { useStudentFees, useAssignFeeStructure, useRemoveFeeStructure } from "@/hooks/useStudentFees";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Loader2, IndianRupee, Calendar, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, IndianRupee, Calendar, CheckCircle2, XCircle, Lock } from "lucide-react";
 import { Student } from "@/hooks/useStudents";
 
 interface StudentFeeManagerProps {
@@ -25,6 +27,7 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
   
   const { data: feeStructures, isLoading: structuresLoading } = useFeeStructures(activeYear?.id);
   const { data: studentFees, isLoading: feesLoading } = useStudentFees(student.id);
+  const { isRestricted } = useSubscriptionStatus();
   
   const assignFee = useAssignFeeStructure();
   const removeFee = useRemoveFeeStructure();
@@ -34,6 +37,10 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
   const assignedStructureIds = new Set(studentFees?.map((sf: any) => sf.fee_structure_id) ?? []);
 
   const handleToggleFee = async (structureId: string, isAssigned: boolean) => {
+    if (isRestricted) {
+      toast.error("Operation restricted", { description: "School is in view-only mode" });
+      return;
+    }
     setProcessingId(structureId);
     try {
       if (isAssigned) {
@@ -67,6 +74,14 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
         </DialogHeader>
         
         <ScrollArea className="flex-1 max-h-[60vh] pr-4">
+          {isRestricted && (
+            <Alert className="mb-4 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+              <Lock className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-700 dark:text-amber-300">
+                School is inactive. Fee assignments are view-only.
+              </AlertDescription>
+            </Alert>
+          )}
           {isLoading ? (
             <div className="space-y-4 py-4">
               {[1, 2, 3].map((i) => (
@@ -111,7 +126,7 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
                         <Checkbox
                           checked={isAssigned}
                           onCheckedChange={() => handleToggleFee(structure.id, isAssigned)}
-                          disabled={isProcessing}
+                          disabled={isProcessing || isRestricted}
                         />
                       )}
                     </div>
