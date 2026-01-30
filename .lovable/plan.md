@@ -1,142 +1,166 @@
 
-# Send Parent Links via WhatsApp/SMS using n8n
+# Fix Phone Number Mismatch Between Lovable and n8n Telegram Integration
 
-## Overview
-Add a "Share Link" button to the Students page that triggers an n8n workflow to send the unique Parent View link to each parent's registered mobile number via WhatsApp or SMS.
+## Problem Summary
 
-## Architecture
+When you click "Share" in the Students section:
+1. Lovable sends student data including `parentPhone: "9612159599"` (10-digit format from your database)
+2. n8n Workflow 2 receives this and tries to lookup the `chat_id` in Google Sheets
+3. The lookup fails because Google Sheets stores phone numbers in a different format (from Telegram, which includes country code)
 
-The solution involves:
-1. A new backend function that receives the share request
-2. Integration with n8n via webhook
-3. UI button in the Students table to trigger sharing
+## Solution: Normalize Phone Numbers in n8n Workflow 2
 
-## Implementation Steps
+You need to add a phone number normalization step in your n8n workflow so that lookups work regardless of format differences.
 
-### Step 1: Connect n8n to the Project
+---
 
-Before implementation, you'll need to connect your n8n instance:
+## Step-by-Step Fix in n8n Workflow 2
 
-1. In your n8n instance, go to **Settings → MCP access** and enable MCP
-2. For each workflow you want to use with Lovable, open the workflow and enable **"Available in MCP"** in the workflow settings
+### Step 1: Check Your Google Sheets Data Format
 
-### Step 2: Create n8n Workflow
+Open your Google Sheet and check Column B (`phone_number`). Note the format:
+- Is it `9612159599` (10 digits)?
+- Is it `919612159599` (with country code, no +)?
+- Is it `+919612159599` (with + and country code)?
 
-Create a workflow in n8n with:
-- **Webhook Trigger**: Receives student data (name, phone, link)
-- **WhatsApp Business API** or **Twilio SMS** node: Sends the message
-- **Response node**: Returns success/failure
+### Step 2: Add a "Set" Node After the Webhook
 
-| Node | Purpose |
-|------|---------|
-| Webhook | Receives: `{ studentName, parentPhone, parentLink, schoolName }` |
-| Message Formatter | Creates personalized message with the link |
-| WhatsApp/SMS | Sends to parent's phone number |
+Insert a **Set** node between your Webhook and Google Sheets Lookup:
 
-Example message template:
+| Setting | Value |
+|---------|-------|
+| Node Name | `Normalize Phone` |
+| Mode | Manual Mapping |
+
+Add these fields:
+
+| Field Name | Value (Expression) |
+|------------|---------------------|
+| `originalPhone` | `{{ $json.parentPhone }}` |
+| `normalizedPhone` | See expressions below based on your Google Sheets format |
+
+**Choose the right expression based on your Google Sheets format:**
+
+**If Google Sheets has 10-digit numbers (like `9612159599`):**
+```javascript
+{{ $json.parentPhone.replace(/^\+?91/, '').replace(/\D/g, '').slice(-10) }}
 ```
-Dear Parent,
 
-Access {studentName}'s fee details securely:
-{parentLink}
-
-- {schoolName}
+**If Google Sheets has numbers WITH country code (like `919612159599`):**
+```javascript
+{{ '91' + $json.parentPhone.replace(/^\+?91/, '').replace(/\D/g, '').slice(-10) }}
 ```
 
-### Step 3: Create Backend Function
+**If Google Sheets has numbers WITH + (like `+919612159599`):**
+```javascript
+{{ '+91' + $json.parentPhone.replace(/^\+?91/, '').replace(/\D/g, '').slice(-10) }}
+```
 
-**File**: `supabase/functions/send-parent-link/index.ts`
+### Step 3: Update Google Sheets Lookup
 
-| Feature | Description |
-|---------|-------------|
-| Authentication | Requires school admin auth |
-| Validation | Checks student has valid phone number |
-| n8n Call | Sends webhook to n8n workflow |
-| Logging | Records share attempt for audit |
+In your **Google Sheets** node (Read Rows operation):
 
-The function will:
-1. Validate the authenticated user is a school admin
-2. Fetch student details (name, phone, access_token)
-3. Build the Parent View URL
-4. Call the n8n webhook with the payload
-5. Return success/failure response
+| Setting | Value |
+|---------|-------|
+| Operation | Read Rows |
+| Filters | Column B (phone_number) equals `{{ $json.normalizedPhone }}` |
 
-### Step 4: Add Secret for n8n Webhook URL
+### Step 4: Verify the IF Node
 
-Store the n8n webhook URL as a secret:
-- **Secret Name**: `N8N_PARENT_LINK_WEBHOOK_URL`
-- **Value**: Your n8n webhook URL (e.g., `https://your-n8n.app.n8n.cloud/webhook/...`)
+After the Google Sheets lookup, your IF node should check:
 
-### Step 5: Update Students Page UI
+| Condition | Expression |
+|-----------|------------|
+| Check if chat_id exists | `{{ $json.chat_id }}` is not empty |
 
-**File**: `src/pages/admin/Students.tsx`
+### Step 5: Telegram Send Node
 
-| Change | Description |
-|--------|-------------|
-| Add Share icon button | Next to Copy button in Parent Link column |
-| Add loading state | Show spinner while sending |
-| Handle response | Show success/error toast |
-| Bulk share option | Optional: Add "Share All Links" button in header |
+In the TRUE branch of your IF node:
 
-The Share button will:
-- Be disabled if parent_phone is missing
-- Show a confirmation dialog before sending
-- Display loading state during the API call
-- Show success/error feedback via toast
+| Setting | Value |
+|---------|-------|
+| Chat ID | `{{ $json.chat_id }}` |
+| Text | Your message with `{{ $('Webhook').item.json.parentLink }}` |
 
-### Step 6: Add Share Tracking (Optional)
+### Step 6: Respond to Webhook Node
 
-**Database**: Add a `link_shares` table to track when links were shared
+**TRUE branch (chat_id found):**
+```json
+{
+  "success": true,
+  "message": "Link sent via Telegram"
+}
+```
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| student_id | uuid | FK to students |
-| shared_at | timestamp | When link was sent |
-| shared_by | uuid | Admin who shared |
-| delivery_status | text | pending/sent/failed |
+**FALSE branch (chat_id not found):**
+```json
+{
+  "success": false,
+  "error": "Parent not registered on Telegram"
+}
+```
 
-## Files to Create/Modify
+---
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `supabase/functions/send-parent-link/index.ts` | Create | Backend function to call n8n |
-| `supabase/config.toml` | Modify | Register new function |
-| `src/pages/admin/Students.tsx` | Modify | Add Share button with send logic |
-
-## Security Considerations
-
-| Concern | Solution |
-|---------|----------|
-| Only admins can share | Auth validation in backend function |
-| Phone number validation | Check format before sending |
-| Rate limiting | n8n workflow can include throttling |
-| Audit trail | Log all share attempts |
-
-## n8n Workflow Example Structure
+## Complete Workflow 2 Node Sequence
 
 ```text
-┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Webhook   │────▶│ Format Message   │────▶│ WhatsApp/Twilio │
-│   Trigger   │     │ with Link        │     │ Send Message    │
-└─────────────┘     └──────────────────┘     └─────────────────┘
-                                                      │
-                                              ┌───────▼───────┐
-                                              │   Respond     │
-                                              │   to Webhook  │
-                                              └───────────────┘
+Webhook Trigger
+      |
+      v
+ Normalize Phone (Set node)
+      |
+      v
+ Google Sheets Lookup
+      |
+      v
+   IF Node (chat_id exists?)
+     /        \
+    /          \
+ TRUE         FALSE
+   |             |
+   v             v
+Telegram     Respond to Webhook
+   |         (error message)
+   v
+Respond to Webhook
+(success message)
 ```
 
-## User Experience
+---
 
-When the admin clicks "Share":
-1. Confirmation dialog: "Send fee link to {parentPhone} for {studentName}?"
-2. Loading spinner on button
-3. Success toast: "Link sent to {parentPhone}!"
-4. Error handling if phone is missing or send fails
+## Debugging Tips
 
-## Prerequisites Before Implementation
+### Test in n8n with Manual Execution
+1. Click "Execute Workflow" in n8n
+2. Go to Lovable and click Share on a student
+3. Watch each node's output in n8n to see where it fails
 
-1. **n8n Account**: You need an n8n instance (cloud or self-hosted)
-2. **WhatsApp Business API** or **Twilio Account**: For message delivery
-3. **n8n Webhook URL**: The URL of your workflow's webhook trigger
+### Check These Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| Phone formats don't match | Add/adjust normalization in Set node |
+| Wrong Google Sheets column | Verify you're filtering Column B |
+| Telegram node error | Check Bot Token and that parent started a chat with bot |
+| Empty response from Sheets | Verify the parent has registered with exact matching phone |
+
+---
+
+## Alternative: Store Phone Numbers Consistently
+
+For a more robust long-term solution, you can also normalize phone numbers in **Workflow 1** when parents register:
+
+In your Workflow 1, after extracting the phone from the parent's message, add a Set node to normalize it to a consistent 10-digit format before storing in Google Sheets.
+
+This ensures both sides (Lovable database and Google Sheets) use the same format.
+
+---
+
+## Quick Test Checklist
+
+1. Check one parent's phone in Google Sheets - note exact format
+2. Check same parent's phone in Lovable Students table - note exact format
+3. If different, add normalization in Workflow 2 Set node
+4. Test the Share button again
+5. Watch n8n execution to confirm lookup now returns data
