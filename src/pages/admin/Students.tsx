@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -219,7 +219,16 @@ export default function Students() {
     toast.success("Parent link copied!", { description: "Share this link with the parent" });
   };
 
+  // Ref guard to prevent duplicate sends
+  const sendingRef = useRef<string | null>(null);
+
   const handleShareLink = async (student: Student) => {
+    // Prevent duplicate sends using ref guard
+    if (sendingRef.current === student.id) {
+      return;
+    }
+    
+    sendingRef.current = student.id;
     setShareStudent(null);
     setIsSendingLink(student.id);
     
@@ -253,6 +262,7 @@ export default function Students() {
       });
     } finally {
       setIsSendingLink(null);
+      sendingRef.current = null;
     }
   };
 
