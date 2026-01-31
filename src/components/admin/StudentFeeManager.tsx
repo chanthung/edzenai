@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFeeStructures } from "@/hooks/useFeeStructures";
+import { useFeeCategories } from "@/hooks/useFeeCategories";
 import { useStudentFees, useAssignFeeStructure, useRemoveFeeStructure } from "@/hooks/useStudentFees";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
@@ -26,6 +27,7 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
   const activeYear = academicYears?.find((y) => y.is_active);
   
   const { data: feeStructures, isLoading: structuresLoading } = useFeeStructures(activeYear?.id);
+  const { data: feeCategories, isLoading: categoriesLoading } = useFeeCategories();
   const { data: studentFees, isLoading: feesLoading } = useStudentFees(student.id);
   const { isRestricted } = useSubscriptionStatus();
   
@@ -57,7 +59,7 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
     }
   };
 
-  const isLoading = yearsLoading || structuresLoading || feesLoading;
+  const isLoading = yearsLoading || structuresLoading || categoriesLoading || feesLoading;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -99,22 +101,24 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
               <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Please create an active academic year first</p>
             </div>
-          ) : feeStructures?.length === 0 ? (
+          ) : feeCategories?.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               <IndianRupee className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No fee structures defined for this academic year</p>
-              <p className="text-sm mt-1">Go to Fee Setup to create fee structures</p>
+              <p>No fee categories defined</p>
+              <p className="text-sm mt-1">Go to Fee Setup to create fee categories</p>
             </div>
           ) : (
             <div className="space-y-3 py-4">
-              {feeStructures?.map((structure: any) => {
-                const isAssigned = assignedStructureIds.has(structure.id);
-                const isProcessing = processingId === structure.id;
-                const category = structure.fee_category;
+              {feeCategories?.map((category: any) => {
+                const structure = feeStructures?.find((s: any) => s.fee_category_id === category.id);
+                const structureId = structure?.id as string | undefined;
+                const isAssigned = structureId ? assignedStructureIds.has(structureId) : false;
+                const isProcessing = structureId ? processingId === structureId : false;
+                const hasStructure = !!structure;
                 
                 return (
                   <div
-                    key={structure.id}
+                    key={category.id}
                     className={`flex items-start gap-4 p-4 border rounded-lg transition-colors ${
                       isAssigned ? "bg-primary/5 border-primary/20" : "hover:bg-muted/50"
                     }`}
@@ -125,8 +129,11 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
                       ) : (
                         <Checkbox
                           checked={isAssigned}
-                          onCheckedChange={() => handleToggleFee(structure.id, isAssigned)}
-                          disabled={isProcessing || isRestricted}
+                          onCheckedChange={() => {
+                            if (!structureId) return;
+                            handleToggleFee(structureId, isAssigned);
+                          }}
+                          disabled={isProcessing || isRestricted || !hasStructure}
                         />
                       )}
                     </div>
@@ -143,29 +150,37 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
                           </Badge>
                         )}
                       </div>
-                      <p className="text-lg font-semibold text-primary mt-1">
-                        {formatCurrency(structure.total_amount)}
-                      </p>
-                      {structure.installments?.length > 0 && (
-                        <div className="mt-2 text-sm text-muted-foreground">
-                          <p>{structure.installments.length} installment(s)</p>
-                          <div className="mt-1 space-y-1">
-                            {structure.installments
-                              .sort((a: any, b: any) => a.display_order - b.display_order)
-                              .slice(0, 3)
-                              .map((inst: any) => (
-                                <div key={inst.id} className="flex justify-between text-xs">
-                                  <span>{inst.name}</span>
-                                  <span>{formatCurrency(inst.amount)} - Due {formatDate(inst.due_date)}</span>
-                                </div>
-                              ))}
-                            {structure.installments.length > 3 && (
-                              <p className="text-xs text-muted-foreground">
-                                +{structure.installments.length - 3} more...
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                      {hasStructure ? (
+                        <>
+                          <p className="text-lg font-semibold text-primary mt-1">
+                            {formatCurrency(structure.total_amount)}
+                          </p>
+                          {structure.installments?.length > 0 && (
+                            <div className="mt-2 text-sm text-muted-foreground">
+                              <p>{structure.installments.length} installment(s)</p>
+                              <div className="mt-1 space-y-1">
+                                {structure.installments
+                                  .sort((a: any, b: any) => a.display_order - b.display_order)
+                                  .slice(0, 3)
+                                  .map((inst: any) => (
+                                    <div key={inst.id} className="flex justify-between text-xs">
+                                      <span>{inst.name}</span>
+                                      <span>{formatCurrency(inst.amount)} - Due {formatDate(inst.due_date)}</span>
+                                    </div>
+                                  ))}
+                                {structure.installments.length > 3 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    +{structure.installments.length - 3} more...
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Not configured for {activeYear?.name}. Create a fee structure in Fee Setup to assign this.
+                        </p>
                       )}
                     </div>
                   </div>
