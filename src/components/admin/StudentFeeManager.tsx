@@ -75,7 +75,7 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 min-h-0 pr-4">
+        <ScrollArea className="flex-1 min-h-0 max-h-[calc(85vh-180px)] pr-4">
           {isRestricted && (
             <Alert className="mb-4 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
               <Lock className="h-4 w-4 text-amber-600" />
