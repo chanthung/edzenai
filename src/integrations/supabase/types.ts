@@ -518,6 +518,7 @@ export type Database = {
           roll_number: string | null
           school_id: string
           section: string | null
+          telegram_registered: boolean
           updated_at: string
         }
         Insert: {
@@ -534,6 +535,7 @@ export type Database = {
           roll_number?: string | null
           school_id: string
           section?: string | null
+          telegram_registered?: boolean
           updated_at?: string
         }
         Update: {
@@ -550,6 +552,7 @@ export type Database = {
           roll_number?: string | null
           school_id?: string
           section?: string | null
+          telegram_registered?: boolean
           updated_at?: string
         }
         Relationships: [
