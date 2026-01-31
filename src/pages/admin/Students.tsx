@@ -12,6 +12,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,6 +77,13 @@ export default function Students() {
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [shareStudent, setShareStudent] = useState<Student | null>(null);
   const [isSendingLink, setIsSendingLink] = useState<string | null>(null);
+  
+  // Multi-select state
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+  const [isBulkSending, setIsBulkSending] = useState(false);
+  const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
+  const [bulkSendProgress, setBulkSendProgress] = useState({ current: 0, total: 0 });
+  
   const [newStudent, setNewStudent] = useState({
     name: "",
     roll_number: "",
@@ -103,6 +112,64 @@ export default function Students() {
     
     return matchesSearch && matchesClass;
   });
+
+  // Get selected students that have valid phone numbers for sharing
+  const selectedShareableStudents = useMemo(() => {
+    if (!filteredStudents) return [];
+    return filteredStudents.filter(
+      student => selectedStudents.has(student.id) && student.parent_phone
+    );
+  }, [selectedStudents, filteredStudents]);
+
+  // Toggle single student selection
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => {
+      const next = new Set(prev);
+      if (next.has(studentId)) {
+        next.delete(studentId);
+      } else {
+        next.add(studentId);
+      }
+      return next;
+    });
+  };
+
+  // Toggle all visible students
+  const toggleSelectAll = () => {
+    if (!filteredStudents) return;
+    
+    const allVisibleIds = filteredStudents.map(s => s.id);
+    const allSelected = allVisibleIds.every(id => selectedStudents.has(id));
+    
+    if (allSelected) {
+      // Deselect all visible
+      setSelectedStudents(prev => {
+        const next = new Set(prev);
+        allVisibleIds.forEach(id => next.delete(id));
+        return next;
+      });
+    } else {
+      // Select all visible
+      setSelectedStudents(prev => {
+        const next = new Set(prev);
+        allVisibleIds.forEach(id => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  // Check if all visible students are selected
+  const allVisibleSelected = useMemo(() => {
+    if (!filteredStudents || filteredStudents.length === 0) return false;
+    return filteredStudents.every(s => selectedStudents.has(s.id));
+  }, [filteredStudents, selectedStudents]);
+
+  // Check if some (but not all) visible students are selected
+  const someVisibleSelected = useMemo(() => {
+    if (!filteredStudents || filteredStudents.length === 0) return false;
+    const selectedCount = filteredStudents.filter(s => selectedStudents.has(s.id)).length;
+    return selectedCount > 0 && selectedCount < filteredStudents.length;
+  }, [filteredStudents, selectedStudents]);
 
   const handleCreateStudent = async () => {
     if (!newStudent.name.trim()) {
@@ -186,6 +253,66 @@ export default function Students() {
       });
     } finally {
       setIsSendingLink(null);
+    }
+  };
+
+  // Handle bulk share action
+  const handleBulkShare = async () => {
+    if (selectedShareableStudents.length === 0) return;
+    
+    setBulkShareDialogOpen(false);
+    setIsBulkSending(true);
+    setBulkSendProgress({ current: 0, total: selectedShareableStudents.length });
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error("Please log in to send links");
+        setIsBulkSending(false);
+        return;
+      }
+
+      for (let i = 0; i < selectedShareableStudents.length; i++) {
+        const student = selectedShareableStudents[i];
+        setBulkSendProgress({ current: i + 1, total: selectedShareableStudents.length });
+        
+        try {
+          const response = await supabase.functions.invoke('send-parent-link', {
+            body: { studentId: student.id },
+          });
+
+          if (response.error || !response.data?.success) {
+            failCount++;
+          } else {
+            successCount++;
+          }
+        } catch {
+          failCount++;
+        }
+        
+        // Small delay between requests to avoid overwhelming the system
+        if (i < selectedShareableStudents.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      // Show final result
+      if (failCount === 0) {
+        toast.success(`Sent ${successCount} links successfully!`);
+      } else if (successCount === 0) {
+        toast.error(`Failed to send all ${failCount} links`);
+      } else {
+        toast.info(`Sent ${successCount} links, ${failCount} failed`);
+      }
+      
+      // Clear selection after successful bulk send
+      setSelectedStudents(new Set());
+    } finally {
+      setIsBulkSending(false);
+      setBulkSendProgress({ current: 0, total: 0 });
     }
   };
 
@@ -322,7 +449,7 @@ export default function Students() {
         </RestrictedButton>
       </PageHeader>
 
-      {/* Search and Filter */}
+      {/* Search, Filter, and Bulk Actions */}
       <div className="flex flex-col sm:flex-row gap-4 mt-6">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -346,7 +473,38 @@ export default function Students() {
             ))}
           </SelectContent>
         </Select>
+        
+        {/* Bulk Share Button */}
+        {selectedStudents.size > 0 && (
+          <Button
+            onClick={() => setBulkShareDialogOpen(true)}
+            disabled={selectedShareableStudents.length === 0 || isBulkSending}
+            className="gap-2"
+          >
+            {isBulkSending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Sending {bulkSendProgress.current}/{bulkSendProgress.total}...
+              </>
+            ) : (
+              <>
+                <Share2 className="h-4 w-4" />
+                Share Selected ({selectedShareableStudents.length})
+              </>
+            )}
+          </Button>
+        )}
       </div>
+
+      {/* Bulk Send Progress */}
+      {isBulkSending && (
+        <div className="mt-4">
+          <Progress value={(bulkSendProgress.current / bulkSendProgress.total) * 100} className="h-2" />
+          <p className="text-sm text-muted-foreground mt-1">
+            Sending link {bulkSendProgress.current} of {bulkSendProgress.total}...
+          </p>
+        </div>
+      )}
 
       {/* Students list */}
       <Card className="mt-6 card-elevated">
@@ -383,6 +541,14 @@ export default function Students() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={allVisibleSelected}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all visible students"
+                      className={someVisibleSelected ? "data-[state=checked]:bg-primary data-[state=unchecked]:bg-primary/50" : ""}
+                    />
+                  </TableHead>
                   <TableHead>Student</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Parent</TableHead>
@@ -394,7 +560,14 @@ export default function Students() {
               </TableHeader>
               <TableBody>
                 {filteredStudents?.map((student) => (
-                  <TableRow key={student.id}>
+                  <TableRow key={student.id} data-state={selectedStudents.has(student.id) ? "selected" : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedStudents.has(student.id)}
+                        onCheckedChange={() => toggleStudentSelection(student.id)}
+                        aria-label={`Select ${student.name}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div>
                         <p className="font-medium">{student.name}</p>
@@ -591,6 +764,42 @@ export default function Students() {
             <AlertDialogAction onClick={() => shareStudent && handleShareLink(shareStudent)}>
               <Share2 className="h-4 w-4 mr-2" />
               Send Link
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Share Confirmation Dialog */}
+      <AlertDialog open={bulkShareDialogOpen} onOpenChange={setBulkShareDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send Links to {selectedShareableStudents.length} Parents</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                <p className="mb-3">The following students' parents will receive their fee details link:</p>
+                <ScrollArea className="h-[200px] rounded-md border p-3">
+                  <ul className="space-y-2">
+                    {selectedShareableStudents.map(student => (
+                      <li key={student.id} className="flex justify-between text-sm">
+                        <span className="font-medium">{student.name}</span>
+                        <span className="text-muted-foreground">{student.parent_phone}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </ScrollArea>
+                {selectedStudents.size > selectedShareableStudents.length && (
+                  <p className="mt-3 text-sm text-amber-600">
+                    Note: {selectedStudents.size - selectedShareableStudents.length} selected student(s) without phone numbers will be skipped.
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkShare}>
+              <Share2 className="h-4 w-4 mr-2" />
+              Send All Links
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
