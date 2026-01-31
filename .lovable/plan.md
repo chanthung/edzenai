@@ -1,110 +1,105 @@
 
-# Auto-Update Telegram Registration Status
+# Multi-Select Bulk Share for Parent Links
 
 ## Overview
-Create a backend function that n8n can call to automatically mark students as "Telegram registered" when their parents register with the bot. This eliminates the need for manual updates.
+Add checkbox selection to the Students table, allowing you to select multiple students and share their parent links in one action instead of clicking "Share" for each student individually.
 
 ## How It Will Work
 
 ```text
-Parent sends /start to Telegram Bot
-           |
-           v
-    n8n Workflow 1
-           |
-    +------+------+
-    |             |
-    v             v
-Save to       Call Lovable
-Google        Backend Function
-Sheets        (NEW STEP)
-                  |
-                  v
-           Update student's
-           telegram_registered = true
++------------------------------------------+
+| Students                    [Add Student] |
+|------------------------------------------|
+| [Search...]           [Class Filter ▼]   |
+|------------------------------------------|
+|                                          |
+| [Share Selected (3)] ← Shows when any    |
+|                        students selected |
++------------------------------------------+
+| ☑ | Student    | Class | Parent | ...   |
+|---|------------|-------|--------|-------|
+| ☑ | Rahul S.   | 10th  | Vijay  | ...   |
+| ☐ | Priya M.   | 9th   | Meena  | ...   |
+| ☑ | Amit K.    | 10th  | Suresh | ...   |
+| ☑ | Neha P.    | 8th   | Rekha  | ...   |
++------------------------------------------+
 ```
 
-## What Changes
+## Features
+1. **Checkbox column** - First column with checkboxes for each student row
+2. **Select All checkbox** - In table header to select/deselect all visible students
+3. **Bulk Share button** - Appears when 1+ students selected, shows count
+4. **Smart filtering** - Only students with valid phone numbers can be shared
+5. **Confirmation dialog** - Shows list of students to receive links before sending
+6. **Progress feedback** - Shows sending progress for multiple students
 
-### In Lovable (I will create)
-A new backend function: `mark-telegram-registered`
+---
 
-- **Endpoint**: Will be called by n8n
-- **Input**: Phone number (in 10-digit format)
-- **Action**: Finds student(s) with matching `parent_phone` and sets `telegram_registered = true`
-- **Security**: Public endpoint (no auth required) but validates input
+## Technical Details
 
-### In n8n Workflow 1 (You will add)
-After your "Write to Google Sheets" step, add:
+### Frontend Changes (src/pages/admin/Students.tsx)
 
-| Node Type | HTTP Request |
-|-----------|--------------|
-| Method | POST |
-| URL | `https://fwnvfkaihuqdfdcwkakj.supabase.co/functions/v1/mark-telegram-registered` |
-| Headers | `Content-Type: application/json` |
-| Body | `{ "phone": "{{ normalized 10-digit phone }}" }` |
+**New State Variables:**
+```typescript
+const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+const [isBulkSending, setIsBulkSending] = useState(false);
+const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
+```
+
+**New Functions:**
+```typescript
+// Toggle single student selection
+const toggleStudentSelection = (studentId: string) => {...}
+
+// Toggle all visible students
+const toggleSelectAll = () => {...}
+
+// Handle bulk share action
+const handleBulkShare = async () => {...}
+
+// Get students eligible for sharing (have phone numbers)
+const selectedShareableStudents = useMemo(() => {...}, [selectedStudents, filteredStudents])
+```
+
+**UI Changes:**
+1. Add `Checkbox` import from `@/components/ui/checkbox`
+2. Add new `<TableHead>` with select-all checkbox
+3. Add new `<TableCell>` with row checkbox for each student
+4. Add "Share Selected" button near search/filter area
+5. Add bulk share confirmation dialog
+
+### Backend Changes
+The existing `send-parent-link` edge function already handles single student sharing. For bulk share, we'll call it multiple times (sequentially to avoid overwhelming n8n).
 
 ---
 
 ## Implementation Steps
 
-### Step 1: Create Backend Function
-Create `supabase/functions/mark-telegram-registered/index.ts`:
+### Step 1: Add Selection State
+Add state variables to track selected students and bulk sending status.
 
-```typescript
-// Key functionality:
-// 1. Accept POST with { phone: "9612159599" }
-// 2. Normalize phone to 10 digits
-// 3. Update all students with matching parent_phone
-// 4. Return success/error response
-```
+### Step 2: Add Select All Checkbox in Header
+Add a checkbox in the table header that selects/deselects all visible (filtered) students.
 
-The function will:
-- Use the service role key to bypass RLS (since this is a server-to-server call)
-- Normalize phone numbers to handle format variations
-- Update all matching students (in case same parent has multiple children)
+### Step 3: Add Row Checkboxes
+Add a checkbox at the beginning of each student row.
 
-### Step 2: Update config.toml
-Add the new function configuration:
+### Step 4: Add Bulk Share Button
+Add a floating action button that appears when students are selected, showing the count.
 
-```toml
-[functions.mark-telegram-registered]
-verify_jwt = false
-```
+### Step 5: Add Bulk Share Confirmation Dialog
+Create a dialog that lists all selected students and confirms the bulk send action.
 
-### Step 3: n8n Workflow 1 Changes (Your Action)
-After the Google Sheets write step, add an **HTTP Request** node:
-
-| Setting | Value |
-|---------|-------|
-| Node Name | Mark Registered in Lovable |
-| Method | POST |
-| URL | `https://fwnvfkaihuqdfdcwkakj.supabase.co/functions/v1/mark-telegram-registered` |
-| Authentication | None |
-| Body Type | JSON |
-| Body | See below |
-
-**Body (use expression mode):**
-```json
-{
-  "phone": "{{ $json.phone_number.replace(/^\\+?91/, '').slice(-10) }}"
-}
-```
-
-This normalizes the phone from Telegram format to 10-digit format to match your database.
+### Step 6: Implement Bulk Share Logic
+Send links sequentially to avoid rate limiting, with progress feedback.
 
 ---
 
-## Security Considerations
-- The endpoint only updates `telegram_registered` field (nothing sensitive)
-- Phone number matching uses normalized 10-digit format
-- No sensitive data is exposed in responses
-- Rate limiting could be added later if needed
-
----
-
-## Testing
-1. After implementation, manually trigger n8n Workflow 1 with a test phone
-2. Check if the student's `telegram_registered` field updates in the database
-3. Verify the Telegram icon appears in the Students table
-
+## User Experience
+- Checkboxes are always visible for quick selection
+- "Share Selected" button shows count: "Share Selected (3)"
+- Students without phone numbers are excluded from bulk share
+- Confirmation dialog shows which students will receive links
+- Toast notifications show progress: "Sent 3 of 5 links..."
+- Selection persists while filtering (only hides non-matching selected items)
+- Clear selection after successful bulk send
