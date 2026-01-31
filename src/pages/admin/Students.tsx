@@ -487,6 +487,7 @@ export default function Students() {
                           onClick={() => setShareStudent(student)}
                           disabled={!student.parent_phone || isSendingLink === student.id}
                           title={!student.parent_phone ? "Parent phone required" : "Share via Telegram"}
+                          className={student.telegram_registered ? "hover:bg-[#0088cc]/10 hover:text-[#0088cc]" : ""}
                         >
                           {isSendingLink === student.id ? (
                             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
