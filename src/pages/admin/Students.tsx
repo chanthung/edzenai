@@ -472,20 +472,6 @@ export default function Students() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        {student.telegram_registered && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="flex items-center justify-center w-6 h-6">
-                                  <Send className="h-4 w-4 text-[#0088cc]" />
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Registered on Telegram</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -500,7 +486,7 @@ export default function Students() {
                           size="sm"
                           onClick={() => setShareStudent(student)}
                           disabled={!student.parent_phone || isSendingLink === student.id}
-                          title={!student.parent_phone ? "Parent phone required" : "Share via WhatsApp/SMS"}
+                          title={!student.parent_phone ? "Parent phone required" : "Share via Telegram"}
                         >
                           {isSendingLink === student.id ? (
                             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -509,6 +495,20 @@ export default function Students() {
                           )}
                           Share
                         </Button>
+                        {student.telegram_registered && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="flex items-center justify-center w-6 h-6">
+                                  <Send className="h-4 w-4 text-[#0088cc]" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Registered on Telegram</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
