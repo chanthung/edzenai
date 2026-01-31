@@ -481,34 +481,29 @@ export default function Students() {
                           <Copy className="h-4 w-4 mr-1" />
                           Copy
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShareStudent(student)}
-                          disabled={!student.parent_phone || isSendingLink === student.id}
-                          title={!student.parent_phone ? "Parent phone required" : "Share via Telegram"}
-                        >
-                          {isSendingLink === student.id ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <Share2 className="h-4 w-4 mr-1" />
-                          )}
-                          Share
-                        </Button>
-                        {student.telegram_registered && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="flex items-center justify-center w-6 h-6">
-                                  <Send className="h-4 w-4 text-[#0088cc]" />
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Registered on Telegram</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShareStudent(student)}
+                                disabled={!student.parent_phone || isSendingLink === student.id}
+                                className={student.telegram_registered ? "text-[#0088cc] hover:text-[#0088cc] hover:bg-[#0088cc]/10" : ""}
+                              >
+                                {isSendingLink === student.id ? (
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Share2 className="h-4 w-4 mr-1" />
+                                )}
+                                Share
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{!student.parent_phone ? "Parent phone required" : student.telegram_registered ? "Registered on Telegram" : "Share via Telegram"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <Button
                           variant="ghost"
                           size="icon"
