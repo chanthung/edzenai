@@ -1,166 +1,110 @@
 
-# Fix Phone Number Mismatch Between Lovable and n8n Telegram Integration
+# Auto-Update Telegram Registration Status
 
-## Problem Summary
+## Overview
+Create a backend function that n8n can call to automatically mark students as "Telegram registered" when their parents register with the bot. This eliminates the need for manual updates.
 
-When you click "Share" in the Students section:
-1. Lovable sends student data including `parentPhone: "9612159599"` (10-digit format from your database)
-2. n8n Workflow 2 receives this and tries to lookup the `chat_id` in Google Sheets
-3. The lookup fails because Google Sheets stores phone numbers in a different format (from Telegram, which includes country code)
-
-## Solution: Normalize Phone Numbers in n8n Workflow 2
-
-You need to add a phone number normalization step in your n8n workflow so that lookups work regardless of format differences.
-
----
-
-## Step-by-Step Fix in n8n Workflow 2
-
-### Step 1: Check Your Google Sheets Data Format
-
-Open your Google Sheet and check Column B (`phone_number`). Note the format:
-- Is it `9612159599` (10 digits)?
-- Is it `919612159599` (with country code, no +)?
-- Is it `+919612159599` (with + and country code)?
-
-### Step 2: Add a "Set" Node After the Webhook
-
-Insert a **Set** node between your Webhook and Google Sheets Lookup:
-
-| Setting | Value |
-|---------|-------|
-| Node Name | `Normalize Phone` |
-| Mode | Manual Mapping |
-
-Add these fields:
-
-| Field Name | Value (Expression) |
-|------------|---------------------|
-| `originalPhone` | `{{ $json.parentPhone }}` |
-| `normalizedPhone` | See expressions below based on your Google Sheets format |
-
-**Choose the right expression based on your Google Sheets format:**
-
-**If Google Sheets has 10-digit numbers (like `9612159599`):**
-```javascript
-{{ $json.parentPhone.replace(/^\+?91/, '').replace(/\D/g, '').slice(-10) }}
-```
-
-**If Google Sheets has numbers WITH country code (like `919612159599`):**
-```javascript
-{{ '91' + $json.parentPhone.replace(/^\+?91/, '').replace(/\D/g, '').slice(-10) }}
-```
-
-**If Google Sheets has numbers WITH + (like `+919612159599`):**
-```javascript
-{{ '+91' + $json.parentPhone.replace(/^\+?91/, '').replace(/\D/g, '').slice(-10) }}
-```
-
-### Step 3: Update Google Sheets Lookup
-
-In your **Google Sheets** node (Read Rows operation):
-
-| Setting | Value |
-|---------|-------|
-| Operation | Read Rows |
-| Filters | Column B (phone_number) equals `{{ $json.normalizedPhone }}` |
-
-### Step 4: Verify the IF Node
-
-After the Google Sheets lookup, your IF node should check:
-
-| Condition | Expression |
-|-----------|------------|
-| Check if chat_id exists | `{{ $json.chat_id }}` is not empty |
-
-### Step 5: Telegram Send Node
-
-In the TRUE branch of your IF node:
-
-| Setting | Value |
-|---------|-------|
-| Chat ID | `{{ $json.chat_id }}` |
-| Text | Your message with `{{ $('Webhook').item.json.parentLink }}` |
-
-### Step 6: Respond to Webhook Node
-
-**TRUE branch (chat_id found):**
-```json
-{
-  "success": true,
-  "message": "Link sent via Telegram"
-}
-```
-
-**FALSE branch (chat_id not found):**
-```json
-{
-  "success": false,
-  "error": "Parent not registered on Telegram"
-}
-```
-
----
-
-## Complete Workflow 2 Node Sequence
+## How It Will Work
 
 ```text
-Webhook Trigger
-      |
-      v
- Normalize Phone (Set node)
-      |
-      v
- Google Sheets Lookup
-      |
-      v
-   IF Node (chat_id exists?)
-     /        \
-    /          \
- TRUE         FALSE
-   |             |
-   v             v
-Telegram     Respond to Webhook
-   |         (error message)
-   v
-Respond to Webhook
-(success message)
+Parent sends /start to Telegram Bot
+           |
+           v
+    n8n Workflow 1
+           |
+    +------+------+
+    |             |
+    v             v
+Save to       Call Lovable
+Google        Backend Function
+Sheets        (NEW STEP)
+                  |
+                  v
+           Update student's
+           telegram_registered = true
 ```
 
----
+## What Changes
 
-## Debugging Tips
+### In Lovable (I will create)
+A new backend function: `mark-telegram-registered`
 
-### Test in n8n with Manual Execution
-1. Click "Execute Workflow" in n8n
-2. Go to Lovable and click Share on a student
-3. Watch each node's output in n8n to see where it fails
+- **Endpoint**: Will be called by n8n
+- **Input**: Phone number (in 10-digit format)
+- **Action**: Finds student(s) with matching `parent_phone` and sets `telegram_registered = true`
+- **Security**: Public endpoint (no auth required) but validates input
 
-### Check These Common Issues
+### In n8n Workflow 1 (You will add)
+After your "Write to Google Sheets" step, add:
 
-| Issue | Solution |
-|-------|----------|
-| Phone formats don't match | Add/adjust normalization in Set node |
-| Wrong Google Sheets column | Verify you're filtering Column B |
-| Telegram node error | Check Bot Token and that parent started a chat with bot |
-| Empty response from Sheets | Verify the parent has registered with exact matching phone |
-
----
-
-## Alternative: Store Phone Numbers Consistently
-
-For a more robust long-term solution, you can also normalize phone numbers in **Workflow 1** when parents register:
-
-In your Workflow 1, after extracting the phone from the parent's message, add a Set node to normalize it to a consistent 10-digit format before storing in Google Sheets.
-
-This ensures both sides (Lovable database and Google Sheets) use the same format.
+| Node Type | HTTP Request |
+|-----------|--------------|
+| Method | POST |
+| URL | `https://fwnvfkaihuqdfdcwkakj.supabase.co/functions/v1/mark-telegram-registered` |
+| Headers | `Content-Type: application/json` |
+| Body | `{ "phone": "{{ normalized 10-digit phone }}" }` |
 
 ---
 
-## Quick Test Checklist
+## Implementation Steps
 
-1. Check one parent's phone in Google Sheets - note exact format
-2. Check same parent's phone in Lovable Students table - note exact format
-3. If different, add normalization in Workflow 2 Set node
-4. Test the Share button again
-5. Watch n8n execution to confirm lookup now returns data
+### Step 1: Create Backend Function
+Create `supabase/functions/mark-telegram-registered/index.ts`:
+
+```typescript
+// Key functionality:
+// 1. Accept POST with { phone: "9612159599" }
+// 2. Normalize phone to 10 digits
+// 3. Update all students with matching parent_phone
+// 4. Return success/error response
+```
+
+The function will:
+- Use the service role key to bypass RLS (since this is a server-to-server call)
+- Normalize phone numbers to handle format variations
+- Update all matching students (in case same parent has multiple children)
+
+### Step 2: Update config.toml
+Add the new function configuration:
+
+```toml
+[functions.mark-telegram-registered]
+verify_jwt = false
+```
+
+### Step 3: n8n Workflow 1 Changes (Your Action)
+After the Google Sheets write step, add an **HTTP Request** node:
+
+| Setting | Value |
+|---------|-------|
+| Node Name | Mark Registered in Lovable |
+| Method | POST |
+| URL | `https://fwnvfkaihuqdfdcwkakj.supabase.co/functions/v1/mark-telegram-registered` |
+| Authentication | None |
+| Body Type | JSON |
+| Body | See below |
+
+**Body (use expression mode):**
+```json
+{
+  "phone": "{{ $json.phone_number.replace(/^\\+?91/, '').slice(-10) }}"
+}
+```
+
+This normalizes the phone from Telegram format to 10-digit format to match your database.
+
+---
+
+## Security Considerations
+- The endpoint only updates `telegram_registered` field (nothing sensitive)
+- Phone number matching uses normalized 10-digit format
+- No sensitive data is exposed in responses
+- Rate limiting could be added later if needed
+
+---
+
+## Testing
+1. After implementation, manually trigger n8n Workflow 1 with a test phone
+2. Check if the student's `telegram_registered` field updates in the database
+3. Verify the Telegram icon appears in the Students table
+
