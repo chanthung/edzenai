@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.send-parent-link]
 verify_jwt = false
+
+[functions.mark-telegram-registered]
+verify_jwt = false
