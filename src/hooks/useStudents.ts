@@ -16,6 +16,7 @@ export interface Student {
   guardian: string | null;
   address: string | null;
   access_token: string;
+  telegram_registered: boolean;
   created_at: string;
   updated_at: string;
 }
