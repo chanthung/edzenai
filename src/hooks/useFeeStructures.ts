@@ -78,14 +78,27 @@ export function useCreateFeeStructure() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
-      const { data, error } = await supabase
+      const { data: feeStructure, error } = await supabase
         .from('fee_structures')
         .insert({ ...structure, school_id: school!.id })
         .select()
         .single();
       
       if (error) throw error;
-      return data;
+
+      // Auto-create default installment with full amount
+      const defaultDueDate = new Date();
+      defaultDueDate.setMonth(defaultDueDate.getMonth() + 1);
+      
+      await supabase.from('installments').insert({
+        fee_structure_id: feeStructure.id,
+        name: 'Full Payment',
+        amount: structure.total_amount,
+        due_date: defaultDueDate.toISOString().split('T')[0],
+        display_order: 1,
+      });
+
+      return feeStructure;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['fee-structures', data.academic_year_id] });
