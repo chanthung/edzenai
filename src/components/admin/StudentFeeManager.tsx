@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -75,7 +75,7 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 min-h-0 max-h-[calc(85vh-180px)] pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(85vh-180px)] pr-2">
           {isRestricted && (
             <Alert className="mb-4 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
               <Lock className="h-4 w-4 text-amber-600" />
@@ -188,7 +188,7 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
               })}
             </div>
           )}
-        </ScrollArea>
+        </div>
         
         <div className="pt-4 border-t flex-shrink-0">
           <div className="flex items-center justify-between text-sm">
