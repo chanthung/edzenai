@@ -61,8 +61,8 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Manage Fees - {student.name}</DialogTitle>
           <DialogDescription>
             {activeYear ? (
@@ -73,7 +73,7 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 max-h-[60vh] pr-4">
+        <ScrollArea className="flex-1 min-h-0 pr-4">
           {isRestricted && (
             <Alert className="mb-4 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
               <Lock className="h-4 w-4 text-amber-600" />
@@ -175,7 +175,7 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
           )}
         </ScrollArea>
         
-        <div className="pt-4 border-t">
+        <div className="pt-4 border-t flex-shrink-0">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
               {assignedStructureIds.size} fee(s) assigned
