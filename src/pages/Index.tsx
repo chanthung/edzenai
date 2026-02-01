@@ -23,7 +23,10 @@ export default function Index() {
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-lg">SchoolFees</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-lg leading-tight">EduTrack</span>
+              <span className="text-[10px] text-muted-foreground leading-tight hidden sm:block">School Management System</span>
+            </div>
           </div>
           <Button asChild>
             <Link to="/login">Sign In</Link>
@@ -38,13 +41,17 @@ export default function Index() {
             <Shield className="h-4 w-4" />
             Trusted by schools across India
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-            Fee transparency that{" "}
-            <span className="text-primary">builds trust</span>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+            Fee Transparency &{" "}
+            <span className="text-primary">Student Progress Analysis</span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Stop the endless phone calls about fee status. Give parents a clear, 
-            real-time view of their child's fees — no login required.
+          <p className="text-lg font-medium text-foreground/80 mb-2">
+            EduTrack — Complete School Management System
+          </p>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
+            A unified platform that brings fee transparency to parents and AI-powered 
+            academic insights to teachers. Track payments in real-time, monitor student 
+            performance trends, and generate intelligent PTM reports — all in one place.
           </p>
           <Button size="lg" asChild className="min-w-[200px]">
             <Link to="/login">
@@ -203,10 +210,10 @@ export default function Index() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-primary" />
-            <span className="font-semibold">SchoolFees</span>
+            <span className="font-semibold">EduTrack</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Built for schools. Loved by parents.
+            Fee Transparency & Student Progress Analysis System
           </p>
         </div>
       </footer>
