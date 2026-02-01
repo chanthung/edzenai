@@ -711,6 +711,7 @@ export type Database = {
       }
       subjects: {
         Row: {
+          class_name: string | null
           code: string | null
           created_at: string | null
           display_order: number | null
@@ -719,6 +720,7 @@ export type Database = {
           school_id: string
         }
         Insert: {
+          class_name?: string | null
           code?: string | null
           created_at?: string | null
           display_order?: number | null
@@ -727,6 +729,7 @@ export type Database = {
           school_id: string
         }
         Update: {
+          class_name?: string | null
           code?: string | null
           created_at?: string | null
           display_order?: number | null

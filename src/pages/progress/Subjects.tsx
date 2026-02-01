@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,30 +31,45 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSubjects, useCreateSubject, useUpdateSubject, useDeleteSubject } from "@/hooks/progress/useSubjects";
+import { useStudents } from "@/hooks/useStudents";
 import { BookOpen, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Subjects() {
   const { data: subjects = [], isLoading } = useSubjects();
+  const { data: students = [] } = useStudents();
   const createSubject = useCreateSubject();
   const updateSubject = useUpdateSubject();
   const deleteSubject = useDeleteSubject();
   const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSubject, setEditingSubject] = useState<{ id: string; name: string; code: string } | null>(null);
+  const [editingSubject, setEditingSubject] = useState<{ id: string; name: string; code: string; class_name: string } | null>(null);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [className, setClassName] = useState("");
 
-  const handleOpenDialog = (subject?: { id: string; name: string; code: string | null }) => {
+  // Get unique class names from students
+  const uniqueClasses = useMemo(() => {
+    return [...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[];
+  }, [students]);
+
+  const handleOpenDialog = (subject?: { id: string; name: string; code: string | null; class_name: string | null }) => {
     if (subject) {
-      setEditingSubject({ id: subject.id, name: subject.name, code: subject.code || "" });
+      setEditingSubject({ 
+        id: subject.id, 
+        name: subject.name, 
+        code: subject.code || "",
+        class_name: subject.class_name || ""
+      });
       setName(subject.name);
       setCode(subject.code || "");
+      setClassName(subject.class_name || "");
     } else {
       setEditingSubject(null);
       setName("");
       setCode("");
+      setClassName("");
     }
     setIsDialogOpen(true);
   };
@@ -60,15 +82,30 @@ export default function Subjects() {
       return;
     }
 
+    if (!className) {
+      toast({ title: "Class is required", variant: "destructive" });
+      return;
+    }
+
     try {
       if (editingSubject) {
-        await updateSubject.mutateAsync({ id: editingSubject.id, name: name.trim(), code: code.trim() || undefined });
+        await updateSubject.mutateAsync({ 
+          id: editingSubject.id, 
+          name: name.trim(), 
+          code: code.trim() || undefined,
+          class_name: className
+        });
       } else {
-        await createSubject.mutateAsync({ name: name.trim(), code: code.trim() || undefined });
+        await createSubject.mutateAsync({ 
+          name: name.trim(), 
+          code: code.trim() || undefined,
+          class_name: className
+        });
       }
       setIsDialogOpen(false);
       setName("");
       setCode("");
+      setClassName("");
       setEditingSubject(null);
     } catch (error) {
       // Error handled by mutation
@@ -112,6 +149,25 @@ export default function Subjects() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="class">Class *</Label>
+                    <Select value={className} onValueChange={setClassName}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Class" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {uniqueClasses.length === 0 ? (
+                          <SelectItem value="none" disabled>No classes available</SelectItem>
+                        ) : (
+                          uniqueClasses.map((cls) => (
+                            <SelectItem key={cls} value={cls}>
+                              {cls}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid gap-2">
                     <Label htmlFor="name">Subject Name *</Label>
                     <Input
@@ -170,6 +226,7 @@ export default function Subjects() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Class</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Code</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
@@ -178,6 +235,7 @@ export default function Subjects() {
                 <TableBody>
                   {subjects.map((subject) => (
                     <TableRow key={subject.id}>
+                      <TableCell className="text-muted-foreground">{subject.class_name || "—"}</TableCell>
                       <TableCell className="font-medium">{subject.name}</TableCell>
                       <TableCell className="text-muted-foreground">{subject.code || "-"}</TableCell>
                       <TableCell>
