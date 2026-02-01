@@ -31,6 +31,7 @@ export interface StudentInsert {
   parent_email?: string;
   guardian?: string;
   address?: string;
+  academic_year_id?: string;
 }
 
 export function useStudents() {
@@ -80,17 +81,40 @@ export function useCreateStudent() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
+      // Extract academic_year_id from the input (not to be inserted into students table)
+      const { academic_year_id, ...studentData } = student;
+      
+      // 1. Create the student record
       const { data, error } = await supabase
         .from('students')
-        .insert({ ...student, school_id: school!.id })
+        .insert({ ...studentData, school_id: school!.id })
         .select()
         .single();
       
       if (error) throw error;
+      
+      // 2. Create the enrollment record if academic_year_id is provided
+      if (academic_year_id && data) {
+        const { error: enrollmentError } = await supabase
+          .from('student_enrollments')
+          .insert({
+            student_id: data.id,
+            academic_year_id: academic_year_id,
+            class_name: studentData.class_name || null,
+            section: studentData.section || null,
+          });
+        
+        if (enrollmentError) {
+          console.error('Failed to create enrollment:', enrollmentError);
+          // Don't throw - student was created successfully
+        }
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students', school?.id] });
+      queryClient.invalidateQueries({ queryKey: ['student-enrollments'] });
     },
   });
 }

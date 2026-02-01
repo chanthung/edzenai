@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import {
 import { useStudents, useCreateStudent, useDeleteStudent, Student } from "@/hooks/useStudents";
 import { useStudentFees } from "@/hooks/useStudentFees";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
 import { StudentFeeManager } from "@/components/admin/StudentFeeManager";
 import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
 import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
@@ -45,6 +46,8 @@ export default function Students() {
   const deleteStudent = useDeleteStudent();
   const { data: school } = useSchool();
   const { isRestricted, canPerform } = useSubscriptionStatus();
+  const { data: academicYears } = useAcademicYears();
+  const activeAcademicYear = useActiveAcademicYear();
 
   // Fetch all student fees to show assignment indicators
   const { data: allStudentFees } = useQuery({
@@ -89,12 +92,23 @@ export default function Students() {
     roll_number: "",
     class_name: "",
     section: "",
+    academic_year_id: "",
     parent_name: "",
     parent_phone: "",
     parent_email: "",
     guardian: "",
     address: "",
   });
+
+  // Pre-select active academic year when dialog opens
+  useEffect(() => {
+    if (activeAcademicYear && dialogOpen) {
+      setNewStudent(prev => ({ 
+        ...prev, 
+        academic_year_id: activeAcademicYear.id 
+      }));
+    }
+  }, [activeAcademicYear, dialogOpen]);
 
   // Get unique classes for filter dropdown
   const uniqueClasses = useMemo(() => {
@@ -191,6 +205,7 @@ export default function Students() {
         roll_number: "",
         class_name: "",
         section: "",
+        academic_year_id: activeAcademicYear?.id || "",
         parent_name: "",
         parent_phone: "",
         parent_email: "",
@@ -365,6 +380,24 @@ export default function Students() {
                       onChange={(e) => setNewStudent({ ...newStudent, roll_number: e.target.value })}
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="academic_year">Academic Year *</Label>
+                  <Select
+                    value={newStudent.academic_year_id}
+                    onValueChange={(value) => setNewStudent({ ...newStudent, academic_year_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select academic year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {academicYears?.map((year) => (
+                        <SelectItem key={year.id} value={year.id}>
+                          {year.name} {year.is_active && "(Active)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

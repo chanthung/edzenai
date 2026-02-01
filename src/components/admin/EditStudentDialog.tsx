@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { Student, useUpdateStudent } from "@/hooks/useStudents";
+import { useAcademicYears } from "@/hooks/useAcademicYears";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface EditStudentDialogProps {
@@ -16,11 +20,32 @@ interface EditStudentDialogProps {
 
 export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDialogProps) {
   const updateStudent = useUpdateStudent();
+  const queryClient = useQueryClient();
+  const { data: academicYears } = useAcademicYears();
+  
+  // Fetch current enrollment for the student
+  const { data: currentEnrollment } = useQuery({
+    queryKey: ['student-enrollment', student?.id],
+    queryFn: async () => {
+      if (!student?.id) return null;
+      const { data, error } = await supabase
+        .from('student_enrollments')
+        .select('*')
+        .eq('student_id', student.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!student?.id && open,
+  });
+  
   const [formData, setFormData] = useState({
     name: "",
     roll_number: "",
     class_name: "",
     section: "",
+    academic_year_id: "",
     parent_name: "",
     parent_phone: "",
     parent_email: "",
@@ -35,6 +60,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
         roll_number: student.roll_number || "",
         class_name: student.class_name || "",
         section: student.section || "",
+        academic_year_id: currentEnrollment?.academic_year_id || "",
         parent_name: student.parent_name || "",
         parent_phone: student.parent_phone || "",
         parent_email: student.parent_email || "",
@@ -42,7 +68,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
         address: student.address || "",
       });
     }
-  }, [student]);
+  }, [student, currentEnrollment]);
 
   const handleSubmit = async () => {
     if (!student) return;
@@ -58,10 +84,46 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
     }
 
     try {
+      // Extract academic_year_id - this is handled separately
+      const { academic_year_id, ...studentData } = formData;
+      
+      // Update student record
       await updateStudent.mutateAsync({
         id: student.id,
-        ...formData,
+        ...studentData,
       });
+      
+      // Handle enrollment update/create
+      if (academic_year_id) {
+        if (currentEnrollment) {
+          // Update existing enrollment
+          const { error } = await supabase
+            .from('student_enrollments')
+            .update({
+              academic_year_id: academic_year_id,
+              class_name: studentData.class_name || null,
+              section: studentData.section || null,
+            })
+            .eq('id', currentEnrollment.id);
+          
+          if (error) console.error('Failed to update enrollment:', error);
+        } else {
+          // Create new enrollment
+          const { error } = await supabase
+            .from('student_enrollments')
+            .insert({
+              student_id: student.id,
+              academic_year_id: academic_year_id,
+              class_name: studentData.class_name || null,
+              section: studentData.section || null,
+            });
+          
+          if (error) console.error('Failed to create enrollment:', error);
+        }
+        queryClient.invalidateQueries({ queryKey: ['student-enrollment', student.id] });
+        queryClient.invalidateQueries({ queryKey: ['student-enrollments'] });
+      }
+      
       toast.success("Student updated successfully");
       onOpenChange(false);
     } catch (error: any) {
@@ -99,6 +161,24 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                   onChange={(e) => setFormData({ ...formData, roll_number: e.target.value })}
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-academic-year">Academic Year</Label>
+              <Select
+                value={formData.academic_year_id}
+                onValueChange={(value) => setFormData({ ...formData, academic_year_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select academic year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears?.map((year) => (
+                    <SelectItem key={year.id} value={year.id}>
+                      {year.name} {year.is_active && "(Active)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
