@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.mark-telegram-registered]
 verify_jwt = false
+
+[functions.create-teacher]
+verify_jwt = false
+
+[functions.analyze-progress]
+verify_jwt = false

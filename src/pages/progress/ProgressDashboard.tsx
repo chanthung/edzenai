@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProgressIndicator } from "@/components/progress/ProgressIndicator";
 import { AtRiskBadge } from "@/components/progress/AtRiskBadge";
+import { ClassDistributionChart, calculateDistribution } from "@/components/progress/charts/ClassDistributionChart";
+import { SubjectComparisonChart } from "@/components/progress/charts/SubjectComparisonChart";
+import { AIInsightsPanel } from "@/components/progress/AIInsightsPanel";
 import { useProgressAnalytics, type ProgressStatus } from "@/hooks/progress/useProgressAnalytics";
+import { useAIAnalysis, type StudentAnalysisData } from "@/hooks/progress/useAIAnalysis";
 import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
 import { useStudents } from "@/hooks/useStudents";
 import { BarChart3, Users, TrendingUp, TrendingDown, Search, Eye } from "lucide-react";
@@ -32,6 +36,8 @@ export default function ProgressDashboard() {
     selectedClass || undefined
   );
 
+  const { isAnalyzing, classInsights, analyzeClass } = useAIAnalysis();
+
   // Filter students
   const filteredStudents = classProgress.filter((student) => {
     const matchesSearch = student.studentName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -50,6 +56,49 @@ export default function ProgressDashboard() {
           classProgress.reduce((sum, s) => sum + s.averagePercentage, 0) / classProgress.length
         )
       : 0;
+
+  // Calculate distribution for chart
+  const distributionData = calculateDistribution(classProgress);
+
+  // Calculate subject averages for chart
+  const subjectStats: Record<string, { total: number; count: number }> = {};
+  classProgress.forEach(student => {
+    student.subjectBreakdown.forEach(subject => {
+      if (!subjectStats[subject.subjectName]) {
+        subjectStats[subject.subjectName] = { total: 0, count: 0 };
+      }
+      subjectStats[subject.subjectName].total += subject.averagePercentage;
+      subjectStats[subject.subjectName].count++;
+    });
+  });
+  const subjectChartData = Object.entries(subjectStats)
+    .map(([subject, stats]) => ({
+      subject,
+      percentage: Math.round(stats.total / stats.count),
+    }))
+    .sort((a, b) => a.percentage - b.percentage);
+
+  // Handle AI analysis
+  const handleAnalyzeClass = () => {
+    if (classProgress.length === 0) return;
+    
+    const analysisData: StudentAnalysisData[] = classProgress.map(student => ({
+      studentName: student.studentName,
+      className: student.className,
+      averagePercentage: student.averagePercentage,
+      trend: student.trend,
+      status: student.status,
+      isAtRisk: student.isAtRisk,
+      assessmentCount: student.assessmentCount,
+      subjectBreakdown: student.subjectBreakdown.map(s => ({
+        subjectName: s.subjectName,
+        averagePercentage: s.averagePercentage,
+        trend: s.trend,
+      })),
+    }));
+
+    analyzeClass(analysisData);
+  };
 
   return (
     <ProgressLayout>
@@ -165,6 +214,34 @@ export default function ProgressDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Charts Section */}
+      {classProgress.length > 0 && (
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
+          <ClassDistributionChart 
+            data={distributionData} 
+            totalStudents={classProgress.length}
+            title="Score Distribution"
+          />
+          <SubjectComparisonChart 
+            data={subjectChartData}
+            title="Subject Averages"
+          />
+        </div>
+      )}
+
+      {/* AI Analysis Section */}
+      {classProgress.length > 0 && (
+        <div className="mt-6">
+          <AIInsightsPanel
+            insights={classInsights}
+            isLoading={isAnalyzing}
+            onGenerate={handleAnalyzeClass}
+            type="class"
+            hasData={classProgress.length > 0}
+          />
+        </div>
+      )}
 
       {/* Student List */}
       <Card className="mt-6">
