@@ -1,216 +1,259 @@
 
 
-# AI-Powered Student Progress Analysis with Interactive Charts
+# Parent View Academic Progress Tab
 
-This plan enhances the Student Progress module with intelligent AI analysis and professional data visualizations to help teachers make better-informed decisions about student performance.
+This plan adds a second tab to the existing Parent View (accessed via the unique parent link) that displays the student's academic performance with marks and visual charts.
 
 ---
 
 ## What You'll Get
 
-### 1. Interactive Performance Charts
-Visual representations of student data using the already-installed Recharts library:
-- **Line Charts**: Track individual student progress over time across assessments
-- **Bar Charts**: Compare subject-wise performance within a class
-- **Area Charts**: Visualize class-wide trends and distributions
-- **Radar Charts**: Show balanced scorecard view of subject strengths/weaknesses
+### Tabbed Parent View Interface
+- **Fees Tab** (existing): Current fee statement, payment QR, installment status, proof upload
+- **Progress Tab** (new): Academic performance summary, assessment history, subject-wise charts
 
-### 2. AI-Powered Insights
-Using Lovable AI (no API key needed), the system will:
-- Automatically generate personalized improvement recommendations for at-risk students
-- Identify subject-specific learning gaps based on performance patterns
-- Create actionable teaching focus areas for teachers
-- Generate parent-friendly progress summaries for PTM meetings
+### Progress Tab Features
+1. **Performance Summary Cards**
+   - Overall average percentage
+   - Total assessments taken
+   - Performance trend (improving/stable/declining indicator)
+   - Strongest and weakest subjects at a glance
 
-### 3. Enhanced Analytics Dashboard
-- Class performance distribution visualization
-- Subject difficulty analysis (which subjects are hardest for the class)
-- Comparative assessment analysis (how did this test compare to previous ones)
-- Print-ready progress reports with charts
+2. **Visual Charts**
+   - Performance Trend Line Chart (how student has progressed over time)
+   - Subject Strength Radar Chart (multi-subject comparison)
+   - Subject-wise Bar Chart (for fewer than 3 subjects)
+
+3. **Assessment History**
+   - List of all assessments with dates
+   - Subject-wise marks breakdown per assessment
+   - Visual percentage indicators
 
 ---
 
 ## Technical Implementation
 
-### Phase 1: Performance Visualization Components
+### Phase 1: Database Function for Token-Based Marks Access
 
-**New Files:**
+A new database function is needed to securely fetch student marks using the access token (same security model as fees).
 
-| File | Purpose |
-|------|---------|
-| `src/components/progress/charts/PerformanceTrendChart.tsx` | Line chart showing student progress over time |
-| `src/components/progress/charts/SubjectComparisonChart.tsx` | Bar chart comparing subject scores |
-| `src/components/progress/charts/ClassDistributionChart.tsx` | Area chart showing class score distribution |
-| `src/components/progress/charts/SubjectRadarChart.tsx` | Radar chart for multi-subject analysis |
-| `src/components/progress/charts/AssessmentTrendChart.tsx` | Line chart comparing multiple assessments |
+**New SQL Function: `get_student_marks_by_access_token`**
 
-### Phase 2: AI Analysis Edge Function
+| Input | Output |
+|-------|--------|
+| `_access_token` (UUID) | Student marks with assessment and subject details |
 
-**New Edge Function: `analyze-progress`**
+This ensures marks data is only accessible via the unique parent link, not through direct table queries.
 
-This function uses Lovable AI (google/gemini-3-flash-preview) to:
-- Accept student marks data and generate insights
-- Return structured recommendations for improvement
-- Identify specific learning gaps
-- Generate PTM-ready summaries
+### Phase 2: Hook for Parent Progress Data
 
-```text
-Request Flow:
-┌─────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
-│  Frontend       │────>│ analyze-progress    │────>│ Lovable AI       │
-│  Progress Page  │     │ Edge Function       │     │ Gateway          │
-└─────────────────┘     └─────────────────────┘     └──────────────────┘
-                                │
-                                ▼
-                        ┌───────────────────┐
-                        │ Structured        │
-                        │ AI Insights JSON  │
-                        └───────────────────┘
-```
+**New File: `src/hooks/useParentProgress.ts`**
 
-### Phase 3: Enhanced Dashboard & Student Progress Pages
+| Function | Purpose |
+|----------|---------|
+| `useParentProgress(token)` | Fetches marks, calculates averages, prepares chart data |
 
-**Modified Files:**
+Returns:
+- `assessmentList`: Grouped marks by assessment with averages
+- `subjectBreakdown`: Subject-wise performance with trends
+- `summary`: Overall average, trend, status
+- `chartData`: Pre-formatted data for PerformanceTrendChart and SubjectRadarChart
 
-| File | Changes |
-|------|---------|
-| `src/pages/progress/ProgressDashboard.tsx` | Add class-wide charts, AI summary panel |
-| `src/pages/progress/StudentProgress.tsx` | Add individual performance charts, AI recommendations |
+### Phase 3: Parent Progress Tab Component
 
-**New Hook:**
+**New File: `src/components/parent/ParentProgressTab.tsx`**
 
-| File | Purpose |
-|------|---------|
-| `src/hooks/progress/useAIAnalysis.ts` | Call AI edge function and cache results |
+A self-contained component that:
+- Displays performance summary cards
+- Shows PerformanceTrendChart and SubjectRadarChart (reusing existing chart components)
+- Lists assessment history with expandable details
+- Handles empty states gracefully
 
-### Phase 4: AI Insights UI Components
+### Phase 4: Refactor ParentView with Tabs
 
-**New Components:**
+**Modified File: `src/pages/parent/ParentView.tsx`**
 
-| File | Purpose |
-|------|---------|
-| `src/components/progress/AIInsightsPanel.tsx` | Display AI-generated recommendations |
-| `src/components/progress/LearningGapsCard.tsx` | Show identified subject-wise gaps |
-| `src/components/progress/PTMSummaryCard.tsx` | Parent-ready summary generator |
+Changes:
+- Add `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` wrapper
+- Move existing fee content into "Fees" tab
+- Add new "Progress" tab with `ParentProgressTab` component
+- Update header to be shared across tabs
 
 ---
 
-## Detailed Feature Breakdown
+## Data Flow
 
-### A. Student Progress Page Enhancements
-
-**Performance Over Time Chart**
-- X-axis: Assessment names/dates
-- Y-axis: Percentage score
-- Shows trend line with colored regions (green = improving, red = declining)
-
-**Subject Strength Radar**
-- Each axis = one subject
-- Shows current average vs. class average
-- Highlights weak subjects visually
-
-**AI Analysis Panel**
-- "What's Working" section with positive patterns
-- "Focus Areas" with specific improvement suggestions
-- "Recommended Actions" for teachers
-
-### B. Class Dashboard Enhancements
-
-**Class Distribution Chart**
-- Shows how many students fall into each grade band (0-40%, 40-60%, 60-80%, 80-100%)
-- Visual comparison across assessments
-
-**Subject Difficulty Chart**
-- Bar chart showing class average per subject
-- Identifies which subjects need more attention
-
-**AI Class Summary**
-- Top 3 performing students
-- Students needing immediate attention
-- Suggested class-wide focus areas
-
-### C. AI Insights Details
-
-The AI will analyze:
-1. Performance trends (improving, stable, declining)
-2. Subject-wise strengths and weaknesses
-3. Comparison with class average
-4. Gap between potential and performance
-5. Specific actionable recommendations
-
-Sample AI output structure:
 ```text
-{
-  "summary": "Brief 2-line summary of student performance",
-  "strengths": ["Subject areas performing well"],
-  "improvements": ["Specific areas needing work"],
-  "recommendations": ["Actionable teacher/parent steps"],
-  "riskLevel": "low" | "medium" | "high",
-  "focusSubject": "The most critical subject to focus on"
-}
+Parent opens /view/:token
+         │
+         ▼
+┌─────────────────────────────┐
+│    Shared Header            │
+│  (School + Student Info)    │
+└─────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│   Tabs: [Fees] [Progress]   │
+└─────────────────────────────┘
+         │
+    ┌────┴────┐
+    ▼         ▼
+┌───────┐ ┌─────────────────────────────┐
+│ Fees  │ │ Progress                    │
+│ Tab   │ │ - Uses useParentProgress()  │
+│(exist)│ │ - Calls RPC function        │
+│       │ │ - Renders charts + history  │
+└───────┘ └─────────────────────────────┘
 ```
+
+---
+
+## UI/UX Design
+
+### Tab Placement
+- Tabs appear below the student info header, above the summary cards
+- Clean, minimal tab design consistent with existing UI
+
+### Progress Tab Layout
+1. **Summary Row** (4 cards grid on desktop, 2x2 on mobile)
+   - Overall Average (percentage)
+   - Assessments Count
+   - Trend (arrow + percentage change)
+   - Best Subject
+
+2. **Charts Section** (side-by-side on desktop, stacked on mobile)
+   - Performance Trend (line chart)
+   - Subject Strengths (radar or bar chart)
+
+3. **Assessment History** (expandable cards)
+   - Assessment name + date + type
+   - Overall score for that assessment
+   - Expand to see subject-wise breakdown
+
+### Empty States
+- "No marks recorded yet" with friendly message if no data exists
+- Charts gracefully show "No data" states (already built into chart components)
 
 ---
 
 ## File Changes Summary
 
-### New Files (11 total)
+### New Files (3)
 
-| Category | Files |
-|----------|-------|
-| Charts (5) | `PerformanceTrendChart.tsx`, `SubjectComparisonChart.tsx`, `ClassDistributionChart.tsx`, `SubjectRadarChart.tsx`, `AssessmentTrendChart.tsx` |
-| Components (3) | `AIInsightsPanel.tsx`, `LearningGapsCard.tsx`, `PTMSummaryCard.tsx` |
-| Hooks (1) | `useAIAnalysis.ts` |
-| Edge Function (1) | `supabase/functions/analyze-progress/index.ts` |
-| Config (1) | Update `supabase/config.toml` to include new function |
+| File | Purpose |
+|------|---------|
+| `src/hooks/useParentProgress.ts` | Hook to fetch and process marks for parent view |
+| `src/components/parent/ParentProgressTab.tsx` | Progress tab UI component |
+| (Migration) | SQL function for token-based marks access |
 
-### Modified Files (2)
+### Modified Files (1)
 
 | File | Changes |
 |------|---------|
-| `src/pages/progress/ProgressDashboard.tsx` | Add chart sections and AI summary |
-| `src/pages/progress/StudentProgress.tsx` | Add individual charts and AI panel |
-
----
-
-## User Experience Flow
-
-### Teacher Views Dashboard
-1. Sees class-wide performance distribution chart
-2. Identifies which subjects are hardest
-3. Clicks "Get AI Analysis" for class insights
-4. Gets prioritized list of at-risk students
-
-### Teacher Views Individual Student
-1. Sees performance trend line across assessments
-2. Sees radar chart of subject strengths
-3. Clicks "Get AI Recommendations"
-4. Gets specific, actionable improvement steps
-5. Can generate PTM summary for parents
-
-### Generating PTM Reports
-1. Teacher selects students for PTM
-2. Clicks "Generate PTM Summaries"
-3. Gets print-ready cards with:
-   - Performance charts
-   - AI-generated parent-friendly summary
-   - Specific improvement suggestions
+| `src/pages/parent/ParentView.tsx` | Add tab structure, integrate progress tab |
 
 ---
 
 ## Security Considerations
 
-- AI edge function will verify teacher/admin authentication
-- Student data is processed but not stored by AI
-- All AI calls go through Lovable AI gateway (no external API keys needed)
-- RLS policies ensure teachers only see their school's data
+- **Token-based access only**: Marks are fetched via RPC function that validates access token
+- **No authentication required**: Same security model as fees - unique link provides access
+- **Read-only**: Parents can only view data, not modify
+- **School isolation**: RPC function ensures only the specific student's data is returned
+
+---
+
+## Technical Details
+
+### Database Migration
+
+```sql
+-- Function to get student marks by access token (secure, no direct table access)
+CREATE OR REPLACE FUNCTION public.get_student_marks_by_access_token(_access_token uuid)
+RETURNS TABLE (
+  id uuid,
+  student_id uuid,
+  marks_obtained numeric,
+  max_marks numeric,
+  remarks text,
+  assessment_id uuid,
+  assessment_name text,
+  assessment_type text,
+  assessment_date date,
+  subject_id uuid,
+  subject_name text,
+  subject_code text
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    sm.id,
+    sm.student_id,
+    sm.marks_obtained,
+    sm.max_marks,
+    sm.remarks,
+    a.id as assessment_id,
+    a.name as assessment_name,
+    a.assessment_type,
+    a.assessment_date,
+    s.id as subject_id,
+    s.name as subject_name,
+    s.code as subject_code
+  FROM student_marks sm
+  INNER JOIN students st ON st.id = sm.student_id
+  INNER JOIN assessments a ON a.id = sm.assessment_id
+  INNER JOIN subjects s ON s.id = sm.subject_id
+  WHERE st.access_token = _access_token
+  ORDER BY a.assessment_date DESC NULLS LAST, s.display_order ASC;
+END;
+$$;
+```
+
+### Hook Structure
+
+```typescript
+// useParentProgress.ts returns:
+{
+  isLoading: boolean;
+  error: Error | null;
+  data: {
+    assessments: AssessmentResult[];      // For history list
+    subjectBreakdown: SubjectStats[];     // For charts
+    trendChartData: TrendDataPoint[];     // For PerformanceTrendChart
+    radarChartData: RadarDataPoint[];     // For SubjectRadarChart
+    summary: {
+      overallAverage: number;
+      assessmentCount: number;
+      trend: number;
+      status: 'improving' | 'stable' | 'declining' | 'new';
+      bestSubject: string | null;
+      weakestSubject: string | null;
+    };
+  };
+}
+```
+
+---
+
+## Reused Components
+
+Leveraging existing progress module components:
+- `PerformanceTrendChart` - Already styled and responsive
+- `SubjectRadarChart` - Already handles < 3 subjects gracefully
+- `SubjectComparisonChart` - Fallback for fewer subjects
+- `ProgressIndicator` - Status visualization
 
 ---
 
 ## No Changes To
 
-- Fee transparency module (completely isolated)
-- Existing database tables
-- Authentication flow
-- Parent view (future enhancement)
+- Fee transparency functionality (completely preserved)
+- Existing parent link security model
+- Teacher/Admin progress views
+- AI analysis features (not exposed to parents)
+- Database schema (only adding a function)
 
