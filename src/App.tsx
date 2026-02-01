@@ -17,6 +17,13 @@ import ParentView from "./pages/parent/ParentView";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import NotFound from "./pages/NotFound";
 
+// Progress Module Pages
+import ProgressDashboard from "./pages/progress/ProgressDashboard";
+import ProgressSubjects from "./pages/progress/Subjects";
+import ProgressAssessments from "./pages/progress/Assessments";
+import ProgressMarksEntry from "./pages/progress/MarksEntry";
+import StudentProgress from "./pages/progress/StudentProgress";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -43,6 +50,13 @@ const App = () => (
             <Route path="/admin/academic-years" element={<AcademicYears />} />
             <Route path="/admin/fee-setup" element={<FeeSetup />} />
             <Route path="/admin/settings" element={<Settings />} />
+            
+            {/* Student Progress Module */}
+            <Route path="/progress" element={<ProgressDashboard />} />
+            <Route path="/progress/subjects" element={<ProgressSubjects />} />
+            <Route path="/progress/assessments" element={<ProgressAssessments />} />
+            <Route path="/progress/marks" element={<ProgressMarksEntry />} />
+            <Route path="/progress/student/:studentId" element={<StudentProgress />} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
