@@ -789,6 +789,23 @@ export type Database = {
           section: string
         }[]
       }
+      get_student_marks_by_access_token: {
+        Args: { _access_token: string }
+        Returns: {
+          assessment_date: string
+          assessment_id: string
+          assessment_name: string
+          assessment_type: string
+          id: string
+          marks_obtained: number
+          max_marks: number
+          remarks: string
+          student_id: string
+          subject_code: string
+          subject_id: string
+          subject_name: string
+        }[]
+      }
       get_teacher_school_ids: { Args: never; Returns: string[] }
       get_user_school_ids: { Args: never; Returns: string[] }
       has_role: {
