@@ -1,283 +1,216 @@
 
 
-# Verified Plan: Student Progress Analysis Dashboard
-## Guaranteed Isolation from Fee Transparency Platform
+# AI-Powered Student Progress Analysis with Interactive Charts
+
+This plan enhances the Student Progress module with intelligent AI analysis and professional data visualizations to help teachers make better-informed decisions about student performance.
 
 ---
 
-## Database Integrity Verification
+## What You'll Get
 
-I have verified the current database structure. Here is the complete list of existing tables that will **NOT be modified**:
+### 1. Interactive Performance Charts
+Visual representations of student data using the already-installed Recharts library:
+- **Line Charts**: Track individual student progress over time across assessments
+- **Bar Charts**: Compare subject-wise performance within a class
+- **Area Charts**: Visualize class-wide trends and distributions
+- **Radar Charts**: Show balanced scorecard view of subject strengths/weaknesses
 
-### Existing Tables (UNTOUCHED)
+### 2. AI-Powered Insights
+Using Lovable AI (no API key needed), the system will:
+- Automatically generate personalized improvement recommendations for at-risk students
+- Identify subject-specific learning gaps based on performance patterns
+- Create actionable teaching focus areas for teachers
+- Generate parent-friendly progress summaries for PTM meetings
 
-| Table | Purpose | Status |
-|-------|---------|--------|
-| `schools` | School master data | Shared (read-only by Progress) |
-| `school_admins` | Admin-school mapping | Shared (read-only by Progress) |
-| `user_roles` | Platform/school admin roles | Shared (read-only by Progress) |
-| `students` | Student master records | Shared (read-only by Progress) |
-| `academic_years` | Academic year definitions | Shared (read-only by Progress) |
-| `student_enrollments` | Student-year associations | Shared (read-only by Progress) |
-| `fee_categories` | Fee type definitions | Fee module only - UNTOUCHED |
-| `fee_structures` | Fee amounts per category/year | Fee module only - UNTOUCHED |
-| `installments` | Payment schedules | Fee module only - UNTOUCHED |
-| `student_fees` | Student-fee assignments | Fee module only - UNTOUCHED |
-| `payments` | Payment records | Fee module only - UNTOUCHED |
-| `payment_proofs` | Proof uploads | Fee module only - UNTOUCHED |
-
-### Data Relationship Diagram
-
-```text
-                        ┌──────────────────────────────────────────┐
-                        │           SHARED FOUNDATION              │
-                        │   (Read-only access by both modules)     │
-                        ├──────────────────────────────────────────┤
-                        │  schools ──┬── school_admins             │
-                        │            │                             │
-                        │  students ─┴── student_enrollments       │
-                        │            │                             │
-                        │  academic_years                          │
-                        └────────────┼─────────────────────────────┘
-                                     │
-           ┌─────────────────────────┴─────────────────────────┐
-           │                                                   │
-           ▼                                                   ▼
-┌──────────────────────────┐               ┌──────────────────────────┐
-│   FEE MODULE (Existing)  │               │  PROGRESS MODULE (New)   │
-│      COMPLETELY SAFE     │               │      NEW TABLES ONLY     │
-├──────────────────────────┤               ├──────────────────────────┤
-│  fee_categories          │               │  subjects (NEW)          │
-│  fee_structures          │               │  assessments (NEW)       │
-│  installments            │               │  student_marks (NEW)     │
-│  student_fees            │               │                          │
-│  payments                │               │                          │
-│  payment_proofs          │               │                          │
-└──────────────────────────┘               └──────────────────────────┘
-```
+### 3. Enhanced Analytics Dashboard
+- Class performance distribution visualization
+- Subject difficulty analysis (which subjects are hardest for the class)
+- Comparative assessment analysis (how did this test compare to previous ones)
+- Print-ready progress reports with charts
 
 ---
 
-## How Independence is Guaranteed
+## Technical Implementation
 
-### 1. Separate Database Tables
-The Progress module creates **3 new tables** that have no foreign keys to fee-related tables:
+### Phase 1: Performance Visualization Components
 
-- `subjects` → references only `schools`
-- `assessments` → references only `schools` and `academic_years`
-- `student_marks` → references only `students`, `assessments`, and `subjects`
-
-### 2. Separate File Structure
-All new code lives in completely separate directories:
-
-```text
-src/
-├── hooks/
-│   ├── useFeeCategories.ts      # Fee module (UNTOUCHED)
-│   ├── useFeeReports.ts         # Fee module (UNTOUCHED)
-│   ├── useFeeStructures.ts      # Fee module (UNTOUCHED)
-│   ├── useStudentFees.ts        # Fee module (UNTOUCHED)
-│   ├── usePaymentProofs.ts      # Fee module (UNTOUCHED)
-│   │
-│   └── progress/                 # NEW DIRECTORY
-│       ├── useSubjects.ts
-│       ├── useAssessments.ts
-│       ├── useStudentMarks.ts
-│       └── useProgressAnalytics.ts
-│
-├── pages/
-│   ├── admin/
-│   │   ├── Dashboard.tsx        # UNTOUCHED
-│   │   ├── FeeSetup.tsx         # UNTOUCHED
-│   │   └── Students.tsx         # UNTOUCHED
-│   │
-│   └── progress/                 # NEW DIRECTORY
-│       ├── ProgressDashboard.tsx
-│       ├── Subjects.tsx
-│       ├── Assessments.tsx
-│       └── MarksEntry.tsx
-│
-├── components/
-│   ├── admin/                    # Fee components (UNTOUCHED)
-│   └── progress/                 # NEW DIRECTORY
-```
-
-### 3. Separate URL Routes
-No overlap with existing routes:
-
-```text
-EXISTING (UNTOUCHED):
-/admin              → Fee Dashboard
-/admin/fee-setup    → Fee Structure
-/admin/students     → Student Management
-/view/:token        → Parent Fee View
-
-NEW (ADDED):
-/progress           → Progress Dashboard
-/progress/subjects  → Subject Management
-/progress/assessments → Assessment Management
-/progress/marks     → Marks Entry
-```
-
-### 4. Minimal Modifications to Existing Files
-
-Only 3 existing files need small additions:
-
-| File | Change Type | What Changes |
-|------|-------------|--------------|
-| `src/App.tsx` | Add routes | Add 4 new route lines for `/progress/*` |
-| `src/components/admin/AdminLayout.tsx` | Add nav link | Add "Student Progress" link in sidebar |
-| `src/pages/parent/ParentView.tsx` | Add tab | Add optional "Progress" tab (only shows if marks exist) |
-
-**No fee-related logic is touched in these files.**
-
----
-
-## Implementation Phases
-
-### Phase 1: Database Setup (Safe Addition)
-
-Create 3 new tables with RLS policies identical to the fee module pattern:
-
-```sql
--- New subjects table (NO impact on fees)
-CREATE TABLE public.subjects (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  school_id UUID NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  code TEXT,
-  display_order INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- New assessments table (NO impact on fees)
-CREATE TABLE public.assessments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  school_id UUID NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
-  academic_year_id UUID NOT NULL REFERENCES public.academic_years(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  assessment_type TEXT NOT NULL,
-  assessment_date DATE,
-  class_name TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- New student_marks table (NO impact on fees)
-CREATE TABLE public.student_marks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
-  assessment_id UUID NOT NULL REFERENCES public.assessments(id) ON DELETE CASCADE,
-  subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
-  marks_obtained NUMERIC NOT NULL,
-  max_marks NUMERIC NOT NULL DEFAULT 100,
-  remarks TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(student_id, assessment_id, subject_id)
-);
-```
-
-### Phase 2: Core Hooks (New Files Only)
-
-Create 4 new hook files in `src/hooks/progress/`:
-- `useSubjects.ts` - CRUD for subjects
-- `useAssessments.ts` - CRUD for assessments
-- `useStudentMarks.ts` - CRUD for marks
-- `useProgressAnalytics.ts` - Trend calculations
-
-### Phase 3: UI Pages (New Files Only)
-
-Create pages in `src/pages/progress/`:
-- `ProgressDashboard.tsx` - Class overview with trends
-- `Subjects.tsx` - Subject management
-- `Assessments.tsx` - Assessment management
-- `MarksEntry.tsx` - Bulk marks entry
-
-### Phase 4: Navigation Integration
-
-Add module switcher without changing fee navigation:
-- Add "Student Progress" link in AdminLayout sidebar
-- Add `/progress/*` routes in App.tsx
-
-### Phase 5: Parent View Enhancement
-
-Add optional "Progress" tab:
-- Only appears if student has marks data
-- Does not affect existing fee display
-
----
-
-## What Can Go Wrong & Safeguards
-
-| Risk | Safeguard |
-|------|-----------|
-| Breaking fee queries | New tables have no links to fee tables |
-| Changing student schema | Only reading from students table, no writes |
-| Breaking Parent View | Progress tab is additive, existing fee UI unchanged |
-| RLS policy conflicts | Using same pattern as fee module (school_id based) |
-| Import conflicts | All new imports from `/progress/` directories |
-
----
-
-## Testing Independence
-
-After implementation, both modules should work independently:
-
-**Fee Module Test:**
-1. Go to `/admin/fee-setup`
-2. Create fee structure
-3. Assign to student
-4. Record payment
-5. Check parent view at `/view/:token`
-
-**Progress Module Test:**
-1. Go to `/progress/subjects`
-2. Create subjects
-3. Go to `/progress/assessments`
-4. Create assessment
-5. Go to `/progress/marks`
-6. Enter marks
-7. Check trends at `/progress`
-
-Both should work without affecting each other.
-
----
-
-## Files to be Created (All New)
+**New Files:**
 
 | File | Purpose |
 |------|---------|
-| `src/pages/progress/ProgressDashboard.tsx` | Main analytics dashboard |
-| `src/pages/progress/Subjects.tsx` | Subject CRUD |
-| `src/pages/progress/Assessments.tsx` | Assessment CRUD |
-| `src/pages/progress/MarksEntry.tsx` | Bulk marks entry |
-| `src/pages/progress/StudentProgress.tsx` | Individual student view |
-| `src/components/progress/ProgressLayout.tsx` | Layout wrapper |
-| `src/components/progress/ProgressIndicator.tsx` | Status indicator |
-| `src/components/progress/AtRiskBadge.tsx` | Risk flag badge |
-| `src/hooks/progress/useSubjects.ts` | Subjects hook |
-| `src/hooks/progress/useAssessments.ts` | Assessments hook |
-| `src/hooks/progress/useStudentMarks.ts` | Marks hook |
-| `src/hooks/progress/useProgressAnalytics.ts` | Analytics calculations |
+| `src/components/progress/charts/PerformanceTrendChart.tsx` | Line chart showing student progress over time |
+| `src/components/progress/charts/SubjectComparisonChart.tsx` | Bar chart comparing subject scores |
+| `src/components/progress/charts/ClassDistributionChart.tsx` | Area chart showing class score distribution |
+| `src/components/progress/charts/SubjectRadarChart.tsx` | Radar chart for multi-subject analysis |
+| `src/components/progress/charts/AssessmentTrendChart.tsx` | Line chart comparing multiple assessments |
 
-## Files to be Modified (Minimal Changes)
+### Phase 2: AI Analysis Edge Function
 
-| File | Change |
-|------|--------|
-| `src/App.tsx` | Add 5 route lines for `/progress/*` |
-| `src/components/admin/AdminLayout.tsx` | Add sidebar link |
-| `src/pages/parent/ParentView.tsx` | Add optional Progress tab |
+**New Edge Function: `analyze-progress`**
+
+This function uses Lovable AI (google/gemini-3-flash-preview) to:
+- Accept student marks data and generate insights
+- Return structured recommendations for improvement
+- Identify specific learning gaps
+- Generate PTM-ready summaries
+
+```text
+Request Flow:
+┌─────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Frontend       │────>│ analyze-progress    │────>│ Lovable AI       │
+│  Progress Page  │     │ Edge Function       │     │ Gateway          │
+└─────────────────┘     └─────────────────────┘     └──────────────────┘
+                                │
+                                ▼
+                        ┌───────────────────┐
+                        │ Structured        │
+                        │ AI Insights JSON  │
+                        └───────────────────┘
+```
+
+### Phase 3: Enhanced Dashboard & Student Progress Pages
+
+**Modified Files:**
+
+| File | Changes |
+|------|---------|
+| `src/pages/progress/ProgressDashboard.tsx` | Add class-wide charts, AI summary panel |
+| `src/pages/progress/StudentProgress.tsx` | Add individual performance charts, AI recommendations |
+
+**New Hook:**
+
+| File | Purpose |
+|------|---------|
+| `src/hooks/progress/useAIAnalysis.ts` | Call AI edge function and cache results |
+
+### Phase 4: AI Insights UI Components
+
+**New Components:**
+
+| File | Purpose |
+|------|---------|
+| `src/components/progress/AIInsightsPanel.tsx` | Display AI-generated recommendations |
+| `src/components/progress/LearningGapsCard.tsx` | Show identified subject-wise gaps |
+| `src/components/progress/PTMSummaryCard.tsx` | Parent-ready summary generator |
 
 ---
 
-## Summary
+## Detailed Feature Breakdown
 
-This implementation guarantees:
+### A. Student Progress Page Enhancements
 
-1. **Zero modifications** to fee-related tables
-2. **Zero modifications** to fee-related hooks
-3. **Zero modifications** to fee-related pages
-4. **Zero modifications** to fee-related components
-5. **Additive-only changes** to shared files (App.tsx, AdminLayout, ParentView)
-6. **Shared student database** without duplication
-7. **Independent operation** of both modules
+**Performance Over Time Chart**
+- X-axis: Assessment names/dates
+- Y-axis: Percentage score
+- Shows trend line with colored regions (green = improving, red = declining)
+
+**Subject Strength Radar**
+- Each axis = one subject
+- Shows current average vs. class average
+- Highlights weak subjects visually
+
+**AI Analysis Panel**
+- "What's Working" section with positive patterns
+- "Focus Areas" with specific improvement suggestions
+- "Recommended Actions" for teachers
+
+### B. Class Dashboard Enhancements
+
+**Class Distribution Chart**
+- Shows how many students fall into each grade band (0-40%, 40-60%, 60-80%, 80-100%)
+- Visual comparison across assessments
+
+**Subject Difficulty Chart**
+- Bar chart showing class average per subject
+- Identifies which subjects need more attention
+
+**AI Class Summary**
+- Top 3 performing students
+- Students needing immediate attention
+- Suggested class-wide focus areas
+
+### C. AI Insights Details
+
+The AI will analyze:
+1. Performance trends (improving, stable, declining)
+2. Subject-wise strengths and weaknesses
+3. Comparison with class average
+4. Gap between potential and performance
+5. Specific actionable recommendations
+
+Sample AI output structure:
+```text
+{
+  "summary": "Brief 2-line summary of student performance",
+  "strengths": ["Subject areas performing well"],
+  "improvements": ["Specific areas needing work"],
+  "recommendations": ["Actionable teacher/parent steps"],
+  "riskLevel": "low" | "medium" | "high",
+  "focusSubject": "The most critical subject to focus on"
+}
+```
+
+---
+
+## File Changes Summary
+
+### New Files (11 total)
+
+| Category | Files |
+|----------|-------|
+| Charts (5) | `PerformanceTrendChart.tsx`, `SubjectComparisonChart.tsx`, `ClassDistributionChart.tsx`, `SubjectRadarChart.tsx`, `AssessmentTrendChart.tsx` |
+| Components (3) | `AIInsightsPanel.tsx`, `LearningGapsCard.tsx`, `PTMSummaryCard.tsx` |
+| Hooks (1) | `useAIAnalysis.ts` |
+| Edge Function (1) | `supabase/functions/analyze-progress/index.ts` |
+| Config (1) | Update `supabase/config.toml` to include new function |
+
+### Modified Files (2)
+
+| File | Changes |
+|------|---------|
+| `src/pages/progress/ProgressDashboard.tsx` | Add chart sections and AI summary |
+| `src/pages/progress/StudentProgress.tsx` | Add individual charts and AI panel |
+
+---
+
+## User Experience Flow
+
+### Teacher Views Dashboard
+1. Sees class-wide performance distribution chart
+2. Identifies which subjects are hardest
+3. Clicks "Get AI Analysis" for class insights
+4. Gets prioritized list of at-risk students
+
+### Teacher Views Individual Student
+1. Sees performance trend line across assessments
+2. Sees radar chart of subject strengths
+3. Clicks "Get AI Recommendations"
+4. Gets specific, actionable improvement steps
+5. Can generate PTM summary for parents
+
+### Generating PTM Reports
+1. Teacher selects students for PTM
+2. Clicks "Generate PTM Summaries"
+3. Gets print-ready cards with:
+   - Performance charts
+   - AI-generated parent-friendly summary
+   - Specific improvement suggestions
+
+---
+
+## Security Considerations
+
+- AI edge function will verify teacher/admin authentication
+- Student data is processed but not stored by AI
+- All AI calls go through Lovable AI gateway (no external API keys needed)
+- RLS policies ensure teachers only see their school's data
+
+---
+
+## No Changes To
+
+- Fee transparency module (completely isolated)
+- Existing database tables
+- Authentication flow
+- Parent view (future enhancement)
 
