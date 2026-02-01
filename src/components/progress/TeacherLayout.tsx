@@ -1,26 +1,22 @@
 import { ReactNode, useState } from "react";
 import { Navigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSchool } from "@/hooks/useSchool";
-import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SubscriptionBanner } from "@/components/admin/SubscriptionBanner";
-import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { 
-  BarChart3, 
+  GraduationCap, 
   BookOpen, 
   ClipboardList, 
-  PenLine,
+  Edit3, 
+  BarChart3,
   LogOut,
   Menu,
-  X,
-  ArrowLeft
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface ProgressLayoutProps {
+interface TeacherLayoutProps {
   children: ReactNode;
 }
 
@@ -28,14 +24,12 @@ const navItems = [
   { href: "/progress", label: "Dashboard", icon: BarChart3 },
   { href: "/progress/subjects", label: "Subjects", icon: BookOpen },
   { href: "/progress/assessments", label: "Assessments", icon: ClipboardList },
-  { href: "/progress/marks", label: "Marks Entry", icon: PenLine },
+  { href: "/progress/marks", label: "Marks Entry", icon: Edit3 },
 ];
 
-export function ProgressLayout({ children }: ProgressLayoutProps) {
+export function TeacherLayout({ children }: TeacherLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { data: school, isLoading: schoolLoading } = useSchool();
-  const { effectiveState, daysRemaining } = useSubscriptionStatus();
-  const { isTeacher, isSchoolAdmin, isLoading: roleLoading } = useUserRole();
+  const { isTeacher, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -43,8 +37,8 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-muted animate-pulse" />
-          <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+          <Skeleton className="h-16 w-16 rounded-2xl" />
+          <Skeleton className="h-4 w-32" />
         </div>
       </div>
     );
@@ -54,13 +48,10 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check if user has access (either teacher or school admin)
-  if (!isTeacher && !isSchoolAdmin) {
-    return <Navigate to="/login" replace />;
+  // Only redirect if explicitly not a teacher (after role is loaded)
+  if (!roleLoading && !isTeacher) {
+    return <Navigate to="/admin" replace />;
   }
-
-  // Teachers don't see the subscription banner or back to fee management link
-  const showAdminFeatures = isSchoolAdmin && !isTeacher;
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,18 +59,12 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
       <header className="lg:hidden sticky top-0 z-50 bg-card border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
-              <BarChart3 className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="font-semibold text-sm">Student Progress</h1>
-              {schoolLoading ? (
-                <div className="h-3 w-20 mt-1 bg-muted animate-pulse rounded" />
-              ) : (
-                <p className="text-xs text-muted-foreground truncate max-w-[150px]">
-                  {isTeacher ? "Teacher Portal" : school?.name}
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground">Teacher Portal</p>
             </div>
           </div>
           <Button
@@ -93,21 +78,8 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
 
         {/* Mobile navigation */}
         {mobileMenuOpen && (
-          <nav className="absolute top-full left-0 right-0 bg-card border-b border-border shadow-lg">
+          <nav className="absolute top-full left-0 right-0 bg-card border-b border-border shadow-lg animate-slide-up">
             <div className="p-2 space-y-1">
-              {showAdminFeatures && (
-                <>
-                  <Link
-                    to="/admin"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                    Back to Fee Management
-                  </Link>
-                  <div className="border-t border-border my-2" />
-                </>
-              )}
               {navItems.map((item) => (
                 <Link
                   key={item.href}
@@ -116,7 +88,7 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                     location.pathname === item.href
-                      ? "bg-emerald-600 text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted"
                   )}
                 >
@@ -124,7 +96,6 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
                   {item.label}
                 </Link>
               ))}
-              <div className="border-t border-border my-2" />
               <button
                 onClick={() => signOut()}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium w-full text-destructive hover:bg-destructive/10 transition-colors"
@@ -144,40 +115,15 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
             {/* Logo */}
             <div className="p-6 border-b border-sidebar-border">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-white" />
+                <div className="w-12 h-12 rounded-xl bg-sidebar-primary flex items-center justify-center">
+                  <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div>
                   <h1 className="font-bold text-sidebar-foreground">Student Progress</h1>
-                  {schoolLoading ? (
-                    <div className="h-3 w-24 mt-1 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <p className="text-xs text-muted-foreground truncate max-w-[140px]">
-                      {isTeacher ? "Teacher Portal" : school?.name}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">Teacher Portal</p>
                 </div>
               </div>
-              {/* School Status Badge - only for admins */}
-              {showAdminFeatures && (
-                <div className="mt-3">
-                  <SchoolStatusBadge effectiveState={effectiveState} />
-                </div>
-              )}
             </div>
-
-            {/* Back to Fee Management - only for admins */}
-            {showAdminFeatures && (
-              <div className="p-4 border-b border-sidebar-border">
-                <Link
-                  to="/admin"
-                  className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-sidebar-accent transition-colors"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Fee Management
-                </Link>
-              </div>
-            )}
 
             {/* Navigation */}
             <nav className="flex-1 p-4 space-y-1">
@@ -188,7 +134,7 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                     location.pathname === item.href
-                      ? "bg-emerald-600 text-white"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
                       : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
@@ -215,14 +161,6 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
         {/* Main content */}
         <main className="flex-1 lg:pl-64">
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-            {/* Subscription Banner - only for admins */}
-            {showAdminFeatures && (
-              <SubscriptionBanner 
-                effectiveState={effectiveState} 
-                daysRemaining={daysRemaining} 
-                className="mb-6"
-              />
-            )}
             {children}
           </div>
         </main>

@@ -28,6 +28,7 @@ const navItems = [
   { href: "/admin/students", label: "Students", icon: Users },
   { href: "/admin/academic-years", label: "Academic Years", icon: CalendarDays },
   { href: "/admin/fee-setup", label: "Fee Setup", icon: Receipt },
+  { href: "/admin/teachers", label: "Teachers", icon: Users },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/progress", label: "Student Progress", icon: GraduationCap },
 ];

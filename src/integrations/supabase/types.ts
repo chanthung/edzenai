@@ -398,6 +398,47 @@ export type Database = {
           },
         ]
       }
+      school_teachers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          name: string
+          school_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          name: string
+          school_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          school_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_teachers_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           address: string | null
@@ -748,6 +789,7 @@ export type Database = {
           section: string
         }[]
       }
+      get_teacher_school_ids: { Args: never; Returns: string[] }
       get_user_school_ids: { Args: never; Returns: string[] }
       has_role: {
         Args: {
@@ -759,9 +801,10 @@ export type Database = {
       is_platform_admin: { Args: never; Returns: boolean }
       is_school_admin: { Args: { _school_id: string }; Returns: boolean }
       is_school_restricted: { Args: { _school_id: string }; Returns: boolean }
+      is_school_teacher: { Args: { _school_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "platform_admin" | "school_admin"
+      app_role: "platform_admin" | "school_admin" | "teacher"
       fee_status: "upcoming" | "due" | "overdue" | "paid"
       proof_rejection_reason:
         | "amount_mismatch"
@@ -904,7 +947,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["platform_admin", "school_admin"],
+      app_role: ["platform_admin", "school_admin", "teacher"],
       fee_status: ["upcoming", "due", "overdue", "paid"],
       proof_rejection_reason: [
         "amount_mismatch",
