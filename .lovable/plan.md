@@ -1,259 +1,159 @@
 
+## Goal (what will change)
+Fix **Marks Entry** so it is strictly:
+1) Academic Year → 2) Assessment → 3) **Class (mandatory)** → 4) **Section (mandatory)** → 5) **Subject (filtered)**
 
-# Parent View Academic Progress Tab
-
-This plan adds a second tab to the existing Parent View (accessed via the unique parent link) that displays the student's academic performance with marks and visual charts.
-
----
-
-## What You'll Get
-
-### Tabbed Parent View Interface
-- **Fees Tab** (existing): Current fee statement, payment QR, installment status, proof upload
-- **Progress Tab** (new): Academic performance summary, assessment history, subject-wise charts
-
-### Progress Tab Features
-1. **Performance Summary Cards**
-   - Overall average percentage
-   - Total assessments taken
-   - Performance trend (improving/stable/declining indicator)
-   - Strongest and weakest subjects at a glance
-
-2. **Visual Charts**
-   - Performance Trend Line Chart (how student has progressed over time)
-   - Subject Strength Radar Chart (multi-subject comparison)
-   - Subject-wise Bar Chart (for fewer than 3 subjects)
-
-3. **Assessment History**
-   - List of all assessments with dates
-   - Subject-wise marks breakdown per assessment
-   - Visual percentage indicators
+And the **Subject dropdown must**:
+- Show only subjects configured for the selected class
+- Show each subject only once (no duplicates within that class)
+- Reset when class/section changes
+- Optionally display subject code to avoid confusion
 
 ---
 
-## Technical Implementation
+## What’s causing the problem today
+- `MarksEntry.tsx` currently loads **all subjects for the school** via `useSubjects()` and displays them without class filtering.
+- There is no “subject belongs to class” attribute in the current `useSubjects` hook interface, and the Subjects admin screen also doesn’t capture a class association.
+- Class selection is optional today (it has an “All Classes” option) and there is no section filter dropdown at all.
 
-### Phase 1: Database Function for Token-Based Marks Access
+---
 
-A new database function is needed to securely fetch student marks using the access token (same security model as fees).
+## Implementation approach
+We’ll implement **class-wise subject mapping** by adding a `class_name` field to subjects and using it for filtering.
 
-**New SQL Function: `get_student_marks_by_access_token`**
+### Decision (no more ambiguity)
+- One subject record belongs to **one class** (e.g., “English” for Class 3 is a separate subject row from “English” for Class 4).
+- Sections (A/B/C) will be selected from the student list and used for filtering students; subjects remain class-level.
 
-| Input | Output |
-|-------|--------|
-| `_access_token` (UUID) | Student marks with assessment and subject details |
+This matches your required workflow and eliminates ambiguity/duplicate subject names.
 
-This ensures marks data is only accessible via the unique parent link, not through direct table queries.
+---
 
-### Phase 2: Hook for Parent Progress Data
+## Backend / Database changes (safe + minimal)
+1. **Add `class_name` column** to `subjects`:
+   - `class_name text NULL`
+   - Nullable so existing data doesn’t break immediately.
+2. **Add an index** for quick filtering:
+   - `(school_id, class_name)`
+3. **Prevent duplicates inside a class** with a partial unique index:
+   - Unique on `(school_id, class_name, name)` **where class_name is not null**
+   - This avoids breaking existing “global / unassigned” subjects that have `class_name = NULL`.
 
-**New File: `src/hooks/useParentProgress.ts`**
+Result: a subject can’t be duplicated twice for the same class.
 
-| Function | Purpose |
-|----------|---------|
-| `useParentProgress(token)` | Fetches marks, calculates averages, prepares chart data |
+---
 
-Returns:
-- `assessmentList`: Grouped marks by assessment with averages
-- `subjectBreakdown`: Subject-wise performance with trends
-- `summary`: Overall average, trend, status
-- `chartData`: Pre-formatted data for PerformanceTrendChart and SubjectRadarChart
+## Frontend changes
 
-### Phase 3: Parent Progress Tab Component
-
-**New File: `src/components/parent/ParentProgressTab.tsx`**
-
-A self-contained component that:
-- Displays performance summary cards
-- Shows PerformanceTrendChart and SubjectRadarChart (reusing existing chart components)
-- Lists assessment history with expandable details
-- Handles empty states gracefully
-
-### Phase 4: Refactor ParentView with Tabs
-
-**Modified File: `src/pages/parent/ParentView.tsx`**
+### A) Update subjects hook to support class filtering
+**File:** `src/hooks/progress/useSubjects.ts`
 
 Changes:
-- Add `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` wrapper
-- Move existing fee content into "Fees" tab
-- Add new "Progress" tab with `ParentProgressTab` component
-- Update header to be shared across tabs
+- Extend `Subject` interface to include `class_name: string | null`.
+- Update `useSubjects` to accept an optional `className?: string`:
+  - When `className` is provided: query `.eq('class_name', className)`
+  - When not provided: keep current behavior for the Subjects admin screen (show all).
+- Ensure query key includes className: `['subjects', schoolId, className]`.
+
+This lets Marks Entry fetch “only subjects for Class 3”.
 
 ---
 
-## Data Flow
+### B) Update “Subjects” admin screen to assign subjects to classes
+**File:** `src/pages/progress/Subjects.tsx`
 
-```text
-Parent opens /view/:token
-         │
-         ▼
-┌─────────────────────────────┐
-│    Shared Header            │
-│  (School + Student Info)    │
-└─────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────┐
-│   Tabs: [Fees] [Progress]   │
-└─────────────────────────────┘
-         │
-    ┌────┴────┐
-    ▼         ▼
-┌───────┐ ┌─────────────────────────────┐
-│ Fees  │ │ Progress                    │
-│ Tab   │ │ - Uses useParentProgress()  │
-│(exist)│ │ - Calls RPC function        │
-│       │ │ - Renders charts + history  │
-└───────┘ └─────────────────────────────┘
-```
+Add:
+- A “Class” dropdown in the Add/Edit Subject dialog:
+  - Options pulled from existing student `class_name` values (same pattern used in Assessments page).
+  - Make it **required** for creating a subject going forward (recommended).
+- Add a **Class column** in the subjects table view so admins can see mapping.
+
+Why this is needed: otherwise filtering will show “No subjects for this class” until mapping is done.
 
 ---
 
-## UI/UX Design
+### C) Fix Marks Entry workflow (Class + Section mandatory, Subjects filtered)
+**File:** `src/pages/progress/MarksEntry.tsx`
 
-### Tab Placement
-- Tabs appear below the student info header, above the summary cards
-- Clean, minimal tab design consistent with existing UI
+#### 1) Make Class mandatory
+- Remove “All Classes” option.
+- Add an empty default state: “Select Class”.
+- Disable Assessment/Subject/Save until class is selected (as per your required workflow).
 
-### Progress Tab Layout
-1. **Summary Row** (4 cards grid on desktop, 2x2 on mobile)
-   - Overall Average (percentage)
-   - Assessments Count
-   - Trend (arrow + percentage change)
-   - Best Subject
+#### 2) Add Section dropdown (mandatory)
+- Add `selectedSection` state.
+- Compute available sections based on selectedClass:
+  - `uniqueSections = students.filter(s => s.class_name === selectedClass).map(s => s.section).filter(Boolean)`
+- Section dropdown becomes active only after class is selected.
 
-2. **Charts Section** (side-by-side on desktop, stacked on mobile)
-   - Performance Trend (line chart)
-   - Subject Strengths (radar or bar chart)
+#### 3) Filter students by Class + Section
+- `filteredStudents` must use both selectedClass and selectedSection.
+- If class/section changes, clear marks state (to avoid saving marks under wrong filters).
 
-3. **Assessment History** (expandable cards)
-   - Assessment name + date + type
-   - Overall score for that assessment
-   - Expand to see subject-wise breakdown
+#### 4) Filter assessments by class
+- `useAssessments(effectiveYearId, selectedClass)` (the hook already supports this)
+- This reduces mistakes where an assessment is meant for another class.
 
-### Empty States
-- "No marks recorded yet" with friendly message if no data exists
-- Charts gracefully show "No data" states (already built into chart components)
+#### 5) Filter subjects by selected class and reset on changes
+- Replace `useSubjects()` with `useSubjects(selectedClass)` (only when class selected).
+- When class changes:
+  - reset `selectedSubjectId` to `""`
+  - reset `selectedSection` to `""`
+  - clear `marks` state
+- If subject list no longer contains currently selected subject, reset it as well.
 
----
+#### 6) Improve Subject dropdown labels to reduce confusion
+- Display as:
+  - `English (ENG)` if code exists
+  - `English` if not
+This helps teachers verify they picked the right one even if names are similar.
 
-## File Changes Summary
-
-### New Files (3)
-
-| File | Purpose |
-|------|---------|
-| `src/hooks/useParentProgress.ts` | Hook to fetch and process marks for parent view |
-| `src/components/parent/ParentProgressTab.tsx` | Progress tab UI component |
-| (Migration) | SQL function for token-based marks access |
-
-### Modified Files (1)
-
-| File | Changes |
-|------|---------|
-| `src/pages/parent/ParentView.tsx` | Add tab structure, integrate progress tab |
-
----
-
-## Security Considerations
-
-- **Token-based access only**: Marks are fetched via RPC function that validates access token
-- **No authentication required**: Same security model as fees - unique link provides access
-- **Read-only**: Parents can only view data, not modify
-- **School isolation**: RPC function ensures only the specific student's data is returned
+#### 7) Tighten validation messaging
+- If teacher tries saving without:
+  - assessment → error
+  - class → error
+  - section → error
+  - subject → error
+Show clear toast messages.
 
 ---
 
-## Technical Details
-
-### Database Migration
-
-```sql
--- Function to get student marks by access token (secure, no direct table access)
-CREATE OR REPLACE FUNCTION public.get_student_marks_by_access_token(_access_token uuid)
-RETURNS TABLE (
-  id uuid,
-  student_id uuid,
-  marks_obtained numeric,
-  max_marks numeric,
-  remarks text,
-  assessment_id uuid,
-  assessment_name text,
-  assessment_type text,
-  assessment_date date,
-  subject_id uuid,
-  subject_name text,
-  subject_code text
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  RETURN QUERY
-  SELECT 
-    sm.id,
-    sm.student_id,
-    sm.marks_obtained,
-    sm.max_marks,
-    sm.remarks,
-    a.id as assessment_id,
-    a.name as assessment_name,
-    a.assessment_type,
-    a.assessment_date,
-    s.id as subject_id,
-    s.name as subject_name,
-    s.code as subject_code
-  FROM student_marks sm
-  INNER JOIN students st ON st.id = sm.student_id
-  INNER JOIN assessments a ON a.id = sm.assessment_id
-  INNER JOIN subjects s ON s.id = sm.subject_id
-  WHERE st.access_token = _access_token
-  ORDER BY a.assessment_date DESC NULLS LAST, s.display_order ASC;
-END;
-$$;
-```
-
-### Hook Structure
-
-```typescript
-// useParentProgress.ts returns:
-{
-  isLoading: boolean;
-  error: Error | null;
-  data: {
-    assessments: AssessmentResult[];      // For history list
-    subjectBreakdown: SubjectStats[];     // For charts
-    trendChartData: TrendDataPoint[];     // For PerformanceTrendChart
-    radarChartData: RadarDataPoint[];     // For SubjectRadarChart
-    summary: {
-      overallAverage: number;
-      assessmentCount: number;
-      trend: number;
-      status: 'improving' | 'stable' | 'declining' | 'new';
-      bestSubject: string | null;
-      weakestSubject: string | null;
-    };
-  };
-}
-```
+## UX behavior checklist (acceptance criteria)
+After changes:
+- Class selection is required (cannot proceed without it)
+- Section selection is required
+- Subject dropdown shows only subjects for that class
+- No repeated subject names within the class (and backend prevents adding duplicates)
+- Changing class resets section + subject + marks
+- “No subjects configured for this class” empty-state message is shown if none exist
+- Teachers can confidently enter marks for Class X, Section Y, Subject Z
 
 ---
 
-## Reused Components
+## Rollout / data migration note (important)
+Because `class_name` will start as NULL for existing subjects:
+- Initially, Marks Entry will show **no subjects** for a class until you assign classes to subjects in **Progress → Subjects**.
+- This is intentional to avoid wrong entries and to satisfy “Do NOT show subjects from other classes”.
 
-Leveraging existing progress module components:
-- `PerformanceTrendChart` - Already styled and responsive
-- `SubjectRadarChart` - Already handles < 3 subjects gracefully
-- `SubjectComparisonChart` - Fallback for fewer subjects
-- `ProgressIndicator` - Status visualization
+(If you want, later we can add a one-time helper screen to bulk-assign subjects to classes.)
 
 ---
 
-## No Changes To
+## Testing plan (end-to-end)
+1. Go to **Progress → Subjects**
+   - Create subjects for Class 3: English, Math, EVS, Science (with optional codes).
+2. Go to **Progress → Marks Entry**
+   - Select Year → Assessment → Class 3 → Section A
+   - Confirm Subject dropdown shows only those 4 subjects (once each)
+   - Switch to Class 2 → confirm subject list changes and selection resets
+3. Enter marks and save
+   - Reload page, pick same filters, ensure marks load correctly.
 
-- Fee transparency functionality (completely preserved)
-- Existing parent link security model
-- Teacher/Admin progress views
-- AI analysis features (not exposed to parents)
-- Database schema (only adding a function)
+---
+
+## Files to change (summary)
+- `src/hooks/progress/useSubjects.ts` (add class_name + optional class filter)
+- `src/pages/progress/Subjects.tsx` (assign class to subject + show column)
+- `src/pages/progress/MarksEntry.tsx` (mandatory class/section, subject filtering + reset logic)
+- Database change: add `subjects.class_name` + indexes (for filtering + duplicate prevention)
 
