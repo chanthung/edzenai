@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,8 +58,8 @@ export default function MarksEntry() {
       : students;
   }, [students, selectedClass]);
 
-  // Initialize marks from existing data
-  useMemo(() => {
+  // Initialize marks from existing data using useEffect (not useMemo)
+  useEffect(() => {
     if (selectedAssessmentId && selectedSubjectId && existingMarks.length > 0) {
       const newMarks: Record<string, MarkEntry> = {};
       existingMarks.forEach((mark) => {
