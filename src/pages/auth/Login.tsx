@@ -47,8 +47,8 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
             <GraduationCap className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold">SchoolFees</h1>
-          <p className="text-muted-foreground mt-1">Fee Transparency Platform</p>
+          <h1 className="text-2xl font-bold">EduTrack</h1>
+          <p className="text-muted-foreground mt-1">Fee Transparency & Student Progress Analysis</p>
         </div>
 
         <Card className="border-border/50 shadow-card">
