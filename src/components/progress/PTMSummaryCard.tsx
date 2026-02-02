@@ -18,7 +18,85 @@ export function PTMSummaryCard({
   onGenerate
 }: PTMSummaryCardProps) {
   const handlePrint = () => {
-    window.print();
+    if (!summary) return;
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>PTM Summary - ${studentName}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: system-ui, -apple-system, sans-serif; padding: 24px; max-width: 800px; margin: 0 auto; }
+            h1 { font-size: 1.25rem; margin-bottom: 16px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+            .greeting { font-weight: 500; margin-bottom: 16px; }
+            .section { margin-bottom: 16px; padding: 12px; border-radius: 8px; }
+            .section-title { font-weight: 600; font-size: 0.875rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+            .section-content { font-size: 0.875rem; line-height: 1.5; }
+            .overall { background: #f3f4f6; }
+            .strengths { background: #d1fae5; border: 1px solid #a7f3d0; }
+            .strengths .section-title { color: #047857; }
+            .improvements { background: #fef3c7; border: 1px solid #fde68a; }
+            .improvements .section-title { color: #b45309; }
+            .home-support { background: #dbeafe; border: 1px solid #bfdbfe; }
+            .home-support .section-title { color: #1d4ed8; }
+            .teacher-note { background: #f3e8ff; border: 1px solid #e9d5ff; }
+            .teacher-note .section-title { color: #7c3aed; }
+            ul { list-style: none; padding-left: 0; }
+            li { margin-bottom: 4px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <h1>PTM Summary for ${studentName}</h1>
+          <p class="greeting">${summary.greeting}</p>
+          
+          <div class="section overall">
+            <div class="section-title">📚 Overall Progress</div>
+            <div class="section-content">${summary.overallProgress}</div>
+          </div>
+          
+          <div class="grid">
+            <div class="section strengths">
+              <div class="section-title">✓ What's Going Well</div>
+              <ul>
+                ${summary.strengths.map(s => `<li>✓ ${s}</li>`).join('')}
+              </ul>
+            </div>
+            
+            <div class="section improvements">
+              <div class="section-title">📈 Areas for Growth</div>
+              <ul>
+                ${summary.areasToImprove.map(a => `<li>• ${a}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+          
+          <div class="section home-support">
+            <div class="section-title">🏠 How You Can Help at Home</div>
+            <ul>
+              ${summary.homeSupport.map((tip, i) => `<li>${i + 1}. ${tip}</li>`).join('')}
+            </ul>
+          </div>
+          
+          <div class="section teacher-note">
+            <div class="section-title">💝 A Note from the Teacher</div>
+            <div class="section-content"><em>${summary.teacherNote}</em></div>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.close();
+      };
+    }
   };
 
   if (isLoading) {
