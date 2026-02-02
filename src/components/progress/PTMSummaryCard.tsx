@@ -27,25 +27,28 @@ export function PTMSummaryCard({
           <title>PTM Summary - ${studentName}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: system-ui, -apple-system, sans-serif; padding: 24px; max-width: 800px; margin: 0 auto; }
-            h1 { font-size: 1.25rem; margin-bottom: 16px; border-bottom: 2px solid #333; padding-bottom: 8px; }
-            .greeting { font-weight: 500; margin-bottom: 16px; }
-            .section { margin-bottom: 16px; padding: 12px; border-radius: 8px; }
-            .section-title { font-weight: 600; font-size: 0.875rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-            .section-content { font-size: 0.875rem; line-height: 1.5; }
-            .overall { background: #f3f4f6; }
-            .strengths { background: #d1fae5; border: 1px solid #a7f3d0; }
+            body { font-family: system-ui, -apple-system, sans-serif; padding: 32px; max-width: 800px; margin: 0 auto; color: #1f2937; }
+            h1 { font-size: 1.5rem; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 12px; }
+            .greeting { font-weight: 500; margin-bottom: 20px; font-size: 1rem; }
+            .section { margin-bottom: 20px; padding: 16px; border-radius: 8px; page-break-inside: avoid; }
+            .section-title { font-weight: 600; font-size: 1rem; margin-bottom: 10px; }
+            .section-content { font-size: 0.9rem; line-height: 1.6; }
+            .overall { background: #f3f4f6; border: 1px solid #e5e7eb; }
+            .strengths { background: #ecfdf5; border: 1px solid #a7f3d0; }
             .strengths .section-title { color: #047857; }
-            .improvements { background: #fef3c7; border: 1px solid #fde68a; }
+            .improvements { background: #fffbeb; border: 1px solid #fde68a; }
             .improvements .section-title { color: #b45309; }
-            .home-support { background: #dbeafe; border: 1px solid #bfdbfe; }
+            .home-support { background: #eff6ff; border: 1px solid #bfdbfe; }
             .home-support .section-title { color: #1d4ed8; }
-            .teacher-note { background: #f3e8ff; border: 1px solid #e9d5ff; }
-            .teacher-note .section-title { color: #7c3aed; }
+            .teacher-note { background: #faf5ff; border: 1px solid #e9d5ff; font-style: italic; }
+            .teacher-note .section-title { color: #7c3aed; font-style: normal; }
             ul { list-style: none; padding-left: 0; }
-            li { margin-bottom: 4px; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-            @media print { body { padding: 0; } }
+            li { margin-bottom: 6px; font-size: 0.9rem; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+            @media print { 
+              body { padding: 20px; } 
+              .section { break-inside: avoid; }
+            }
           </style>
         </head>
         <body>
@@ -82,20 +85,21 @@ export function PTMSummaryCard({
           
           <div class="section teacher-note">
             <div class="section-title">💝 A Note from the Teacher</div>
-            <div class="section-content"><em>${summary.teacherNote}</em></div>
+            <div class="section-content">${summary.teacherNote}</div>
           </div>
         </body>
       </html>
     `;
     
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (printWindow) {
       printWindow.document.write(printContent);
       printWindow.document.close();
-      printWindow.onload = () => {
+      // Use setTimeout to ensure content is fully rendered before printing
+      setTimeout(() => {
+        printWindow.focus();
         printWindow.print();
-        printWindow.close();
-      };
+      }, 250);
     }
   };
 
