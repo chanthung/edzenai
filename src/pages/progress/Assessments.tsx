@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useAssessments, useCreateAssessment, useDeleteAssessment } from "@/hooks/progress/useAssessments";
-import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
+import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
 import { useStudents } from "@/hooks/useStudents";
 import { ClipboardList, Plus, Trash2, Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
@@ -42,8 +42,8 @@ const ASSESSMENT_TYPES = [
 ];
 
 export default function Assessments() {
-  const { data: academicYears = [] } = useAcademicYears();
-  const activeYear = useActiveAcademicYear();
+  const { data: academicYears = [] } = useResolvedAcademicYears();
+  const activeYear = useResolvedActiveAcademicYear();
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const effectiveYearId = selectedYearId || activeYear?.id || "";
   
