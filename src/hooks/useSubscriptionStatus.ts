@@ -77,12 +77,13 @@ function calculateEffectiveState(school: {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  // If payment verified and subscription active
-  if (school.payment_verified && school.subscription_status === 'active') {
+  // Only consider subscription active if payment was explicitly verified
+  // (payment_verified = true is the authoritative flag, not just subscription_status)
+  if (school.payment_verified === true && school.system_state === 'subscription_active') {
     return 'subscription_active';
   }
   
-  // If no trial end date or within trial period
+  // If no trial end date, school is in an indefinite trial
   if (!school.trial_end_date) {
     return 'trial_active';
   }
@@ -94,7 +95,7 @@ function calculateEffectiveState(school: {
     return 'trial_active';
   }
   
-  // Trial has expired
+  // Trial has expired → restricted
   return 'trial_expired';
 }
 

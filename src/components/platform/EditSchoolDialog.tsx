@@ -55,6 +55,26 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     }
   }, [school]);
 
+  // Compute system_state from current form values
+  const computeSystemState = () => {
+    // If payment was already verified (existing school data), keep subscription_active
+    if (school?.payment_verified && formData.subscription_status === 'active') {
+      return 'subscription_active' as const;
+    }
+    // Compute from trial dates
+    if (!formData.trial_end_date) {
+      return 'trial_active' as const;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const trialEnd = new Date(formData.trial_end_date);
+    trialEnd.setHours(0, 0, 0, 0);
+    if (today <= trialEnd) {
+      return 'trial_active' as const;
+    }
+    return 'trial_expired' as const;
+  };
+
   const handleSubmit = async () => {
     if (!school) return;
     
@@ -65,6 +85,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
 
     setLoading(true);
     try {
+      const computedState = computeSystemState();
       const { error } = await supabase
         .from('schools')
         .update({
@@ -80,6 +101,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
           subscription_renewal_date: formData.subscription_renewal_date || null,
           trial_start_date: formData.trial_start_date || null,
           trial_end_date: formData.trial_end_date || null,
+          system_state: computedState,
         })
         .eq('id', school.id);
 

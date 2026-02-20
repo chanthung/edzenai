@@ -21,7 +21,8 @@ function calculateEffectiveState(school: School): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  if (school.payment_verified && school.subscription_status === 'active') {
+  // Only subscription_active if payment was explicitly verified
+  if (school.payment_verified === true && school.system_state === 'subscription_active') {
     return 'subscription_active';
   }
   
