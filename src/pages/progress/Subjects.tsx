@@ -31,13 +31,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSubjects, useCreateSubject, useUpdateSubject, useDeleteSubject } from "@/hooks/progress/useSubjects";
-import { useStudents } from "@/hooks/useStudents";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Fetch unique class names from students visible to the current user (admin or teacher)
+function useUniqueClasses() {
+  return useQuery({
+    queryKey: ['unique-classes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('class_name')
+        .not('class_name', 'is', null);
+      if (error) throw error;
+      const classes = [...new Set((data || []).map((s) => s.class_name).filter(Boolean))] as string[];
+      return classes.sort();
+    },
+  });
+}
+
 export default function Subjects() {
   const { data: subjects = [], isLoading } = useSubjects();
-  const { data: students = [] } = useStudents();
+  const { data: uniqueClasses = [] } = useUniqueClasses();
   const createSubject = useCreateSubject();
   const updateSubject = useUpdateSubject();
   const deleteSubject = useDeleteSubject();
@@ -48,11 +65,6 @@ export default function Subjects() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [className, setClassName] = useState("");
-
-  // Get unique class names from students
-  const uniqueClasses = useMemo(() => {
-    return [...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[];
-  }, [students]);
 
   const handleOpenDialog = (subject?: { id: string; name: string; code: string | null; class_name: string | null }) => {
     if (subject) {

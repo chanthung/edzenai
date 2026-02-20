@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSchool } from '@/hooks/useSchool';
+import { useResolvedSchoolId } from './useResolvedSchoolId';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Subject {
@@ -14,8 +14,7 @@ export interface Subject {
 }
 
 export function useSubjects(className?: string) {
-  const { data: school } = useSchool();
-  const schoolId = school?.id;
+  const { data: schoolId } = useResolvedSchoolId();
 
   return useQuery({
     queryKey: ['subjects', schoolId, className],
@@ -27,7 +26,6 @@ export function useSubjects(className?: string) {
         .select('*')
         .eq('school_id', schoolId);
 
-      // Filter by class_name when provided
       if (className) {
         query = query.eq('class_name', className);
       }
@@ -45,17 +43,17 @@ export function useSubjects(className?: string) {
 
 export function useCreateSubject() {
   const queryClient = useQueryClient();
-  const { data: school } = useSchool();
+  const { data: schoolId } = useResolvedSchoolId();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (subject: { name: string; code?: string; class_name?: string; display_order?: number }) => {
-      if (!school?.id) throw new Error('No school found');
+      if (!schoolId) throw new Error('No school found');
 
       const { data, error } = await supabase
         .from('subjects')
         .insert({
-          school_id: school.id,
+          school_id: schoolId,
           name: subject.name,
           code: subject.code || null,
           class_name: subject.class_name || null,
@@ -68,7 +66,7 @@ export function useCreateSubject() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subjects', school?.id] });
+      queryClient.invalidateQueries({ queryKey: ['subjects', schoolId] });
       toast({ title: 'Subject created successfully' });
     },
     onError: (error) => {
@@ -83,7 +81,7 @@ export function useCreateSubject() {
 
 export function useUpdateSubject() {
   const queryClient = useQueryClient();
-  const { data: school } = useSchool();
+  const { data: schoolId } = useResolvedSchoolId();
   const { toast } = useToast();
 
   return useMutation({
@@ -99,7 +97,7 @@ export function useUpdateSubject() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subjects', school?.id] });
+      queryClient.invalidateQueries({ queryKey: ['subjects', schoolId] });
       toast({ title: 'Subject updated successfully' });
     },
     onError: (error) => {
@@ -114,7 +112,7 @@ export function useUpdateSubject() {
 
 export function useDeleteSubject() {
   const queryClient = useQueryClient();
-  const { data: school } = useSchool();
+  const { data: schoolId } = useResolvedSchoolId();
   const { toast } = useToast();
 
   return useMutation({
@@ -127,7 +125,7 @@ export function useDeleteSubject() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subjects', school?.id] });
+      queryClient.invalidateQueries({ queryKey: ['subjects', schoolId] });
       toast({ title: 'Subject deleted successfully' });
     },
     onError: (error) => {

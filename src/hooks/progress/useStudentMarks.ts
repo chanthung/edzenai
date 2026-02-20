@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSchool } from '@/hooks/useSchool';
+import { useResolvedSchoolId } from './useResolvedSchoolId';
 import { useToast } from '@/hooks/use-toast';
 
 export interface StudentMark {
@@ -37,8 +37,7 @@ export interface StudentMarkWithDetails extends StudentMark {
 }
 
 export function useStudentMarks(assessmentId?: string, studentId?: string) {
-  const { data: school } = useSchool();
-  const schoolId = school?.id;
+  const { data: schoolId } = useResolvedSchoolId();
 
   return useQuery({
     queryKey: ['student-marks', schoolId, assessmentId, studentId],
@@ -72,8 +71,7 @@ export function useStudentMarks(assessmentId?: string, studentId?: string) {
 }
 
 export function useStudentMarksByStudent(studentId: string) {
-  const { data: school } = useSchool();
-  const schoolId = school?.id;
+  const { data: schoolId } = useResolvedSchoolId();
 
   return useQuery({
     queryKey: ['student-marks-by-student', studentId],
@@ -99,7 +97,7 @@ export function useStudentMarksByStudent(studentId: string) {
 
 export function useSaveMarks() {
   const queryClient = useQueryClient();
-  const { data: school } = useSchool();
+  const { data: schoolId } = useResolvedSchoolId();
   const { toast } = useToast();
 
   return useMutation({
@@ -113,7 +111,6 @@ export function useSaveMarks() {
         remarks?: string;
       }>
     ) => {
-      // Use upsert to handle both insert and update
       const { data, error } = await supabase
         .from('student_marks')
         .upsert(
@@ -133,7 +130,7 @@ export function useSaveMarks() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-marks', school?.id] });
+      queryClient.invalidateQueries({ queryKey: ['student-marks', schoolId] });
       queryClient.invalidateQueries({ queryKey: ['student-marks-by-student'] });
       queryClient.invalidateQueries({ queryKey: ['class-progress'] });
       toast({ title: 'Marks saved successfully' });
@@ -150,7 +147,7 @@ export function useSaveMarks() {
 
 export function useDeleteMark() {
   const queryClient = useQueryClient();
-  const { data: school } = useSchool();
+  const { data: schoolId } = useResolvedSchoolId();
   const { toast } = useToast();
 
   return useMutation({
@@ -159,7 +156,7 @@ export function useDeleteMark() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-marks', school?.id] });
+      queryClient.invalidateQueries({ queryKey: ['student-marks', schoolId] });
       queryClient.invalidateQueries({ queryKey: ['student-marks-by-student'] });
       queryClient.invalidateQueries({ queryKey: ['class-progress'] });
       toast({ title: 'Mark deleted successfully' });
