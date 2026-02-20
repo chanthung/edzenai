@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSchool } from '@/hooks/useSchool';
+import { useResolvedSchoolId } from './useResolvedSchoolId';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Assessment {
@@ -15,8 +15,7 @@ export interface Assessment {
 }
 
 export function useAssessments(academicYearId?: string, className?: string) {
-  const { data: school } = useSchool();
-  const schoolId = school?.id;
+  const { data: schoolId } = useResolvedSchoolId();
 
   return useQuery({
     queryKey: ['assessments', schoolId, academicYearId, className],
@@ -47,7 +46,7 @@ export function useAssessments(academicYearId?: string, className?: string) {
 
 export function useCreateAssessment() {
   const queryClient = useQueryClient();
-  const { data: school } = useSchool();
+  const { data: schoolId } = useResolvedSchoolId();
   const { toast } = useToast();
 
   return useMutation({
@@ -58,12 +57,12 @@ export function useCreateAssessment() {
       assessment_date?: string;
       class_name?: string;
     }) => {
-      if (!school?.id) throw new Error('No school found');
+      if (!schoolId) throw new Error('No school found');
 
       const { data, error } = await supabase
         .from('assessments')
         .insert({
-          school_id: school.id,
+          school_id: schoolId,
           academic_year_id: assessment.academic_year_id,
           name: assessment.name,
           assessment_type: assessment.assessment_type,
@@ -77,7 +76,7 @@ export function useCreateAssessment() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assessments', school?.id] });
+      queryClient.invalidateQueries({ queryKey: ['assessments', schoolId] });
       toast({ title: 'Assessment created successfully' });
     },
     onError: (error) => {
@@ -92,7 +91,7 @@ export function useCreateAssessment() {
 
 export function useUpdateAssessment() {
   const queryClient = useQueryClient();
-  const { data: school } = useSchool();
+  const { data: schoolId } = useResolvedSchoolId();
   const { toast } = useToast();
 
   return useMutation({
@@ -117,7 +116,7 @@ export function useUpdateAssessment() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assessments', school?.id] });
+      queryClient.invalidateQueries({ queryKey: ['assessments', schoolId] });
       toast({ title: 'Assessment updated successfully' });
     },
     onError: (error) => {
@@ -132,7 +131,7 @@ export function useUpdateAssessment() {
 
 export function useDeleteAssessment() {
   const queryClient = useQueryClient();
-  const { data: school } = useSchool();
+  const { data: schoolId } = useResolvedSchoolId();
   const { toast } = useToast();
 
   return useMutation({
@@ -141,7 +140,7 @@ export function useDeleteAssessment() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assessments', school?.id] });
+      queryClient.invalidateQueries({ queryKey: ['assessments', schoolId] });
       toast({ title: 'Assessment deleted successfully' });
     },
     onError: (error) => {
