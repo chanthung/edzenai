@@ -17,8 +17,8 @@ import {
 import { useAssessments } from "@/hooks/progress/useAssessments";
 import { useSubjects } from "@/hooks/progress/useSubjects";
 import { useSaveMarks, useStudentMarks } from "@/hooks/progress/useStudentMarks";
-import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
-import { useStudents } from "@/hooks/useStudents";
+import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
+import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { PenLine, Save, Loader2, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,12 +30,12 @@ interface MarkEntry {
 }
 
 export default function MarksEntry() {
-  const { data: academicYears = [] } = useAcademicYears();
-  const activeYear = useActiveAcademicYear();
+  const { data: academicYears = [] } = useResolvedAcademicYears();
+  const activeYear = useResolvedActiveAcademicYear();
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const effectiveYearId = selectedYearId || activeYear?.id || "";
   
-  const { data: students = [] } = useStudents();
+  const { data: students = [] } = useResolvedStudents();
   const saveMarks = useSaveMarks();
   const { toast } = useToast();
 
