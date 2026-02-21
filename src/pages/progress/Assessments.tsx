@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useAssessments, useCreateAssessment, useDeleteAssessment } from "@/hooks/progress/useAssessments";
+import { useAssessments, useCreateAssessment, useDeleteAssessment, type AssessmentDomain, type AssessmentCategory } from "@/hooks/progress/useAssessments";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
 import { useStudents } from "@/hooks/useStudents";
 import { ClipboardList, Plus, Trash2, Loader2, Calendar } from "lucide-react";
@@ -39,6 +39,20 @@ const ASSESSMENT_TYPES = [
   { value: "quiz", label: "Quiz" },
   { value: "assignment", label: "Assignment" },
   { value: "practical", label: "Practical" },
+  { value: "project", label: "Project" },
+  { value: "portfolio", label: "Portfolio" },
+  { value: "observation", label: "Observation" },
+];
+
+const ASSESSMENT_DOMAINS: { value: AssessmentDomain; label: string }[] = [
+  { value: "cognitive", label: "Cognitive" },
+  { value: "affective", label: "Affective" },
+  { value: "psychomotor", label: "Psychomotor" },
+];
+
+const ASSESSMENT_CATEGORIES: { value: AssessmentCategory; label: string }[] = [
+  { value: "formative", label: "Formative" },
+  { value: "summative", label: "Summative" },
 ];
 
 export default function Assessments() {
@@ -60,6 +74,8 @@ export default function Assessments() {
   const [assessmentType, setAssessmentType] = useState("");
   const [assessmentDate, setAssessmentDate] = useState("");
   const [className, setClassName] = useState("");
+  const [assessmentDomain, setAssessmentDomain] = useState<AssessmentDomain>("cognitive");
+  const [assessmentCategory, setAssessmentCategory] = useState<AssessmentCategory>("summative");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,12 +92,16 @@ export default function Assessments() {
         assessment_type: assessmentType,
         assessment_date: assessmentDate || undefined,
         class_name: className || undefined,
+        assessment_domain: assessmentDomain,
+        assessment_category: assessmentCategory,
       });
       setIsDialogOpen(false);
       setName("");
       setAssessmentType("");
       setAssessmentDate("");
       setClassName("");
+      setAssessmentDomain("cognitive");
+      setAssessmentCategory("summative");
     } catch (error) {
       // Error handled by mutation
     }
@@ -167,6 +187,34 @@ export default function Assessments() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label>Domain (NEP)</Label>
+                      <Select value={assessmentDomain} onValueChange={(v) => setAssessmentDomain(v as AssessmentDomain)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ASSESSMENT_DOMAINS.map((d) => (
+                            <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Category</Label>
+                      <Select value={assessmentCategory} onValueChange={(v) => setAssessmentCategory(v as AssessmentCategory)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ASSESSMENT_CATEGORIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <div className="grid gap-2">
                     <Label htmlFor="date">Assessment Date</Label>
                     <Input
@@ -236,6 +284,8 @@ export default function Assessments() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Domain</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
@@ -247,6 +297,14 @@ export default function Assessments() {
                       <TableCell className="font-medium">{assessment.name}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{getTypeLabel(assessment.assessment_type)}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">{assessment.assessment_domain}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={assessment.assessment_category === 'formative' ? 'default' : 'secondary'} className="capitalize">
+                          {assessment.assessment_category}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {assessment.class_name || "All Classes"}

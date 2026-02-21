@@ -8,6 +8,7 @@ const corsHeaders = {
 interface StudentData {
   studentName: string;
   className?: string;
+  nepStage?: string;
   averagePercentage: number;
   trend: number;
   status: 'improving' | 'stable' | 'declining' | 'new';
@@ -15,9 +16,15 @@ interface StudentData {
   assessmentCount: number;
   subjectBreakdown: Array<{
     subjectName: string;
+    subjectType?: string;
     averagePercentage: number;
     trend: number;
   }>;
+  domainBreakdown?: {
+    cognitive?: number;
+    affective?: number;
+    psychomotor?: number;
+  };
 }
 
 interface AnalysisRequest {
@@ -49,24 +56,31 @@ serve(async (req) => {
     let userPrompt = '';
 
     if (type === 'student' && studentData) {
-      systemPrompt = `You are an expert educational analyst helping teachers understand student performance. 
-Analyze the student data and provide actionable insights in ${language}.
-Be specific, practical, and focus on improvement strategies.
+      systemPrompt = `You are an expert educational analyst aligned with India's National Education Policy (NEP) 2020. 
+Analyze the student data holistically across cognitive, affective, and psychomotor domains.
+Provide actionable insights in ${language} that consider academic AND co-curricular performance.
+Be specific, practical, and focus on competency-based improvement strategies.
 Keep responses concise but helpful.`;
 
-      userPrompt = `Analyze this student's performance:
+      userPrompt = `Analyze this student's performance (NEP 2020 framework):
 
 Student: ${studentData.studentName}
 Class: ${studentData.className || 'N/A'}
+NEP Stage: ${studentData.nepStage || 'N/A'}
 Overall Average: ${studentData.averagePercentage}%
 Trend: ${studentData.trend > 0 ? '+' : ''}${studentData.trend}% (${studentData.status})
 At Risk: ${studentData.isAtRisk ? 'Yes' : 'No'}
 Assessments Completed: ${studentData.assessmentCount}
 
-Subject Performance:
+Subject Performance (includes academic, co-curricular, and vocational):
 ${studentData.subjectBreakdown.map(s => 
-  `- ${s.subjectName}: ${s.averagePercentage}% (trend: ${s.trend > 0 ? '+' : ''}${s.trend}%)`
+  `- ${s.subjectName}${s.subjectType ? ` [${s.subjectType}]` : ''}: ${s.averagePercentage}% (trend: ${s.trend > 0 ? '+' : ''}${s.trend}%)`
 ).join('\n')}
+${studentData.domainBreakdown ? `
+Domain Performance:
+- Cognitive: ${studentData.domainBreakdown.cognitive ?? 'N/A'}%
+- Affective: ${studentData.domainBreakdown.affective ?? 'N/A'}%
+- Psychomotor: ${studentData.domainBreakdown.psychomotor ?? 'N/A'}%` : ''}
 
 Provide analysis using this EXACT JSON structure:
 {
@@ -78,9 +92,9 @@ Provide analysis using this EXACT JSON structure:
   "focusSubject": "the one subject to prioritize"
 }`;
     } else if (type === 'class' && classData && classData.length > 0) {
-      systemPrompt = `You are an expert educational analyst helping teachers understand class-wide performance patterns.
-Analyze the class data and provide actionable insights in ${language}.
-Focus on identifying patterns, at-risk students, and teaching strategies.`;
+      systemPrompt = `You are an expert educational analyst aligned with India's NEP 2020.
+Analyze the class data holistically and provide actionable insights in ${language}.
+Focus on identifying patterns across cognitive, affective, and psychomotor domains, at-risk students, and teaching strategies for academic AND co-curricular subjects.`;
 
       const atRiskStudents = classData.filter(s => s.isAtRisk);
       const avgPercentage = Math.round(classData.reduce((sum, s) => sum + s.averagePercentage, 0) / classData.length);
@@ -128,11 +142,13 @@ Provide analysis using this EXACT JSON structure:
   "focusAreas": ["area 1", "area 2"]
 }`;
     } else if (type === 'ptm' && studentData) {
-      systemPrompt = `You are helping a teacher prepare for a Parent-Teacher Meeting.
-Create a parent-friendly summary in ${language} that is:
-- Positive and encouraging in tone
-- Clear and jargon-free
-- Focused on actionable home support strategies
+      systemPrompt = `You are helping a teacher prepare for a Parent-Teacher Meeting aligned with NEP 2020.
+Create a parent-friendly, holistic summary in ${language} that:
+- Covers academic AND co-curricular/vocational performance
+- Is positive and encouraging in tone
+- Is clear and jargon-free
+- Focuses on actionable home support strategies
+- References the child's development across cognitive, affective, and psychomotor domains where data is available
 Keep it concise for easy reading.`;
 
       userPrompt = `Create a PTM summary for this student:

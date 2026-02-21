@@ -5,6 +5,7 @@ import { toast } from '@/hooks/use-toast';
 export interface StudentAnalysisData {
   studentName: string;
   className?: string | null;
+  nepStage?: string | null;
   averagePercentage: number;
   trend: number;
   status: 'improving' | 'stable' | 'declining' | 'new';
@@ -12,9 +13,15 @@ export interface StudentAnalysisData {
   assessmentCount: number;
   subjectBreakdown: Array<{
     subjectName: string;
+    subjectType?: string;
     averagePercentage: number;
     trend: number;
   }>;
+  domainBreakdown?: {
+    cognitive?: number;
+    affective?: number;
+    psychomotor?: number;
+  };
 }
 
 export interface StudentInsights {

@@ -14,14 +14,15 @@ import { AIInsightsPanel } from "@/components/progress/AIInsightsPanel";
 import { LearningGapsCard } from "@/components/progress/LearningGapsCard";
 import { PTMSummaryCard } from "@/components/progress/PTMSummaryCard";
 import { useStudentMarksByStudent } from "@/hooks/progress/useStudentMarks";
-import { useStudents } from "@/hooks/useStudents";
+import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { useAIAnalysis, type StudentAnalysisData } from "@/hooks/progress/useAIAnalysis";
+import { getNepStage, getNepStageLabel } from "@/lib/nep-stages";
 import { ArrowLeft, BarChart3, TrendingUp, TrendingDown } from "lucide-react";
 import { format } from "date-fns";
 
 export default function StudentProgress() {
   const { studentId } = useParams<{ studentId: string }>();
-  const { data: students = [] } = useStudents();
+  const { data: students = [] } = useResolvedStudents();
   const { data: marks = [], isLoading } = useStudentMarksByStudent(studentId || "");
   
   const { 
@@ -139,6 +140,7 @@ export default function StudentProgress() {
   const analysisData: StudentAnalysisData | null = student ? {
     studentName: student.name,
     className: student.class_name,
+    nepStage: getNepStageLabel(student.class_name),
     averagePercentage: overallAverage,
     trend,
     status,
@@ -180,7 +182,7 @@ export default function StudentProgress() {
 
       <PageHeader
         title={student.name}
-        description={`${student.class_name}${student.section ? ` - ${student.section}` : ""} | Roll: ${student.roll_number || "N/A"}`}
+        description={`${student.class_name}${student.section ? ` - ${student.section}` : ""} | Roll: ${student.roll_number || "N/A"} | NEP Stage: ${getNepStageLabel(student.class_name)}`}
       />
 
       {/* Summary Cards */}

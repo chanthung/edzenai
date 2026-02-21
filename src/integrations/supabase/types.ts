@@ -58,7 +58,9 @@ export type Database = {
       assessments: {
         Row: {
           academic_year_id: string
+          assessment_category: Database["public"]["Enums"]["assessment_category"]
           assessment_date: string | null
+          assessment_domain: Database["public"]["Enums"]["assessment_domain"]
           assessment_type: string
           class_name: string | null
           created_at: string | null
@@ -68,7 +70,9 @@ export type Database = {
         }
         Insert: {
           academic_year_id: string
+          assessment_category?: Database["public"]["Enums"]["assessment_category"]
           assessment_date?: string | null
+          assessment_domain?: Database["public"]["Enums"]["assessment_domain"]
           assessment_type: string
           class_name?: string | null
           created_at?: string | null
@@ -78,7 +82,9 @@ export type Database = {
         }
         Update: {
           academic_year_id?: string
+          assessment_category?: Database["public"]["Enums"]["assessment_category"]
           assessment_date?: string | null
+          assessment_domain?: Database["public"]["Enums"]["assessment_domain"]
           assessment_type?: string
           class_name?: string | null
           created_at?: string | null
@@ -596,9 +602,12 @@ export type Database = {
         Row: {
           assessment_id: string
           created_at: string | null
+          grade: Database["public"]["Enums"]["grade_scale"] | null
           id: string
+          is_grade_based: boolean
           marks_obtained: number
           max_marks: number
+          qualitative_feedback: string | null
           remarks: string | null
           student_id: string
           subject_id: string
@@ -606,9 +615,12 @@ export type Database = {
         Insert: {
           assessment_id: string
           created_at?: string | null
+          grade?: Database["public"]["Enums"]["grade_scale"] | null
           id?: string
+          is_grade_based?: boolean
           marks_obtained: number
           max_marks?: number
+          qualitative_feedback?: string | null
           remarks?: string | null
           student_id: string
           subject_id: string
@@ -616,9 +628,12 @@ export type Database = {
         Update: {
           assessment_id?: string
           created_at?: string | null
+          grade?: Database["public"]["Enums"]["grade_scale"] | null
           id?: string
+          is_grade_based?: boolean
           marks_obtained?: number
           max_marks?: number
+          qualitative_feedback?: string | null
           remarks?: string | null
           student_id?: string
           subject_id?: string
@@ -718,6 +733,7 @@ export type Database = {
           id: string
           name: string
           school_id: string
+          subject_type: Database["public"]["Enums"]["subject_type"]
         }
         Insert: {
           class_name?: string | null
@@ -727,6 +743,7 @@ export type Database = {
           id?: string
           name: string
           school_id: string
+          subject_type?: Database["public"]["Enums"]["subject_type"]
         }
         Update: {
           class_name?: string | null
@@ -736,6 +753,7 @@ export type Database = {
           id?: string
           name?: string
           school_id?: string
+          subject_type?: Database["public"]["Enums"]["subject_type"]
         }
         Relationships: [
           {
@@ -776,6 +794,10 @@ export type Database = {
       create_school_with_primary_admin: {
         Args: { _school_name: string }
         Returns: string
+      }
+      get_nep_stage: {
+        Args: { class_name: string }
+        Returns: Database["public"]["Enums"]["nep_learning_stage"]
       }
       get_school_effective_state: {
         Args: { _school_id: string }
@@ -825,7 +847,15 @@ export type Database = {
     }
     Enums: {
       app_role: "platform_admin" | "school_admin" | "teacher"
+      assessment_category: "formative" | "summative"
+      assessment_domain: "cognitive" | "affective" | "psychomotor"
       fee_status: "upcoming" | "due" | "overdue" | "paid"
+      grade_scale: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D" | "E"
+      nep_learning_stage:
+        | "foundational"
+        | "preparatory"
+        | "middle"
+        | "secondary"
       proof_rejection_reason:
         | "amount_mismatch"
         | "old_reused_screenshot"
@@ -840,6 +870,7 @@ export type Database = {
         | "trial_expired"
         | "subscription_active"
         | "restricted_mode"
+      subject_type: "academic" | "co_curricular" | "vocational"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -968,7 +999,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["platform_admin", "school_admin", "teacher"],
+      assessment_category: ["formative", "summative"],
+      assessment_domain: ["cognitive", "affective", "psychomotor"],
       fee_status: ["upcoming", "due", "overdue", "paid"],
+      grade_scale: ["A+", "A", "B+", "B", "C+", "C", "D", "E"],
+      nep_learning_stage: [
+        "foundational",
+        "preparatory",
+        "middle",
+        "secondary",
+      ],
       proof_rejection_reason: [
         "amount_mismatch",
         "old_reused_screenshot",
@@ -985,6 +1025,7 @@ export const Constants = {
         "subscription_active",
         "restricted_mode",
       ],
+      subject_type: ["academic", "co_curricular", "vocational"],
     },
   },
 } as const

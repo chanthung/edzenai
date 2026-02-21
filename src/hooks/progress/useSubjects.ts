@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useResolvedSchoolId } from './useResolvedSchoolId';
 import { useToast } from '@/hooks/use-toast';
 
+export type SubjectType = 'academic' | 'co_curricular' | 'vocational';
+
 export interface Subject {
   id: string;
   school_id: string;
@@ -11,6 +13,7 @@ export interface Subject {
   class_name: string | null;
   display_order: number | null;
   created_at: string | null;
+  subject_type: SubjectType;
 }
 
 export function useSubjects(className?: string) {
@@ -47,7 +50,7 @@ export function useCreateSubject() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (subject: { name: string; code?: string; class_name?: string; display_order?: number }) => {
+    mutationFn: async (subject: { name: string; code?: string; class_name?: string; display_order?: number; subject_type?: SubjectType }) => {
       if (!schoolId) throw new Error('No school found');
 
       const { data, error } = await supabase
@@ -58,6 +61,7 @@ export function useCreateSubject() {
           code: subject.code || null,
           class_name: subject.class_name || null,
           display_order: subject.display_order || 0,
+          subject_type: subject.subject_type || 'academic',
         })
         .select()
         .single();
@@ -85,7 +89,7 @@ export function useUpdateSubject() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; code?: string; class_name?: string; display_order?: number }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; code?: string; class_name?: string; display_order?: number; subject_type?: SubjectType }) => {
       const { data, error } = await supabase
         .from('subjects')
         .update(updates)
