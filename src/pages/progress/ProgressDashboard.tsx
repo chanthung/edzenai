@@ -13,20 +13,20 @@ import { SubjectComparisonChart } from "@/components/progress/charts/SubjectComp
 import { AIInsightsPanel } from "@/components/progress/AIInsightsPanel";
 import { useProgressAnalytics, type ProgressStatus } from "@/hooks/progress/useProgressAnalytics";
 import { useAIAnalysis, type StudentAnalysisData } from "@/hooks/progress/useAIAnalysis";
-import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
-import { useStudents } from "@/hooks/useStudents";
+import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
+import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { BarChart3, Users, TrendingUp, TrendingDown, Search, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function ProgressDashboard() {
-  const { data: academicYears = [] } = useAcademicYears();
-  const activeYear = useActiveAcademicYear();
+  const { data: academicYears = [] } = useResolvedAcademicYears();
+  const activeYear = useResolvedActiveAcademicYear();
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<ProgressStatus | "all" | "at_risk">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: students = [] } = useStudents();
+  const { data: students = [] } = useResolvedStudents();
   const uniqueClasses = [...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[];
 
   const effectiveYearId = selectedYearId || activeYear?.id || "";

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -30,11 +31,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useSubjects, useCreateSubject, useUpdateSubject, useDeleteSubject } from "@/hooks/progress/useSubjects";
+import { useSubjects, useCreateSubject, useUpdateSubject, useDeleteSubject, type SubjectType } from "@/hooks/progress/useSubjects";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+const SUBJECT_TYPES: { value: SubjectType; label: string }[] = [
+  { value: "academic", label: "Academic" },
+  { value: "co_curricular", label: "Co-Curricular" },
+  { value: "vocational", label: "Vocational" },
+];
+
+const SUBJECT_TYPE_COLORS: Record<SubjectType, string> = {
+  academic: "default",
+  co_curricular: "secondary",
+  vocational: "outline",
+};
 
 // Fetch unique class names from students visible to the current user (admin or teacher)
 function useUniqueClasses() {
@@ -61,27 +74,31 @@ export default function Subjects() {
   const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSubject, setEditingSubject] = useState<{ id: string; name: string; code: string; class_name: string } | null>(null);
+  const [editingSubject, setEditingSubject] = useState<{ id: string; name: string; code: string; class_name: string; subject_type: SubjectType } | null>(null);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [className, setClassName] = useState("");
+  const [subjectType, setSubjectType] = useState<SubjectType>("academic");
 
-  const handleOpenDialog = (subject?: { id: string; name: string; code: string | null; class_name: string | null }) => {
+  const handleOpenDialog = (subject?: { id: string; name: string; code: string | null; class_name: string | null; subject_type: SubjectType }) => {
     if (subject) {
       setEditingSubject({ 
         id: subject.id, 
         name: subject.name, 
         code: subject.code || "",
-        class_name: subject.class_name || ""
+        class_name: subject.class_name || "",
+        subject_type: subject.subject_type || "academic",
       });
       setName(subject.name);
       setCode(subject.code || "");
       setClassName(subject.class_name || "");
+      setSubjectType(subject.subject_type || "academic");
     } else {
       setEditingSubject(null);
       setName("");
       setCode("");
       setClassName("");
+      setSubjectType("academic");
     }
     setIsDialogOpen(true);
   };
@@ -105,19 +122,22 @@ export default function Subjects() {
           id: editingSubject.id, 
           name: name.trim(), 
           code: code.trim() || undefined,
-          class_name: className
+          class_name: className,
+          subject_type: subjectType,
         });
       } else {
         await createSubject.mutateAsync({ 
           name: name.trim(), 
           code: code.trim() || undefined,
-          class_name: className
+          class_name: className,
+          subject_type: subjectType,
         });
       }
       setIsDialogOpen(false);
       setName("");
       setCode("");
       setClassName("");
+      setSubjectType("academic");
       setEditingSubject(null);
     } catch (error) {
       // Error handled by mutation
@@ -134,11 +154,15 @@ export default function Subjects() {
     }
   };
 
+  const getTypeLabel = (type: SubjectType) => {
+    return SUBJECT_TYPES.find((t) => t.value === type)?.label || type;
+  };
+
   return (
     <ProgressLayout>
       <PageHeader
         title="Subjects"
-        description="Manage the subjects for student progress tracking"
+        description="Manage academic, co-curricular, and vocational subjects (NEP 2020)"
       />
 
       <div className="mt-6">
@@ -161,6 +185,21 @@ export default function Subjects() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label>Subject Type *</Label>
+                    <Select value={subjectType} onValueChange={(v) => setSubjectType(v as SubjectType)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SUBJECT_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid gap-2">
                     <Label htmlFor="class">Class *</Label>
                     <Select value={className} onValueChange={setClassName}>
@@ -186,7 +225,7 @@ export default function Subjects() {
                       id="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g., Mathematics"
+                      placeholder={subjectType === "academic" ? "e.g., Mathematics" : subjectType === "co_curricular" ? "e.g., Basketball" : "e.g., Coding"}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -241,6 +280,7 @@ export default function Subjects() {
                     <TableHead>Class</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Code</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -250,6 +290,11 @@ export default function Subjects() {
                       <TableCell className="text-muted-foreground">{subject.class_name || "—"}</TableCell>
                       <TableCell className="font-medium">{subject.name}</TableCell>
                       <TableCell className="text-muted-foreground">{subject.code || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={SUBJECT_TYPE_COLORS[subject.subject_type] as any}>
+                          {getTypeLabel(subject.subject_type)}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Button

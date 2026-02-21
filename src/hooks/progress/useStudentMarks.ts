@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useResolvedSchoolId } from './useResolvedSchoolId';
 import { useToast } from '@/hooks/use-toast';
 
+export type GradeScale = 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D' | 'E';
+
 export interface StudentMark {
   id: string;
   student_id: string;
@@ -12,6 +14,9 @@ export interface StudentMark {
   max_marks: number;
   remarks: string | null;
   created_at: string | null;
+  grade: GradeScale | null;
+  qualitative_feedback: string | null;
+  is_grade_based: boolean;
 }
 
 export interface StudentMarkWithDetails extends StudentMark {

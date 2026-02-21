@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useResolvedSchoolId } from './useResolvedSchoolId';
 import { useToast } from '@/hooks/use-toast';
 
+export type AssessmentDomain = 'cognitive' | 'affective' | 'psychomotor';
+export type AssessmentCategory = 'formative' | 'summative';
+
 export interface Assessment {
   id: string;
   school_id: string;
@@ -12,6 +15,8 @@ export interface Assessment {
   assessment_date: string | null;
   class_name: string | null;
   created_at: string | null;
+  assessment_domain: AssessmentDomain;
+  assessment_category: AssessmentCategory;
 }
 
 export function useAssessments(academicYearId?: string, className?: string) {
@@ -56,6 +61,8 @@ export function useCreateAssessment() {
       assessment_type: string;
       assessment_date?: string;
       class_name?: string;
+      assessment_domain?: AssessmentDomain;
+      assessment_category?: AssessmentCategory;
     }) => {
       if (!schoolId) throw new Error('No school found');
 
@@ -68,6 +75,8 @@ export function useCreateAssessment() {
           assessment_type: assessment.assessment_type,
           assessment_date: assessment.assessment_date || null,
           class_name: assessment.class_name || null,
+          assessment_domain: assessment.assessment_domain || 'cognitive',
+          assessment_category: assessment.assessment_category || 'summative',
         })
         .select()
         .single();
