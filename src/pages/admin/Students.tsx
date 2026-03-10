@@ -733,7 +733,7 @@ export default function Students() {
                           asChild
                           title="Open parent view"
                         >
-                          <Link to={`/view/${student.access_token}`} target="_blank">
+                          <Link to={`/view/${student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '')}/${student.access_token}`} target="_blank">
                             <ExternalLink className="h-4 w-4" />
                           </Link>
                         </Button>

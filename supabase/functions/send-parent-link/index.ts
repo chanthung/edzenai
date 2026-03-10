@@ -99,7 +99,8 @@ Deno.serve(async (req) => {
     // Build the parent link URL
     const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '');
     // Use the app's published URL or preview URL
-    const parentLink = `https://easykiwi.lovable.app/view/${student.access_token}`;
+    const firstName = student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const parentLink = `https://easykiwi.lovable.app/view/${firstName}/${student.access_token}`;
 
     // Get n8n webhook URL from secrets
     const n8nWebhookUrl = Deno.env.get('N8N_PARENT_LINK_WEBHOOK_URL');

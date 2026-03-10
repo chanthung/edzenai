@@ -9,7 +9,7 @@ import { ParentFeesTab } from "@/components/parent/ParentFeesTab";
 import { ParentProgressTab } from "@/components/parent/ParentProgressTab";
 
 export default function ParentView() {
-  const { token } = useParams<{ token: string }>();
+  const { token } = useParams<{ name: string; token: string }>();
   const { data, isLoading, error } = useParentView(token);
   const queryClient = useQueryClient();
 
