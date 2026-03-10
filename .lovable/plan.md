@@ -1,21 +1,52 @@
+# NEP 2020 Compliance — Implementation Status
 
+## ✅ Implemented (Phase 1)
 
-# Add Student First Name to Parent View URL
+### Gap 1: 5+3+3+4 Stage Structure
+- Added `get_nep_stage()` database function to auto-derive NEP stage from class_name
+- Created `src/lib/nep-stages.ts` client-side utility mirroring the DB function
+- NEP stage displayed on Student Progress page header
+- NEP stage passed to AI analysis for stage-aware insights
 
-## Problem
-When parents have siblings at the same school, all parent links look identical (e.g., `/view/abc-123-uuid`). They can't tell which link belongs to which child.
+### Gap 2: Multi-Dimensional Assessment
+- Added `assessment_domain` enum (cognitive / affective / psychomotor) to `assessments` table
+- Added `assessment_category` enum (formative / summative) to `assessments` table
+- Added `grade`, `qualitative_feedback`, `is_grade_based` fields to `student_marks` table
+- Assessment creation form updated with Domain and Category selectors
+- Assessment list table shows Domain and Category badges
+- New assessment types added: Project, Portfolio, Observation
 
-## Solution
-Change the URL pattern from `/view/:token` to `/view/:name/:token`, where `:name` is a URL-friendly slug of the student's first name. The name is cosmetic only -- the token remains the sole identifier for data lookup.
+### Gap 5: Co-Curricular & Vocational Tracking
+- Added `subject_type` enum (academic / co_curricular / vocational) to `subjects` table
+- Subjects page updated with Subject Type selector and badge display
+- Subject type passed to AI analysis for holistic insights
 
-Example: `/view/rahul/a1b2c3d4-...` vs `/view/priya/e5f6g7h8-...`
+### AI Edge Function Updates
+- Prompts updated to reference NEP 2020 framework
+- Analysis now considers co-curricular and vocational performance
+- PTM summaries now cover holistic development across domains
+- Domain breakdown data accepted in analysis requests
 
-## Changes
+### Bug Fix: Teacher Portal Access
+- ProgressDashboard and StudentProgress now use resolved hooks (useResolvedAcademicYears, useResolvedStudents) instead of admin-only hooks
 
-1. **Route** (`src/App.tsx`): Update to `/view/:name/:token`
-2. **ParentView page** (`src/pages/parent/ParentView.tsx`): Update `useParams` to extract both `name` and `token` (only `token` is used for data)
-3. **Edge function** (`supabase/functions/send-parent-link/index.ts`): Extract first name from `student.name`, slugify it (lowercase, hyphenated), and include in the URL
-4. **Students page share button**: Update any frontend code that constructs the parent link to include the student's first name slug
+---
 
-This is purely a URL cosmetic change -- no database modifications needed. The `name` param is ignored by the data layer; the `token` alone drives authentication.
+## ⏳ Not Yet Implemented
 
+### Gap 3: Competency-Based Learning Outcomes
+- Needs `competencies` table linking subjects to specific skills
+- Marks need to be tagged against competencies
+
+### Gap 4: Multilingual Support
+- i18n framework needed for Hindi and regional languages
+
+### Gap 6: Student Subject Choice Flexibility
+- Per-student subject selection mechanism
+
+### Gap 7: Dropout & Attendance Tracking
+- Attendance records table
+- Dropout status tracking on students
+
+### Gap 8: Teacher CPD Tracking
+- Training records and CPD hours tracking module

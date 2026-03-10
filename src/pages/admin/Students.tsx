@@ -229,7 +229,8 @@ export default function Students() {
   };
 
   const copyParentLink = (student: Student) => {
-    const link = `${window.location.origin}/view/${student.access_token}`;
+    const firstName = student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const link = `${window.location.origin}/view/${firstName}/${student.access_token}`;
     navigator.clipboard.writeText(link);
     toast.success("Parent link copied!", { description: "Share this link with the parent" });
   };
@@ -732,7 +733,7 @@ export default function Students() {
                           asChild
                           title="Open parent view"
                         >
-                          <Link to={`/view/${student.access_token}`} target="_blank">
+                          <Link to={`/view/${student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '')}/${student.access_token}`} target="_blank">
                             <ExternalLink className="h-4 w-4" />
                           </Link>
                         </Button>

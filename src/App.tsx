@@ -40,7 +40,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             
             {/* Parent view - unique link access */}
-            <Route path="/view/:token" element={<ParentView />} />
+            <Route path="/view/:name/:token" element={<ParentView />} />
             
             {/* Platform Admin routes */}
             <Route path="/platform" element={<PlatformDashboard />} />
