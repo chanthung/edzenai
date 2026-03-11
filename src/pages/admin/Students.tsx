@@ -32,6 +32,7 @@ import { StudentFeeManager } from "@/components/admin/StudentFeeManager";
 import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
 import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
+import { SiblingIndicator } from "@/components/admin/SiblingIndicator";
 import { toast } from "sonner";
 import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, Send } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -614,7 +615,10 @@ export default function Students() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{student.name}</p>
+                        <div className="flex items-center">
+                          <p className="font-medium">{student.name}</p>
+                          <SiblingIndicator student={student} allStudents={students || []} />
+                        </div>
                         {student.roll_number && (
                           <p className="text-sm text-muted-foreground">Roll: {student.roll_number}</p>
                         )}
