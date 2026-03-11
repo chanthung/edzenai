@@ -615,7 +615,10 @@ export default function Students() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{student.name}</p>
+                        <div className="flex items-center">
+                          <p className="font-medium">{student.name}</p>
+                          <SiblingIndicator student={student} allStudents={students || []} />
+                        </div>
                         {student.roll_number && (
                           <p className="text-sm text-muted-foreground">Roll: {student.roll_number}</p>
                         )}
