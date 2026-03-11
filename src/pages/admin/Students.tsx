@@ -32,6 +32,7 @@ import { StudentFeeManager } from "@/components/admin/StudentFeeManager";
 import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
 import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
+import { SiblingIndicator } from "@/components/admin/SiblingIndicator";
 import { toast } from "sonner";
 import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, Send } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
