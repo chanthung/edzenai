@@ -42,6 +42,10 @@ export default function Settings() {
   const [isUploadingQr, setIsUploadingQr] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Assessment template editing state
+  const [editingTemplate, setEditingTemplate] = useState<AssessmentTemplate | null | undefined>(undefined);
+  // undefined = list view, null = creating new, AssessmentTemplate = editing
+
   useEffect(() => {
     if (school) {
       setFormData({
