@@ -186,7 +186,14 @@ export default function MarksEntry() {
     return results;
   }, [componentMarksInput, templateComponents, gradeMappings, filteredStudents, hasTemplate]);
 
-  const handleComponentChange = (studentId: string, componentId: string, value: string) => {
+  const handleComponentChange = (studentId: string, componentId: string, value: string, maxMarks: number) => {
+    const numVal = parseFloat(value);
+    if (value !== "" && !isNaN(numVal) && numVal > maxMarks) {
+      value = maxMarks.toString();
+    }
+    if (value !== "" && !isNaN(numVal) && numVal < 0) {
+      value = "0";
+    }
     setComponentMarksInput(prev => ({
       ...prev,
       [studentId]: { ...(prev[studentId] || {}), [componentId]: value },
@@ -194,6 +201,12 @@ export default function MarksEntry() {
   };
 
   const handleLegacyChange = (studentId: string, field: "marksObtained" | "maxMarks", value: string) => {
+    const currentMax = parseFloat(legacyMarks[studentId]?.maxMarks || defaultMaxMarks);
+    if (field === "marksObtained") {
+      const numVal = parseFloat(value);
+      if (value !== "" && !isNaN(numVal) && numVal > currentMax) value = currentMax.toString();
+      if (value !== "" && !isNaN(numVal) && numVal < 0) value = "0";
+    }
     setLegacyMarks(prev => ({
       ...prev,
       [studentId]: {
@@ -409,7 +422,7 @@ export default function MarksEntry() {
                               <Input
                                 type="number"
                                 value={componentMarksInput[student.id]?.[c.id] ?? ""}
-                                onChange={(e) => handleComponentChange(student.id, c.id, e.target.value)}
+                                onChange={(e) => handleComponentChange(student.id, c.id, e.target.value, Number(c.max_marks))}
                                 placeholder="0"
                                 min="0"
                                 max={Number(c.max_marks)}
