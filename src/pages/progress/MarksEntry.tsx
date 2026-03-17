@@ -201,6 +201,12 @@ export default function MarksEntry() {
   };
 
   const handleLegacyChange = (studentId: string, field: "marksObtained" | "maxMarks", value: string) => {
+    const currentMax = parseFloat(legacyMarks[studentId]?.maxMarks || defaultMaxMarks);
+    if (field === "marksObtained") {
+      const numVal = parseFloat(value);
+      if (value !== "" && !isNaN(numVal) && numVal > currentMax) value = currentMax.toString();
+      if (value !== "" && !isNaN(numVal) && numVal < 0) value = "0";
+    }
     setLegacyMarks(prev => ({
       ...prev,
       [studentId]: {
