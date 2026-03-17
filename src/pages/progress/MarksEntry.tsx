@@ -115,6 +115,7 @@ export default function MarksEntry() {
     setSelectedSubjectId("");
     setLegacyMarks({});
     setComponentMarksInput({});
+    setValidationErrors({});
   }, [selectedClass]);
 
   useEffect(() => {
