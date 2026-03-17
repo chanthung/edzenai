@@ -81,6 +81,32 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [allClasses, setAllClasses] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const autoSyncRan = useRef(false);
+
+  // Auto-sync: create missing assessments for all existing assignments on load
+  useEffect(() => {
+    if (autoSyncRan.current || !assignments?.length || !school || !activeYear) return;
+    autoSyncRan.current = true;
+    (async () => {
+      for (const a of assignments) {
+        await createAssessmentsFromTerms(a.template_id, a.class_name, a.academic_year_id, school.id);
+      }
+    })();
+  }, [assignments, school, activeYear]);
+
+  const handleSyncOne = async (a: { template_id: string; class_name: string; academic_year_id: string; id: string }) => {
+    if (!school) return;
+    setSyncingId(a.id);
+    try {
+      await createAssessmentsFromTerms(a.template_id, a.class_name, a.academic_year_id, school.id);
+      toast.success(`Assessments synced for ${a.class_name}`);
+    } catch (e: any) {
+      toast.error("Sync failed", { description: e.message });
+    } finally {
+      setSyncingId(null);
+    }
+  };
 
   // Get unique class names from students
   const classNames = [...new Set(students?.map(s => s.class_name).filter(Boolean) as string[])].sort();
