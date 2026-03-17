@@ -298,6 +298,7 @@ export default function Subjects() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
+                          <CompetencyManager subjectId={subject.id} subjectName={subject.name} />
                           <Button
                             variant="ghost"
                             size="icon"
