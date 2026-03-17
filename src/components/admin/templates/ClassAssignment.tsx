@@ -12,6 +12,8 @@ import {
 } from "@/hooks/progress/useAssessmentTemplates";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useStudents } from "@/hooks/useStudents";
+import { useSchool } from "@/hooks/useSchool";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link2, Trash2, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,10 +23,55 @@ interface ClassAssignmentProps {
   isRestricted: boolean;
 }
 
+async function createAssessmentsFromTerms(
+  templateId: string,
+  className: string,
+  academicYearId: string,
+  schoolId: string
+) {
+  // Fetch template terms
+  const { data: terms, error: termsError } = await supabase
+    .from("template_terms")
+    .select("*")
+    .eq("template_id", templateId)
+    .order("display_order");
+
+  if (termsError || !terms || terms.length === 0) return;
+
+  // Fetch existing assessments for this class+year to avoid duplicates
+  const { data: existing } = await supabase
+    .from("assessments")
+    .select("name")
+    .eq("school_id", schoolId)
+    .eq("academic_year_id", academicYearId)
+    .eq("class_name", className)
+    .eq("assessment_type", "term_exam");
+
+  const existingNames = new Set(existing?.map((a) => a.name) ?? []);
+
+  const newAssessments = terms
+    .filter((t) => !existingNames.has(t.name))
+    .map((t) => ({
+      name: t.name,
+      assessment_type: "term_exam",
+      class_name: className,
+      academic_year_id: academicYearId,
+      school_id: schoolId,
+      assessment_domain: "cognitive" as const,
+      assessment_category: "summative" as const,
+    }));
+
+  if (newAssessments.length > 0) {
+    const { error } = await supabase.from("assessments").insert(newAssessments);
+    if (error) console.error("Failed to auto-create assessments:", error);
+  }
+}
+
 export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
   const { data: academicYears, isLoading: loadingYears } = useAcademicYears();
   const { data: templates } = useAssessmentTemplates();
   const { data: students } = useStudents();
+  const { data: school } = useSchool();
 
   const activeYear = academicYears?.find(y => y.is_active);
   const { data: assignments, isLoading: loadingAssignments } = useClassTemplateAssignments(activeYear?.id ?? null);
@@ -39,7 +86,7 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
   const classNames = [...new Set(students?.map(s => s.class_name).filter(Boolean) as string[])].sort();
 
   const handleAssign = async () => {
-    if ((!selectedClass && !allClasses) || !selectedTemplate || !activeYear) return;
+    if ((!selectedClass && !allClasses) || !selectedTemplate || !activeYear || !school) return;
     const classesToAssign = allClasses ? classNames : [selectedClass];
     try {
       for (const cn of classesToAssign) {
@@ -48,6 +95,8 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
           className: cn,
           academicYearId: activeYear.id,
         });
+        // Auto-create assessments from template terms
+        await createAssessmentsFromTerms(selectedTemplate, cn, activeYear.id, school.id);
       }
       toast.success(allClasses ? `Template assigned to all ${classesToAssign.length} classes` : `Template assigned to ${selectedClass}`);
       setSelectedClass("");
