@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import type { ReportCardData } from "@/hooks/progress/useReportCard";
 import { getNepStageLabel } from "@/lib/nep-stages";
+import { useStudentCompetencyScores, type MasteryLevel } from "@/hooks/progress/useCompetencyScores";
+import { Badge } from "@/components/ui/badge";
+import { useMemo } from "react";
 
 interface ReportCardViewProps {
   data: ReportCardData;
