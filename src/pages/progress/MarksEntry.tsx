@@ -29,6 +29,7 @@ import { useComponentMarks } from "@/hooks/progress/useComponentMarks";
 import { computeStudentResult } from "@/lib/marks-engine";
 import { PenLine, Save, Loader2, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { CompetencyScoring } from "@/components/progress/CompetencyScoring";
 
 // Per-student, per-component raw mark input
 type ComponentMarksMap = Record<string, Record<string, string>>; // studentId → componentId → value
