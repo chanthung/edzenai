@@ -14,6 +14,8 @@ import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useStudents } from "@/hooks/useStudents";
 import { toast } from "sonner";
 import { Link2, Trash2, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface ClassAssignmentProps {
   isRestricted: boolean;
