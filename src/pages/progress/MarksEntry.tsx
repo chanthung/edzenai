@@ -56,6 +56,7 @@ export default function MarksEntry() {
 
   // Template mode state
   const [componentMarksInput, setComponentMarksInput] = useState<ComponentMarksMap>({});
+  const [validationErrors, setValidationErrors] = useState<ValidationErrorsMap>({});
 
   // Fetch template assignment for selected class + year
   const { data: classAssignments = [] } = useClassTemplateAssignments(effectiveYearId || null);
