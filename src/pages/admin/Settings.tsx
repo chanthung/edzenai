@@ -6,13 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSchool, useUpdateSchool } from "@/hooks/useSchool";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton, RestrictedOverlay } from "@/components/admin/RestrictedOverlay";
+import { TemplateList } from "@/components/admin/templates/TemplateList";
+import { TemplateEditor } from "@/components/admin/templates/TemplateEditor";
+import { ClassAssignment } from "@/components/admin/templates/ClassAssignment";
+import type { AssessmentTemplate } from "@/hooks/progress/useAssessmentTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2 } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList } from "lucide-react";
 
 export default function Settings() {
   const { data: school, isLoading } = useSchool();
