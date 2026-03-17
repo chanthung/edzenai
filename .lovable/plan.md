@@ -1,52 +1,76 @@
-# NEP 2020 Compliance — Implementation Status
 
-## ✅ Implemented (Phase 1)
 
-### Gap 1: 5+3+3+4 Stage Structure
-- Added `get_nep_stage()` database function to auto-derive NEP stage from class_name
-- Created `src/lib/nep-stages.ts` client-side utility mirroring the DB function
-- NEP stage displayed on Student Progress page header
-- NEP stage passed to AI analysis for stage-aware insights
+# Competency-Based Learning Outcomes (Gap 3)
 
-### Gap 2: Multi-Dimensional Assessment
-- Added `assessment_domain` enum (cognitive / affective / psychomotor) to `assessments` table
-- Added `assessment_category` enum (formative / summative) to `assessments` table
-- Added `grade`, `qualitative_feedback`, `is_grade_based` fields to `student_marks` table
-- Assessment creation form updated with Domain and Category selectors
-- Assessment list table shows Domain and Category badges
-- New assessment types added: Project, Portfolio, Observation
+## What We're Building
 
-### Gap 5: Co-Curricular & Vocational Tracking
-- Added `subject_type` enum (academic / co_curricular / vocational) to `subjects` table
-- Subjects page updated with Subject Type selector and badge display
-- Subject type passed to AI analysis for holistic insights
+A system where each subject has defined competencies (skills/learning outcomes), and student marks can be tracked against those competencies -- enabling teachers to see which specific skills a student has mastered vs. needs work on.
 
-### AI Edge Function Updates
-- Prompts updated to reference NEP 2020 framework
-- Analysis now considers co-curricular and vocational performance
-- PTM summaries now cover holistic development across domains
-- Domain breakdown data accepted in analysis requests
+## Database Changes
 
-### Bug Fix: Teacher Portal Access
-- ProgressDashboard and StudentProgress now use resolved hooks (useResolvedAcademicYears, useResolvedStudents) instead of admin-only hooks
+### New table: `competencies`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| subject_id | uuid | FK to subjects |
+| school_id | uuid | For RLS |
+| name | text | e.g. "Number Sense", "Reading Comprehension" |
+| description | text | Optional detail |
+| display_order | integer | Sorting |
+| created_at | timestamptz | Default now() |
 
----
+### New table: `student_competency_scores`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| student_id | uuid | FK to students |
+| competency_id | uuid | FK to competencies |
+| assessment_id | uuid | FK to assessments |
+| mastery_level | enum | `beginning`, `developing`, `proficient`, `advanced` |
+| score | numeric | Optional numeric score |
+| remarks | text | Teacher notes |
+| created_at | timestamptz | Default now() |
 
-## ⏳ Not Yet Implemented
+### New enum: `mastery_level`
+Values: `beginning`, `developing`, `proficient`, `advanced`
 
-### Gap 3: Competency-Based Learning Outcomes
-- Needs `competencies` table linking subjects to specific skills
-- Marks need to be tagged against competencies
+### RLS Policies
+- Same pattern as subjects/student_marks: admin full access via `get_user_school_ids()`, teacher access via `get_teacher_school_ids()`, public SELECT for parent view.
 
-### Gap 4: Multilingual Support
-- i18n framework needed for Hindi and regional languages
+## UI Changes
 
-### Gap 6: Student Subject Choice Flexibility
-- Per-student subject selection mechanism
+### 1. Competency Management (on Subjects page)
+- Add a "Manage Competencies" button next to each subject
+- Opens a dialog/panel to add/edit/delete competencies for that subject
+- Simple list with name, description, drag-to-reorder
 
-### Gap 7: Dropout & Attendance Tracking
-- Attendance records table
-- Dropout status tracking on students
+### 2. Competency Scoring (on Marks Entry page)
+- After entering marks for a subject, show a "Competency Assessment" section
+- For each competency of the selected subject, show a mastery level selector (Beginning / Developing / Proficient / Advanced) per student
+- Optional remarks field
 
-### Gap 8: Teacher CPD Tracking
-- Training records and CPD hours tracking module
+### 3. Competency View (on Student Progress page)
+- New "Competencies" tab/section showing mastery levels across subjects
+- Color-coded badges: Beginning (red), Developing (amber), Proficient (green), Advanced (blue)
+- Radar/heatmap showing competency mastery across subjects
+
+### 4. Report Card Integration
+- Add competency mastery summary to existing report card view
+- Show per-subject competency breakdown with mastery level indicators
+
+## Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| Migration SQL | Create enum, tables, RLS policies |
+| `src/hooks/progress/useCompetencies.ts` | New - CRUD for competencies |
+| `src/hooks/progress/useCompetencyScores.ts` | New - CRUD for student scores |
+| `src/components/progress/CompetencyManager.tsx` | New - manage competencies per subject |
+| `src/components/progress/CompetencyScoring.tsx` | New - mastery level entry per student |
+| `src/components/progress/CompetencyView.tsx` | New - student competency overview |
+| `src/pages/progress/Subjects.tsx` | Add "Manage Competencies" button |
+| `src/pages/progress/MarksEntry.tsx` | Add competency scoring section |
+| `src/pages/progress/StudentProgress.tsx` | Add competency tab |
+| `src/components/progress/ReportCardView.tsx` | Add competency section |
+| `supabase/functions/analyze-progress/index.ts` | Include competency data in AI prompts |
+
