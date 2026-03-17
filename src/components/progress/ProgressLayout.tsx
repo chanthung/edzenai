@@ -29,6 +29,7 @@ const navItems = [
   { href: "/progress/subjects", label: "Subjects", icon: BookOpen },
   { href: "/progress/assessments", label: "Assessments", icon: ClipboardList },
   { href: "/progress/marks", label: "Marks Entry", icon: PenLine },
+  { href: "/progress/report-cards", label: "Report Cards", icon: FileText },
 ];
 
 export function ProgressLayout({ children }: ProgressLayoutProps) {
