@@ -282,6 +282,11 @@ export default function StudentProgress() {
           />
         </TabsContent>
 
+
+        <TabsContent value="competencies" className="mt-4">
+          {studentId && <CompetencyView studentId={studentId} />}
+        </TabsContent>
+
         <TabsContent value="subjects" className="mt-4">
           <LearningGapsCard 
             subjects={subjectBreakdown}

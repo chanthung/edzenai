@@ -533,6 +533,15 @@ export default function MarksEntry() {
             )}
           </CardContent>
         </Card>
+
+        {/* Competency Scoring Section */}
+        {selectedSubjectId && selectedAssessmentId && filteredStudents.length > 0 && (
+          <CompetencyScoring
+            subjectId={selectedSubjectId}
+            assessmentId={selectedAssessmentId}
+            students={filteredStudents}
+          />
+        )}
       </div>
     </ProgressLayout>
   );
