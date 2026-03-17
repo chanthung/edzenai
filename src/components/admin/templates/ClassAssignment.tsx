@@ -201,9 +201,14 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
                   <span className="text-sm">→</span>
                   <span className="text-sm font-medium">{templateMap.get(a.template_id)?.name ?? "Unknown"}</span>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => handleRemove(a.id)} disabled={isRestricted} className="text-destructive h-7 w-7">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => handleSyncOne(a)} disabled={isRestricted || syncingId === a.id} className="h-7 w-7" title="Sync assessments">
+                    <RefreshCw className={`h-3.5 w-3.5 ${syncingId === a.id ? 'animate-spin' : ''}`} />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleRemove(a.id)} disabled={isRestricted} className="text-destructive h-7 w-7">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
