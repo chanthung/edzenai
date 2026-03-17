@@ -14,6 +14,8 @@ import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useStudents } from "@/hooks/useStudents";
 import { toast } from "sonner";
 import { Link2, Trash2, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface ClassAssignmentProps {
   isRestricted: boolean;
@@ -31,21 +33,26 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
 
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [allClasses, setAllClasses] = useState(false);
 
   // Get unique class names from students
   const classNames = [...new Set(students?.map(s => s.class_name).filter(Boolean) as string[])].sort();
 
   const handleAssign = async () => {
-    if (!selectedClass || !selectedTemplate || !activeYear) return;
+    if ((!selectedClass && !allClasses) || !selectedTemplate || !activeYear) return;
+    const classesToAssign = allClasses ? classNames : [selectedClass];
     try {
-      await assignTemplate.mutateAsync({
-        templateId: selectedTemplate,
-        className: selectedClass,
-        academicYearId: activeYear.id,
-      });
-      toast.success(`Template assigned to ${selectedClass}`);
+      for (const cn of classesToAssign) {
+        await assignTemplate.mutateAsync({
+          templateId: selectedTemplate,
+          className: cn,
+          academicYearId: activeYear.id,
+        });
+      }
+      toast.success(allClasses ? `Template assigned to all ${classesToAssign.length} classes` : `Template assigned to ${selectedClass}`);
       setSelectedClass("");
       setSelectedTemplate("");
+      setAllClasses(false);
     } catch (e: any) {
       toast.error("Failed to assign template", { description: e.message });
     }
@@ -84,20 +91,26 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Assignment form */}
+        <div className="flex items-center gap-2 mb-2">
+          <Checkbox id="all-classes" checked={allClasses} onCheckedChange={(v) => { setAllClasses(!!v); if (v) setSelectedClass(""); }} disabled={isRestricted} />
+          <Label htmlFor="all-classes" className="text-sm font-medium cursor-pointer">Assign to all classes</Label>
+        </div>
         <div className="flex gap-2 flex-wrap">
-          <Select value={selectedClass} onValueChange={setSelectedClass} disabled={isRestricted}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="Class" /></SelectTrigger>
-            <SelectContent>
-              {classNames.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          {!allClasses && (
+            <Select value={selectedClass} onValueChange={setSelectedClass} disabled={isRestricted}>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Class" /></SelectTrigger>
+              <SelectContent>
+                {classNames.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={selectedTemplate} onValueChange={setSelectedTemplate} disabled={isRestricted}>
             <SelectTrigger className="w-52"><SelectValue placeholder="Template" /></SelectTrigger>
             <SelectContent>
               {templates?.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button onClick={handleAssign} disabled={!selectedClass || !selectedTemplate || assignTemplate.isPending || isRestricted} size="sm">
+          <Button onClick={handleAssign} disabled={(!selectedClass && !allClasses) || !selectedTemplate || assignTemplate.isPending || isRestricted} size="sm">
             {assignTemplate.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />}
             Assign
           </Button>
