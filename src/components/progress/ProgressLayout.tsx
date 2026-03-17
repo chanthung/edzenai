@@ -13,6 +13,7 @@ import {
   BookOpen, 
   ClipboardList, 
   PenLine,
+  FileText,
   LogOut,
   Menu,
   X,
