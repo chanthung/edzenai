@@ -57,6 +57,20 @@ export function ReportCardView({ data }: ReportCardViewProps) {
   };
 
   const nepStage = getNepStageLabel(data.student.className);
+  const { data: compScores = [] } = useStudentCompetencyScores(data.student.id);
+
+  const competencyGroups = useMemo(() => {
+    const map = new Map<string, { subjectName: string; items: Array<{ name: string; level: MasteryLevel }> }>();
+    compScores.forEach((s: any) => {
+      const subName = s.competencies?.subjects?.name || 'Unknown';
+      if (!map.has(subName)) map.set(subName, { subjectName: subName, items: [] });
+      const existing = map.get(subName)!.items.find(i => i.name === s.competencies?.name);
+      if (!existing) {
+        map.get(subName)!.items.push({ name: s.competencies?.name || '', level: s.mastery_level as MasteryLevel });
+      }
+    });
+    return Array.from(map.values());
+  }, [compScores]);
 
   return (
     <div>
