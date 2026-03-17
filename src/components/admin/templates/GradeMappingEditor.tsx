@@ -34,8 +34,16 @@ export function GradeMappingEditor({ templateId }: { templateId: string }) {
     if (existing && existing.length > 0) {
       setMappings(existing.map(m => ({ ...m, key: m.id })));
     } else if (existing && existing.length === 0) {
-      // Pre-fill with defaults
-      setMappings(DEFAULT_MAPPINGS.map(m => ({ ...m, key: crypto.randomUUID() })));
+      // Pre-fill with defaults and auto-save them
+      const defaults = DEFAULT_MAPPINGS.map(m => ({ ...m, key: crypto.randomUUID() }));
+      setMappings(defaults);
+      // Auto-save defaults so grade lookups work immediately
+      saveMappings.mutate({
+        templateId,
+        mappings: DEFAULT_MAPPINGS.map(({ min_percentage, max_percentage, grade_label, display_order }) => ({
+          min_percentage, max_percentage, grade_label, display_order,
+        })),
+      });
     }
   }, [existing]);
 
