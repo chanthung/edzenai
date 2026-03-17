@@ -266,6 +266,7 @@ export default function StudentProgress() {
       <Tabs defaultValue="analysis" className="mt-6">
         <TabsList>
           <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
+          <TabsTrigger value="competencies">Competencies</TabsTrigger>
           <TabsTrigger value="subjects">Subject Details</TabsTrigger>
           <TabsTrigger value="ptm">PTM Summary</TabsTrigger>
           <TabsTrigger value="history">Assessment History</TabsTrigger>
