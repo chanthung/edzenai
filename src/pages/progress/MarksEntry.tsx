@@ -186,7 +186,14 @@ export default function MarksEntry() {
     return results;
   }, [componentMarksInput, templateComponents, gradeMappings, filteredStudents, hasTemplate]);
 
-  const handleComponentChange = (studentId: string, componentId: string, value: string) => {
+  const handleComponentChange = (studentId: string, componentId: string, value: string, maxMarks: number) => {
+    const numVal = parseFloat(value);
+    if (value !== "" && !isNaN(numVal) && numVal > maxMarks) {
+      value = maxMarks.toString();
+    }
+    if (value !== "" && !isNaN(numVal) && numVal < 0) {
+      value = "0";
+    }
     setComponentMarksInput(prev => ({
       ...prev,
       [studentId]: { ...(prev[studentId] || {}), [componentId]: value },
