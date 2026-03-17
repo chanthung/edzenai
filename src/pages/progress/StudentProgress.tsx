@@ -12,6 +12,7 @@ import { SubjectRadarChart } from "@/components/progress/charts/SubjectRadarChar
 import { SubjectComparisonChart } from "@/components/progress/charts/SubjectComparisonChart";
 import { AIInsightsPanel } from "@/components/progress/AIInsightsPanel";
 import { LearningGapsCard } from "@/components/progress/LearningGapsCard";
+import { CompetencyView } from "@/components/progress/CompetencyView";
 import { PTMSummaryCard } from "@/components/progress/PTMSummaryCard";
 import { useStudentMarksByStudent } from "@/hooks/progress/useStudentMarks";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
