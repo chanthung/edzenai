@@ -15,7 +15,7 @@ import { useStudents } from "@/hooks/useStudents";
 import { useSchool } from "@/hooks/useSchool";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Link2, Trash2, Loader2 } from "lucide-react";
+import { Link2, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
