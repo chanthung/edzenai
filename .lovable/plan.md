@@ -1,52 +1,43 @@
-# NEP 2020 Compliance — Implementation Status
 
-## ✅ Implemented (Phase 1)
 
-### Gap 1: 5+3+3+4 Stage Structure
-- Added `get_nep_stage()` database function to auto-derive NEP stage from class_name
-- Created `src/lib/nep-stages.ts` client-side utility mirroring the DB function
-- NEP stage displayed on Student Progress page header
-- NEP stage passed to AI analysis for stage-aware insights
+## Plan: Auto-Create Assessments from Template Terms (Option A)
 
-### Gap 2: Multi-Dimensional Assessment
-- Added `assessment_domain` enum (cognitive / affective / psychomotor) to `assessments` table
-- Added `assessment_category` enum (formative / summative) to `assessments` table
-- Added `grade`, `qualitative_feedback`, `is_grade_based` fields to `student_marks` table
-- Assessment creation form updated with Domain and Category selectors
-- Assessment list table shows Domain and Category badges
-- New assessment types added: Project, Portfolio, Observation
+### Problem
+The Assessments page has manual creation with Type/Domain/Category dropdowns, but the Marks Entry page only shows manually-created assessments (e.g., "End Term Feb", "Mid Term"). Template terms (e.g., "1st Assessment", "2nd Assessment", "3rd Assessment") defined in the template are not reflected as selectable assessments.
 
-### Gap 5: Co-Curricular & Vocational Tracking
-- Added `subject_type` enum (academic / co_curricular / vocational) to `subjects` table
-- Subjects page updated with Subject Type selector and badge display
-- Subject type passed to AI analysis for holistic insights
+### Recommended Approach: Option A — Auto-create assessments from template terms
 
-### AI Edge Function Updates
-- Prompts updated to reference NEP 2020 framework
-- Analysis now considers co-curricular and vocational performance
-- PTM summaries now cover holistic development across domains
-- Domain breakdown data accepted in analysis requests
+This is the best fit because:
+- The `assessments` table already has the right fields (type, domain, category, class_name)
+- Marks Entry already queries `assessments` — no changes needed there
+- Template terms become real assessments, so everything stays consistent
+- Users can still manually create additional assessments if needed
 
-### Bug Fix: Teacher Portal Access
-- ProgressDashboard and StudentProgress now use resolved hooks (useResolvedAcademicYears, useResolvedStudents) instead of admin-only hooks
+### Implementation Steps
 
----
+1. **Auto-create on template assignment**
+   - In `ClassAssignment.tsx`, after a template is successfully assigned to a class, fetch that template's `template_terms`
+   - For each term, insert an `assessment` record with:
+     - `name` = term name (e.g., "1st Assessment")
+     - `assessment_type` = "term_exam" (new type)
+     - `class_name` = the assigned class
+     - `academic_year_id` = current year
+     - `assessment_domain` = "cognitive" (default)
+     - `assessment_category` = "summative" (default)
+   - Skip creation if an assessment with the same name + class + year already exists (avoid duplicates)
 
-## ⏳ Not Yet Implemented
+2. **Add "Term Exam" to assessment types**
+   - Add `{ value: "term_exam", label: "Term Exam" }` to the `ASSESSMENT_TYPES` array in `Assessments.tsx` so manually-created term exams are also possible
 
-### Gap 3: Competency-Based Learning Outcomes
-- Needs `competencies` table linking subjects to specific skills
-- Marks need to be tagged against competencies
+3. **Visual indicator on auto-created assessments**
+   - No schema change needed — auto-created assessments are regular assessments and can be edited/deleted like any other
 
-### Gap 4: Multilingual Support
-- i18n framework needed for Hindi and regional languages
+### Files to modify
+- `src/components/admin/templates/ClassAssignment.tsx` — add post-assignment logic to create assessments from terms
+- `src/pages/progress/Assessments.tsx` — add "Term Exam" type to dropdown
 
-### Gap 6: Student Subject Choice Flexibility
-- Per-student subject selection mechanism
+### What stays unchanged
+- `MarksEntry.tsx` — already queries assessments filtered by class, so template-derived assessments will appear automatically
+- Database schema — no migrations needed
+- Existing manually-created assessments remain untouched
 
-### Gap 7: Dropout & Attendance Tracking
-- Attendance records table
-- Dropout status tracking on students
-
-### Gap 8: Teacher CPD Tracking
-- Training records and CPD hours tracking module
