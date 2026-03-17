@@ -496,15 +496,20 @@ export default function MarksEntry() {
                       <TableCell className="text-muted-foreground">{student.roll_number || "-"}</TableCell>
                       <TableCell className="font-medium">{student.name}</TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
-                          value={legacyMarks[student.id]?.marksObtained || ""}
-                          onChange={(e) => handleLegacyChange(student.id, "marksObtained", e.target.value)}
-                          placeholder="0"
-                          min="0"
-                          max={parseFloat(legacyMarks[student.id]?.maxMarks || defaultMaxMarks)}
-                          className="w-full"
-                        />
+                        <div>
+                          <Input
+                            type="number"
+                            value={legacyMarks[student.id]?.marksObtained || ""}
+                            onChange={(e) => handleLegacyChange(student.id, "marksObtained", e.target.value)}
+                            placeholder="0"
+                            min="0"
+                            max={parseFloat(legacyMarks[student.id]?.maxMarks || defaultMaxMarks)}
+                            className={`w-full ${validationErrors[student.id]?.["legacy"] ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                          />
+                          {validationErrors[student.id]?.["legacy"] && (
+                            <p className="text-xs text-destructive mt-1">{validationErrors[student.id]["legacy"]}</p>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Input
