@@ -60,6 +60,7 @@ serve(async (req) => {
 Analyze the student data holistically across cognitive, affective, and psychomotor domains.
 Provide actionable insights in ${language} that consider academic AND co-curricular performance.
 Be specific, practical, and focus on competency-based improvement strategies.
+Include specific teacher actions and priority subjects for intervention.
 Keep responses concise but helpful.`;
 
       userPrompt = `Analyze this student's performance (NEP 2020 framework):
@@ -87,21 +88,24 @@ Provide analysis using this EXACT JSON structure:
   "summary": "2-3 sentence overall assessment",
   "strengths": ["strength 1", "strength 2"],
   "improvements": ["area needing work 1", "area needing work 2"],
-  "recommendations": ["specific action 1", "specific action 2", "specific action 3"],
+  "recommendations": ["specific action for student 1", "specific action 2", "specific action 3"],
   "riskLevel": "low" | "medium" | "high",
-  "focusSubject": "the one subject to prioritize"
+  "focusSubject": "the one subject to prioritize",
+  "prioritySubject": "the weakest subject needing immediate intervention with reason",
+  "suggestedTeacherActions": ["specific classroom action 1", "differentiated instruction strategy 2", "assessment modification 3"],
+  "parentCommunicationTips": ["what to tell parents 1", "home practice suggestion 2"]
 }`;
     } else if (type === 'class' && classData && classData.length > 0) {
       systemPrompt = `You are an expert educational analyst aligned with India's NEP 2020.
 Analyze the class data holistically and provide actionable insights in ${language}.
-Focus on identifying patterns across cognitive, affective, and psychomotor domains, at-risk students, and teaching strategies for academic AND co-curricular subjects.`;
+Focus on identifying patterns across cognitive, affective, and psychomotor domains, at-risk students, and teaching strategies for academic AND co-curricular subjects.
+Include specific teacher intervention actions and prioritized remediation strategies.`;
 
       const atRiskStudents = classData.filter(s => s.isAtRisk);
       const avgPercentage = Math.round(classData.reduce((sum, s) => sum + s.averagePercentage, 0) / classData.length);
       const improvingCount = classData.filter(s => s.status === 'improving').length;
       const decliningCount = classData.filter(s => s.status === 'declining').length;
 
-      // Aggregate subject data
       const subjectStats: Record<string, { total: number; count: number }> = {};
       classData.forEach(student => {
         student.subjectBreakdown.forEach(subject => {
@@ -139,7 +143,9 @@ Provide analysis using this EXACT JSON structure:
   "hardestSubject": "subject name",
   "easiestSubject": "subject name",
   "classRecommendations": ["teaching strategy 1", "teaching strategy 2"],
-  "focusAreas": ["area 1", "area 2"]
+  "focusAreas": ["area 1", "area 2"],
+  "suggestedTeacherActions": ["specific pedagogical action 1", "differentiated approach 2", "remedial strategy 3"],
+  "interventionPriorities": ["highest priority intervention 1", "second priority 2"]
 }`;
     } else if (type === 'ptm' && studentData) {
       systemPrompt = `You are helping a teacher prepare for a Parent-Teacher Meeting aligned with NEP 2020.
@@ -231,17 +237,14 @@ Provide a parent-friendly summary using this EXACT JSON structure:
       );
     }
 
-    // Parse JSON from the response
     let analysis;
     try {
-      // Try to extract JSON from the response (it might be wrapped in markdown code blocks)
       const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/\{[\s\S]*\}/);
       const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
       analysis = JSON.parse(jsonStr.trim());
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError);
       console.log('Raw content:', content);
-      // Return the raw content if parsing fails
       analysis = { rawContent: content };
     }
 
