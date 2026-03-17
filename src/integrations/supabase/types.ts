@@ -55,6 +55,44 @@ export type Database = {
           },
         ]
       }
+      assessment_templates: {
+        Row: {
+          created_at: string
+          grading_type: Database["public"]["Enums"]["grading_type"]
+          id: string
+          is_default: boolean
+          name: string
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grading_type?: Database["public"]["Enums"]["grading_type"]
+          id?: string
+          is_default?: boolean
+          name: string
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grading_type?: Database["public"]["Enums"]["grading_type"]
+          id?: string
+          is_default?: boolean
+          name?: string
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_templates_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessments: {
         Row: {
           academic_year_id: string
@@ -105,6 +143,94 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_template_assignments: {
+        Row: {
+          academic_year_id: string
+          class_name: string
+          created_at: string
+          id: string
+          school_id: string
+          template_id: string
+        }
+        Insert: {
+          academic_year_id: string
+          class_name: string
+          created_at?: string
+          id?: string
+          school_id: string
+          template_id: string
+        }
+        Update: {
+          academic_year_id?: string
+          class_name?: string
+          created_at?: string
+          id?: string
+          school_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_template_assignments_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_template_assignments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_template_assignments_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      component_marks: {
+        Row: {
+          component_id: string
+          created_at: string
+          id: string
+          marks_obtained: number
+          student_mark_id: string
+        }
+        Insert: {
+          component_id: string
+          created_at?: string
+          id?: string
+          marks_obtained?: number
+          student_mark_id: string
+        }
+        Update: {
+          component_id?: string
+          created_at?: string
+          id?: string
+          marks_obtained?: number
+          student_mark_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "component_marks_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "template_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_marks_student_mark_id_fkey"
+            columns: ["student_mark_id"]
+            isOneToOne: false
+            referencedRelation: "student_marks"
             referencedColumns: ["id"]
           },
         ]
@@ -765,6 +891,114 @@ export type Database = {
           },
         ]
       }
+      template_components: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          max_marks: number
+          name: string
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          max_marks?: number
+          name: string
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          max_marks?: number
+          name?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_components_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_grade_mappings: {
+        Row: {
+          created_at: string
+          display_order: number
+          grade_label: string
+          id: string
+          max_percentage: number
+          min_percentage: number
+          numerical_grade: number | null
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          grade_label: string
+          id?: string
+          max_percentage: number
+          min_percentage: number
+          numerical_grade?: number | null
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          grade_label?: string
+          id?: string
+          max_percentage?: number
+          min_percentage?: number
+          numerical_grade?: number | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_grade_mappings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_terms: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_terms_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -851,6 +1085,7 @@ export type Database = {
       assessment_domain: "cognitive" | "affective" | "psychomotor"
       fee_status: "upcoming" | "due" | "overdue" | "paid"
       grade_scale: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D" | "E"
+      grading_type: "percentage" | "custom_grades"
       nep_learning_stage:
         | "foundational"
         | "preparatory"
@@ -1003,6 +1238,7 @@ export const Constants = {
       assessment_domain: ["cognitive", "affective", "psychomotor"],
       fee_status: ["upcoming", "due", "overdue", "paid"],
       grade_scale: ["A+", "A", "B+", "B", "C+", "C", "D", "E"],
+      grading_type: ["percentage", "custom_grades"],
       nep_learning_stage: [
         "foundational",
         "preparatory",
