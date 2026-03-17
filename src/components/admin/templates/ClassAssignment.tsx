@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +15,7 @@ import { useStudents } from "@/hooks/useStudents";
 import { useSchool } from "@/hooks/useSchool";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Link2, Trash2, Loader2 } from "lucide-react";
+import { Link2, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
@@ -81,6 +81,32 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [allClasses, setAllClasses] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const autoSyncRan = useRef(false);
+
+  // Auto-sync: create missing assessments for all existing assignments on load
+  useEffect(() => {
+    if (autoSyncRan.current || !assignments?.length || !school || !activeYear) return;
+    autoSyncRan.current = true;
+    (async () => {
+      for (const a of assignments) {
+        await createAssessmentsFromTerms(a.template_id, a.class_name, a.academic_year_id, school.id);
+      }
+    })();
+  }, [assignments, school, activeYear]);
+
+  const handleSyncOne = async (a: { template_id: string; class_name: string; academic_year_id: string; id: string }) => {
+    if (!school) return;
+    setSyncingId(a.id);
+    try {
+      await createAssessmentsFromTerms(a.template_id, a.class_name, a.academic_year_id, school.id);
+      toast.success(`Assessments synced for ${a.class_name}`);
+    } catch (e: any) {
+      toast.error("Sync failed", { description: e.message });
+    } finally {
+      setSyncingId(null);
+    }
+  };
 
   // Get unique class names from students
   const classNames = [...new Set(students?.map(s => s.class_name).filter(Boolean) as string[])].sort();
@@ -175,9 +201,14 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
                   <span className="text-sm">→</span>
                   <span className="text-sm font-medium">{templateMap.get(a.template_id)?.name ?? "Unknown"}</span>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => handleRemove(a.id)} disabled={isRestricted} className="text-destructive h-7 w-7">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => handleSyncOne(a)} disabled={isRestricted || syncingId === a.id} className="h-7 w-7" title="Sync assessments">
+                    <RefreshCw className={`h-3.5 w-3.5 ${syncingId === a.id ? 'animate-spin' : ''}`} />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleRemove(a.id)} disabled={isRestricted} className="text-destructive h-7 w-7">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

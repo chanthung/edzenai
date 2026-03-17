@@ -1,28 +1,52 @@
+# NEP 2020 Compliance — Implementation Status
 
+## ✅ Implemented (Phase 1)
 
-## Problem
+### Gap 1: 5+3+3+4 Stage Structure
+- Added `get_nep_stage()` database function to auto-derive NEP stage from class_name
+- Created `src/lib/nep-stages.ts` client-side utility mirroring the DB function
+- NEP stage displayed on Student Progress page header
+- NEP stage passed to AI analysis for stage-aware insights
 
-The ICSE template has 3 terms: "1st Assessment", "2nd Assessment", "3rd Assessment". The template is already assigned to classes 2, 3, 5, 9. However, the auto-create logic was added *after* the assignments were made, so no assessment records were created in the `assessments` table. The Marks Entry dropdown only shows manually-created assessments ("Term March", "End Term Feb", "Mid Term").
+### Gap 2: Multi-Dimensional Assessment
+- Added `assessment_domain` enum (cognitive / affective / psychomotor) to `assessments` table
+- Added `assessment_category` enum (formative / summative) to `assessments` table
+- Added `grade`, `qualitative_feedback`, `is_grade_based` fields to `student_marks` table
+- Assessment creation form updated with Domain and Category selectors
+- Assessment list table shows Domain and Category badges
+- New assessment types added: Project, Portfolio, Observation
 
-Requiring users to manually remove and re-assign each class is confusing and error-prone.
+### Gap 5: Co-Curricular & Vocational Tracking
+- Added `subject_type` enum (academic / co_curricular / vocational) to `subjects` table
+- Subjects page updated with Subject Type selector and badge display
+- Subject type passed to AI analysis for holistic insights
 
-## Solution
+### AI Edge Function Updates
+- Prompts updated to reference NEP 2020 framework
+- Analysis now considers co-curricular and vocational performance
+- PTM summaries now cover holistic development across domains
+- Domain breakdown data accepted in analysis requests
 
-Two changes:
+### Bug Fix: Teacher Portal Access
+- ProgressDashboard and StudentProgress now use resolved hooks (useResolvedAcademicYears, useResolvedStudents) instead of admin-only hooks
 
-### 1. Add a "Sync Assessments" button on ClassAssignment panel
-For each existing assignment, add a sync action that triggers `createAssessmentsFromTerms` without needing to remove/re-assign. This gives the admin a one-click way to populate missing assessments.
+---
 
-### 2. Auto-sync on component load
-When the ClassAssignment component loads and detects existing assignments, automatically run the sync for all of them. This is safe because `createAssessmentsFromTerms` already skips duplicates.
+## ⏳ Not Yet Implemented
 
-### Files to modify
-- **`src/components/admin/templates/ClassAssignment.tsx`**:
-  - Add a `useEffect` that runs when `assignments`, `school`, and `activeYear` are available — loops through all assignments and calls `createAssessmentsFromTerms` for each
-  - Add a "Sync" button next to each assignment row as a manual fallback
-  - Both are safe due to existing duplicate-skip logic
+### Gap 3: Competency-Based Learning Outcomes
+- Needs `competencies` table linking subjects to specific skills
+- Marks need to be tagged against competencies
 
-### What this fixes
-- Opening the Settings → Templates page will auto-create the missing "1st Assessment", "2nd Assessment", "3rd Assessment" records for classes 2, 3, 5, 9
-- These will then appear in the Marks Entry assessment dropdown immediately
+### Gap 4: Multilingual Support
+- i18n framework needed for Hindi and regional languages
 
+### Gap 6: Student Subject Choice Flexibility
+- Per-student subject selection mechanism
+
+### Gap 7: Dropout & Attendance Tracking
+- Attendance records table
+- Dropout status tracking on students
+
+### Gap 8: Teacher CPD Tracking
+- Training records and CPD hours tracking module
