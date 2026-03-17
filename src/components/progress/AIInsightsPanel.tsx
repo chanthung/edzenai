@@ -271,6 +271,40 @@ export function AIInsightsPanel({
               ))}
             </ul>
           </div>
+
+          {/* Suggested Teacher Actions */}
+          {classInsights.suggestedTeacherActions && classInsights.suggestedTeacherActions.length > 0 && (
+            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
+              <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-medium text-sm mb-2">
+                <Target className="h-4 w-4" />
+                Suggested Teacher Actions
+              </div>
+              <ul className="space-y-1">
+                {classInsights.suggestedTeacherActions.map((action, idx) => (
+                  <li key={idx} className="text-sm text-blue-800 dark:text-blue-300">
+                    {idx + 1}. {action}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Intervention Priorities */}
+          {classInsights.interventionPriorities && classInsights.interventionPriorities.length > 0 && (
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
+              <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-2">
+                <AlertTriangle className="h-4 w-4" />
+                Intervention Priorities
+              </div>
+              <ul className="space-y-1">
+                {classInsights.interventionPriorities.map((item, idx) => (
+                  <li key={idx} className="text-sm text-red-800 dark:text-red-300">
+                    {idx + 1}. {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
