@@ -35,6 +35,7 @@ import { useSubjects, useCreateSubject, useUpdateSubject, useDeleteSubject, type
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { CompetencyManager } from "@/components/progress/CompetencyManager";
 import { useToast } from "@/hooks/use-toast";
 
 const SUBJECT_TYPES: { value: SubjectType; label: string }[] = [
