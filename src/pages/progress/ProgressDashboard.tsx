@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProgressIndicator } from "@/components/progress/ProgressIndicator";
-import { AtRiskBadge } from "@/components/progress/AtRiskBadge";
+import { StudentMonitoringBadge, computeMonitoringInfo } from "@/components/progress/StudentMonitoringBadge";
 import { ClassDistributionChart, calculateDistribution } from "@/components/progress/charts/ClassDistributionChart";
 import { SubjectComparisonChart } from "@/components/progress/charts/SubjectComparisonChart";
 import { AIInsightsPanel } from "@/components/progress/AIInsightsPanel";
@@ -15,7 +15,7 @@ import { useProgressAnalytics, type ProgressStatus } from "@/hooks/progress/useP
 import { useAIAnalysis, type StudentAnalysisData } from "@/hooks/progress/useAIAnalysis";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
-import { BarChart3, Users, TrendingUp, TrendingDown, Search, Eye } from "lucide-react";
+import { BarChart3, Users, TrendingUp, AlertTriangle, Search, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function ProgressDashboard() {
