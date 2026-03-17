@@ -12,6 +12,7 @@ import { SubjectRadarChart } from "@/components/progress/charts/SubjectRadarChar
 import { SubjectComparisonChart } from "@/components/progress/charts/SubjectComparisonChart";
 import { AIInsightsPanel } from "@/components/progress/AIInsightsPanel";
 import { LearningGapsCard } from "@/components/progress/LearningGapsCard";
+import { CompetencyView } from "@/components/progress/CompetencyView";
 import { PTMSummaryCard } from "@/components/progress/PTMSummaryCard";
 import { useStudentMarksByStudent } from "@/hooks/progress/useStudentMarks";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
@@ -265,6 +266,7 @@ export default function StudentProgress() {
       <Tabs defaultValue="analysis" className="mt-6">
         <TabsList>
           <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
+          <TabsTrigger value="competencies">Competencies</TabsTrigger>
           <TabsTrigger value="subjects">Subject Details</TabsTrigger>
           <TabsTrigger value="ptm">PTM Summary</TabsTrigger>
           <TabsTrigger value="history">Assessment History</TabsTrigger>
@@ -278,6 +280,11 @@ export default function StudentProgress() {
             type="student"
             hasData={assessmentList.length > 0}
           />
+        </TabsContent>
+
+
+        <TabsContent value="competencies" className="mt-4">
+          {studentId && <CompetencyView studentId={studentId} />}
         </TabsContent>
 
         <TabsContent value="subjects" className="mt-4">

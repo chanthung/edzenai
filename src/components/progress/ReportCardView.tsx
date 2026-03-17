@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import type { ReportCardData } from "@/hooks/progress/useReportCard";
 import { getNepStageLabel } from "@/lib/nep-stages";
+import { useStudentCompetencyScores, type MasteryLevel } from "@/hooks/progress/useCompetencyScores";
+import { Badge } from "@/components/ui/badge";
+import { useMemo } from "react";
 
 interface ReportCardViewProps {
   data: ReportCardData;
@@ -54,6 +57,20 @@ export function ReportCardView({ data }: ReportCardViewProps) {
   };
 
   const nepStage = getNepStageLabel(data.student.className);
+  const { data: compScores = [] } = useStudentCompetencyScores(data.student.id);
+
+  const competencyGroups = useMemo(() => {
+    const map = new Map<string, { subjectName: string; items: Array<{ name: string; level: MasteryLevel }> }>();
+    compScores.forEach((s: any) => {
+      const subName = s.competencies?.subjects?.name || 'Unknown';
+      if (!map.has(subName)) map.set(subName, { subjectName: subName, items: [] });
+      const existing = map.get(subName)!.items.find(i => i.name === s.competencies?.name);
+      if (!existing) {
+        map.get(subName)!.items.push({ name: s.competencies?.name || '', level: s.mastery_level as MasteryLevel });
+      }
+    });
+    return Array.from(map.values());
+  }, [compScores]);
 
   return (
     <div>
@@ -198,6 +215,50 @@ export function ReportCardView({ data }: ReportCardViewProps) {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </>
+          )}
+
+          {/* Competency Mastery */}
+          {competencyGroups.length > 0 && (
+            <>
+              <div className="text-sm font-bold mb-2 px-2 py-1 bg-accent text-accent-foreground rounded mt-4">
+                Competency-Based Assessment
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm mb-4">
+                  <thead>
+                    <tr className="bg-muted">
+                      <th className="border border-border px-3 py-2 text-left font-semibold">Subject / Competency</th>
+                      <th className="border border-border px-2 py-2 text-center font-semibold">Mastery Level</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {competencyGroups.map(group => (
+                      <>
+                        <tr key={`h-${group.subjectName}`} className="bg-muted/30">
+                          <td colSpan={2} className="border border-border px-3 py-1.5 font-semibold text-sm">{group.subjectName}</td>
+                        </tr>
+                        {group.items.map((item, idx) => (
+                          <tr key={`${group.subjectName}-${idx}`}>
+                            <td className="border border-border px-3 py-1.5 pl-6 text-sm">{item.name}</td>
+                            <td className="border border-border px-2 py-1.5 text-center">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                                item.level === 'advanced' ? 'bg-primary/10 text-primary' :
+                                item.level === 'proficient' ? 'bg-emerald-500/10 text-emerald-700' :
+                                item.level === 'developing' ? 'bg-amber-500/10 text-amber-700' :
+                                'bg-destructive/10 text-destructive'
+                              }`}>
+                                {item.level.charAt(0).toUpperCase() + item.level.slice(1)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="text-xs text-muted-foreground mb-2">B = Beginning | D = Developing | P = Proficient | A = Advanced</p>
               </div>
             </>
           )}

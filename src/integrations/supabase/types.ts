@@ -196,6 +196,51 @@ export type Database = {
           },
         ]
       }
+      competencies: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          name: string
+          school_id: string
+          subject_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          name: string
+          school_id: string
+          subject_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          name?: string
+          school_id?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competencies_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competencies_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       component_marks: {
         Row: {
           component_id: string
@@ -646,6 +691,61 @@ export type Database = {
         }
         Relationships: []
       }
+      student_competency_scores: {
+        Row: {
+          assessment_id: string
+          competency_id: string
+          created_at: string
+          id: string
+          mastery_level: Database["public"]["Enums"]["mastery_level"]
+          remarks: string | null
+          score: number | null
+          student_id: string
+        }
+        Insert: {
+          assessment_id: string
+          competency_id: string
+          created_at?: string
+          id?: string
+          mastery_level?: Database["public"]["Enums"]["mastery_level"]
+          remarks?: string | null
+          score?: number | null
+          student_id: string
+        }
+        Update: {
+          assessment_id?: string
+          competency_id?: string
+          created_at?: string
+          id?: string
+          mastery_level?: Database["public"]["Enums"]["mastery_level"]
+          remarks?: string | null
+          score?: number | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_competency_scores_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_competency_scores_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "competencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_competency_scores_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_enrollments: {
         Row: {
           academic_year_id: string
@@ -1086,6 +1186,7 @@ export type Database = {
       fee_status: "upcoming" | "due" | "overdue" | "paid"
       grade_scale: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D" | "E"
       grading_type: "percentage" | "custom_grades"
+      mastery_level: "beginning" | "developing" | "proficient" | "advanced"
       nep_learning_stage:
         | "foundational"
         | "preparatory"
@@ -1239,6 +1340,7 @@ export const Constants = {
       fee_status: ["upcoming", "due", "overdue", "paid"],
       grade_scale: ["A+", "A", "B+", "B", "C+", "C", "D", "E"],
       grading_type: ["percentage", "custom_grades"],
+      mastery_level: ["beginning", "developing", "proficient", "advanced"],
       nep_learning_stage: [
         "foundational",
         "preparatory",

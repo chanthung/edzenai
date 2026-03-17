@@ -35,6 +35,7 @@ import { useSubjects, useCreateSubject, useUpdateSubject, useDeleteSubject, type
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { CompetencyManager } from "@/components/progress/CompetencyManager";
 import { useToast } from "@/hooks/use-toast";
 
 const SUBJECT_TYPES: { value: SubjectType; label: string }[] = [
@@ -281,7 +282,7 @@ export default function Subjects() {
                     <TableHead>Name</TableHead>
                     <TableHead>Code</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableHead className="w-[140px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -297,6 +298,7 @@ export default function Subjects() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
+                          <CompetencyManager subjectId={subject.id} subjectName={subject.name} />
                           <Button
                             variant="ghost"
                             size="icon"
