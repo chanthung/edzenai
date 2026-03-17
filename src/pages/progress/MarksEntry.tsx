@@ -133,11 +133,12 @@ export default function MarksEntry() {
 
   // Initialize from existing data
   useEffect(() => {
+    // Always clear marks when subject or assessment changes
+    setLegacyMarks({});
+    setComponentMarksInput({});
+    setValidationErrors({});
+
     if (!selectedAssessmentId || !selectedSubjectId || existingMarks.length === 0) {
-      if (!selectedAssessmentId || !selectedSubjectId) {
-        setLegacyMarks({});
-        setComponentMarksInput({});
-      }
       return;
     }
 
