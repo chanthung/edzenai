@@ -110,7 +110,7 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
               {templates?.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button onClick={handleAssign} disabled={!selectedClass || !selectedTemplate || assignTemplate.isPending || isRestricted} size="sm">
+          <Button onClick={handleAssign} disabled={(!selectedClass && !allClasses) || !selectedTemplate || assignTemplate.isPending || isRestricted} size="sm">
             {assignTemplate.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />}
             Assign
           </Button>
