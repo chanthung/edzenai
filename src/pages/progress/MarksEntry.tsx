@@ -190,26 +190,27 @@ export default function MarksEntry() {
   }, [componentMarksInput, templateComponents, gradeMappings, filteredStudents, hasTemplate]);
 
   const handleComponentChange = (studentId: string, componentId: string, value: string, maxMarks: number) => {
-    const numVal = parseFloat(value);
-    if (value !== "" && !isNaN(numVal) && numVal > maxMarks) {
-      value = maxMarks.toString();
-    }
-    if (value !== "" && !isNaN(numVal) && numVal < 0) {
-      value = "0";
-    }
     setComponentMarksInput(prev => ({
       ...prev,
       [studentId]: { ...(prev[studentId] || {}), [componentId]: value },
     }));
+
+    const numVal = parseFloat(value);
+    let error = "";
+    if (value !== "" && !isNaN(numVal)) {
+      if (numVal < 0) error = "Marks cannot be negative";
+      else if (numVal > maxMarks) error = `Max allowed: ${maxMarks}`;
+    }
+    setValidationErrors(prev => {
+      const studentErrors = { ...(prev[studentId] || {}) };
+      if (error) studentErrors[componentId] = error;
+      else delete studentErrors[componentId];
+      return { ...prev, [studentId]: studentErrors };
+    });
   };
 
   const handleLegacyChange = (studentId: string, field: "marksObtained" | "maxMarks", value: string) => {
     const currentMax = parseFloat(legacyMarks[studentId]?.maxMarks || defaultMaxMarks);
-    if (field === "marksObtained") {
-      const numVal = parseFloat(value);
-      if (value !== "" && !isNaN(numVal) && numVal > currentMax) value = currentMax.toString();
-      if (value !== "" && !isNaN(numVal) && numVal < 0) value = "0";
-    }
     setLegacyMarks(prev => ({
       ...prev,
       [studentId]: {
@@ -217,6 +218,20 @@ export default function MarksEntry() {
         maxMarks: field === "maxMarks" ? value : (prev[studentId]?.maxMarks || defaultMaxMarks),
       },
     }));
+    if (field === "marksObtained") {
+      const numVal = parseFloat(value);
+      let error = "";
+      if (value !== "" && !isNaN(numVal)) {
+        if (numVal < 0) error = "Marks cannot be negative";
+        else if (numVal > currentMax) error = `Max allowed: ${currentMax}`;
+      }
+      setValidationErrors(prev => {
+        const studentErrors = { ...(prev[studentId] || {}) };
+        if (error) studentErrors["legacy"] = error;
+        else delete studentErrors["legacy"];
+        return { ...prev, [studentId]: studentErrors };
+      });
+    }
   };
 
   const handleSave = async () => {
