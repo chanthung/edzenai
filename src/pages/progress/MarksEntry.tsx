@@ -416,7 +416,7 @@ export default function MarksEntry() {
                               <Input
                                 type="number"
                                 value={componentMarksInput[student.id]?.[c.id] ?? ""}
-                                onChange={(e) => handleComponentChange(student.id, c.id, e.target.value)}
+                                onChange={(e) => handleComponentChange(student.id, c.id, e.target.value, Number(c.max_marks))}
                                 placeholder="0"
                                 min="0"
                                 max={Number(c.max_marks)}
