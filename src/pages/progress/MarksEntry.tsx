@@ -131,23 +131,29 @@ export default function MarksEntry() {
     }
   }, [subjects, selectedSubjectId]);
 
-  // Initialize from existing data
+  // Clear marks when assessment or subject selection changes
+  const [loadedKey, setLoadedKey] = useState<string>("");
+
   useEffect(() => {
-    // Always clear marks when subject or assessment changes
     setLegacyMarks({});
     setComponentMarksInput({});
     setValidationErrors({});
+    setLoadedKey("");
+  }, [selectedAssessmentId, selectedSubjectId]);
 
-    if (!selectedAssessmentId || !selectedSubjectId || existingMarks.length === 0) {
-      return;
-    }
+  // Populate from existing data (runs once per unique data load)
+  useEffect(() => {
+    if (!selectedAssessmentId || !selectedSubjectId || existingMarks.length === 0) return;
+
+    const dataKey = `${selectedAssessmentId}_${selectedSubjectId}_${existingMarks.length}_${existingComponentMarks.length}`;
+    if (dataKey === loadedKey) return;
+
+    const subjectMarks = existingMarks.filter(m => m.subject_id === selectedSubjectId);
+    if (subjectMarks.length === 0) return;
 
     if (hasTemplate && existingComponentMarks.length > 0) {
-      // Build component marks map from existing data
       const markByStudent = new Map<string, string>();
-      existingMarks
-        .filter(m => m.subject_id === selectedSubjectId)
-        .forEach(m => markByStudent.set(m.student_id, m.id));
+      subjectMarks.forEach(m => markByStudent.set(m.student_id, m.id));
 
       const newCM: ComponentMarksMap = {};
       for (const [studentId, markId] of markByStudent) {
@@ -161,19 +167,17 @@ export default function MarksEntry() {
       }
       setComponentMarksInput(newCM);
     } else {
-      // Legacy mode
       const newMarks: Record<string, { marksObtained: string; maxMarks: string }> = {};
-      existingMarks
-        .filter(m => m.subject_id === selectedSubjectId)
-        .forEach(m => {
-          newMarks[m.student_id] = {
-            marksObtained: m.marks_obtained.toString(),
-            maxMarks: m.max_marks.toString(),
-          };
-        });
+      subjectMarks.forEach(m => {
+        newMarks[m.student_id] = {
+          marksObtained: m.marks_obtained.toString(),
+          maxMarks: m.max_marks.toString(),
+        };
+      });
       setLegacyMarks(newMarks);
     }
-  }, [selectedAssessmentId, selectedSubjectId, existingMarks, existingComponentMarks, hasTemplate]);
+    setLoadedKey(dataKey);
+  }, [selectedAssessmentId, selectedSubjectId, existingMarks, existingComponentMarks, hasTemplate, loadedKey]);
 
   // Compute results for template mode
   const computedResults = useMemo(() => {
