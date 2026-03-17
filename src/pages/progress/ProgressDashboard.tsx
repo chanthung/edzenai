@@ -216,7 +216,7 @@ export default function ProgressDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <TrendingDown className="h-5 w-5 text-red-600" />
+              <AlertTriangle className="h-5 w-5 text-red-600" />
               <span className="text-2xl font-bold text-red-600">{atRiskCount}</span>
             </div>
           </CardContent>
