@@ -38,12 +38,20 @@ export default function ProgressDashboard() {
 
   const { isAnalyzing, classInsights, analyzeClass } = useAIAnalysis();
 
+  // Compute monitoring info for each student
+  const studentsWithMonitoring = classProgress.map(student => ({
+    ...student,
+    monitoring: computeMonitoringInfo(student),
+  }));
+
   // Filter students
-  const filteredStudents = classProgress.filter((student) => {
+  const filteredStudents = studentsWithMonitoring.filter((student) => {
     const matchesSearch = student.studentName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === "all" ||
-      (statusFilter === "at_risk" ? student.isAtRisk : student.status === statusFilter);
+      (statusFilter === "at_risk"
+        ? student.monitoring.level === "critical" || student.monitoring.level === "needs_attention"
+        : student.status === statusFilter);
     return matchesSearch && matchesStatus;
   });
 
