@@ -292,7 +292,7 @@ export default function ProgressDashboard() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{student.studentName}</span>
-                        {student.isAtRisk && <AtRiskBadge showLabel={false} />}
+                        <StudentMonitoringBadge info={student.monitoring} compact />
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {student.className}
