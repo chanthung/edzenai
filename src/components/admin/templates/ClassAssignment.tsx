@@ -91,13 +91,19 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Assignment form */}
+        <div className="flex items-center gap-2 mb-2">
+          <Checkbox id="all-classes" checked={allClasses} onCheckedChange={(v) => { setAllClasses(!!v); if (v) setSelectedClass(""); }} disabled={isRestricted} />
+          <Label htmlFor="all-classes" className="text-sm font-medium cursor-pointer">Assign to all classes</Label>
+        </div>
         <div className="flex gap-2 flex-wrap">
-          <Select value={selectedClass} onValueChange={setSelectedClass} disabled={isRestricted}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="Class" /></SelectTrigger>
-            <SelectContent>
-              {classNames.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          {!allClasses && (
+            <Select value={selectedClass} onValueChange={setSelectedClass} disabled={isRestricted}>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Class" /></SelectTrigger>
+              <SelectContent>
+                {classNames.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={selectedTemplate} onValueChange={setSelectedTemplate} disabled={isRestricted}>
             <SelectTrigger className="w-52"><SelectValue placeholder="Template" /></SelectTrigger>
             <SelectContent>
