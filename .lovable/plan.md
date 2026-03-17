@@ -32,11 +32,21 @@
 
 ---
 
-## ⏳ Not Yet Implemented
+## ✅ Implemented (Phase 2)
 
 ### Gap 3: Competency-Based Learning Outcomes
-- Needs `competencies` table linking subjects to specific skills
-- Marks need to be tagged against competencies
+- Created `mastery_level` enum: beginning, developing, proficient, advanced
+- Created `competencies` table (subject_id, school_id, name, description, display_order)
+- Created `student_competency_scores` table (student_id, competency_id, assessment_id, mastery_level, score, remarks)
+- RLS policies for both tables (admin, teacher, public read)
+- **Competency Management**: Settings icon on each subject row in Subjects page opens dialog for CRUD competencies
+- **Competency Scoring**: CompetencyScoring section appears below marks entry when subject has competencies defined
+- **Competency View**: New "Competencies" tab on Student Progress page with color-coded mastery badges
+- **Report Card Integration**: Competency mastery summary section added to ReportCardView with per-subject breakdown
+
+---
+
+## ⏳ Not Yet Implemented
 
 ### Gap 4: Multilingual Support
 - i18n framework needed for Hindi and regional languages
