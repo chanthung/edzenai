@@ -57,7 +57,7 @@ export default function ProgressDashboard() {
 
   // Calculate summary stats
   const improvingCount = classProgress.filter((s) => s.status === "improving").length;
-  const atRiskCount = classProgress.filter((s) => s.isAtRisk).length;
+  const atRiskCount = studentsWithMonitoring.filter((s) => s.monitoring.level === "critical" || s.monitoring.level === "needs_attention").length;
   const averagePercentage =
     classProgress.length > 0
       ? Math.round(
