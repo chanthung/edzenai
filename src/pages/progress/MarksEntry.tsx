@@ -32,6 +32,8 @@ import { useToast } from "@/hooks/use-toast";
 
 // Per-student, per-component raw mark input
 type ComponentMarksMap = Record<string, Record<string, string>>; // studentId → componentId → value
+// Tracks which fields have validation errors: studentId → fieldKey → error message
+type ValidationErrorsMap = Record<string, Record<string, string>>;
 
 export default function MarksEntry() {
   const { data: academicYears = [] } = useResolvedAcademicYears();
@@ -54,6 +56,7 @@ export default function MarksEntry() {
 
   // Template mode state
   const [componentMarksInput, setComponentMarksInput] = useState<ComponentMarksMap>({});
+  const [validationErrors, setValidationErrors] = useState<ValidationErrorsMap>({});
 
   // Fetch template assignment for selected class + year
   const { data: classAssignments = [] } = useClassTemplateAssignments(effectiveYearId || null);
@@ -112,11 +115,13 @@ export default function MarksEntry() {
     setSelectedSubjectId("");
     setLegacyMarks({});
     setComponentMarksInput({});
+    setValidationErrors({});
   }, [selectedClass]);
 
   useEffect(() => {
     setLegacyMarks({});
     setComponentMarksInput({});
+    setValidationErrors({});
   }, [selectedSection]);
 
   useEffect(() => {
@@ -187,26 +192,27 @@ export default function MarksEntry() {
   }, [componentMarksInput, templateComponents, gradeMappings, filteredStudents, hasTemplate]);
 
   const handleComponentChange = (studentId: string, componentId: string, value: string, maxMarks: number) => {
-    const numVal = parseFloat(value);
-    if (value !== "" && !isNaN(numVal) && numVal > maxMarks) {
-      value = maxMarks.toString();
-    }
-    if (value !== "" && !isNaN(numVal) && numVal < 0) {
-      value = "0";
-    }
     setComponentMarksInput(prev => ({
       ...prev,
       [studentId]: { ...(prev[studentId] || {}), [componentId]: value },
     }));
+
+    const numVal = parseFloat(value);
+    let error = "";
+    if (value !== "" && !isNaN(numVal)) {
+      if (numVal < 0) error = "Marks cannot be negative";
+      else if (numVal > maxMarks) error = `Max allowed: ${maxMarks}`;
+    }
+    setValidationErrors(prev => {
+      const studentErrors = { ...(prev[studentId] || {}) };
+      if (error) studentErrors[componentId] = error;
+      else delete studentErrors[componentId];
+      return { ...prev, [studentId]: studentErrors };
+    });
   };
 
   const handleLegacyChange = (studentId: string, field: "marksObtained" | "maxMarks", value: string) => {
     const currentMax = parseFloat(legacyMarks[studentId]?.maxMarks || defaultMaxMarks);
-    if (field === "marksObtained") {
-      const numVal = parseFloat(value);
-      if (value !== "" && !isNaN(numVal) && numVal > currentMax) value = currentMax.toString();
-      if (value !== "" && !isNaN(numVal) && numVal < 0) value = "0";
-    }
     setLegacyMarks(prev => ({
       ...prev,
       [studentId]: {
@@ -214,6 +220,20 @@ export default function MarksEntry() {
         maxMarks: field === "maxMarks" ? value : (prev[studentId]?.maxMarks || defaultMaxMarks),
       },
     }));
+    if (field === "marksObtained") {
+      const numVal = parseFloat(value);
+      let error = "";
+      if (value !== "" && !isNaN(numVal)) {
+        if (numVal < 0) error = "Marks cannot be negative";
+        else if (numVal > currentMax) error = `Max allowed: ${currentMax}`;
+      }
+      setValidationErrors(prev => {
+        const studentErrors = { ...(prev[studentId] || {}) };
+        if (error) studentErrors["legacy"] = error;
+        else delete studentErrors["legacy"];
+        return { ...prev, [studentId]: studentErrors };
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -277,7 +297,11 @@ export default function MarksEntry() {
     ? Object.values(componentMarksInput).some(cm => Object.values(cm).some(v => v !== ""))
     : Object.values(legacyMarks).some(m => m.marksObtained !== "");
 
-  const canSave = selectedClass && selectedSection && selectedAssessmentId && selectedSubjectId && hasAnyInput;
+  const hasValidationErrors = Object.values(validationErrors).some(
+    studentErrors => Object.keys(studentErrors).length > 0
+  );
+
+  const canSave = selectedClass && selectedSection && selectedAssessmentId && selectedSubjectId && hasAnyInput && !hasValidationErrors;
 
   const totalMaxMarks = templateComponents.reduce((sum, c) => sum + Number(c.max_marks), 0);
 
@@ -417,19 +441,27 @@ export default function MarksEntry() {
                         <TableRow key={student.id}>
                           <TableCell className="text-muted-foreground sticky left-0 bg-background">{student.roll_number || "-"}</TableCell>
                           <TableCell className="font-medium sticky left-[60px] bg-background">{student.name}</TableCell>
-                          {templateComponents.map(c => (
-                            <TableCell key={c.id}>
-                              <Input
-                                type="number"
-                                value={componentMarksInput[student.id]?.[c.id] ?? ""}
-                                onChange={(e) => handleComponentChange(student.id, c.id, e.target.value, Number(c.max_marks))}
-                                placeholder="0"
-                                min="0"
-                                max={Number(c.max_marks)}
-                                className="w-full text-center"
-                              />
-                            </TableCell>
-                          ))}
+                          {templateComponents.map(c => {
+                            const errorMsg = validationErrors[student.id]?.[c.id];
+                            return (
+                              <TableCell key={c.id}>
+                                <div>
+                                  <Input
+                                    type="number"
+                                    value={componentMarksInput[student.id]?.[c.id] ?? ""}
+                                    onChange={(e) => handleComponentChange(student.id, c.id, e.target.value, Number(c.max_marks))}
+                                    placeholder="0"
+                                    min="0"
+                                    max={Number(c.max_marks)}
+                                    className={`w-full text-center ${errorMsg ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                                  />
+                                  {errorMsg && (
+                                    <p className="text-xs text-destructive mt-1">{errorMsg}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                            );
+                          })}
                           <TableCell className="text-center font-semibold bg-muted/30">
                             {result ? result.total : "–"}
                           </TableCell>
@@ -464,15 +496,20 @@ export default function MarksEntry() {
                       <TableCell className="text-muted-foreground">{student.roll_number || "-"}</TableCell>
                       <TableCell className="font-medium">{student.name}</TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
-                          value={legacyMarks[student.id]?.marksObtained || ""}
-                          onChange={(e) => handleLegacyChange(student.id, "marksObtained", e.target.value)}
-                          placeholder="0"
-                          min="0"
-                          max={parseFloat(legacyMarks[student.id]?.maxMarks || defaultMaxMarks)}
-                          className="w-full"
-                        />
+                        <div>
+                          <Input
+                            type="number"
+                            value={legacyMarks[student.id]?.marksObtained || ""}
+                            onChange={(e) => handleLegacyChange(student.id, "marksObtained", e.target.value)}
+                            placeholder="0"
+                            min="0"
+                            max={parseFloat(legacyMarks[student.id]?.maxMarks || defaultMaxMarks)}
+                            className={`w-full ${validationErrors[student.id]?.["legacy"] ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                          />
+                          {validationErrors[student.id]?.["legacy"] && (
+                            <p className="text-xs text-destructive mt-1">{validationErrors[student.id]["legacy"]}</p>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Input
