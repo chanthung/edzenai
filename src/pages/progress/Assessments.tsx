@@ -36,6 +36,7 @@ const ASSESSMENT_TYPES = [
   { value: "unit_test", label: "Unit Test" },
   { value: "mid_term", label: "Mid Term" },
   { value: "final_exam", label: "Final Exam" },
+  { value: "term_exam", label: "Term Exam" },
   { value: "quiz", label: "Quiz" },
   { value: "assignment", label: "Assignment" },
   { value: "practical", label: "Practical" },
