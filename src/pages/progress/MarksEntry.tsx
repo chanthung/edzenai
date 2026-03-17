@@ -441,19 +441,27 @@ export default function MarksEntry() {
                         <TableRow key={student.id}>
                           <TableCell className="text-muted-foreground sticky left-0 bg-background">{student.roll_number || "-"}</TableCell>
                           <TableCell className="font-medium sticky left-[60px] bg-background">{student.name}</TableCell>
-                          {templateComponents.map(c => (
-                            <TableCell key={c.id}>
-                              <Input
-                                type="number"
-                                value={componentMarksInput[student.id]?.[c.id] ?? ""}
-                                onChange={(e) => handleComponentChange(student.id, c.id, e.target.value, Number(c.max_marks))}
-                                placeholder="0"
-                                min="0"
-                                max={Number(c.max_marks)}
-                                className="w-full text-center"
-                              />
-                            </TableCell>
-                          ))}
+                          {templateComponents.map(c => {
+                            const errorMsg = validationErrors[student.id]?.[c.id];
+                            return (
+                              <TableCell key={c.id}>
+                                <div>
+                                  <Input
+                                    type="number"
+                                    value={componentMarksInput[student.id]?.[c.id] ?? ""}
+                                    onChange={(e) => handleComponentChange(student.id, c.id, e.target.value, Number(c.max_marks))}
+                                    placeholder="0"
+                                    min="0"
+                                    max={Number(c.max_marks)}
+                                    className={`w-full text-center ${errorMsg ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                                  />
+                                  {errorMsg && (
+                                    <p className="text-xs text-destructive mt-1">{errorMsg}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                            );
+                          })}
                           <TableCell className="text-center font-semibold bg-muted/30">
                             {result ? result.total : "–"}
                           </TableCell>
