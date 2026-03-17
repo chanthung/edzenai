@@ -297,7 +297,11 @@ export default function MarksEntry() {
     ? Object.values(componentMarksInput).some(cm => Object.values(cm).some(v => v !== ""))
     : Object.values(legacyMarks).some(m => m.marksObtained !== "");
 
-  const canSave = selectedClass && selectedSection && selectedAssessmentId && selectedSubjectId && hasAnyInput;
+  const hasValidationErrors = Object.values(validationErrors).some(
+    studentErrors => Object.keys(studentErrors).length > 0
+  );
+
+  const canSave = selectedClass && selectedSection && selectedAssessmentId && selectedSubjectId && hasAnyInput && !hasValidationErrors;
 
   const totalMaxMarks = templateComponents.reduce((sum, c) => sum + Number(c.max_marks), 0);
 
