@@ -121,6 +121,7 @@ export default function MarksEntry() {
   useEffect(() => {
     setLegacyMarks({});
     setComponentMarksInput({});
+    setValidationErrors({});
   }, [selectedSection]);
 
   useEffect(() => {
