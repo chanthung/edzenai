@@ -31,21 +31,26 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
 
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [allClasses, setAllClasses] = useState(false);
 
   // Get unique class names from students
   const classNames = [...new Set(students?.map(s => s.class_name).filter(Boolean) as string[])].sort();
 
   const handleAssign = async () => {
-    if (!selectedClass || !selectedTemplate || !activeYear) return;
+    if ((!selectedClass && !allClasses) || !selectedTemplate || !activeYear) return;
+    const classesToAssign = allClasses ? classNames : [selectedClass];
     try {
-      await assignTemplate.mutateAsync({
-        templateId: selectedTemplate,
-        className: selectedClass,
-        academicYearId: activeYear.id,
-      });
-      toast.success(`Template assigned to ${selectedClass}`);
+      for (const cn of classesToAssign) {
+        await assignTemplate.mutateAsync({
+          templateId: selectedTemplate,
+          className: cn,
+          academicYearId: activeYear.id,
+        });
+      }
+      toast.success(allClasses ? `Template assigned to all ${classesToAssign.length} classes` : `Template assigned to ${selectedClass}`);
       setSelectedClass("");
       setSelectedTemplate("");
+      setAllClasses(false);
     } catch (e: any) {
       toast.error("Failed to assign template", { description: e.message });
     }
