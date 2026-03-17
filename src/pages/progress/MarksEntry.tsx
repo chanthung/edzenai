@@ -32,6 +32,8 @@ import { useToast } from "@/hooks/use-toast";
 
 // Per-student, per-component raw mark input
 type ComponentMarksMap = Record<string, Record<string, string>>; // studentId → componentId → value
+// Tracks which fields have validation errors: studentId → fieldKey → error message
+type ValidationErrorsMap = Record<string, Record<string, string>>;
 
 export default function MarksEntry() {
   const { data: academicYears = [] } = useResolvedAcademicYears();
