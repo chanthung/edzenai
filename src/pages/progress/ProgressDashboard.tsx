@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProgressIndicator } from "@/components/progress/ProgressIndicator";
-import { AtRiskBadge } from "@/components/progress/AtRiskBadge";
+import { StudentMonitoringBadge, computeMonitoringInfo } from "@/components/progress/StudentMonitoringBadge";
 import { ClassDistributionChart, calculateDistribution } from "@/components/progress/charts/ClassDistributionChart";
 import { SubjectComparisonChart } from "@/components/progress/charts/SubjectComparisonChart";
 import { AIInsightsPanel } from "@/components/progress/AIInsightsPanel";
@@ -15,7 +15,7 @@ import { useProgressAnalytics, type ProgressStatus } from "@/hooks/progress/useP
 import { useAIAnalysis, type StudentAnalysisData } from "@/hooks/progress/useAIAnalysis";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
-import { BarChart3, Users, TrendingUp, TrendingDown, Search, Eye } from "lucide-react";
+import { BarChart3, Users, TrendingUp, AlertTriangle, Search, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function ProgressDashboard() {
@@ -38,18 +38,26 @@ export default function ProgressDashboard() {
 
   const { isAnalyzing, classInsights, analyzeClass } = useAIAnalysis();
 
+  // Compute monitoring info for each student
+  const studentsWithMonitoring = classProgress.map(student => ({
+    ...student,
+    monitoring: computeMonitoringInfo(student),
+  }));
+
   // Filter students
-  const filteredStudents = classProgress.filter((student) => {
+  const filteredStudents = studentsWithMonitoring.filter((student) => {
     const matchesSearch = student.studentName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === "all" ||
-      (statusFilter === "at_risk" ? student.isAtRisk : student.status === statusFilter);
+      (statusFilter === "at_risk"
+        ? student.monitoring.level === "critical" || student.monitoring.level === "needs_attention"
+        : student.status === statusFilter);
     return matchesSearch && matchesStatus;
   });
 
   // Calculate summary stats
   const improvingCount = classProgress.filter((s) => s.status === "improving").length;
-  const atRiskCount = classProgress.filter((s) => s.isAtRisk).length;
+  const atRiskCount = studentsWithMonitoring.filter((s) => s.monitoring.level === "critical" || s.monitoring.level === "needs_attention").length;
   const averagePercentage =
     classProgress.length > 0
       ? Math.round(
@@ -208,7 +216,7 @@ export default function ProgressDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <TrendingDown className="h-5 w-5 text-red-600" />
+              <AlertTriangle className="h-5 w-5 text-red-600" />
               <span className="text-2xl font-bold text-red-600">{atRiskCount}</span>
             </div>
           </CardContent>
@@ -284,7 +292,7 @@ export default function ProgressDashboard() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{student.studentName}</span>
-                        {student.isAtRisk && <AtRiskBadge showLabel={false} />}
+                        <StudentMonitoringBadge info={student.monitoring} compact />
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {student.className}

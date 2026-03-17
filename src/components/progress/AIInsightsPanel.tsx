@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, Target, TrendingUp, Lightbulb, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Sparkles, Target, TrendingUp, Lightbulb, AlertTriangle, CheckCircle, MessageCircle } from 'lucide-react';
 import type { StudentInsights, ClassInsights } from '@/hooks/progress/useAIAnalysis';
 
 interface AIInsightsPanelProps {
@@ -133,12 +133,29 @@ export function AIInsightsPanel({
           </div>
 
           {/* Priority Subject */}
-          {studentInsights.focusSubject && (
+          {(studentInsights.prioritySubject || studentInsights.focusSubject) && (
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
               <div className="flex items-center gap-2 text-primary font-medium text-sm">
                 <Target className="h-4 w-4" />
-                Priority Subject: {studentInsights.focusSubject}
+                Priority Subject: {studentInsights.prioritySubject || studentInsights.focusSubject}
               </div>
+            </div>
+          )}
+
+          {/* Suggested Teacher Actions */}
+          {studentInsights.suggestedTeacherActions && studentInsights.suggestedTeacherActions.length > 0 && (
+            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
+              <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-medium text-sm mb-2">
+                <Lightbulb className="h-4 w-4" />
+                Suggested Teacher Actions
+              </div>
+              <ul className="space-y-1">
+                {studentInsights.suggestedTeacherActions.map((action, idx) => (
+                  <li key={idx} className="text-sm text-blue-800 dark:text-blue-300">
+                    {idx + 1}. {action}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -156,6 +173,23 @@ export function AIInsightsPanel({
               ))}
             </ul>
           </div>
+
+          {/* Parent Communication Tips */}
+          {studentInsights.parentCommunicationTips && studentInsights.parentCommunicationTips.length > 0 && (
+            <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900">
+              <div className="flex items-center gap-2 text-purple-700 dark:text-purple-400 font-medium text-sm mb-2">
+                <MessageCircle className="h-4 w-4" />
+                Parent Communication Tips
+              </div>
+              <ul className="space-y-1">
+                {studentInsights.parentCommunicationTips.map((tip, idx) => (
+                  <li key={idx} className="text-sm text-purple-800 dark:text-purple-300">
+                    • {tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -237,6 +271,40 @@ export function AIInsightsPanel({
               ))}
             </ul>
           </div>
+
+          {/* Suggested Teacher Actions */}
+          {classInsights.suggestedTeacherActions && classInsights.suggestedTeacherActions.length > 0 && (
+            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
+              <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-medium text-sm mb-2">
+                <Target className="h-4 w-4" />
+                Suggested Teacher Actions
+              </div>
+              <ul className="space-y-1">
+                {classInsights.suggestedTeacherActions.map((action, idx) => (
+                  <li key={idx} className="text-sm text-blue-800 dark:text-blue-300">
+                    {idx + 1}. {action}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Intervention Priorities */}
+          {classInsights.interventionPriorities && classInsights.interventionPriorities.length > 0 && (
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
+              <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-2">
+                <AlertTriangle className="h-4 w-4" />
+                Intervention Priorities
+              </div>
+              <ul className="space-y-1">
+                {classInsights.interventionPriorities.map((item, idx) => (
+                  <li key={idx} className="text-sm text-red-800 dark:text-red-300">
+                    {idx + 1}. {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

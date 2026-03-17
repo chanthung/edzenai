@@ -31,6 +31,9 @@ export interface StudentInsights {
   recommendations: string[];
   riskLevel: 'low' | 'medium' | 'high';
   focusSubject: string;
+  prioritySubject: string;
+  suggestedTeacherActions: string[];
+  parentCommunicationTips?: string[];
 }
 
 export interface ClassInsights {
@@ -41,6 +44,8 @@ export interface ClassInsights {
   easiestSubject: string;
   classRecommendations: string[];
   focusAreas: string[];
+  suggestedTeacherActions: string[];
+  interventionPriorities?: string[];
 }
 
 export interface PTMSummary {
