@@ -44,6 +44,8 @@ export interface ClassInsights {
   easiestSubject: string;
   classRecommendations: string[];
   focusAreas: string[];
+  suggestedTeacherActions: string[];
+  interventionPriorities?: string[];
 }
 
 export interface PTMSummary {
