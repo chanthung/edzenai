@@ -129,6 +129,7 @@ export function useStudentAttendanceSummary(accessToken: string | undefined) {
       const present = records.filter(r => r.status === 'present').length;
       const absent = records.filter(r => r.status === 'absent').length;
       const late = records.filter(r => r.status === 'late').length;
+      const leave = records.filter(r => r.status === 'leave').length;
       const percentage = total > 0 ? Math.round((present + late) * 100 / total) : 0;
 
       // Group by month
