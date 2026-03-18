@@ -6,6 +6,32 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function parseWithRecovery(content: string): unknown {
+  try {
+    return JSON.parse(content);
+  } catch (e) {
+    // attempt to repair truncated JSON array
+    const lastBrace = content.lastIndexOf("}");
+    if (lastBrace > 0) {
+      const repaired = content.substring(0, lastBrace + 1) + "]";
+      try {
+        const items = JSON.parse(repaired);
+        console.warn(`Recovered ${Array.isArray(items) ? items.length : 'unknown'} items from truncated response`);
+        return items;
+      } catch {
+        // Try wrapping in object
+        try {
+          const repairedObj = content.substring(0, lastBrace + 1);
+          return JSON.parse(repairedObj);
+        } catch {
+          console.error("Cannot repair truncated JSON");
+        }
+      }
+    }
+    throw new Error(`Invalid JSON response from webhook. First 200 chars: ${content.substring(0, 200)}`);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -45,7 +71,26 @@ serve(async (req) => {
       );
     }
 
-    const result = await n8nResponse.json();
+    // Read response as text first, then parse
+    const responseText = await n8nResponse.text();
+    
+    if (!responseText || responseText.trim().length === 0) {
+      console.error("n8n returned empty response. The webhook may be in async mode.");
+      return new Response(
+        JSON.stringify({ error: "The webhook returned an empty response. Please ensure your n8n webhook node uses 'Respond to Webhook' (not 'Respond Immediately')." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const result = parseWithRecovery(responseText);
+
+    // Handle n8n async mode response
+    if (result && typeof result === "object" && "message" in (result as Record<string, unknown>) && (result as Record<string, unknown>).message === "Workflow was started") {
+      return new Response(
+        JSON.stringify({ error: "The n8n webhook is running in async mode. Please switch your Webhook node to use 'Respond to Webhook' node at the end of your workflow instead of 'Respond Immediately'." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(JSON.stringify(result), {
       status: 200,
