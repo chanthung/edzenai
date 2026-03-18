@@ -133,14 +133,15 @@ export function useStudentAttendanceSummary(accessToken: string | undefined) {
       const percentage = total > 0 ? Math.round((present + late) * 100 / total) : 0;
 
       // Group by month
-      const byMonth: Record<string, { present: number; absent: number; late: number; total: number }> = {};
+      const byMonth: Record<string, { present: number; absent: number; late: number; leave: number; total: number }> = {};
       records.forEach(r => {
         const month = r.date.substring(0, 7); // YYYY-MM
-        if (!byMonth[month]) byMonth[month] = { present: 0, absent: 0, late: 0, total: 0 };
+        if (!byMonth[month]) byMonth[month] = { present: 0, absent: 0, late: 0, leave: 0, total: 0 };
         byMonth[month].total++;
         if (r.status === 'present') byMonth[month].present++;
         else if (r.status === 'absent') byMonth[month].absent++;
         else if (r.status === 'late') byMonth[month].late++;
+        else if (r.status === 'leave') byMonth[month].leave++;
       });
 
       return {
