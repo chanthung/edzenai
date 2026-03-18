@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,49 +15,106 @@ function base64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
-function parseSpreadsheet(fileBase64: string, fileName: string): { headers: string[]; rows: Record<string, string>[] } {
-  const bytes = base64ToUint8Array(fileBase64);
-  const workbook = XLSX.read(bytes, { type: "array" });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+function parseCSV(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) throw new Error("File has no data rows");
 
-  if (!jsonData.length) {
-    throw new Error("The file appears to be empty or has no data rows");
+  // Simple CSV parser handling quoted fields
+  function splitRow(line: string): string[] {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === "," && !inQuotes) {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current.trim());
+    return result;
   }
 
-  const headers = Object.keys(jsonData[0]);
-  const rows = jsonData.map((row) => {
-    const cleaned: Record<string, string> = {};
-    for (const [key, value] of Object.entries(row)) {
-      cleaned[key] = String(value ?? "").trim();
-    }
-    return cleaned;
+  const headers = splitRow(lines[0]);
+  const rows = lines.slice(1).map((line) => {
+    const values = splitRow(line);
+    const row: Record<string, string> = {};
+    headers.forEach((h, i) => {
+      row[h] = (values[i] || "").trim();
+    });
+    return row;
   });
 
   return { headers, rows };
 }
 
+function parseSpreadsheet(fileBase64: string, fileName: string): { headers: string[]; rows: Record<string, string>[] } {
+  const isCSV = fileName.toLowerCase().endsWith(".csv");
+
+  if (isCSV) {
+    const bytes = base64ToUint8Array(fileBase64);
+    const text = new TextDecoder("utf-8").decode(bytes);
+    return parseCSV(text);
+  }
+
+  // For XLSX: extract sheet data using the AI to interpret raw content
+  // We'll convert to text and send to AI for extraction
+  const bytes = base64ToUint8Array(fileBase64);
+  // Try to decode as UTF-8 in case it's actually a CSV with wrong extension
+  try {
+    const text = new TextDecoder("utf-8").decode(bytes);
+    // Check if it looks like CSV/TSV
+    if (text.includes(",") || text.includes("\t")) {
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length >= 2) {
+        // Try tab-separated first, then comma
+        const tabCount = (lines[0].match(/\t/g) || []).length;
+        const commaCount = (lines[0].match(/,/g) || []).length;
+        if (tabCount > commaCount) {
+          // TSV
+          const headers = lines[0].split("\t").map((h) => h.trim());
+          const rows = lines.slice(1).map((line) => {
+            const values = line.split("\t");
+            const row: Record<string, string> = {};
+            headers.forEach((h, i) => {
+              row[h] = (values[i] || "").trim();
+            });
+            return row;
+          });
+          return { headers, rows };
+        }
+        return parseCSV(text);
+      }
+    }
+  } catch {
+    // Not text-decodable
+  }
+
+  throw new Error(
+    "XLSX files are not directly supported. Please save your file as CSV (.csv) format and re-upload. In Excel: File → Save As → CSV (Comma delimited)."
+  );
+}
+
 function normalizePhone(phone: string): string {
   if (!phone) return "";
-  // Remove spaces, dashes, dots
   let cleaned = phone.replace(/[\s\-\.()]/g, "");
-  // Remove leading +91 or 91 for Indian numbers
-  if (cleaned.startsWith("+91") && cleaned.length === 13) {
-    cleaned = cleaned.slice(3);
-  } else if (cleaned.startsWith("91") && cleaned.length === 12) {
-    cleaned = cleaned.slice(2);
-  }
+  if (cleaned.startsWith("+91") && cleaned.length === 13) cleaned = cleaned.slice(3);
+  else if (cleaned.startsWith("91") && cleaned.length === 12) cleaned = cleaned.slice(2);
   return cleaned;
 }
 
 function capitalizeName(name: string): string {
   if (!name) return "";
-  return name
-    .toLowerCase()
-    .split(/\s+/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+  return name.toLowerCase().split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
 serve(async (req) => {
@@ -157,16 +213,12 @@ Return the mapping as a JSON object where keys are source column names and value
       const errText = await mappingResponse.text();
       console.error("AI mapping error:", mappingResponse.status, errText);
       if (mappingResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (mappingResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       throw new Error("AI column mapping failed");
     }
@@ -186,21 +238,14 @@ Return the mapping as a JSON object where keys are source column names and value
     const warnings: string[] = [];
     const students = rows.map((row, index) => {
       const student: Record<string, string> = {
-        name: "",
-        roll_number: "",
-        class_name: "",
-        section: "",
-        parent_name: "",
-        parent_phone: "",
-        parent_email: "",
-        guardian: "",
-        address: "",
+        name: "", roll_number: "", class_name: "", section: "",
+        parent_name: "", parent_phone: "", parent_email: "",
+        guardian: "", address: "",
       };
 
       for (const [sourceCol, targetField] of Object.entries(mapping)) {
         if (targetField && typeof targetField === "string" && targetField in student) {
-          const value = row[sourceCol] || "";
-          student[targetField] = value;
+          student[targetField] = row[sourceCol] || "";
         }
       }
 
@@ -211,16 +256,10 @@ Return the mapping as a JSON object where keys are source column names and value
       student.parent_phone = normalizePhone(student.parent_phone);
       student.parent_email = student.parent_email.toLowerCase().trim();
 
-      // Standardize class name
-      if (student.class_name) {
-        const classClean = student.class_name.trim();
-        // If it's just a number, prefix with "Class "
-        if (/^\d+$/.test(classClean)) {
-          student.class_name = `Class ${classClean}`;
-        }
+      if (student.class_name && /^\d+$/.test(student.class_name.trim())) {
+        student.class_name = `Class ${student.class_name.trim()}`;
       }
 
-      // Track warnings
       if (!student.name) warnings.push(`Row ${index + 1}: Missing student name`);
       if (!student.parent_phone) warnings.push(`Row ${index + 1}: Missing phone number`);
 
