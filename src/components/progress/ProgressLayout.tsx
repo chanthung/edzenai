@@ -14,6 +14,7 @@ import {
   ClipboardList, 
   PenLine,
   FileText,
+  CalendarCheck,
   LogOut,
   Menu,
   X,
