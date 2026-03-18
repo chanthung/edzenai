@@ -92,7 +92,7 @@ export function useSaveAttendance() {
         student_id: e.student_id,
         school_id: schoolId,
         date,
-        status: e.status as 'present' | 'absent' | 'late',
+        status: e.status as 'present' | 'absent' | 'late' | 'leave',
         marked_by: user.id,
         remarks: e.remarks || null,
       }));
