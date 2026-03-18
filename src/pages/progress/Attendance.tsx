@@ -1,0 +1,340 @@
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { format, addDays, subDays } from "date-fns";
+import { ProgressLayout } from "@/components/progress/ProgressLayout";
+import { useAttendanceByDate, useSaveAttendance, AttendanceStatus } from "@/hooks/useAttendance";
+import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Check, 
+  X, 
+  Clock, 
+  CheckCircle2, 
+  Save,
+  Users
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type LocalEntry = {
+  student_id: string;
+  status: AttendanceStatus;
+};
+
+export default function Attendance() {
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [localEntries, setLocalEntries] = useState<Map<string, AttendanceStatus>>(new Map());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Get unique class names from students
+  const { data: allStudents, isLoading: studentsLoading } = useResolvedStudents();
+  const classes = useMemo(() => {
+    const classSet = new Set<string>();
+    (allStudents ?? []).forEach(s => {
+      if (s.class_name) classSet.add(s.class_name);
+    });
+    return Array.from(classSet).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB || a.localeCompare(b);
+    });
+  }, [allStudents]);
+
+  // Auto-select first class
+  useEffect(() => {
+    if (classes.length > 0 && !selectedClass) {
+      setSelectedClass(classes[0]);
+    }
+  }, [classes, selectedClass]);
+
+  const { data: attendanceData, isLoading: attendanceLoading } = useAttendanceByDate(selectedDate, selectedClass);
+  const saveAttendance = useSaveAttendance();
+
+  // When attendance data loads, populate local state
+  useEffect(() => {
+    if (attendanceData) {
+      const map = new Map<string, AttendanceStatus>();
+      attendanceData.forEach(item => {
+        map.set(
+          item.student.id,
+          (item.attendance?.status as AttendanceStatus) ?? 'present'
+        );
+      });
+      setLocalEntries(map);
+      setHasUnsavedChanges(false);
+    }
+  }, [attendanceData]);
+
+  const toggleStatus = useCallback((studentId: string) => {
+    setLocalEntries(prev => {
+      const next = new Map(prev);
+      const current = next.get(studentId) || 'present';
+      // Cycle: present -> absent -> late -> present
+      const cycle: AttendanceStatus[] = ['present', 'absent', 'late'];
+      const idx = cycle.indexOf(current);
+      next.set(studentId, cycle[(idx + 1) % 3]);
+      return next;
+    });
+    setHasUnsavedChanges(true);
+  }, []);
+
+  const markAllPresent = useCallback(() => {
+    if (!attendanceData) return;
+    const map = new Map<string, AttendanceStatus>();
+    attendanceData.forEach(item => map.set(item.student.id, 'present'));
+    setLocalEntries(map);
+    setHasUnsavedChanges(true);
+  }, [attendanceData]);
+
+  const handleSave = async () => {
+    const entries = Array.from(localEntries.entries()).map(([student_id, status]) => ({
+      student_id,
+      status,
+    }));
+
+    try {
+      await saveAttendance.mutateAsync({ date: selectedDate, entries });
+      toast({ title: "Attendance saved", description: `Saved for ${entries.length} students` });
+      setHasUnsavedChanges(false);
+    } catch (err: any) {
+      toast({ title: "Error saving attendance", description: err.message, variant: "destructive" });
+    }
+  };
+
+  // Summary counts
+  const summary = useMemo(() => {
+    let present = 0, absent = 0, late = 0;
+    localEntries.forEach(status => {
+      if (status === 'present') present++;
+      else if (status === 'absent') absent++;
+      else if (status === 'late') late++;
+    });
+    return { present, absent, late, total: localEntries.size };
+  }, [localEntries]);
+
+  const isToday = selectedDate === format(new Date(), 'yyyy-MM-dd');
+  const isFuture = selectedDate > format(new Date(), 'yyyy-MM-dd');
+
+  return (
+    <ProgressLayout>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Daily Attendance</h1>
+            <p className="text-sm text-muted-foreground">Mark attendance for your class</p>
+          </div>
+        </div>
+
+        {/* Controls: Date + Class selector */}
+        <Card>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              {/* Date navigation */}
+              <div className="flex items-center gap-2 flex-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => setSelectedDate(format(subDays(new Date(selectedDate), 1), 'yyyy-MM-dd'))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex-1 text-center">
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    max={format(new Date(), 'yyyy-MM-dd')}
+                    className="w-full text-center bg-background border border-input rounded-md px-3 py-2 text-sm"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => {
+                    const next = format(addDays(new Date(selectedDate), 1), 'yyyy-MM-dd');
+                    const today = format(new Date(), 'yyyy-MM-dd');
+                    if (next <= today) setSelectedDate(next);
+                  }}
+                  disabled={isToday}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Class selector */}
+              <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder="Select Class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map(c => (
+                    <SelectItem key={c} value={c}>Class {c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {isToday && (
+              <p className="text-xs text-muted-foreground mt-2 text-center sm:text-left">
+                Today — {format(new Date(selectedDate), 'EEEE, dd MMM yyyy')}
+              </p>
+            )}
+            {!isToday && !isFuture && (
+              <p className="text-xs text-muted-foreground mt-2 text-center sm:text-left">
+                {format(new Date(selectedDate), 'EEEE, dd MMM yyyy')}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Summary bar */}
+        {summary.total > 0 && (
+          <div className="grid grid-cols-4 gap-2">
+            <div className="bg-muted rounded-lg p-2 text-center">
+              <p className="text-lg font-bold text-foreground">{summary.total}</p>
+              <p className="text-xs text-muted-foreground">Total</p>
+            </div>
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-2 text-center">
+              <p className="text-lg font-bold text-emerald-600">{summary.present}</p>
+              <p className="text-xs text-muted-foreground">Present</p>
+            </div>
+            <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-2 text-center">
+              <p className="text-lg font-bold text-red-600">{summary.absent}</p>
+              <p className="text-xs text-muted-foreground">Absent</p>
+            </div>
+            <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-2 text-center">
+              <p className="text-lg font-bold text-amber-600">{summary.late}</p>
+              <p className="text-xs text-muted-foreground">Late</p>
+            </div>
+          </div>
+        )}
+
+        {/* Quick actions */}
+        {attendanceData && attendanceData.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={markAllPresent} className="gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              Mark All Present
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saveAttendance.isPending || !hasUnsavedChanges}
+              className="gap-1.5 ml-auto"
+            >
+              <Save className="h-4 w-4" />
+              {saveAttendance.isPending ? 'Saving...' : 'Save Attendance'}
+            </Button>
+          </div>
+        )}
+
+        {/* Student list */}
+        {(attendanceLoading || studentsLoading) ? (
+          <div className="space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : isFuture ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Cannot mark attendance for future dates.</p>
+            </CardContent>
+          </Card>
+        ) : !selectedClass ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">Select a class to begin marking attendance.</p>
+            </CardContent>
+          </Card>
+        ) : attendanceData && attendanceData.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">No students found in Class {selectedClass}.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-1">
+            {attendanceData?.map((item, index) => {
+              const status = localEntries.get(item.student.id) || 'present';
+              return (
+                <button
+                  key={item.student.id}
+                  onClick={() => toggleStatus(item.student.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-3 rounded-lg border transition-colors text-left",
+                    status === 'present' && "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900",
+                    status === 'absent' && "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900",
+                    status === 'late' && "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900",
+                  )}
+                >
+                  {/* Roll number */}
+                  <span className="text-xs text-muted-foreground w-6 text-center shrink-0">
+                    {item.student.roll_number || (index + 1)}
+                  </span>
+
+                  {/* Student name */}
+                  <span className="flex-1 text-sm font-medium text-foreground truncate">
+                    {item.student.name}
+                  </span>
+
+                  {/* Status indicator */}
+                  <StatusBadge status={status} />
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Floating save button on mobile when there are unsaved changes */}
+        {hasUnsavedChanges && (
+          <div className="fixed bottom-4 left-4 right-4 sm:hidden z-50">
+            <Button
+              className="w-full shadow-lg gap-2"
+              size="lg"
+              onClick={handleSave}
+              disabled={saveAttendance.isPending}
+            >
+              <Save className="h-5 w-5" />
+              {saveAttendance.isPending ? 'Saving...' : 'Save Attendance'}
+            </Button>
+          </div>
+        )}
+      </div>
+    </ProgressLayout>
+  );
+}
+
+function StatusBadge({ status }: { status: AttendanceStatus }) {
+  switch (status) {
+    case 'present':
+      return (
+        <Badge variant="outline" className="bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-700 gap-1 shrink-0">
+          <Check className="h-3 w-3" /> P
+        </Badge>
+      );
+    case 'absent':
+      return (
+        <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300 dark:bg-red-900/50 dark:text-red-300 dark:border-red-700 gap-1 shrink-0">
+          <X className="h-3 w-3" /> A
+        </Badge>
+      );
+    case 'late':
+      return (
+        <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700 gap-1 shrink-0">
+          <Clock className="h-3 w-3" /> L
+        </Badge>
+      );
+  }
+}
