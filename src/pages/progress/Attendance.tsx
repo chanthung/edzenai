@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
+import { RecordLeaveDialog } from "@/components/progress/RecordLeaveDialog";
 import { 
   ChevronLeft, 
   ChevronRight, 
