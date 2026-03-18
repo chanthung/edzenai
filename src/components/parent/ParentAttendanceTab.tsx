@@ -2,7 +2,7 @@ import { useStudentAttendanceSummary } from "@/hooks/useAttendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, X, Clock, CalendarDays } from "lucide-react";
+import { Check, X, Clock, CalendarDays, CalendarOff } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 interface ParentAttendanceTabProps {
