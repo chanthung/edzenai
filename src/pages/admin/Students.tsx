@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { BulkStudentUpload } from "@/components/admin/BulkStudentUpload";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
