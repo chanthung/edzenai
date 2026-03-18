@@ -10,6 +10,7 @@ import {
   ClipboardList, 
   Edit3, 
   BarChart3,
+  CalendarCheck,
   LogOut,
   Menu,
   X
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/progress/subjects", label: "Subjects", icon: BookOpen },
   { href: "/progress/assessments", label: "Assessments", icon: ClipboardList },
   { href: "/progress/marks", label: "Marks Entry", icon: Edit3 },
+  { href: "/progress/attendance", label: "Attendance", icon: CalendarCheck },
 ];
 
 export function TeacherLayout({ children }: TeacherLayoutProps) {

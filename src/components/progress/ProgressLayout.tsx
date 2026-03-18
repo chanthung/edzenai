@@ -14,6 +14,7 @@ import {
   ClipboardList, 
   PenLine,
   FileText,
+  CalendarCheck,
   LogOut,
   Menu,
   X,
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/progress/subjects", label: "Subjects", icon: BookOpen },
   { href: "/progress/assessments", label: "Assessments", icon: ClipboardList },
   { href: "/progress/marks", label: "Marks Entry", icon: PenLine },
+  { href: "/progress/attendance", label: "Attendance", icon: CalendarCheck },
   { href: "/progress/report-cards", label: "Report Cards", icon: FileText },
 ];
 

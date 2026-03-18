@@ -25,6 +25,7 @@ import ProgressAssessments from "./pages/progress/Assessments";
 import ProgressMarksEntry from "./pages/progress/MarksEntry";
 import StudentProgress from "./pages/progress/StudentProgress";
 import ReportCards from "./pages/progress/ReportCards";
+import Attendance from "./pages/progress/Attendance";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/progress/assessments" element={<ProgressAssessments />} />
             <Route path="/progress/marks" element={<ProgressMarksEntry />} />
             <Route path="/progress/student/:studentId" element={<StudentProgress />} />
+            <Route path="/progress/attendance" element={<Attendance />} />
             <Route path="/progress/report-cards" element={<ReportCards />} />
 
             {/* Catch-all */}

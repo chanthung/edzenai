@@ -147,6 +147,57 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          marked_by: string | null
+          remarks: string | null
+          school_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          marked_by?: string | null
+          remarks?: string | null
+          school_id: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          marked_by?: string | null
+          remarks?: string | null
+          school_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_template_assignments: {
         Row: {
           academic_year_id: string
@@ -1137,6 +1188,14 @@ export type Database = {
         Args: { _school_id: string }
         Returns: Database["public"]["Enums"]["school_system_state"]
       }
+      get_student_attendance_by_access_token: {
+        Args: { _access_token: string }
+        Returns: {
+          date: string
+          remarks: string
+          status: Database["public"]["Enums"]["attendance_status"]
+        }[]
+      }
       get_student_by_access_token: {
         Args: { _access_token: string }
         Returns: {
@@ -1183,6 +1242,7 @@ export type Database = {
       app_role: "platform_admin" | "school_admin" | "teacher"
       assessment_category: "formative" | "summative"
       assessment_domain: "cognitive" | "affective" | "psychomotor"
+      attendance_status: "present" | "absent" | "late"
       fee_status: "upcoming" | "due" | "overdue" | "paid"
       grade_scale: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D" | "E"
       grading_type: "percentage" | "custom_grades"
@@ -1337,6 +1397,7 @@ export const Constants = {
       app_role: ["platform_admin", "school_admin", "teacher"],
       assessment_category: ["formative", "summative"],
       assessment_domain: ["cognitive", "affective", "psychomotor"],
+      attendance_status: ["present", "absent", "late"],
       fee_status: ["upcoming", "due", "overdue", "paid"],
       grade_scale: ["A+", "A", "B+", "B", "C+", "C", "D", "E"],
       grading_type: ["percentage", "custom_grades"],

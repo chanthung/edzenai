@@ -2,11 +2,12 @@ import { useParams } from "react-router-dom";
 import { useParentView } from "@/hooks/useParentView";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GraduationCap, AlertCircle, IndianRupee, BarChart3 } from "lucide-react";
+import { GraduationCap, AlertCircle, IndianRupee, BarChart3, CalendarCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ParentFeesTab } from "@/components/parent/ParentFeesTab";
 import { ParentProgressTab } from "@/components/parent/ParentProgressTab";
+import { ParentAttendanceTab } from "@/components/parent/ParentAttendanceTab";
 
 export default function ParentView() {
   const { token } = useParams<{ name: string; token: string }>();
@@ -70,14 +71,18 @@ export default function ParentView() {
       {/* Tab Navigation */}
       <div className="max-w-2xl mx-auto px-4 -mt-2">
         <Tabs defaultValue="fees" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="fees" className="flex items-center gap-2">
-              <IndianRupee className="h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="fees" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <IndianRupee className="h-3.5 w-3.5" />
               Fees
             </TabsTrigger>
-            <TabsTrigger value="progress" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
+            <TabsTrigger value="progress" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <BarChart3 className="h-3.5 w-3.5" />
               Progress
+            </TabsTrigger>
+            <TabsTrigger value="attendance" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <CalendarCheck className="h-3.5 w-3.5" />
+              Attendance
             </TabsTrigger>
           </TabsList>
           
@@ -87,6 +92,10 @@ export default function ParentView() {
           
           <TabsContent value="progress" className="mt-0">
             <ParentProgressTab accessToken={token!} studentName={student.name} />
+          </TabsContent>
+
+          <TabsContent value="attendance" className="mt-0">
+            <ParentAttendanceTab accessToken={token!} studentName={student.name} />
           </TabsContent>
         </Tabs>
       </div>
