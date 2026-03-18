@@ -145,7 +145,7 @@ export function useStudentAttendanceSummary(accessToken: string | undefined) {
 
       return {
         records,
-        summary: { total, present, absent, late, percentage },
+        summary: { total, present, absent, late, leave, percentage },
         byMonth,
       };
     },
