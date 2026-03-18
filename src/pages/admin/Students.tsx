@@ -88,6 +88,7 @@ export default function Students() {
   const [isBulkSending, setIsBulkSending] = useState(false);
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
   const [bulkSendProgress, setBulkSendProgress] = useState({ current: 0, total: 0 });
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   
   const [newStudent, setNewStudent] = useState({
     name: "",
