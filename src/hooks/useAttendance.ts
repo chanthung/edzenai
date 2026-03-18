@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useResolvedSchoolId } from '@/hooks/progress/useResolvedSchoolId';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type AttendanceStatus = 'present' | 'absent' | 'late';
+export type AttendanceStatus = 'present' | 'absent' | 'late' | 'leave';
 
 export interface AttendanceRecord {
   id: string;
@@ -24,15 +24,15 @@ export interface AttendanceBulkEntry {
 /**
  * Fetch attendance records for a given date and optional class filter.
  */
-export function useAttendanceByDate(date: string, className?: string) {
+export function useAttendanceByDate(date: string, className?: string, section?: string) {
   const { data: schoolId } = useResolvedSchoolId();
 
   return useQuery({
-    queryKey: ['attendance', schoolId, date, className],
+    queryKey: ['attendance', schoolId, date, className, section],
     queryFn: async () => {
       if (!schoolId) return [];
 
-      // First get students for this class
+      // First get students for this class and section
       let studentQuery = supabase
         .from('students')
         .select('id, name, roll_number, class_name, section')
@@ -41,6 +41,9 @@ export function useAttendanceByDate(date: string, className?: string) {
 
       if (className) {
         studentQuery = studentQuery.eq('class_name', className);
+      }
+      if (section) {
+        studentQuery = studentQuery.eq('section', section);
       }
 
       const { data: students, error: studentsError } = await studentQuery;
@@ -89,7 +92,7 @@ export function useSaveAttendance() {
         student_id: e.student_id,
         school_id: schoolId,
         date,
-        status: e.status as 'present' | 'absent' | 'late',
+        status: e.status as 'present' | 'absent' | 'late' | 'leave',
         marked_by: user.id,
         remarks: e.remarks || null,
       }));
@@ -126,22 +129,24 @@ export function useStudentAttendanceSummary(accessToken: string | undefined) {
       const present = records.filter(r => r.status === 'present').length;
       const absent = records.filter(r => r.status === 'absent').length;
       const late = records.filter(r => r.status === 'late').length;
+      const leave = records.filter(r => r.status === 'leave').length;
       const percentage = total > 0 ? Math.round((present + late) * 100 / total) : 0;
 
       // Group by month
-      const byMonth: Record<string, { present: number; absent: number; late: number; total: number }> = {};
+      const byMonth: Record<string, { present: number; absent: number; late: number; leave: number; total: number }> = {};
       records.forEach(r => {
         const month = r.date.substring(0, 7); // YYYY-MM
-        if (!byMonth[month]) byMonth[month] = { present: 0, absent: 0, late: 0, total: 0 };
+        if (!byMonth[month]) byMonth[month] = { present: 0, absent: 0, late: 0, leave: 0, total: 0 };
         byMonth[month].total++;
         if (r.status === 'present') byMonth[month].present++;
         else if (r.status === 'absent') byMonth[month].absent++;
         else if (r.status === 'late') byMonth[month].late++;
+        else if (r.status === 'leave') byMonth[month].leave++;
       });
 
       return {
         records,
-        summary: { total, present, absent, late, percentage },
+        summary: { total, present, absent, late, leave, percentage },
         byMonth,
       };
     },

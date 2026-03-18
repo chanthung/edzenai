@@ -2,7 +2,7 @@ import { useStudentAttendanceSummary } from "@/hooks/useAttendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, X, Clock, CalendarDays } from "lucide-react";
+import { Check, X, Clock, CalendarDays, CalendarOff } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 interface ParentAttendanceTabProps {
@@ -67,7 +67,7 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-4 gap-3 text-center">
             <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-2">
               <div className="flex items-center justify-center gap-1 text-emerald-600 mb-1">
                 <Check className="h-3.5 w-3.5" />
@@ -88,6 +88,13 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
                 <span className="text-sm font-bold">{summary.late}</span>
               </div>
               <p className="text-xs text-muted-foreground">Late</p>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2">
+              <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
+                <CalendarOff className="h-3.5 w-3.5" />
+                <span className="text-sm font-bold">{summary.leave ?? 0}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Leave</p>
             </div>
           </div>
         </CardContent>
@@ -145,10 +152,12 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
                       ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-300"
                       : record.status === 'absent'
                       ? "bg-red-100 text-red-700 border-red-300 dark:bg-red-900/50 dark:text-red-300"
+                      : record.status === 'leave'
+                      ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300"
                       : "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300"
                   }
                 >
-                  {record.status === 'present' ? 'P' : record.status === 'absent' ? 'A' : 'L'}
+                  {record.status === 'present' ? 'P' : record.status === 'absent' ? 'A' : record.status === 'leave' ? 'Lv' : 'L'}
                 </Badge>
               </div>
             ))}

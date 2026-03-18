@@ -1242,7 +1242,7 @@ export type Database = {
       app_role: "platform_admin" | "school_admin" | "teacher"
       assessment_category: "formative" | "summative"
       assessment_domain: "cognitive" | "affective" | "psychomotor"
-      attendance_status: "present" | "absent" | "late"
+      attendance_status: "present" | "absent" | "late" | "leave"
       fee_status: "upcoming" | "due" | "overdue" | "paid"
       grade_scale: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D" | "E"
       grading_type: "percentage" | "custom_grades"
@@ -1397,7 +1397,7 @@ export const Constants = {
       app_role: ["platform_admin", "school_admin", "teacher"],
       assessment_category: ["formative", "summative"],
       assessment_domain: ["cognitive", "affective", "psychomotor"],
-      attendance_status: ["present", "absent", "late"],
+      attendance_status: ["present", "absent", "late", "leave"],
       fee_status: ["upcoming", "due", "overdue", "paid"],
       grade_scale: ["A+", "A", "B+", "B", "C+", "C", "D", "E"],
       grading_type: ["percentage", "custom_grades"],

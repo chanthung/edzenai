@@ -4,7 +4,7 @@ import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { useAttendanceByDate, useSaveAttendance, AttendanceStatus } from "@/hooks/useAttendance";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,23 +17,21 @@ import {
   Clock, 
   CheckCircle2, 
   Save,
-  Users
+  Users,
+  CalendarOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type LocalEntry = {
-  student_id: string;
-  status: AttendanceStatus;
-};
 
 export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedSection, setSelectedSection] = useState<string>('');
   const [localEntries, setLocalEntries] = useState<Map<string, AttendanceStatus>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Get unique class names from students
   const { data: allStudents, isLoading: studentsLoading } = useResolvedStudents();
+
+  // Derive unique classes
   const classes = useMemo(() => {
     const classSet = new Set<string>();
     (allStudents ?? []).forEach(s => {
@@ -46,6 +44,16 @@ export default function Attendance() {
     });
   }, [allStudents]);
 
+  // Derive sections for selected class
+  const sections = useMemo(() => {
+    if (!selectedClass) return [];
+    const sectionSet = new Set<string>();
+    (allStudents ?? []).forEach(s => {
+      if (s.class_name === selectedClass && s.section) sectionSet.add(s.section);
+    });
+    return Array.from(sectionSet).sort();
+  }, [allStudents, selectedClass]);
+
   // Auto-select first class
   useEffect(() => {
     if (classes.length > 0 && !selectedClass) {
@@ -53,7 +61,18 @@ export default function Attendance() {
     }
   }, [classes, selectedClass]);
 
-  const { data: attendanceData, isLoading: attendanceLoading } = useAttendanceByDate(selectedDate, selectedClass);
+  // Auto-select first section when class changes
+  useEffect(() => {
+    if (sections.length > 0) {
+      setSelectedSection(sections[0]);
+    } else {
+      setSelectedSection('');
+    }
+  }, [sections]);
+
+  const { data: attendanceData, isLoading: attendanceLoading } = useAttendanceByDate(
+    selectedDate, selectedClass, selectedSection || undefined
+  );
   const saveAttendance = useSaveAttendance();
 
   // When attendance data loads, populate local state
@@ -75,10 +94,9 @@ export default function Attendance() {
     setLocalEntries(prev => {
       const next = new Map(prev);
       const current = next.get(studentId) || 'present';
-      // Cycle: present -> absent -> late -> present
-      const cycle: AttendanceStatus[] = ['present', 'absent', 'late'];
+      const cycle: AttendanceStatus[] = ['present', 'absent', 'late', 'leave'];
       const idx = cycle.indexOf(current);
-      next.set(studentId, cycle[(idx + 1) % 3]);
+      next.set(studentId, cycle[(idx + 1) % cycle.length]);
       return next;
     });
     setHasUnsavedChanges(true);
@@ -109,13 +127,14 @@ export default function Attendance() {
 
   // Summary counts
   const summary = useMemo(() => {
-    let present = 0, absent = 0, late = 0;
+    let present = 0, absent = 0, late = 0, leave = 0;
     localEntries.forEach(status => {
       if (status === 'present') present++;
       else if (status === 'absent') absent++;
       else if (status === 'late') late++;
+      else if (status === 'leave') leave++;
     });
-    return { present, absent, late, total: localEntries.size };
+    return { present, absent, late, leave, total: localEntries.size };
   }, [localEntries]);
 
   const isToday = selectedDate === format(new Date(), 'yyyy-MM-dd');
@@ -132,7 +151,7 @@ export default function Attendance() {
           </div>
         </div>
 
-        {/* Controls: Date + Class selector */}
+        {/* Controls */}
         <Card>
           <CardContent className="p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -171,9 +190,9 @@ export default function Attendance() {
               </div>
 
               {/* Class selector */}
-              <Select value={selectedClass} onValueChange={setSelectedClass}>
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue placeholder="Select Class" />
+              <Select value={selectedClass} onValueChange={(v) => setSelectedClass(v)}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="Class" />
                 </SelectTrigger>
                 <SelectContent>
                   {classes.map(c => (
@@ -181,24 +200,31 @@ export default function Attendance() {
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Section selector */}
+              {sections.length > 0 && (
+                <Select value={selectedSection} onValueChange={setSelectedSection}>
+                  <SelectTrigger className="w-full sm:w-[120px]">
+                    <SelectValue placeholder="Section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sections.map(s => (
+                      <SelectItem key={s} value={s}>Sec {s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
-            {isToday && (
-              <p className="text-xs text-muted-foreground mt-2 text-center sm:text-left">
-                Today — {format(new Date(selectedDate), 'EEEE, dd MMM yyyy')}
-              </p>
-            )}
-            {!isToday && !isFuture && (
-              <p className="text-xs text-muted-foreground mt-2 text-center sm:text-left">
-                {format(new Date(selectedDate), 'EEEE, dd MMM yyyy')}
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground mt-2 text-center sm:text-left">
+              {isToday ? 'Today — ' : ''}{format(new Date(selectedDate), 'EEEE, dd MMM yyyy')}
+            </p>
           </CardContent>
         </Card>
 
         {/* Summary bar */}
         {summary.total > 0 && (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             <div className="bg-muted rounded-lg p-2 text-center">
               <p className="text-lg font-bold text-foreground">{summary.total}</p>
               <p className="text-xs text-muted-foreground">Total</p>
@@ -214,6 +240,10 @@ export default function Attendance() {
             <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-2 text-center">
               <p className="text-lg font-bold text-amber-600">{summary.late}</p>
               <p className="text-xs text-muted-foreground">Late</p>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2 text-center">
+              <p className="text-lg font-bold text-blue-600">{summary.leave}</p>
+              <p className="text-xs text-muted-foreground">Leave</p>
             </div>
           </div>
         )}
@@ -261,7 +291,7 @@ export default function Attendance() {
           <Card>
             <CardContent className="py-12 text-center">
               <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No students found in Class {selectedClass}.</p>
+              <p className="text-muted-foreground">No students found in Class {selectedClass}{selectedSection ? `, Section ${selectedSection}` : ''}.</p>
             </CardContent>
           </Card>
         ) : (
@@ -277,19 +307,15 @@ export default function Attendance() {
                     status === 'present' && "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900",
                     status === 'absent' && "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900",
                     status === 'late' && "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900",
+                    status === 'leave' && "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900",
                   )}
                 >
-                  {/* Roll number */}
                   <span className="text-xs text-muted-foreground w-6 text-center shrink-0">
                     {item.student.roll_number || (index + 1)}
                   </span>
-
-                  {/* Student name */}
                   <span className="flex-1 text-sm font-medium text-foreground truncate">
                     {item.student.name}
                   </span>
-
-                  {/* Status indicator */}
                   <StatusBadge status={status} />
                 </button>
               );
@@ -297,7 +323,7 @@ export default function Attendance() {
           </div>
         )}
 
-        {/* Floating save button on mobile when there are unsaved changes */}
+        {/* Floating save button on mobile */}
         {hasUnsavedChanges && (
           <div className="fixed bottom-4 left-4 right-4 sm:hidden z-50">
             <Button
@@ -334,6 +360,12 @@ function StatusBadge({ status }: { status: AttendanceStatus }) {
       return (
         <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700 gap-1 shrink-0">
           <Clock className="h-3 w-3" /> L
+        </Badge>
+      );
+    case 'leave':
+      return (
+        <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700 gap-1 shrink-0">
+          <CalendarOff className="h-3 w-3" /> Lv
         </Badge>
       );
   }
