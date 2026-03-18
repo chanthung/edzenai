@@ -256,6 +256,11 @@ export default function Attendance() {
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               Mark All Present
             </Button>
+            <RecordLeaveDialog
+              students={(attendanceData ?? []).map(item => item.student)}
+              selectedClass={selectedClass}
+              selectedSection={selectedSection}
+            />
             <Button
               size="sm"
               onClick={handleSave}
