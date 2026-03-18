@@ -61,6 +61,7 @@ const App = () => (
             <Route path="/progress/assessments" element={<ProgressAssessments />} />
             <Route path="/progress/marks" element={<ProgressMarksEntry />} />
             <Route path="/progress/student/:studentId" element={<StudentProgress />} />
+            <Route path="/progress/attendance" element={<Attendance />} />
             <Route path="/progress/report-cards" element={<ReportCards />} />
 
             {/* Catch-all */}
