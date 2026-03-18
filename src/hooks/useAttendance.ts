@@ -24,7 +24,7 @@ export interface AttendanceBulkEntry {
 /**
  * Fetch attendance records for a given date and optional class filter.
  */
-export function useAttendanceByDate(date: string, className?: string) {
+export function useAttendanceByDate(date: string, className?: string, section?: string) {
   const { data: schoolId } = useResolvedSchoolId();
 
   return useQuery({
