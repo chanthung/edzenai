@@ -28,11 +28,11 @@ export function useAttendanceByDate(date: string, className?: string, section?: 
   const { data: schoolId } = useResolvedSchoolId();
 
   return useQuery({
-    queryKey: ['attendance', schoolId, date, className],
+    queryKey: ['attendance', schoolId, date, className, section],
     queryFn: async () => {
       if (!schoolId) return [];
 
-      // First get students for this class
+      // First get students for this class and section
       let studentQuery = supabase
         .from('students')
         .select('id, name, roll_number, class_name, section')
@@ -41,6 +41,9 @@ export function useAttendanceByDate(date: string, className?: string, section?: 
 
       if (className) {
         studentQuery = studentQuery.eq('class_name', className);
+      }
+      if (section) {
+        studentQuery = studentQuery.eq('section', section);
       }
 
       const { data: students, error: studentsError } = await studentQuery;
