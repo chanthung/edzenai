@@ -501,7 +501,10 @@ export default function Students() {
             </DialogContent>
           </Dialog>
         </RestrictedButton>
+        </div>
       </PageHeader>
+
+      <BulkStudentUpload open={bulkUploadOpen} onOpenChange={setBulkUploadOpen} />
 
       {/* Search, Filter, and Bulk Actions */}
       <div className="flex flex-col sm:flex-row gap-4 mt-6">
