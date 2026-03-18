@@ -25,6 +25,7 @@ import ProgressAssessments from "./pages/progress/Assessments";
 import ProgressMarksEntry from "./pages/progress/MarksEntry";
 import StudentProgress from "./pages/progress/StudentProgress";
 import ReportCards from "./pages/progress/ReportCards";
+import Attendance from "./pages/progress/Attendance";
 
 const queryClient = new QueryClient();
 
