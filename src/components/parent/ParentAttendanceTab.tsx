@@ -67,7 +67,7 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-4 gap-3 text-center">
             <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-2">
               <div className="flex items-center justify-center gap-1 text-emerald-600 mb-1">
                 <Check className="h-3.5 w-3.5" />
@@ -88,6 +88,13 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
                 <span className="text-sm font-bold">{summary.late}</span>
               </div>
               <p className="text-xs text-muted-foreground">Late</p>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2">
+              <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
+                <CalendarOff className="h-3.5 w-3.5" />
+                <span className="text-sm font-bold">{summary.leave ?? 0}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Leave</p>
             </div>
           </div>
         </CardContent>
