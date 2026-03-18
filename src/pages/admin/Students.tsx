@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { BulkStudentUpload } from "@/components/admin/BulkStudentUpload";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,7 @@ import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { SiblingIndicator } from "@/components/admin/SiblingIndicator";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, Send } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, Send, FileSpreadsheet } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,6 +88,7 @@ export default function Students() {
   const [isBulkSending, setIsBulkSending] = useState(false);
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
   const [bulkSendProgress, setBulkSendProgress] = useState({ current: 0, total: 0 });
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   
   const [newStudent, setNewStudent] = useState({
     name: "",
@@ -346,14 +348,21 @@ export default function Students() {
   return (
     <AdminLayout>
       <PageHeader title="Students" description="Manage student records and parent access links">
-        <RestrictedButton isRestricted={isRestricted}>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={isRestricted}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Student
-              </Button>
-            </DialogTrigger>
+        <div className="flex gap-2">
+          <RestrictedButton isRestricted={isRestricted}>
+            <Button variant="outline" disabled={isRestricted} onClick={() => setBulkUploadOpen(true)}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Import via Excel (AI)
+            </Button>
+          </RestrictedButton>
+          <RestrictedButton isRestricted={isRestricted}>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={isRestricted}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Student
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle>Add New Student</DialogTitle>
@@ -492,7 +501,10 @@ export default function Students() {
             </DialogContent>
           </Dialog>
         </RestrictedButton>
+        </div>
       </PageHeader>
+
+      <BulkStudentUpload open={bulkUploadOpen} onOpenChange={setBulkUploadOpen} />
 
       {/* Search, Filter, and Bulk Actions */}
       <div className="flex flex-col sm:flex-row gap-4 mt-6">
