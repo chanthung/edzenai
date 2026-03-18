@@ -348,14 +348,21 @@ export default function Students() {
   return (
     <AdminLayout>
       <PageHeader title="Students" description="Manage student records and parent access links">
-        <RestrictedButton isRestricted={isRestricted}>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={isRestricted}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Student
-              </Button>
-            </DialogTrigger>
+        <div className="flex gap-2">
+          <RestrictedButton isRestricted={isRestricted}>
+            <Button variant="outline" disabled={isRestricted} onClick={() => setBulkUploadOpen(true)}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Import via Excel (AI)
+            </Button>
+          </RestrictedButton>
+          <RestrictedButton isRestricted={isRestricted}>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={isRestricted}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Student
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle>Add New Student</DialogTitle>
