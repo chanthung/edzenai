@@ -1,37 +1,62 @@
+# NEP 2020 Compliance — Implementation Status
 
+## ✅ Implemented (Phase 1)
 
-## Current Issues with Your n8n Setup
+### Gap 1: 5+3+3+4 Stage Structure
+- Added `get_nep_stage()` database function to auto-derive NEP stage from class_name
+- Created `src/lib/nep-stages.ts` client-side utility mirroring the DB function
+- NEP stage displayed on Student Progress page header
+- NEP stage passed to AI analysis for stage-aware insights
 
-From your screenshots, there are **3 problems**:
+### Gap 2: Multi-Dimensional Assessment
+- Added `assessment_domain` enum (cognitive / affective / psychomotor) to `assessments` table
+- Added `assessment_category` enum (formative / summative) to `assessments` table
+- Added `grade`, `qualitative_feedback`, `is_grade_based` fields to `student_marks` table
+- Assessment creation form updated with Domain and Category selectors
+- Assessment list table shows Domain and Category badges
+- New assessment types added: Project, Portfolio, Observation
 
-1. **Deprecated model**: `gemini-pro` → should be `gemini-2.5-flash` or `gemini-1.5-flash`
-2. **Field name mismatch**: Your prompt maps to `student_name`, `class`, `phone` but the frontend expects `name`, `class_name`, `parent_phone`, `parent_email`
-3. **Response format**: Gemini returns `{ candidates: [{ content: { parts: [{ text: "..." }] } }] }` — you need a Code node after the HTTP Request to extract and parse the JSON from the text field
+### Gap 5: Co-Curricular & Vocational Tracking
+- Added `subject_type` enum (academic / co_curricular / vocational) to `subjects` table
+- Subjects page updated with Subject Type selector and badge display
+- Subject type passed to AI analysis for holistic insights
 
-## Recommended Approach: Eliminate n8n, Use Lovable AI
+### AI Edge Function Updates
+- Prompts updated to reference NEP 2020 framework
+- Analysis now considers co-curricular and vocational performance
+- PTM summaries now cover holistic development across domains
+- Domain breakdown data accepted in analysis requests
 
-Your project already has `LOVABLE_API_KEY` configured. Instead of debugging the n8n workflow, I can rewrite the edge function to:
+### Bug Fix: Teacher Portal Access
+- ProgressDashboard and StudentProgress now use resolved hooks (useResolvedAcademicYears, useResolvedStudents) instead of admin-only hooks
 
-1. **Parse the Excel/CSV directly** in the edge function (using a lightweight XLSX library)
-2. **Call Lovable AI** (Gemini) directly via the pre-configured gateway to map columns and clean data
-3. **Return structured results** — no external webhook needed
+---
 
-### What Changes
+## ✅ Implemented (Phase 2)
 
-**1 file modified**: `supabase/functions/process-student-excel/index.ts`
+### Gap 3: Competency-Based Learning Outcomes
+- Created `mastery_level` enum: beginning, developing, proficient, advanced
+- Created `competencies` table (subject_id, school_id, name, description, display_order)
+- Created `student_competency_scores` table (student_id, competency_id, assessment_id, mastery_level, score, remarks)
+- RLS policies for both tables (admin, teacher, public read)
+- **Competency Management**: Settings icon on each subject row in Subjects page opens dialog for CRUD competencies
+- **Competency Scoring**: CompetencyScoring section appears below marks entry when subject has competencies defined
+- **Competency View**: New "Competencies" tab on Student Progress page with color-coded mastery badges
+- **Report Card Integration**: Competency mastery summary section added to ReportCardView with per-subject breakdown
 
-- Remove the n8n webhook proxy logic
-- Add CSV/XLSX parsing using SheetJS (loaded from CDN)
-- Send extracted rows to Lovable AI gateway (`https://ai.gateway.lovable.dev/v1/chat/completions`) with a prompt to map columns to `name`, `roll_number`, `class_name`, `section`, `parent_name`, `parent_phone`, `parent_email`, `guardian`, `address`
-- Use tool calling to get structured JSON output (no fragile JSON parsing)
-- Return `{ students: [...], warnings: [...] }` to the frontend
+---
 
-### Benefits
-- No n8n dependency for this feature
-- No external API key needed (LOVABLE_API_KEY is auto-configured)
-- Fewer moving parts = fewer errors
-- The frontend `BulkStudentUpload` component requires **zero changes**
+## ⏳ Not Yet Implemented
 
-### If You Prefer to Keep n8n
-I can instead just tell you the exact fixes for your 3 n8n nodes. Let me know.
+### Gap 4: Multilingual Support
+- i18n framework needed for Hindi and regional languages
 
+### Gap 6: Student Subject Choice Flexibility
+- Per-student subject selection mechanism
+
+### Gap 7: Dropout & Attendance Tracking
+- Attendance records table
+- Dropout status tracking on students
+
+### Gap 8: Teacher CPD Tracking
+- Training records and CPD hours tracking module
