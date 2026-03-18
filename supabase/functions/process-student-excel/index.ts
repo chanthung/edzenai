@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,30 +7,58 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function parseWithRecovery(content: string): unknown {
-  try {
-    return JSON.parse(content);
-  } catch (e) {
-    // attempt to repair truncated JSON array
-    const lastBrace = content.lastIndexOf("}");
-    if (lastBrace > 0) {
-      const repaired = content.substring(0, lastBrace + 1) + "]";
-      try {
-        const items = JSON.parse(repaired);
-        console.warn(`Recovered ${Array.isArray(items) ? items.length : 'unknown'} items from truncated response`);
-        return items;
-      } catch {
-        // Try wrapping in object
-        try {
-          const repairedObj = content.substring(0, lastBrace + 1);
-          return JSON.parse(repairedObj);
-        } catch {
-          console.error("Cannot repair truncated JSON");
-        }
-      }
-    }
-    throw new Error(`Invalid JSON response from webhook. First 200 chars: ${content.substring(0, 200)}`);
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
   }
+  return bytes;
+}
+
+function parseSpreadsheet(fileBase64: string, fileName: string): { headers: string[]; rows: Record<string, string>[] } {
+  const bytes = base64ToUint8Array(fileBase64);
+  const workbook = XLSX.read(bytes, { type: "array" });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+
+  if (!jsonData.length) {
+    throw new Error("The file appears to be empty or has no data rows");
+  }
+
+  const headers = Object.keys(jsonData[0]);
+  const rows = jsonData.map((row) => {
+    const cleaned: Record<string, string> = {};
+    for (const [key, value] of Object.entries(row)) {
+      cleaned[key] = String(value ?? "").trim();
+    }
+    return cleaned;
+  });
+
+  return { headers, rows };
+}
+
+function normalizePhone(phone: string): string {
+  if (!phone) return "";
+  // Remove spaces, dashes, dots
+  let cleaned = phone.replace(/[\s\-\.()]/g, "");
+  // Remove leading +91 or 91 for Indian numbers
+  if (cleaned.startsWith("+91") && cleaned.length === 13) {
+    cleaned = cleaned.slice(3);
+  } else if (cleaned.startsWith("91") && cleaned.length === 12) {
+    cleaned = cleaned.slice(2);
+  }
+  return cleaned;
+}
+
+function capitalizeName(name: string): string {
+  if (!name) return "";
+  return name
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 serve(async (req) => {
@@ -38,10 +67,10 @@ serve(async (req) => {
   }
 
   try {
-    const webhookUrl = Deno.env.get("N8N_STUDENT_IMPORT_WEBHOOK_URL");
-    if (!webhookUrl) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "N8N_STUDENT_IMPORT_WEBHOOK_URL is not configured" }),
+        JSON.stringify({ error: "AI service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -55,47 +84,155 @@ serve(async (req) => {
       );
     }
 
-    // Forward to n8n webhook
-    const n8nResponse = await fetch(webhookUrl, {
+    // Step 1: Parse the spreadsheet
+    console.log("Parsing spreadsheet:", fileName);
+    const { headers, rows } = parseSpreadsheet(fileBase64, fileName);
+    console.log(`Parsed ${rows.length} rows with headers:`, headers);
+
+    if (rows.length > 500) {
+      return new Response(
+        JSON.stringify({ error: "File contains too many rows (max 500). Please split into smaller files." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Step 2: Use AI to map columns
+    const sampleRows = rows.slice(0, 5);
+    const mappingPrompt = `You are a data mapping assistant for a school student management system.
+
+Given these spreadsheet column headers: ${JSON.stringify(headers)}
+
+And these sample rows:
+${JSON.stringify(sampleRows, null, 2)}
+
+Map each source column to the correct target field. Target fields are:
+- name (student's full name) — REQUIRED
+- roll_number (roll number, admission number, or student ID)
+- class_name (class/grade, e.g. "Class 5", "5th", "V")
+- section (section like A, B, C)
+- parent_name (father's name, mother's name, or parent name)
+- parent_phone (phone/mobile number) — REQUIRED
+- parent_email (email address)
+- guardian (guardian name if different from parent)
+- address (home address)
+
+Return the mapping as a JSON object where keys are source column names and values are target field names. If a column doesn't map to any target field, map it to null.`;
+
+    console.log("Calling AI for column mapping...");
+    const mappingResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileBase64, fileName }),
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [{ role: "user", content: mappingPrompt }],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "column_mapping",
+              description: "Map source spreadsheet columns to target student fields",
+              parameters: {
+                type: "object",
+                properties: {
+                  mapping: {
+                    type: "object",
+                    description: "Object where keys are source column names and values are target field names or null",
+                    additionalProperties: { type: ["string", "null"] },
+                  },
+                },
+                required: ["mapping"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "column_mapping" } },
+      }),
     });
 
-    if (!n8nResponse.ok) {
-      const errorText = await n8nResponse.text();
-      console.error("n8n webhook error:", n8nResponse.status, errorText);
-      return new Response(
-        JSON.stringify({ error: `AI processing failed (${n8nResponse.status})` }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!mappingResponse.ok) {
+      const errText = await mappingResponse.text();
+      console.error("AI mapping error:", mappingResponse.status, errText);
+      if (mappingResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (mappingResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw new Error("AI column mapping failed");
     }
 
-    // Read response as text first, then parse
-    const responseText = await n8nResponse.text();
-    
-    if (!responseText || responseText.trim().length === 0) {
-      console.error("n8n returned empty response. The webhook may be in async mode.");
-      return new Response(
-        JSON.stringify({ error: "The webhook returned an empty response. Please ensure your n8n webhook node uses 'Respond to Webhook' (not 'Respond Immediately')." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const mappingResult = await mappingResponse.json();
+    const toolCall = mappingResult.choices?.[0]?.message?.tool_calls?.[0];
+
+    if (!toolCall) {
+      console.error("No tool call in AI response:", JSON.stringify(mappingResult));
+      throw new Error("AI did not return column mapping");
     }
 
-    const result = parseWithRecovery(responseText);
+    const { mapping } = JSON.parse(toolCall.function.arguments);
+    console.log("Column mapping:", mapping);
 
-    // Handle n8n async mode response
-    if (result && typeof result === "object" && "message" in (result as Record<string, unknown>) && (result as Record<string, unknown>).message === "Workflow was started") {
-      return new Response(
-        JSON.stringify({ error: "The n8n webhook is running in async mode. Please switch your Webhook node to use 'Respond to Webhook' node at the end of your workflow instead of 'Respond Immediately'." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Step 3: Apply mapping and clean data
+    const warnings: string[] = [];
+    const students = rows.map((row, index) => {
+      const student: Record<string, string> = {
+        name: "",
+        roll_number: "",
+        class_name: "",
+        section: "",
+        parent_name: "",
+        parent_phone: "",
+        parent_email: "",
+        guardian: "",
+        address: "",
+      };
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      for (const [sourceCol, targetField] of Object.entries(mapping)) {
+        if (targetField && typeof targetField === "string" && targetField in student) {
+          const value = row[sourceCol] || "";
+          student[targetField] = value;
+        }
+      }
+
+      // Clean data
+      student.name = capitalizeName(student.name);
+      student.parent_name = capitalizeName(student.parent_name);
+      student.guardian = capitalizeName(student.guardian);
+      student.parent_phone = normalizePhone(student.parent_phone);
+      student.parent_email = student.parent_email.toLowerCase().trim();
+
+      // Standardize class name
+      if (student.class_name) {
+        const classClean = student.class_name.trim();
+        // If it's just a number, prefix with "Class "
+        if (/^\d+$/.test(classClean)) {
+          student.class_name = `Class ${classClean}`;
+        }
+      }
+
+      // Track warnings
+      if (!student.name) warnings.push(`Row ${index + 1}: Missing student name`);
+      if (!student.parent_phone) warnings.push(`Row ${index + 1}: Missing phone number`);
+
+      return student;
     });
+
+    console.log(`Processed ${students.length} students, ${warnings.length} warnings`);
+
+    return new Response(
+      JSON.stringify({ students, warnings }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
     console.error("process-student-excel error:", error);
     return new Response(
