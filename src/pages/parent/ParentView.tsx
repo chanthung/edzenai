@@ -2,11 +2,12 @@ import { useParams } from "react-router-dom";
 import { useParentView } from "@/hooks/useParentView";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GraduationCap, AlertCircle, IndianRupee, BarChart3 } from "lucide-react";
+import { GraduationCap, AlertCircle, IndianRupee, BarChart3, CalendarCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ParentFeesTab } from "@/components/parent/ParentFeesTab";
 import { ParentProgressTab } from "@/components/parent/ParentProgressTab";
+import { ParentAttendanceTab } from "@/components/parent/ParentAttendanceTab";
 
 export default function ParentView() {
   const { token } = useParams<{ name: string; token: string }>();
