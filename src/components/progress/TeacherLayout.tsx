@@ -10,6 +10,7 @@ import {
   ClipboardList, 
   Edit3, 
   BarChart3,
+  CalendarCheck,
   LogOut,
   Menu,
   X
