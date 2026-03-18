@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useResolvedSchoolId } from '@/hooks/progress/useResolvedSchoolId';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type AttendanceStatus = 'present' | 'absent' | 'late';
+export type AttendanceStatus = 'present' | 'absent' | 'late' | 'leave';
 
 export interface AttendanceRecord {
   id: string;
