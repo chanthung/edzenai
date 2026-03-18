@@ -1001,9 +1001,47 @@ export type Database = {
           },
         ]
       }
+      subject_class_assignments: {
+        Row: {
+          class_name: string
+          created_at: string
+          id: string
+          school_id: string
+          subject_id: string
+        }
+        Insert: {
+          class_name: string
+          created_at?: string
+          id?: string
+          school_id: string
+          subject_id: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          school_id?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_class_assignments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subject_class_assignments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
-          class_name: string | null
           code: string | null
           created_at: string | null
           display_order: number | null
@@ -1013,7 +1051,6 @@ export type Database = {
           subject_type: Database["public"]["Enums"]["subject_type"]
         }
         Insert: {
-          class_name?: string | null
           code?: string | null
           created_at?: string | null
           display_order?: number | null
@@ -1023,7 +1060,6 @@ export type Database = {
           subject_type?: Database["public"]["Enums"]["subject_type"]
         }
         Update: {
-          class_name?: string | null
           code?: string | null
           created_at?: string | null
           display_order?: number | null
