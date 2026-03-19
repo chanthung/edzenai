@@ -74,15 +74,15 @@ function parseSpreadsheet(fileBase64: string, fileName: string): { headers: stri
     if (!sheetName) throw new Error("No sheets found in workbook");
 
     const sheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
+    const raw = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
 
-    if (jsonData.length < 1) throw new Error("File has no data rows");
+    if (raw.length < 2) throw new Error("File has no data rows");
 
-    const headers = Object.keys(jsonData[0]).map((h) => String(h).trim());
-    const rows = jsonData.map((row: Record<string, any>) => {
+    const headers = (raw[0] as any[]).map((h: any) => String(h ?? "").trim()).filter(Boolean);
+    const rows = (raw as any[][]).slice(1).map((row) => {
       const obj: Record<string, string> = {};
-      headers.forEach((h) => {
-        obj[h] = String(row[h] ?? "").trim();
+      headers.forEach((h, i) => {
+        obj[h] = String(row[i] ?? "").trim();
       });
       return obj;
     });
@@ -173,30 +173,9 @@ Return the mapping as a JSON object where keys are source column names and value
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.5-flash",
         messages: [{ role: "user", content: mappingPrompt }],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "column_mapping",
-              description: "Map source spreadsheet columns to target student fields",
-              parameters: {
-                type: "object",
-                properties: {
-                  mapping: {
-                    type: "object",
-                    description: "Object where keys are source column names and values are target field names or null",
-                    additionalProperties: { type: ["string", "null"] },
-                  },
-                },
-                required: ["mapping"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "column_mapping" } },
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -215,14 +194,21 @@ Return the mapping as a JSON object where keys are source column names and value
     }
 
     const mappingResult = await mappingResponse.json();
-    const toolCall = mappingResult.choices?.[0]?.message?.tool_calls?.[0];
+    const content = mappingResult.choices?.[0]?.message?.content;
 
-    if (!toolCall) {
-      console.error("No tool call in AI response:", JSON.stringify(mappingResult));
+    if (!content) {
+      console.error("No content in AI response:", JSON.stringify(mappingResult));
       throw new Error("AI did not return column mapping");
     }
 
-    const { mapping } = JSON.parse(toolCall.function.arguments);
+    let mapping: Record<string, string | null>;
+    try {
+      const parsed = JSON.parse(content);
+      mapping = parsed.mapping || parsed;
+    } catch {
+      console.error("Failed to parse AI response as JSON:", content);
+      throw new Error("AI returned invalid JSON");
+    }
     console.log("Column mapping:", mapping);
 
     // Apply mapping and clean data
