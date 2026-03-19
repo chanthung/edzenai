@@ -467,6 +467,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                   })}
                 </TableBody>
               </Table>
+              </div>
             </ScrollArea>
 
             <div className="flex justify-between">
