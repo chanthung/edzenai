@@ -194,14 +194,21 @@ Return the mapping as a JSON object where keys are source column names and value
     }
 
     const mappingResult = await mappingResponse.json();
-    const toolCall = mappingResult.choices?.[0]?.message?.tool_calls?.[0];
+    const content = mappingResult.choices?.[0]?.message?.content;
 
-    if (!toolCall) {
-      console.error("No tool call in AI response:", JSON.stringify(mappingResult));
+    if (!content) {
+      console.error("No content in AI response:", JSON.stringify(mappingResult));
       throw new Error("AI did not return column mapping");
     }
 
-    const { mapping } = JSON.parse(toolCall.function.arguments);
+    let mapping: Record<string, string | null>;
+    try {
+      const parsed = JSON.parse(content);
+      mapping = parsed.mapping || parsed;
+    } catch {
+      console.error("Failed to parse AI response as JSON:", content);
+      throw new Error("AI returned invalid JSON");
+    }
     console.log("Column mapping:", mapping);
 
     // Apply mapping and clean data
