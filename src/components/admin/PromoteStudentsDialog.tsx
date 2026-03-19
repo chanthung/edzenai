@@ -39,14 +39,37 @@ export function PromoteStudentsDialog({ open, onOpenChange, academicYears, schoo
   const [toYearId, setToYearId] = useState("");
   const [overrides, setOverrides] = useState<Record<string, { action: PromotionAction; targetClass?: string }>>({});
 
-  // Fetch enrollments for source year
+  // Sort academic years by start_date ascending for proper ordering
+  const sortedYears = useMemo(() => 
+    [...academicYears].sort((a, b) => a.start_date.localeCompare(b.start_date)),
+    [academicYears]
+  );
+
+  // "To" options: only years that come after the selected "From" year
+  const toYearOptions = useMemo(() => {
+    if (!fromYearId) return [];
+    const fromIdx = sortedYears.findIndex((y) => y.id === fromYearId);
+    return fromIdx >= 0 ? sortedYears.slice(fromIdx + 1) : [];
+  }, [sortedYears, fromYearId]);
+
+  // Reset toYearId if it's no longer valid when From changes
+  const handleFromChange = (v: string) => {
+    setFromYearId(v);
+    setOverrides({});
+    const fromIdx = sortedYears.findIndex((y) => y.id === v);
+    const toIdx = sortedYears.findIndex((y) => y.id === toYearId);
+    if (toIdx <= fromIdx) setToYearId("");
+  };
+
+  // Fetch enrollments for source year — filter by school_id on the server
   const { data: enrollments, isLoading: enrollmentsLoading } = useQuery({
-    queryKey: ["enrollments-for-promotion", fromYearId],
+    queryKey: ["enrollments-for-promotion", fromYearId, schoolId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("student_enrollments")
         .select("id, student_id, class_name, section, students!inner(name, school_id)")
-        .eq("academic_year_id", fromYearId);
+        .eq("academic_year_id", fromYearId)
+        .eq("students.school_id", schoolId);
 
       if (error) throw error;
       return data as Array<{
@@ -57,7 +80,7 @@ export function PromoteStudentsDialog({ open, onOpenChange, academicYears, schoo
         students: { name: string; school_id: string };
       }>;
     },
-    enabled: !!fromYearId,
+    enabled: !!fromYearId && !!schoolId,
   });
 
   // Check existing enrollments in target year to avoid duplicates
@@ -78,7 +101,6 @@ export function PromoteStudentsDialog({ open, onOpenChange, academicYears, schoo
   const rows = useMemo<EnrollmentRow[]>(() => {
     if (!enrollments) return [];
     return enrollments
-      .filter((e) => e.students.school_id === schoolId)
       .map((e) => {
         const status = getPromotionStatus(e.class_name);
         const promotedClass = getNextClass(e.class_name);
@@ -96,7 +118,7 @@ export function PromoteStudentsDialog({ open, onOpenChange, academicYears, schoo
         };
       })
       .sort((a, b) => (a.current_class ?? "").localeCompare(b.current_class ?? "") || a.student_name.localeCompare(b.student_name));
-  }, [enrollments, overrides, schoolId]);
+  }, [enrollments, overrides]);
 
   // Filter out already-enrolled students
   const promotableRows = useMemo(() => {
@@ -183,13 +205,13 @@ export function PromoteStudentsDialog({ open, onOpenChange, academicYears, schoo
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>From Academic Year</Label>
-            <Select value={fromYearId} onValueChange={(v) => { setFromYearId(v); setOverrides({}); }}>
+            <Select value={fromYearId} onValueChange={handleFromChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select source year" />
               </SelectTrigger>
               <SelectContent>
-                {academicYears.map((y) => (
-                  <SelectItem key={y.id} value={y.id} disabled={y.id === toYearId}>
+                {sortedYears.map((y) => (
+                  <SelectItem key={y.id} value={y.id}>
                     {y.name}
                   </SelectItem>
                 ))}
@@ -198,13 +220,13 @@ export function PromoteStudentsDialog({ open, onOpenChange, academicYears, schoo
           </div>
           <div className="space-y-2">
             <Label>To Academic Year</Label>
-            <Select value={toYearId} onValueChange={setToYearId}>
+            <Select value={toYearId} onValueChange={setToYearId} disabled={!fromYearId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select target year" />
+                <SelectValue placeholder={fromYearId ? "Select target year" : "Select source first"} />
               </SelectTrigger>
               <SelectContent>
-                {academicYears.map((y) => (
-                  <SelectItem key={y.id} value={y.id} disabled={y.id === fromYearId}>
+                {toYearOptions.map((y) => (
+                  <SelectItem key={y.id} value={y.id}>
                     {y.name}
                   </SelectItem>
                 ))}
