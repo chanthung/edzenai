@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +20,6 @@ function parseCSV(text: string): { headers: string[]; rows: Record<string, strin
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) throw new Error("File has no data rows");
 
-  // Simple CSV parser handling quoted fields
   function splitRow(line: string): string[] {
     const result: string[] = [];
     let current = "";
@@ -58,50 +58,43 @@ function parseCSV(text: string): { headers: string[]; rows: Record<string, strin
 }
 
 function parseSpreadsheet(fileBase64: string, fileName: string): { headers: string[]; rows: Record<string, string>[] } {
+  const bytes = base64ToUint8Array(fileBase64);
   const isCSV = fileName.toLowerCase().endsWith(".csv");
 
   if (isCSV) {
-    const bytes = base64ToUint8Array(fileBase64);
     const text = new TextDecoder("utf-8").decode(bytes);
     return parseCSV(text);
   }
 
-  // For XLSX: extract sheet data using the AI to interpret raw content
-  // We'll convert to text and send to AI for extraction
-  const bytes = base64ToUint8Array(fileBase64);
-  // Try to decode as UTF-8 in case it's actually a CSV with wrong extension
+  // Parse XLSX/XLS using SheetJS
   try {
-    const text = new TextDecoder("utf-8").decode(bytes);
-    // Check if it looks like CSV/TSV
-    if (text.includes(",") || text.includes("\t")) {
-      const lines = text.split(/\r?\n/).filter((l) => l.trim());
-      if (lines.length >= 2) {
-        // Try tab-separated first, then comma
-        const tabCount = (lines[0].match(/\t/g) || []).length;
-        const commaCount = (lines[0].match(/,/g) || []).length;
-        if (tabCount > commaCount) {
-          // TSV
-          const headers = lines[0].split("\t").map((h) => h.trim());
-          const rows = lines.slice(1).map((line) => {
-            const values = line.split("\t");
-            const row: Record<string, string> = {};
-            headers.forEach((h, i) => {
-              row[h] = (values[i] || "").trim();
-            });
-            return row;
-          });
-          return { headers, rows };
-        }
-        return parseCSV(text);
-      }
-    }
-  } catch {
-    // Not text-decodable
-  }
+    const workbook = XLSX.read(bytes, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) throw new Error("No sheets found in workbook");
 
-  throw new Error(
-    "XLSX files are not directly supported. Please save your file as CSV (.csv) format and re-upload. In Excel: File → Save As → CSV (Comma delimited)."
-  );
+    const sheet = workbook.Sheets[sheetName];
+    const jsonData: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+    if (jsonData.length < 2) throw new Error("File has no data rows");
+
+    const headers = jsonData[0].map((h: any) => String(h).trim());
+    const rows = jsonData.slice(1)
+      .filter((row: any[]) => row.some((cell: any) => String(cell).trim() !== ""))
+      .map((row: any[]) => {
+        const obj: Record<string, string> = {};
+        headers.forEach((h, i) => {
+          obj[h] = String(row[i] ?? "").trim();
+        });
+        return obj;
+      });
+
+    return { headers, rows };
+  } catch (e) {
+    console.error("XLSX parse error:", e);
+    throw new Error(
+      "Failed to parse the spreadsheet. Please ensure it's a valid .xlsx or .csv file."
+    );
+  }
 }
 
 function normalizePhone(phone: string): string {
@@ -140,7 +133,6 @@ serve(async (req) => {
       );
     }
 
-    // Step 1: Parse the spreadsheet
     console.log("Parsing spreadsheet:", fileName);
     const { headers, rows } = parseSpreadsheet(fileBase64, fileName);
     console.log(`Parsed ${rows.length} rows with headers:`, headers);
@@ -152,7 +144,7 @@ serve(async (req) => {
       );
     }
 
-    // Step 2: Use AI to map columns
+    // Use AI to map columns
     const sampleRows = rows.slice(0, 5);
     const mappingPrompt = `You are a data mapping assistant for a school student management system.
 
@@ -234,7 +226,7 @@ Return the mapping as a JSON object where keys are source column names and value
     const { mapping } = JSON.parse(toolCall.function.arguments);
     console.log("Column mapping:", mapping);
 
-    // Step 3: Apply mapping and clean data
+    // Apply mapping and clean data
     const warnings: string[] = [];
     const students = rows.map((row, index) => {
       const student: Record<string, string> = {
@@ -249,7 +241,6 @@ Return the mapping as a JSON object where keys are source column names and value
         }
       }
 
-      // Clean data
       student.name = capitalizeName(student.name);
       student.parent_name = capitalizeName(student.parent_name);
       student.guardian = capitalizeName(student.guardian);
