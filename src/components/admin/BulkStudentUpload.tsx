@@ -369,7 +369,8 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
               </div>
             )}
 
-            <ScrollArea className="flex-1 border rounded-md max-h-[45vh]">
+            <ScrollArea className="flex-1 border rounded-md max-h-[45vh]" type="always">
+              <div className="min-w-[800px]">
               <Table>
                 <TableHeader>
                   <TableRow>
