@@ -12,10 +12,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear } from "@/hooks/useAcademicYears";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useSchool } from "@/hooks/useSchool";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
+import { PromoteStudentsDialog } from "@/components/admin/PromoteStudentsDialog";
 import { formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Plus, CalendarDays, Trash2, Loader2 } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Loader2, GraduationCap } from "lucide-react";
 
 export default function AcademicYears() {
   const { data: academicYears, isLoading } = useAcademicYears();
