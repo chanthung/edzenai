@@ -245,6 +245,15 @@ export default function AcademicYears() {
           ))
         )}
       </div>
+
+      {school && academicYears && (
+        <PromoteStudentsDialog
+          open={promoteOpen}
+          onOpenChange={setPromoteOpen}
+          academicYears={academicYears}
+          schoolId={school.id}
+        />
+      )}
     </AdminLayout>
   );
 }
