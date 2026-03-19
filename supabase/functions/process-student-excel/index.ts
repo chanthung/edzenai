@@ -68,25 +68,24 @@ function parseSpreadsheet(fileBase64: string, fileName: string): { headers: stri
 
   // Parse XLSX/XLS using SheetJS
   try {
-    const workbook = XLSX.read(bytes, { type: "array" });
+    const buffer = bytes.buffer;
+    const workbook = XLSX.read(buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     if (!sheetName) throw new Error("No sheets found in workbook");
 
     const sheet = workbook.Sheets[sheetName];
-    const jsonData: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
 
-    if (jsonData.length < 2) throw new Error("File has no data rows");
+    if (jsonData.length < 1) throw new Error("File has no data rows");
 
-    const headers = jsonData[0].map((h: any) => String(h).trim());
-    const rows = jsonData.slice(1)
-      .filter((row: any[]) => row.some((cell: any) => String(cell).trim() !== ""))
-      .map((row: any[]) => {
-        const obj: Record<string, string> = {};
-        headers.forEach((h, i) => {
-          obj[h] = String(row[i] ?? "").trim();
-        });
-        return obj;
+    const headers = Object.keys(jsonData[0]).map((h) => String(h).trim());
+    const rows = jsonData.map((row: Record<string, any>) => {
+      const obj: Record<string, string> = {};
+      headers.forEach((h) => {
+        obj[h] = String(row[h] ?? "").trim();
       });
+      return obj;
+    });
 
     return { headers, rows };
   } catch (e) {
