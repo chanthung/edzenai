@@ -205,13 +205,13 @@ export function PromoteStudentsDialog({ open, onOpenChange, academicYears, schoo
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>From Academic Year</Label>
-            <Select value={fromYearId} onValueChange={(v) => { setFromYearId(v); setOverrides({}); }}>
+            <Select value={fromYearId} onValueChange={handleFromChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select source year" />
               </SelectTrigger>
               <SelectContent>
-                {academicYears.map((y) => (
-                  <SelectItem key={y.id} value={y.id} disabled={y.id === toYearId}>
+                {sortedYears.map((y) => (
+                  <SelectItem key={y.id} value={y.id}>
                     {y.name}
                   </SelectItem>
                 ))}
@@ -220,13 +220,13 @@ export function PromoteStudentsDialog({ open, onOpenChange, academicYears, schoo
           </div>
           <div className="space-y-2">
             <Label>To Academic Year</Label>
-            <Select value={toYearId} onValueChange={setToYearId}>
+            <Select value={toYearId} onValueChange={setToYearId} disabled={!fromYearId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select target year" />
+                <SelectValue placeholder={fromYearId ? "Select target year" : "Select source first"} />
               </SelectTrigger>
               <SelectContent>
-                {academicYears.map((y) => (
-                  <SelectItem key={y.id} value={y.id} disabled={y.id === fromYearId}>
+                {toYearOptions.map((y) => (
+                  <SelectItem key={y.id} value={y.id}>
                     {y.name}
                   </SelectItem>
                 ))}
