@@ -369,106 +369,106 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
               </div>
             )}
 
-            <ScrollArea className="flex-1 border rounded-md max-h-[45vh]" type="always">
-              <div className="min-w-[800px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10">✓</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Class</TableHead>
-                    <TableHead>Section</TableHead>
-                    <TableHead>Roll No</TableHead>
-                    <TableHead>Parent Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((row) => {
-                    const hasIssues = row._issues.length > 0;
-                    const rowClass = hasIssues
-                      ? "bg-destructive/5"
-                      : row._isDuplicate
-                      ? "bg-yellow-50 dark:bg-yellow-900/10"
-                      : "";
+            <div className="flex-1 min-h-0 max-h-[45vh] overflow-auto rounded-md border">
+              <div className="min-w-[980px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">✓</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Section</TableHead>
+                      <TableHead>Roll No</TableHead>
+                      <TableHead>Parent Name</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((row) => {
+                      const hasIssues = row._issues.length > 0;
+                      const rowClass = hasIssues
+                        ? "bg-destructive/5"
+                        : row._isDuplicate
+                        ? "bg-yellow-50 dark:bg-yellow-900/10"
+                        : "";
 
-                    return (
-                      <TableRow key={row._rowIndex} className={rowClass}>
-                        <TableCell>
-                          <Checkbox
-                            checked={row._selected}
-                            onCheckedChange={() => toggleRow(row._rowIndex)}
-                            disabled={hasIssues}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={row.name}
-                            onChange={(e) => editField(row._rowIndex, "name", e.target.value)}
-                            className="h-7 text-xs min-w-[120px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={row.class_name}
-                            onChange={(e) => editField(row._rowIndex, "class_name", e.target.value)}
-                            className="h-7 text-xs w-16"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={row.section}
-                            onChange={(e) => editField(row._rowIndex, "section", e.target.value)}
-                            className="h-7 text-xs w-12"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={row.roll_number}
-                            onChange={(e) => editField(row._rowIndex, "roll_number", e.target.value)}
-                            className="h-7 text-xs w-20"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={row.parent_name}
-                            onChange={(e) => editField(row._rowIndex, "parent_name", e.target.value)}
-                            className="h-7 text-xs min-w-[100px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={row.parent_phone}
-                            onChange={(e) => editField(row._rowIndex, "parent_phone", e.target.value)}
-                            className="h-7 text-xs w-28"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {hasIssues ? (
-                            <span className="text-xs text-destructive flex items-center gap-1">
-                              <XCircle className="h-3 w-3" />
-                              {row._issues[0]}
-                            </span>
-                          ) : row._isDuplicate ? (
-                            <span className="text-xs text-yellow-600 flex items-center gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              Duplicate
-                            </span>
-                          ) : (
-                            <span className="text-xs text-green-600 flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              Valid
-                            </span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                      return (
+                        <TableRow key={row._rowIndex} className={rowClass}>
+                          <TableCell>
+                            <Checkbox
+                              checked={row._selected}
+                              onCheckedChange={() => toggleRow(row._rowIndex)}
+                              disabled={hasIssues}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={row.name}
+                              onChange={(e) => editField(row._rowIndex, "name", e.target.value)}
+                              className="h-7 text-xs min-w-[120px]"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={row.class_name}
+                              onChange={(e) => editField(row._rowIndex, "class_name", e.target.value)}
+                              className="h-7 text-xs w-16"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={row.section}
+                              onChange={(e) => editField(row._rowIndex, "section", e.target.value)}
+                              className="h-7 text-xs w-12"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={row.roll_number}
+                              onChange={(e) => editField(row._rowIndex, "roll_number", e.target.value)}
+                              className="h-7 text-xs w-20"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={row.parent_name}
+                              onChange={(e) => editField(row._rowIndex, "parent_name", e.target.value)}
+                              className="h-7 text-xs min-w-[100px]"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={row.parent_phone}
+                              onChange={(e) => editField(row._rowIndex, "parent_phone", e.target.value)}
+                              className="h-7 text-xs w-28"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {hasIssues ? (
+                              <span className="text-xs text-destructive flex items-center gap-1">
+                                <XCircle className="h-3 w-3" />
+                                {row._issues[0]}
+                              </span>
+                            ) : row._isDuplicate ? (
+                              <span className="text-xs text-yellow-600 flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                Duplicate
+                              </span>
+                            ) : (
+                              <span className="text-xs text-green-600 flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Valid
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
-            </ScrollArea>
+            </div>
 
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep("upload")}>
