@@ -80,75 +80,85 @@ export default function AcademicYears() {
   return (
     <AdminLayout>
       <PageHeader title="Academic Years" description="Manage academic years and their fee structures">
-        <RestrictedButton isRestricted={isRestricted}>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={isRestricted}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Year
+        <div className="flex gap-2">
+          {(academicYears?.length ?? 0) >= 2 && (
+            <RestrictedButton isRestricted={isRestricted}>
+              <Button variant="outline" onClick={() => !isRestricted && setPromoteOpen(true)} disabled={isRestricted}>
+                <GraduationCap className="h-4 w-4 mr-2" />
+                Promote Students
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Academic Year</DialogTitle>
-                <DialogDescription>
-                  Add a new academic year for fee management
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="yearName">Year Name</Label>
-                  <Input
-                    id="yearName"
-                    placeholder="2025-26"
-                    value={newYear.name}
-                    onChange={(e) => setNewYear({ ...newYear, name: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+            </RestrictedButton>
+          )}
+          <RestrictedButton isRestricted={isRestricted}>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={isRestricted}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Year
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Academic Year</DialogTitle>
+                  <DialogDescription>
+                    Add a new academic year for fee management
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Date</Label>
+                    <Label htmlFor="yearName">Year Name</Label>
                     <Input
-                      id="startDate"
-                      type="date"
-                      value={newYear.start_date}
-                      onChange={(e) => setNewYear({ ...newYear, start_date: e.target.value })}
+                      id="yearName"
+                      placeholder="2025-26"
+                      value={newYear.name}
+                      onChange={(e) => setNewYear({ ...newYear, name: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endDate">End Date</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={newYear.end_date}
-                      onChange={(e) => setNewYear({ ...newYear, end_date: e.target.value })}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate">Start Date</Label>
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={newYear.start_date}
+                        onChange={(e) => setNewYear({ ...newYear, start_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endDate">End Date</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={newYear.end_date}
+                        onChange={(e) => setNewYear({ ...newYear, end_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2">
+                    <div>
+                      <Label htmlFor="isActive">Set as active year</Label>
+                      <p className="text-sm text-muted-foreground">Active year is shown by default</p>
+                    </div>
+                    <Switch
+                      id="isActive"
+                      checked={newYear.is_active}
+                      onCheckedChange={(checked) => setNewYear({ ...newYear, is_active: checked })}
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between pt-2">
-                  <div>
-                    <Label htmlFor="isActive">Set as active year</Label>
-                    <p className="text-sm text-muted-foreground">Active year is shown by default</p>
-                  </div>
-                  <Switch
-                    id="isActive"
-                    checked={newYear.is_active}
-                    onCheckedChange={(checked) => setNewYear({ ...newYear, is_active: checked })}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateYear} disabled={createYear.isPending}>
-                  {createYear.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Create Year
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </RestrictedButton>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateYear} disabled={createYear.isPending}>
+                    {createYear.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Create Year
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </RestrictedButton>
+        </div>
       </PageHeader>
 
       <div className="mt-6 grid gap-4">
