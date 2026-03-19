@@ -25,8 +25,10 @@ export default function AcademicYears() {
   const updateYear = useUpdateAcademicYear();
   const deleteYear = useDeleteAcademicYear();
   const { isRestricted, canPerform } = useSubscriptionStatus();
+  const { data: school } = useSchool();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [promoteOpen, setPromoteOpen] = useState(false);
   const [newYear, setNewYear] = useState({
     name: "",
     start_date: "",
