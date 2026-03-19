@@ -173,30 +173,9 @@ Return the mapping as a JSON object where keys are source column names and value
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.5-flash",
         messages: [{ role: "user", content: mappingPrompt }],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "column_mapping",
-              description: "Map source spreadsheet columns to target student fields",
-              parameters: {
-                type: "object",
-                properties: {
-                  mapping: {
-                    type: "object",
-                    description: "Object where keys are source column names and values are target field names or null",
-                    additionalProperties: { type: ["string", "null"] },
-                  },
-                },
-                required: ["mapping"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "column_mapping" } },
+        response_format: { type: "json_object" },
       }),
     });
 
