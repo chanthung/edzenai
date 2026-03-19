@@ -74,15 +74,15 @@ function parseSpreadsheet(fileBase64: string, fileName: string): { headers: stri
     if (!sheetName) throw new Error("No sheets found in workbook");
 
     const sheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
+    const raw = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
 
-    if (jsonData.length < 1) throw new Error("File has no data rows");
+    if (raw.length < 2) throw new Error("File has no data rows");
 
-    const headers = Object.keys(jsonData[0]).map((h) => String(h).trim());
-    const rows = jsonData.map((row: Record<string, any>) => {
+    const headers = (raw[0] as any[]).map((h: any) => String(h ?? "").trim()).filter(Boolean);
+    const rows = (raw as any[][]).slice(1).map((row) => {
       const obj: Record<string, string> = {};
-      headers.forEach((h) => {
-        obj[h] = String(row[h] ?? "").trim();
+      headers.forEach((h, i) => {
+        obj[h] = String(row[i] ?? "").trim();
       });
       return obj;
     });
