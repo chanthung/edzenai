@@ -1,11 +1,14 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useSubscriptionStatus, RestrictedAction, SystemState } from '@/hooks/useSubscriptionStatus';
+import type { SubscriptionPlan, PlanFeature } from '@/config/plan-features';
 
 interface RestrictionContextValue {
   isRestricted: boolean;
   effectiveState: SystemState;
+  currentPlan: SubscriptionPlan;
   daysRemaining: number | null;
   canPerform: (action: RestrictedAction) => boolean;
+  canAccessFeature: (feature: PlanFeature) => boolean;
   getRestrictionMessage: () => string;
 }
 
@@ -19,8 +22,10 @@ export function RestrictionProvider({ children }: RestrictionProviderProps) {
   const {
     isRestricted,
     effectiveState,
+    currentPlan,
     daysRemaining,
     canPerform,
+    canAccessFeature,
     getRestrictionMessage,
   } = useSubscriptionStatus();
 
@@ -29,8 +34,10 @@ export function RestrictionProvider({ children }: RestrictionProviderProps) {
       value={{
         isRestricted,
         effectiveState,
+        currentPlan,
         daysRemaining,
         canPerform,
+        canAccessFeature,
         getRestrictionMessage,
       }}
     >
@@ -47,5 +54,4 @@ export function useRestriction() {
   return context;
 }
 
-// Re-export the type for convenience
-export type { RestrictedAction };
+export type { RestrictedAction, PlanFeature };
