@@ -11,6 +11,7 @@ import { useSchool, useUpdateSchool } from "@/hooks/useSchool";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton, RestrictedOverlay } from "@/components/admin/RestrictedOverlay";
+import { SubscriptionInfoCard } from "@/components/admin/SubscriptionInfoCard";
 import { TemplateList } from "@/components/admin/templates/TemplateList";
 import { TemplateEditor } from "@/components/admin/templates/TemplateEditor";
 import { ClassAssignment } from "@/components/admin/templates/ClassAssignment";
