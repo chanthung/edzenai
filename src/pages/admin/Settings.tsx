@@ -349,6 +349,11 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
+        {/* Subscription Tab */}
+        <TabsContent value="subscription" className="space-y-6">
+          <SubscriptionInfoCard />
+        </TabsContent>
+
         {/* Assessment Templates Tab */}
         <TabsContent value="templates" className="space-y-6">
           {editingTemplate !== undefined ? (
