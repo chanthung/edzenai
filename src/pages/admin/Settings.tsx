@@ -18,7 +18,7 @@ import { ClassAssignment } from "@/components/admin/templates/ClassAssignment";
 import type { AssessmentTemplate } from "@/hooks/progress/useAssessmentTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown } from "lucide-react";
 
 export default function Settings() {
   const { data: school, isLoading } = useSchool();
