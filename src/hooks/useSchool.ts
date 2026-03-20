@@ -16,6 +16,8 @@ export interface School {
   updated_at: string;
   // Plan field
   subscription_plan: string;
+  custom_per_student_fee: number | null;
+  discount_percent: number;
   // Subscription fields
   subscription_type: string | null;
   subscription_status: string | null;
