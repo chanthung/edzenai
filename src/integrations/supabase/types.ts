@@ -700,6 +700,8 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          custom_per_student_fee: number | null
+          discount_percent: number
           email: string | null
           id: string
           logo_url: string | null
@@ -725,6 +727,8 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string
+          custom_per_student_fee?: number | null
+          discount_percent?: number
           email?: string | null
           id?: string
           logo_url?: string | null
@@ -750,6 +754,8 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          custom_per_student_fee?: number | null
+          discount_percent?: number
           email?: string | null
           id?: string
           logo_url?: string | null
@@ -1109,6 +1115,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_pricing: {
+        Row: {
+          base_monthly_fee: number
+          id: string
+          per_student_fee: number
+          plan: string
+          updated_at: string
+        }
+        Insert: {
+          base_monthly_fee?: number
+          id?: string
+          per_student_fee?: number
+          plan: string
+          updated_at?: string
+        }
+        Update: {
+          base_monthly_fee?: number
+          id?: string
+          per_student_fee?: number
+          plan?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       template_components: {
         Row: {
