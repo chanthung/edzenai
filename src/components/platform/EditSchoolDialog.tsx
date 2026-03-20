@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
+import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 type School = Tables<"schools">;
@@ -34,6 +37,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     subscription_renewal_date: "",
     trial_start_date: "",
     trial_end_date: "",
+    subscription_plan: "starter" as SubscriptionPlan,
   });
 
   useEffect(() => {
@@ -51,17 +55,15 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
         subscription_renewal_date: school.subscription_renewal_date || "",
         trial_start_date: school.trial_start_date || "",
         trial_end_date: school.trial_end_date || "",
+        subscription_plan: ((school as any).subscription_plan as SubscriptionPlan) || "starter",
       });
     }
   }, [school]);
 
-  // Compute system_state from current form values
   const computeSystemState = () => {
-    // If payment was already verified (existing school data), keep subscription_active
     if (school?.payment_verified && formData.subscription_status === 'active') {
       return 'subscription_active' as const;
     }
-    // Compute from trial dates
     if (!formData.trial_end_date) {
       return 'trial_active' as const;
     }
@@ -102,7 +104,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
           trial_start_date: formData.trial_start_date || null,
           trial_end_date: formData.trial_end_date || null,
           system_state: computedState,
-        })
+          subscription_plan: formData.subscription_plan,
+        } as any)
         .eq('id', school.id);
 
       if (error) throw error;
@@ -220,6 +223,33 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                     onChange={(e) => setFormData({ ...formData, trial_end_date: e.target.value })}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Subscription Plan */}
+            <div className="border-t pt-4 space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Subscription Plan</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {(Object.keys(PLAN_DISPLAY) as SubscriptionPlan[]).map((plan) => {
+                  const info = PLAN_DISPLAY[plan];
+                  const isSelected = formData.subscription_plan === plan;
+                  return (
+                    <button
+                      key={plan}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, subscription_plan: plan })}
+                      className={cn(
+                        "rounded-lg border-2 p-3 text-left transition-all",
+                        isSelected
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/30"
+                      )}
+                    >
+                      <Badge className={cn("mb-1", info.colorClass)}>{info.badge}</Badge>
+                      <p className="text-xs text-muted-foreground">{info.description}</p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

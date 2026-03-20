@@ -5,8 +5,10 @@ import { useSchool } from "@/hooks/useSchool";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { SubscriptionBanner } from "@/components/admin/SubscriptionBanner";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
+import { PLAN_DISPLAY } from "@/config/plan-features";
 import { 
   GraduationCap, 
   Users, 
@@ -15,7 +17,8 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +39,7 @@ const navItems = [
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
   const { data: school, isLoading: schoolLoading } = useSchool();
-  const { effectiveState, daysRemaining, isRestricted } = useSubscriptionStatus();
+  const { effectiveState, daysRemaining, isRestricted, currentPlan, canAccessFeature } = useSubscriptionStatus();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -54,6 +57,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  const planInfo = PLAN_DISPLAY[currentPlan];
 
   return (
     <div className="min-h-screen bg-background">
@@ -86,22 +91,33 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         {mobileMenuOpen && (
           <nav className="absolute top-full left-0 right-0 bg-card border-b border-border shadow-lg animate-slide-up">
             <div className="p-2 space-y-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                    location.pathname === item.href
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const isProgressLocked = item.href === '/progress' && !canAccessFeature('progress_module');
+                return (
+                  <Link
+                    key={item.href}
+                    to={isProgressLocked ? '#' : item.href}
+                    onClick={(e) => {
+                      if (isProgressLocked) {
+                        e.preventDefault();
+                      } else {
+                        setMobileMenuOpen(false);
+                      }
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                      location.pathname === item.href
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-muted",
+                      isProgressLocked && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                    {isProgressLocked && <Lock className="h-3.5 w-3.5 ml-auto" />}
+                  </Link>
+                );
+              })}
               <button
                 onClick={() => signOut()}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium w-full text-destructive hover:bg-destructive/10 transition-colors"
@@ -133,29 +149,38 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   )}
                 </div>
               </div>
-              {/* School Status Badge */}
-              <div className="mt-3">
+              {/* Plan Badge + Status */}
+              <div className="mt-3 flex items-center gap-2">
+                <Badge className={cn("text-xs", planInfo.colorClass)}>
+                  {planInfo.badge}
+                </Badge>
                 <SchoolStatusBadge effectiveState={effectiveState} />
               </div>
             </div>
 
             {/* Navigation */}
             <nav className="flex-1 p-4 space-y-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                    location.pathname === item.href
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const isProgressLocked = item.href === '/progress' && !canAccessFeature('progress_module');
+                return (
+                  <Link
+                    key={item.href}
+                    to={isProgressLocked ? '#' : item.href}
+                    onClick={isProgressLocked ? (e) => e.preventDefault() : undefined}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                      location.pathname === item.href
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      isProgressLocked && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                    {isProgressLocked && <Lock className="h-3.5 w-3.5 ml-auto" />}
+                  </Link>
+                );
+              })}
             </nav>
 
             {/* Footer */}
@@ -178,7 +203,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             {/* Subscription Banner */}
             <SubscriptionBanner 
               effectiveState={effectiveState} 
-              daysRemaining={daysRemaining} 
+              daysRemaining={daysRemaining}
+              currentPlan={currentPlan}
               className="mb-6"
             />
             {children}

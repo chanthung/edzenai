@@ -18,7 +18,8 @@ import {
   LogOut,
   Menu,
   X,
-  ArrowLeft
+  ArrowLeft,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +39,7 @@ const navItems = [
 export function ProgressLayout({ children }: ProgressLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
   const { data: school, isLoading: schoolLoading } = useSchool();
-  const { effectiveState, daysRemaining } = useSubscriptionStatus();
+  const { effectiveState, daysRemaining, canAccessFeature, currentPlan } = useSubscriptionStatus();
   const { isTeacher, isSchoolAdmin, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -61,6 +62,32 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
   // Check if user has access (either teacher or school admin)
   if (!isTeacher && !isSchoolAdmin) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Gate progress module for non-Pro schools (admin-only check; teachers always get access via their school)
+  if (isSchoolAdmin && !isTeacher && !canAccessFeature('progress_module')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="max-w-md text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto">
+            <Lock className="h-8 w-8 text-purple-600" />
+          </div>
+          <h1 className="text-2xl font-bold">Upgrade to Pro</h1>
+          <p className="text-muted-foreground">
+            The Student Progress module — including subjects, assessments, marks entry, report cards, and AI insights — is available on the Pro plan.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Contact your administrator to upgrade your subscription.
+          </p>
+          <Link to="/admin">
+            <Button variant="outline" className="mt-2">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   // Teachers don't see the subscription banner or back to fee management link
@@ -223,7 +250,8 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
             {showAdminFeatures && (
               <SubscriptionBanner 
                 effectiveState={effectiveState} 
-                daysRemaining={daysRemaining} 
+                daysRemaining={daysRemaining}
+                currentPlan={currentPlan}
                 className="mb-6"
               />
             )}
