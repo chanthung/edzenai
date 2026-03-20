@@ -16,6 +16,7 @@ import Settings from "./pages/admin/Settings";
 import Teachers from "./pages/admin/Teachers";
 import ParentView from "./pages/parent/ParentView";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
+import SubscriptionSettings from "./pages/platform/SubscriptionSettings";
 import NotFound from "./pages/NotFound";
 
 // Progress Module Pages
@@ -46,6 +47,7 @@ const App = () => (
             
             {/* Platform Admin routes */}
             <Route path="/platform" element={<PlatformDashboard />} />
+            <Route path="/platform/subscription-settings" element={<SubscriptionSettings />} />
             
             {/* School Admin routes */}
             <Route path="/admin" element={<Dashboard />} />

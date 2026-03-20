@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
+import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { BillingBreakdown } from "@/components/platform/BillingBreakdown";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -24,6 +26,8 @@ interface EditSchoolDialogProps {
 
 export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: EditSchoolDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [studentCount, setStudentCount] = useState(0);
+  const { data: pricing } = useSubscriptionPricing();
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -38,6 +42,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     trial_start_date: "",
     trial_end_date: "",
     subscription_plan: "starter" as SubscriptionPlan,
+    custom_per_student_fee: "",
+    discount_percent: "0",
   });
 
   useEffect(() => {
@@ -56,9 +62,25 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
         trial_start_date: school.trial_start_date || "",
         trial_end_date: school.trial_end_date || "",
         subscription_plan: ((school as any).subscription_plan as SubscriptionPlan) || "starter",
+        custom_per_student_fee: (school as any).custom_per_student_fee != null ? String((school as any).custom_per_student_fee) : "",
+        discount_percent: String((school as any).discount_percent || 0),
       });
+      fetchStudentCount(school.id);
     }
   }, [school]);
+
+  const fetchStudentCount = async (schoolId: string) => {
+    const { count } = await supabase
+      .from('students')
+      .select('id', { count: 'exact', head: true })
+      .eq('school_id', schoolId);
+    setStudentCount(count || 0);
+  };
+
+  const getPlanPricing = (plan: string) => {
+    const p = pricing?.find((pr) => pr.plan === plan);
+    return { perStudentFee: p?.per_student_fee ?? (plan === 'pro' ? 8 : 5), baseFee: p?.base_monthly_fee ?? 0 };
+  };
 
   const computeSystemState = () => {
     if (school?.payment_verified && formData.subscription_status === 'active') {
@@ -88,6 +110,9 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     setLoading(true);
     try {
       const computedState = computeSystemState();
+      const customFee = formData.custom_per_student_fee.trim() ? parseFloat(formData.custom_per_student_fee) : null;
+      const discount = parseFloat(formData.discount_percent) || 0;
+
       const { error } = await supabase
         .from('schools')
         .update({
@@ -105,6 +130,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
           trial_end_date: formData.trial_end_date || null,
           system_state: computedState,
           subscription_plan: formData.subscription_plan,
+          custom_per_student_fee: customFee,
+          discount_percent: discount,
         } as any)
         .eq('id', school.id);
 
@@ -119,6 +146,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
       setLoading(false);
     }
   };
+
+  const planPricing = getPlanPricing(formData.subscription_plan);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -251,6 +280,45 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                   );
                 })}
               </div>
+            </div>
+
+            {/* Pricing Override */}
+            <div className="border-t pt-4 space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Pricing Override</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Custom Per-Student Fee (₹)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder={`Default: ₹${planPricing.perStudentFee}`}
+                    value={formData.custom_per_student_fee}
+                    onChange={(e) => setFormData({ ...formData, custom_per_student_fee: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">Leave empty to use plan default</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Discount (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.discount_percent}
+                    onChange={(e) => setFormData({ ...formData, discount_percent: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Billing Preview */}
+              <BillingBreakdown
+                studentCount={studentCount}
+                perStudentFee={planPricing.perStudentFee}
+                baseFee={planPricing.baseFee}
+                discountPercent={parseFloat(formData.discount_percent) || 0}
+                customPerStudentFee={formData.custom_per_student_fee.trim() ? parseFloat(formData.custom_per_student_fee) : null}
+              />
             </div>
 
             {/* Subscription Details */}

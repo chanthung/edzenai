@@ -11,13 +11,14 @@ import { useSchool, useUpdateSchool } from "@/hooks/useSchool";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton, RestrictedOverlay } from "@/components/admin/RestrictedOverlay";
+import { SubscriptionInfoCard } from "@/components/admin/SubscriptionInfoCard";
 import { TemplateList } from "@/components/admin/templates/TemplateList";
 import { TemplateEditor } from "@/components/admin/templates/TemplateEditor";
 import { ClassAssignment } from "@/components/admin/templates/ClassAssignment";
 import type { AssessmentTemplate } from "@/hooks/progress/useAssessmentTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown } from "lucide-react";
 
 export default function Settings() {
   const { data: school, isLoading } = useSchool();
@@ -208,6 +209,7 @@ export default function Settings() {
       <Tabs defaultValue="school" className="mt-6">
         <TabsList className="mb-4">
           <TabsTrigger value="school"><Building className="h-4 w-4 mr-1.5" /> School</TabsTrigger>
+          <TabsTrigger value="subscription"><Crown className="h-4 w-4 mr-1.5" /> Subscription</TabsTrigger>
           <TabsTrigger value="templates"><ClipboardList className="h-4 w-4 mr-1.5" /> Assessment Templates</TabsTrigger>
         </TabsList>
 
@@ -345,6 +347,11 @@ export default function Settings() {
               </RestrictedButton>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Subscription Tab */}
+        <TabsContent value="subscription" className="space-y-6">
+          <SubscriptionInfoCard />
         </TabsContent>
 
         {/* Assessment Templates Tab */}
