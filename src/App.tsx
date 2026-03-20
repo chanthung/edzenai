@@ -47,6 +47,7 @@ const App = () => (
             
             {/* Platform Admin routes */}
             <Route path="/platform" element={<PlatformDashboard />} />
+            <Route path="/platform/subscription-settings" element={<SubscriptionSettings />} />
             
             {/* School Admin routes */}
             <Route path="/admin" element={<Dashboard />} />

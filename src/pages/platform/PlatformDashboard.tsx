@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee } from "lucide-react";
 import { toast } from "sonner";
 import { CreateSchoolDialog } from "@/components/platform/CreateSchoolDialog";
 import { EditSchoolDialog } from "@/components/platform/EditSchoolDialog";
 import { ActivateSchoolDialog } from "@/components/platform/ActivateSchoolDialog";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
 import { format, differenceInDays } from "date-fns";
+import { useSubscriptionPricing, calculateMonthlyFee } from "@/hooks/useSubscriptionPricing";
 import type { Tables } from "@/integrations/supabase/types";
 
 type School = Tables<"schools">;
@@ -49,10 +50,12 @@ export default function PlatformDashboard() {
   const navigate = useNavigate();
   const [isPlatformAdmin, setIsPlatformAdmin] = useState<boolean | null>(null);
   const [schools, setSchools] = useState<School[]>([]);
+  const [studentCounts, setStudentCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
   const [activatingSchool, setActivatingSchool] = useState<School | null>(null);
+  const { data: pricing } = useSubscriptionPricing();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -95,8 +98,30 @@ export default function PlatformDashboard() {
       toast.error("Failed to load schools");
     } else {
       setSchools(data || []);
+      // Fetch student counts for each school
+      if (data && data.length > 0) {
+        fetchStudentCounts(data.map(s => s.id));
+      }
     }
     setLoading(false);
+  };
+
+  const fetchStudentCounts = async (schoolIds: string[]) => {
+    const { data, error } = await supabase
+      .from('students')
+      .select('school_id')
+      .in('school_id', schoolIds);
+
+    if (error) {
+      console.error("Error fetching student counts:", error);
+      return;
+    }
+
+    const counts: Record<string, number> = {};
+    (data || []).forEach((s) => {
+      counts[s.school_id] = (counts[s.school_id] || 0) + 1;
+    });
+    setStudentCounts(counts);
   };
 
   const handleSignOut = async () => {
@@ -104,10 +129,28 @@ export default function PlatformDashboard() {
     navigate("/login");
   };
 
+  const getPricingForPlan = (plan: string) => {
+    const p = pricing?.find((pr) => pr.plan === plan);
+    return { perStudentFee: p?.per_student_fee ?? (plan === 'pro' ? 8 : 5), baseFee: p?.base_monthly_fee ?? 0 };
+  };
+
   // Calculate stats
   const activeSchools = schools.filter(s => calculateEffectiveState(s) === 'subscription_active').length;
   const trialSchools = schools.filter(s => calculateEffectiveState(s) === 'trial_active').length;
   const expiredSchools = schools.filter(s => calculateEffectiveState(s) === 'trial_expired').length;
+
+  // Total revenue
+  const totalMonthlyRevenue = schools.reduce((sum, school) => {
+    const plan = (school as any).subscription_plan || 'starter';
+    const { perStudentFee, baseFee } = getPricingForPlan(plan);
+    const count = studentCounts[school.id] || 0;
+    const billing = calculateMonthlyFee(
+      count, perStudentFee, baseFee,
+      (school as any).discount_percent || 0,
+      (school as any).custom_per_student_fee,
+    );
+    return sum + billing.totalFee;
+  }, 0);
 
   if (authLoading || loading) {
     return (
@@ -154,20 +197,26 @@ export default function PlatformDashboard() {
             </div>
             <div>
               <h1 className="text-xl font-bold">Platform Admin</h1>
-              <p className="text-sm text-muted-foreground">Manage schools and administrators</p>
+              <p className="text-sm text-muted-foreground">Manage schools and subscriptions</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate("/platform/subscription-settings")}>
+              <Settings2 className="mr-2 h-4 w-4" />
+              Subscription Settings
+            </Button>
+            <Button variant="ghost" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main content */}
       <main className="container mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Schools</CardTitle>
@@ -204,6 +253,15 @@ export default function PlatformDashboard() {
               <div className="text-2xl font-bold text-orange-600">{expiredSchools}</div>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+              <IndianRupee className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tabular-nums">₹{totalMonthlyRevenue.toLocaleString("en-IN")}</div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Schools table */}
@@ -236,10 +294,11 @@ export default function PlatformDashboard() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Plan</TableHead>
-                      <TableHead>Trial End</TableHead>
+                      <TableHead className="text-right">Students</TableHead>
+                      <TableHead className="text-right">Rate (₹)</TableHead>
+                      <TableHead className="text-right">Monthly Fee</TableHead>
                       <TableHead>State</TableHead>
                       <TableHead>Days Left</TableHead>
-                      <TableHead>Created</TableHead>
                       <TableHead className="w-[140px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -249,6 +308,13 @@ export default function PlatformDashboard() {
                       const daysRemaining = getDaysRemaining(school.trial_end_date);
                       const needsActivation = effectiveState === 'trial_expired';
                       const plan = (school as any).subscription_plan || 'starter';
+                      const count = studentCounts[school.id] || 0;
+                      const { perStudentFee, baseFee } = getPricingForPlan(plan);
+                      const billing = calculateMonthlyFee(
+                        count, perStudentFee, baseFee,
+                        (school as any).discount_percent || 0,
+                        (school as any).custom_per_student_fee,
+                      );
 
                       return (
                         <TableRow key={school.id}>
@@ -267,10 +333,25 @@ export default function PlatformDashboard() {
                               {plan.charAt(0).toUpperCase() + plan.slice(1)}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            {school.trial_end_date 
-                              ? format(new Date(school.trial_end_date), "MMM d, yyyy")
-                              : "-"}
+                          <TableCell className="text-right tabular-nums">
+                            <div className="flex items-center justify-end gap-1">
+                              <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                              {count}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            ₹{billing.effectiveRate}
+                            {(school as any).custom_per_student_fee != null && (
+                              <span className="text-xs text-muted-foreground ml-1">*</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums font-medium">
+                            ₹{billing.totalFee.toLocaleString("en-IN")}
+                            {(school as any).discount_percent > 0 && (
+                              <Badge variant="outline" className="ml-1 text-xs text-green-600 border-green-500/20">
+                                -{(school as any).discount_percent}%
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <SystemStateBadge state={effectiveState} size="sm" />
@@ -281,9 +362,6 @@ export default function PlatformDashboard() {
                                 {daysRemaining <= 0 ? 'Expired' : `${daysRemaining} days`}
                               </span>
                             ) : "-"}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(school.created_at), "MMM d, yyyy")}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
