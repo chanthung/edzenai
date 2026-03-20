@@ -209,6 +209,7 @@ export default function Settings() {
       <Tabs defaultValue="school" className="mt-6">
         <TabsList className="mb-4">
           <TabsTrigger value="school"><Building className="h-4 w-4 mr-1.5" /> School</TabsTrigger>
+          <TabsTrigger value="subscription"><Crown className="h-4 w-4 mr-1.5" /> Subscription</TabsTrigger>
           <TabsTrigger value="templates"><ClipboardList className="h-4 w-4 mr-1.5" /> Assessment Templates</TabsTrigger>
         </TabsList>
 
