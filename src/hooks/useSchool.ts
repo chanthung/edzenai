@@ -14,6 +14,8 @@ export interface School {
   qr_code_url: string | null;
   created_at: string;
   updated_at: string;
+  // Plan field
+  subscription_plan: string;
   // Subscription fields
   subscription_type: string | null;
   subscription_status: string | null;

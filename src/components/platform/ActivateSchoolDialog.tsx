@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, AlertTriangle, Calendar, CreditCard } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, Calendar, CreditCard, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, addMonths, addYears } from "date-fns";
+import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 type School = Tables<"schools">;
@@ -38,6 +40,7 @@ function getSystemStateBadge(state: string | null) {
 
 export function ActivateSchoolDialog({ school, open, onOpenChange, onSuccess }: ActivateSchoolDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("starter");
   const [checklist, setChecklist] = useState({
     paymentVerified: false,
     paymentReceived: false,
@@ -73,13 +76,14 @@ export function ActivateSchoolDialog({ school, open, onOpenChange, onSuccess }: 
           subscription_start_date: subscriptionStartDate,
           subscription_renewal_date: renewalDate,
           system_state: 'subscription_active',
-        })
+          subscription_plan: selectedPlan,
+        } as any)
         .eq('id', school.id);
 
       if (error) throw error;
 
       toast.success("School activated successfully", {
-        description: `${school.name} is now active with a ${subscriptionType} subscription.`,
+        description: `${school.name} is now active on the ${PLAN_DISPLAY[selectedPlan].badge} plan with a ${subscriptionType} subscription.`,
       });
       onSuccess();
       onOpenChange(false);
@@ -97,8 +101,8 @@ export function ActivateSchoolDialog({ school, open, onOpenChange, onSuccess }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-primary" />
             Activate School Subscription
@@ -108,111 +112,145 @@ export function ActivateSchoolDialog({ school, open, onOpenChange, onSuccess }: 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* School Info */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-medium">{school.name}</span>
-              {getSystemStateBadge(school.system_state)}
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Trial Started:</span>
-                <p className="font-medium">
-                  {school.trial_start_date 
-                    ? format(new Date(school.trial_start_date), "MMM d, yyyy")
-                    : "Not set"}
-                </p>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="space-y-6 py-4 pr-2">
+            {/* School Info */}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{school.name}</span>
+                {getSystemStateBadge(school.system_state)}
               </div>
-              <div>
-                <span className="text-muted-foreground">Trial Ends:</span>
-                <p className={`font-medium ${isTrialExpired ? 'text-destructive' : ''}`}>
-                  {school.trial_end_date 
-                    ? format(new Date(school.trial_end_date), "MMM d, yyyy")
-                    : "Not set"}
-                  {isTrialExpired && " (Expired)"}
-                </p>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Trial Started:</span>
+                  <p className="font-medium">
+                    {school.trial_start_date 
+                      ? format(new Date(school.trial_start_date), "MMM d, yyyy")
+                      : "Not set"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Trial Ends:</span>
+                  <p className={`font-medium ${isTrialExpired ? 'text-destructive' : ''}`}>
+                    {school.trial_end_date 
+                      ? format(new Date(school.trial_end_date), "MMM d, yyyy")
+                      : "Not set"}
+                    {isTrialExpired && " (Expired)"}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Verification Checklist */}
-          <div className="space-y-3">
-            <h4 className="font-medium flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" />
-              Verification Checklist
-            </h4>
-            <div className="space-y-3 pl-6">
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="payment-verified"
-                  checked={checklist.paymentVerified}
-                  onCheckedChange={(checked) => 
-                    setChecklist(prev => ({ ...prev, paymentVerified: checked as boolean }))
-                  }
-                />
-                <Label htmlFor="payment-verified" className="cursor-pointer">
-                  Payment amount verified
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="payment-received"
-                  checked={checklist.paymentReceived}
-                  onCheckedChange={(checked) => 
-                    setChecklist(prev => ({ ...prev, paymentReceived: checked as boolean }))
-                  }
-                />
-                <Label htmlFor="payment-received" className="cursor-pointer">
-                  Payment received in bank account
-                </Label>
+            {/* Plan Selector */}
+            <div className="space-y-3">
+              <h4 className="font-medium">Subscription Plan</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {(Object.keys(PLAN_DISPLAY) as SubscriptionPlan[]).map((plan) => {
+                  const info = PLAN_DISPLAY[plan];
+                  const isSelected = selectedPlan === plan;
+                  return (
+                    <button
+                      key={plan}
+                      type="button"
+                      onClick={() => setSelectedPlan(plan)}
+                      className={cn(
+                        "relative rounded-lg border-2 p-4 text-left transition-all",
+                        isSelected
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/30"
+                      )}
+                    >
+                      {isSelected && (
+                        <div className="absolute top-2 right-2">
+                          <Check className="h-4 w-4 text-primary" />
+                        </div>
+                      )}
+                      <Badge className={cn("mb-2", info.colorClass)}>{info.badge}</Badge>
+                      <p className="text-xs text-muted-foreground mt-1">{info.description}</p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          </div>
 
-          {/* Subscription Settings */}
-          <div className="space-y-4">
-            <h4 className="font-medium flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Subscription Settings
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Subscription Type</Label>
-                <Select value={subscriptionType} onValueChange={setSubscriptionType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="annual">Annual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Start Date</Label>
-                <Input
-                  type="date"
-                  value={subscriptionStartDate}
-                  onChange={(e) => setSubscriptionStartDate(e.target.value)}
-                />
+            {/* Verification Checklist */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Verification Checklist
+              </h4>
+              <div className="space-y-3 pl-6">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="payment-verified"
+                    checked={checklist.paymentVerified}
+                    onCheckedChange={(checked) => 
+                      setChecklist(prev => ({ ...prev, paymentVerified: checked as boolean }))
+                    }
+                  />
+                  <Label htmlFor="payment-verified" className="cursor-pointer">
+                    Payment amount verified
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="payment-received"
+                    checked={checklist.paymentReceived}
+                    onCheckedChange={(checked) => 
+                      setChecklist(prev => ({ ...prev, paymentReceived: checked as boolean }))
+                    }
+                  />
+                  <Label htmlFor="payment-received" className="cursor-pointer">
+                    Payment received in bank account
+                  </Label>
+                </div>
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Renewal date will be: <span className="font-medium">{format(new Date(calculateRenewalDate()), "MMM d, yyyy")}</span>
-            </div>
-          </div>
 
-          {!canActivate && (
-            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-500/10 px-3 py-2 rounded-lg">
-              <AlertTriangle className="h-4 w-4" />
-              Complete all verification steps to activate
+            {/* Subscription Settings */}
+            <div className="space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Subscription Settings
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Subscription Type</Label>
+                  <Select value={subscriptionType} onValueChange={setSubscriptionType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="annual">Annual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Input
+                    type="date"
+                    value={subscriptionStartDate}
+                    onChange={(e) => setSubscriptionStartDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Renewal date will be: <span className="font-medium">{format(new Date(calculateRenewalDate()), "MMM d, yyyy")}</span>
+              </div>
             </div>
-          )}
+
+            {!canActivate && (
+              <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-500/10 px-3 py-2 rounded-lg">
+                <AlertTriangle className="h-4 w-4" />
+                Complete all verification steps to activate
+              </div>
+            )}
+          </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

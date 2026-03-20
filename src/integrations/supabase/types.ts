@@ -55,6 +55,35 @@ export type Database = {
           },
         ]
       }
+      ai_usage_log: {
+        Row: {
+          created_at: string
+          feature: string
+          id: string
+          school_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          id?: string
+          school_id: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          id?: string
+          school_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_log_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_templates: {
         Row: {
           created_at: string
@@ -680,6 +709,7 @@ export type Database = {
           payment_verified_by: string | null
           phone: string | null
           qr_code_url: string | null
+          subscription_plan: string
           subscription_renewal_date: string | null
           subscription_start_date: string | null
           subscription_status: string | null
@@ -704,6 +734,7 @@ export type Database = {
           payment_verified_by?: string | null
           phone?: string | null
           qr_code_url?: string | null
+          subscription_plan?: string
           subscription_renewal_date?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null
@@ -728,6 +759,7 @@ export type Database = {
           payment_verified_by?: string | null
           phone?: string | null
           qr_code_url?: string | null
+          subscription_plan?: string
           subscription_renewal_date?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null

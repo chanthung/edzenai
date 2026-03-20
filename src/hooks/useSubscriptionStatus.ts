@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { canAccessFeature as checkFeatureAccess, type SubscriptionPlan, type PlanFeature } from '@/config/plan-features';
 
 export type SystemState = 'trial_active' | 'trial_expired' | 'subscription_active' | 'restricted_mode';
 
@@ -12,6 +13,7 @@ export interface SubscriptionInfo {
   paymentVerifiedAt: string | null;
   subscriptionStatus: string | null;
   subscriptionType: string | null;
+  subscriptionPlan: SubscriptionPlan;
   daysRemaining: number | null;
   isRestricted: boolean;
   effectiveState: SystemState;
@@ -77,13 +79,10 @@ function calculateEffectiveState(school: {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  // Only consider subscription active if payment was explicitly verified
-  // (payment_verified = true is the authoritative flag, not just subscription_status)
   if (school.payment_verified === true && school.system_state === 'subscription_active') {
     return 'subscription_active';
   }
   
-  // If no trial end date, school is in an indefinite trial
   if (!school.trial_end_date) {
     return 'trial_active';
   }
@@ -95,7 +94,6 @@ function calculateEffectiveState(school: {
     return 'trial_active';
   }
   
-  // Trial has expired → restricted
   return 'trial_expired';
 }
 
@@ -120,7 +118,6 @@ export function useSubscriptionStatus() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['subscription-status', user?.id],
     queryFn: async (): Promise<SubscriptionInfo | null> => {
-      // Get the user's school
       const { data: schoolData, error: schoolError } = await supabase
         .from('schools')
         .select(`
@@ -131,7 +128,8 @@ export function useSubscriptionStatus() {
           payment_verified,
           payment_verified_at,
           subscription_status,
-          subscription_type
+          subscription_type,
+          subscription_plan
         `)
         .limit(1)
         .maybeSingle();
@@ -157,6 +155,7 @@ export function useSubscriptionStatus() {
         paymentVerifiedAt: schoolData.payment_verified_at,
         subscriptionStatus: schoolData.subscription_status,
         subscriptionType: schoolData.subscription_type,
+        subscriptionPlan: ((schoolData as any).subscription_plan as SubscriptionPlan) || 'starter',
         daysRemaining,
         isRestricted,
         effectiveState,
@@ -166,9 +165,14 @@ export function useSubscriptionStatus() {
   });
 
   const canPerform = (action: RestrictedAction): boolean => {
-    if (!data) return true; // Allow if no data yet
+    if (!data) return true;
     if (!data.isRestricted) return true;
     return !RESTRICTED_ACTIONS.includes(action);
+  };
+
+  const canAccessFeature = (feature: PlanFeature): boolean => {
+    if (!data) return true; // Allow if no data yet
+    return checkFeatureAccess(data.subscriptionPlan, feature);
   };
 
   const getRestrictionMessage = (): string => {
@@ -183,10 +187,12 @@ export function useSubscriptionStatus() {
     refetch,
     isRestricted: data?.isRestricted || false,
     effectiveState: data?.effectiveState || 'trial_active',
+    currentPlan: data?.subscriptionPlan || 'starter' as SubscriptionPlan,
     daysRemaining: data?.daysRemaining,
     canPerform,
+    canAccessFeature,
     getRestrictionMessage,
   };
 }
 
-export type { RestrictedAction };
+export type { RestrictedAction, SubscriptionPlan, PlanFeature };

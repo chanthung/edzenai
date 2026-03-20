@@ -1,14 +1,16 @@
 import { AlertTriangle, Clock, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SystemState } from "@/hooks/useSubscriptionStatus";
+import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 
 interface SubscriptionBannerProps {
   effectiveState: SystemState;
   daysRemaining: number | null;
+  currentPlan?: SubscriptionPlan;
   className?: string;
 }
 
-export function SubscriptionBanner({ effectiveState, daysRemaining, className }: SubscriptionBannerProps) {
+export function SubscriptionBanner({ effectiveState, daysRemaining, currentPlan = 'starter', className }: SubscriptionBannerProps) {
   // Don't show banner for active subscriptions
   if (effectiveState === 'subscription_active') {
     return null;
@@ -61,9 +63,12 @@ export function SubscriptionBanner({ effectiveState, daysRemaining, className }:
       )}>
         <CheckCircle className="h-5 w-5 shrink-0" />
         <div className="flex-1">
-          <p className="font-medium">Trial Active</p>
+          <p className="font-medium">Trial Active — {PLAN_DISPLAY[currentPlan].badge} Plan</p>
           <p className="text-sm opacity-90">
             {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining in your trial period.
+            {currentPlan === 'starter' && (
+              <span className="ml-1">Upgrade to Pro for AI insights, progress tracking, and more.</span>
+            )}
           </p>
         </div>
       </div>

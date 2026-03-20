@@ -21,7 +21,6 @@ function calculateEffectiveState(school: School): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  // Only subscription_active if payment was explicitly verified
   if (school.payment_verified === true && school.system_state === 'subscription_active') {
     return 'subscription_active';
   }
@@ -236,6 +235,7 @@ export default function PlatformDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
+                      <TableHead>Plan</TableHead>
                       <TableHead>Trial End</TableHead>
                       <TableHead>State</TableHead>
                       <TableHead>Days Left</TableHead>
@@ -248,6 +248,7 @@ export default function PlatformDashboard() {
                       const effectiveState = calculateEffectiveState(school);
                       const daysRemaining = getDaysRemaining(school.trial_end_date);
                       const needsActivation = effectiveState === 'trial_expired';
+                      const plan = (school as any).subscription_plan || 'starter';
 
                       return (
                         <TableRow key={school.id}>
@@ -256,6 +257,15 @@ export default function PlatformDashboard() {
                               <p className="font-medium">{school.name}</p>
                               <p className="text-xs text-muted-foreground">{school.email || "-"}</p>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={
+                              plan === 'pro'
+                                ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                            }>
+                              {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             {school.trial_end_date 

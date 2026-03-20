@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,10 +30,20 @@ interface StudentData {
 
 interface AnalysisRequest {
   type: 'student' | 'class' | 'ptm';
+  schoolId: string;
   studentData?: StudentData;
   classData?: StudentData[];
   language?: string;
 }
+
+// Feature → minimum plan
+const FEATURE_PLAN_MAP: Record<string, string> = {
+  class: 'starter',    // class summary allowed on starter (usage-limited)
+  student: 'pro',
+  ptm: 'pro',
+};
+
+const STARTER_CLASS_LIMIT = 3; // per month
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -49,9 +60,81 @@ serve(async (req) => {
       );
     }
 
-    const { type, studentData, classData, language = 'English' }: AnalysisRequest = await req.json();
-    console.log('Analysis request:', { type, language, hasStudentData: !!studentData, classSize: classData?.length });
+    const { type, schoolId, studentData, classData, language = 'English' }: AnalysisRequest = await req.json();
+    console.log('Analysis request:', { type, schoolId, language, hasStudentData: !!studentData, classSize: classData?.length });
 
+    // ── Plan-based access check ──────────────────────────────────
+    if (schoolId) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const adminClient = createClient(supabaseUrl, supabaseKey);
+
+      const { data: school, error: schoolErr } = await adminClient
+        .from('schools')
+        .select('subscription_plan')
+        .eq('id', schoolId)
+        .single();
+
+      if (schoolErr || !school) {
+        console.error('Failed to fetch school plan:', schoolErr);
+        return new Response(
+          JSON.stringify({ error: 'School not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const currentPlan = school.subscription_plan || 'starter';
+      const requiredPlan = FEATURE_PLAN_MAP[type] || 'pro';
+
+      // Plan hierarchy: starter < pro
+      const planRank: Record<string, number> = { starter: 0, pro: 1 };
+      if ((planRank[currentPlan] ?? 0) < (planRank[requiredPlan] ?? 1)) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'upgrade_required',
+            message: `This feature requires the Pro plan. Your school is currently on the ${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} plan.`,
+            requiredPlan: 'pro',
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Usage limit for starter class summaries
+      if (currentPlan === 'starter' && type === 'class') {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const { count, error: countErr } = await adminClient
+          .from('ai_usage_log')
+          .select('*', { count: 'exact', head: true })
+          .eq('school_id', schoolId)
+          .eq('feature', 'ai_class_summary')
+          .gte('created_at', startOfMonth.toISOString());
+
+        if (countErr) {
+          console.error('Failed to check usage:', countErr);
+        } else if ((count ?? 0) >= STARTER_CLASS_LIMIT) {
+          return new Response(
+            JSON.stringify({
+              error: 'usage_limit_reached',
+              message: `You've used all ${STARTER_CLASS_LIMIT} AI class summaries this month. Upgrade to Pro for unlimited access.`,
+              limit: STARTER_CLASS_LIMIT,
+              used: count,
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Log usage
+        await adminClient.from('ai_usage_log').insert({
+          school_id: schoolId,
+          feature: 'ai_class_summary',
+        });
+      }
+    }
+
+    // ── Build prompts (same as before) ───────────────────────────
     let systemPrompt = '';
     let userPrompt = '';
 
