@@ -1,85 +1,66 @@
 
 
-# School Self-Signup Flow with Trial + Plan Selection
+# Google OAuth Signup Flow — School Onboarding for New Users
 
-## Overview
+## Problem
 
-Create a 2-step self-signup flow: Basic Info → Plan Selection → auto-create school with 30-day trial. No platform admin needed for self-registration.
+When a new user signs in via Google on `/login`, they get authenticated but have no school, no role, and no plan. The current redirect logic falls through to `/admin` which breaks.
 
-## Architecture
+## Solution
+
+Create a **post-OAuth onboarding page** at `/onboard` that catches new Google users who have no school linked, and walks them through school creation + plan selection.
+
+## Flow
 
 ```text
-/signup (Step 1: Info) → /signup (Step 2: Plan) → Edge Function → /admin (Dashboard with trial banner)
+/login → "Continue with Google" → Google OAuth → callback to /login
+  → useEffect checks roles:
+      - Has role? → redirect to dashboard as usual
+      - No role? → redirect to /onboard (NEW)
+          → Step 1: School Name, Phone (name/email from Google profile)
+          → Step 2: Plan Selection (same UI as /signup step 2)
+          → Calls edge function → redirect to /admin
 ```
 
 ## Implementation Steps
 
-### 1. Edge Function: `signup-school`
+### 1. Create Onboarding Page: `src/pages/auth/Onboard.tsx`
 
-New backend function at `supabase/functions/signup-school/index.ts` that:
-- Accepts: schoolName, adminName, email, phone, password, selectedPlan
-- Creates user via `supabase.auth.admin.createUser()` (email auto-confirmed)
-- Creates school record with: `subscription_plan`, `subscription_status = 'trial'`, `trial_start_date = now`, `trial_end_date = now + 30 days`, `system_state = 'trial_active'`
-- Links user → school via `school_admins` (is_primary = true)
-- Adds `school_admin` role to `user_roles`
-- Creates default fee categories (same as existing `create-school` function)
-- Returns success with school ID
-- **No auth required** (public endpoint) — uses service role key internally
+- Pre-fill admin name and email from `user.user_metadata.full_name` and `user.email`
+- Collect: School Name, Phone (admin name editable but pre-filled)
+- Step 2: Plan selection cards (reuse same UI pattern from Signup.tsx)
+- On submit: call a new edge function `onboard-school` that creates the school for an **already authenticated** user (unlike `signup-school` which creates the user too)
 
-### 2. Signup Page: `src/pages/auth/Signup.tsx`
+### 2. New Edge Function: `supabase/functions/onboard-school/index.ts`
 
-Two-step form within a single page component:
+Accepts: `schoolName`, `adminName`, `phone`, `selectedPlan`  
+Requires auth (uses JWT to identify user). Logic:
+- Gets user ID from JWT
+- Updates user metadata (full_name, phone) if provided
+- Creates school record with trial settings (same as signup-school)
+- Links user → school_admins, adds school_admin role
+- Creates default fee categories
+- Returns school ID
 
-**Step 1 — Basic Info:**
-- School Name, Admin Name, Email, Phone, Password (all required)
-- Trust badges: "No credit card required", "Free for 30 days"
-- "Next" button → advances to Step 2
+### 3. Update Login.tsx redirect logic
 
-**Step 2 — Plan Selection:**
-- Two cards side-by-side: Starter (₹5/student) and Pro (₹8/student, "Recommended" badge)
-- Feature bullet list from existing `PLAN_DISPLAY` config
-- Default selection = Starter
-- "Start Free Trial" button → calls edge function, signs in user, redirects to `/admin`
+Change the fallback case (no role found) from `navigate("/admin")` to `navigate("/onboard")`.
 
-### 3. Update Login Page
+### 4. Add Route
 
-Add "Start Free Trial" CTA button below the sign-in card linking to `/signup`.
+Register `/onboard` in `App.tsx`.
 
-### 4. Update Landing Page
+### 5. Config
 
-- Change hero CTA to "Start Free Trial" (primary) + keep "Sign In" (secondary)
-- Update bottom CTA section similarly
-
-### 5. Add Route
-
-Register `/signup` route in `App.tsx`.
-
-### 6. Trial Banner on Dashboard
-
-Add a banner component to `src/pages/admin/Dashboard.tsx` that shows:
-- "Your 30-day free trial has started" (for new trial users)
-- Days remaining countdown
-- Upgrade CTA for Starter plan users
-
-This leverages the existing `useSubscriptionStatus` hook which already computes `effectiveState`, `daysRemaining`, and `currentPlan`.
-
-## Technical Details
-
-- The edge function mirrors the existing `create-school` function's logic but removes the platform admin check, making it a public self-service endpoint
-- After successful signup, the client calls `supabase.auth.signInWithPassword()` to establish session, then redirects
-- Input validation: email format, password min 6 chars, required fields — both client-side (zod) and server-side
-- The existing subscription/trial system handles expiry automatically (no new DB changes needed)
-- No database migration required — all needed columns already exist on the `schools` table
+Add `[functions.onboard-school]` with `verify_jwt = false` to config.toml (JWT validated in code).
 
 ## Files to Create/Modify
 
 | File | Action |
 |------|--------|
-| `supabase/functions/signup-school/index.ts` | Create — public school registration endpoint |
-| `src/pages/auth/Signup.tsx` | Create — 2-step signup form |
-| `src/components/admin/TrialBanner.tsx` | Create — trial status banner |
-| `src/pages/auth/Login.tsx` | Modify — add "Start Free Trial" link |
-| `src/pages/Index.tsx` | Modify — add trial CTA buttons |
-| `src/App.tsx` | Modify — add `/signup` route |
-| `src/pages/admin/Dashboard.tsx` | Modify — add TrialBanner component |
+| `src/pages/auth/Onboard.tsx` | Create — post-OAuth school setup |
+| `supabase/functions/onboard-school/index.ts` | Create — authenticated school creation |
+| `src/pages/auth/Login.tsx` | Modify — redirect no-role users to `/onboard` |
+| `src/App.tsx` | Modify — add `/onboard` route |
+| `supabase/config.toml` | Modify — add onboard-school function config |
 
