@@ -180,9 +180,16 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        <p className="text-sm text-muted-foreground text-center mt-6">
-          Contact your administrator if you need access.
-        </p>
+        <div className="mt-6 text-center space-y-3">
+          <Button asChild variant="outline" className="w-full" size="lg">
+            <Link to="/signup">
+              Start Free Trial — No Credit Card Required
+            </Link>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Contact your administrator if you need access.
+          </p>
+        </div>
       </div>
     </div>
   );
