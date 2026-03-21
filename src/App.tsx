@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
 import Dashboard from "./pages/admin/Dashboard";
 import Students from "./pages/admin/Students";
 import AcademicYears from "./pages/admin/AcademicYears";
