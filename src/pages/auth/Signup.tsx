@@ -1,0 +1,227 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { GraduationCap, Loader2, ArrowLeft, ArrowRight, Check, Shield, Sparkles } from "lucide-react";
+import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
+import { cn } from "@/lib/utils";
+
+export default function Signup() {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  // Step 1 fields
+  const [schoolName, setSchoolName] = useState("");
+  const [adminName, setAdminName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Step 2
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("starter");
+
+  const handleStep1 = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!schoolName || !adminName || !email || !phone || !password) {
+      toast.error("Please fill all fields");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setStep(2);
+  };
+
+  const handleSignup = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("signup-school", {
+        body: { schoolName, adminName, email, phone, password, selectedPlan },
+      });
+
+      if (error || !data?.success) {
+        toast.error(data?.error || error?.message || "Signup failed");
+        setLoading(false);
+        return;
+      }
+
+      // Sign in the newly created user
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError) {
+        toast.error("Account created but login failed. Please sign in manually.");
+        navigate("/login");
+        return;
+      }
+
+      toast.success("Welcome! Your 30-day free trial has started 🎉");
+      navigate("/admin", { replace: true });
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+      <div className="w-full max-w-2xl animate-fade-in">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
+            <GraduationCap className="h-8 w-8 text-primary-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold">Start your free trial</h1>
+          <p className="text-muted-foreground mt-1">No credit card required · Free for 30 days</p>
+        </div>
+
+        {/* Step indicator */}
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
+            step === 1 ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+          )}>
+            {step > 1 ? <Check className="h-4 w-4" /> : <span>1</span>}
+            School Info
+          </div>
+          <div className="w-8 h-px bg-border" />
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
+            step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          )}>
+            <span>2</span>
+            Choose Plan
+          </div>
+        </div>
+
+        {/* Step 1: Basic Info */}
+        {step === 1 && (
+          <Card className="border-border/50 shadow-card">
+            <CardHeader>
+              <CardTitle>School & Admin Details</CardTitle>
+              <CardDescription>Tell us about your school to get started</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleStep1} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="schoolName">School Name</Label>
+                  <Input id="schoolName" placeholder="Delhi Public School" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adminName">Admin Name</Label>
+                  <Input id="adminName" placeholder="Your full name" value={adminName} onChange={(e) => setAdminName(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="admin@school.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input id="phone" type="tel" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" placeholder="Min 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                </div>
+                <Button type="submit" className="w-full">
+                  Next — Choose Plan
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 2: Plan Selection */}
+        {step === 2 && (
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              {(["starter", "pro"] as SubscriptionPlan[]).map((plan) => {
+                const info = PLAN_DISPLAY[plan];
+                const isSelected = selectedPlan === plan;
+                const isPro = plan === "pro";
+
+                return (
+                  <Card
+                    key={plan}
+                    className={cn(
+                      "cursor-pointer transition-all relative",
+                      isSelected
+                        ? "border-primary ring-2 ring-primary/20"
+                        : "border-border/50 hover:border-primary/40"
+                    )}
+                    onClick={() => setSelectedPlan(plan)}
+                  >
+                    {isPro && (
+                      <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground">
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Recommended
+                      </Badge>
+                    )}
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{info.label}</CardTitle>
+                        <div className={cn(
+                          "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                          isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
+                        )}>
+                          {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </div>
+                      </div>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-2xl font-bold">₹{isPro ? 8 : 5}</span>
+                        <span className="text-muted-foreground text-sm">/ student / month</span>
+                      </div>
+                      <CardDescription className="text-xs">{info.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {info.features.map((f) => (
+                          <li key={f} className="flex items-start gap-2 text-sm">
+                            <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+              <Button onClick={handleSignup} disabled={loading} className="flex-1">
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Start Free Trial
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Shield className="h-3.5 w-3.5" />
+              No credit card required · Cancel anytime · 30-day free trial
+            </div>
+          </div>
+        )}
+
+        <p className="text-sm text-muted-foreground text-center mt-6">
+          Already have an account?{" "}
+          <Link to="/login" className="text-primary font-medium hover:underline">
+            Sign In
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
