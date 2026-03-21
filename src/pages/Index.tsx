@@ -58,12 +58,18 @@ export default function Index() {
             academic insights to teachers. Track payments in real-time, monitor student 
             performance trends, and generate intelligent PTM reports — all in one place.
           </p>
-          <Button size="lg" asChild className="min-w-[200px]">
-            <Link to="/login">
-              School Admin Login
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
+            <Button size="lg" asChild className="min-w-[200px]">
+              <Link to="/signup">
+                Start Free Trial
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/login">Sign In</Link>
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">No credit card required · Free for 30 days</p>
         </div>
       </section>
 
