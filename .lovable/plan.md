@@ -1,84 +1,85 @@
 
 
-# 2-Tier Subscription Plan: Starter & Pro
+# School Self-Signup Flow with Trial + Plan Selection
 
 ## Overview
 
-Add a `subscription_plan` column to the `schools` table and build a centralized feature gating system. Parent Link is included in **Starter**. AI Excel Import is in **Starter** (onboarding tool). Limited AI class summary (2-3/month) in Starter as a teaser. Full AI, Progress module, and advanced reports are **Pro-only**.
+Create a 2-step self-signup flow: Basic Info → Plan Selection → auto-create school with 30-day trial. No platform admin needed for self-registration.
 
----
+## Architecture
 
-## Final Feature Split
+```text
+/signup (Step 1: Info) → /signup (Step 2: Plan) → Edge Function → /admin (Dashboard with trial banner)
+```
 
-### Starter (Core Operations + AI Taste)
-- Student CRUD, manual bulk upload
-- Fee management (categories, structures, installments, payments, proofs)
-- Attendance marking, record leave
-- Academic years, student promotion
-- Teacher accounts
-- Parent Link generation, Telegram integration
-- Parent View (fees + attendance)
-- School settings, QR code, password change
-- Basic reports (class-wise, student-pending, month-wise — view only)
-- **AI Excel Import** (onboarding friction reducer)
-- **AI Class Summary** (2-3 per month, usage-tracked)
+## Implementation Steps
 
-### Pro (Starter + Intelligence)
-- Unlimited AI Insights (student-level deep analysis)
-- PTM Summary generation
-- Progress Module (subjects, assessments, marks entry, competency tracking)
-- Assessment Templates (terms, components, grade mappings)
-- NEP 2020 Report Cards
-- Performance Charts (trend, radar, distribution, comparison)
-- At-Risk Detection & Learning Gaps
-- CSV/PDF Exports (when built)
+### 1. Edge Function: `signup-school`
 
----
+New backend function at `supabase/functions/signup-school/index.ts` that:
+- Accepts: schoolName, adminName, email, phone, password, selectedPlan
+- Creates user via `supabase.auth.admin.createUser()` (email auto-confirmed)
+- Creates school record with: `subscription_plan`, `subscription_status = 'trial'`, `trial_start_date = now`, `trial_end_date = now + 30 days`, `system_state = 'trial_active'`
+- Links user → school via `school_admins` (is_primary = true)
+- Adds `school_admin` role to `user_roles`
+- Creates default fee categories (same as existing `create-school` function)
+- Returns success with school ID
+- **No auth required** (public endpoint) — uses service role key internally
 
-## Billing System (Per-Student Pricing) ✅ IMPLEMENTED
+### 2. Signup Page: `src/pages/auth/Signup.tsx`
 
-### Database
-- `subscription_pricing` table: per-plan defaults (per_student_fee, base_monthly_fee)
-- `schools.custom_per_student_fee`: optional per-school override
-- `schools.discount_percent`: school-level discount
+Two-step form within a single page component:
 
-### Formula
-`total_fee = (student_count × effective_rate) + base_fee - discount`
+**Step 1 — Basic Info:**
+- School Name, Admin Name, Email, Phone, Password (all required)
+- Trust badges: "No credit card required", "Free for 30 days"
+- "Next" button → advances to Step 2
 
-### Platform Admin
-- Subscription Settings page (`/platform/subscription-settings`)
-- Schools table shows: Students, Rate, Monthly Fee columns
-- Monthly Revenue stat card
-- Edit dialog includes pricing override + discount + billing preview
+**Step 2 — Plan Selection:**
+- Two cards side-by-side: Starter (₹5/student) and Pro (₹8/student, "Recommended" badge)
+- Feature bullet list from existing `PLAN_DISPLAY` config
+- Default selection = Starter
+- "Start Free Trial" button → calls edge function, signs in user, redirects to `/admin`
 
-### School Admin
-- Settings → Subscription tab shows plan, rate, student count, fee breakdown, renewal dates
+### 3. Update Login Page
 
----
+Add "Start Free Trial" CTA button below the sign-in card linking to `/signup`.
 
-## Implementation Status
+### 4. Update Landing Page
 
-| Step | Status |
+- Change hero CTA to "Start Free Trial" (primary) + keep "Sign In" (secondary)
+- Update bottom CTA section similarly
+
+### 5. Add Route
+
+Register `/signup` route in `App.tsx`.
+
+### 6. Trial Banner on Dashboard
+
+Add a banner component to `src/pages/admin/Dashboard.tsx` that shows:
+- "Your 30-day free trial has started" (for new trial users)
+- Days remaining countdown
+- Upgrade CTA for Starter plan users
+
+This leverages the existing `useSubscriptionStatus` hook which already computes `effectiveState`, `daysRemaining`, and `currentPlan`.
+
+## Technical Details
+
+- The edge function mirrors the existing `create-school` function's logic but removes the platform admin check, making it a public self-service endpoint
+- After successful signup, the client calls `supabase.auth.signInWithPassword()` to establish session, then redirects
+- Input validation: email format, password min 6 chars, required fields — both client-side (zod) and server-side
+- The existing subscription/trial system handles expiry automatically (no new DB changes needed)
+- No database migration required — all needed columns already exist on the `schools` table
+
+## Files to Create/Modify
+
+| File | Action |
 |------|--------|
-| Step 1: Database Migration (subscription_plan + ai_usage_log) | ✅ Done |
-| Step 2: plan-features.ts config | ✅ Done |
-| Step 3: useSubscriptionStatus refactor | ✅ Done |
-| Step 4: useAIUsage hook | ✅ Done |
-| Step 5: ActivateSchoolDialog plan selector | ✅ Done |
-| Step 6: UI Gating (AdminLayout, ProgressLayout, SubscriptionBanner) | ✅ Done |
-| Step 7: Edge Function Guards (analyze-progress) | ✅ Done |
-| Step 8: Platform Dashboard Updates | ✅ Done |
-| Billing: subscription_pricing table + school columns | ✅ Done |
-| Billing: Subscription Settings page | ✅ Done |
-| Billing: Platform Dashboard billing columns + revenue | ✅ Done |
-| Billing: EditSchoolDialog pricing override | ✅ Done |
-| Billing: School admin Subscription tab | ✅ Done |
+| `supabase/functions/signup-school/index.ts` | Create — public school registration endpoint |
+| `src/pages/auth/Signup.tsx` | Create — 2-step signup form |
+| `src/components/admin/TrialBanner.tsx` | Create — trial status banner |
+| `src/pages/auth/Login.tsx` | Modify — add "Start Free Trial" link |
+| `src/pages/Index.tsx` | Modify — add trial CTA buttons |
+| `src/App.tsx` | Modify — add `/signup` route |
+| `src/pages/admin/Dashboard.tsx` | Modify — add TrialBanner component |
 
----
-
-## Remaining / Future
-- RestrictedOverlay plan-based messaging for AI panels
-- Upgrade prompt component (Starter → Pro)
-- CSV/PDF export gating
-- Self-signup with plan selection
-- Enterprise tier placeholder
