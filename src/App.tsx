@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import Onboard from "./pages/auth/Onboard";
 import Dashboard from "./pages/admin/Dashboard";
 import Students from "./pages/admin/Students";
 import AcademicYears from "./pages/admin/AcademicYears";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/onboard" element={<Onboard />} />
             
             {/* Parent view - unique link access */}
             <Route path="/view/:name/:token" element={<ParentView />} />
