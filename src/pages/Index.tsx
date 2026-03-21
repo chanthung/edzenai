@@ -28,9 +28,14 @@ export default function Index() {
               <span className="text-[10px] text-muted-foreground leading-tight hidden sm:block">School Management System</span>
             </div>
           </div>
-          <Button asChild>
-            <Link to="/login">Sign In</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/login">Sign In</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/signup">Start Free Trial</Link>
+            </Button>
+          </div>
         </div>
       </nav>
 
