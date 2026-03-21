@@ -28,9 +28,14 @@ export default function Index() {
               <span className="text-[10px] text-muted-foreground leading-tight hidden sm:block">School Management System</span>
             </div>
           </div>
-          <Button asChild>
-            <Link to="/login">Sign In</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/login">Sign In</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/signup">Start Free Trial</Link>
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -53,12 +58,18 @@ export default function Index() {
             academic insights to teachers. Track payments in real-time, monitor student 
             performance trends, and generate intelligent PTM reports — all in one place.
           </p>
-          <Button size="lg" asChild className="min-w-[200px]">
-            <Link to="/login">
-              School Admin Login
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
+            <Button size="lg" asChild className="min-w-[200px]">
+              <Link to="/signup">
+                Start Free Trial
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/login">Sign In</Link>
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">No credit card required · Free for 30 days</p>
         </div>
       </section>
 
@@ -193,15 +204,20 @@ export default function Index() {
             Ready to reduce fee-related stress?
           </h2>
           <p className="text-primary-foreground/80 text-lg mb-8 max-w-2xl mx-auto">
-            Contact our team to get your school onboarded. 
-            Set up in minutes, not weeks.
+            Get your school onboarded in minutes, not weeks.
+            Start with a free 30-day trial.
           </p>
-          <Button size="lg" variant="secondary" asChild>
-            <Link to="/login">
-              Sign In to Dashboard
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
+            <Button size="lg" variant="secondary" asChild>
+              <Link to="/signup">
+                Start Free Trial
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="ghost" className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/10" asChild>
+              <Link to="/login">Sign In</Link>
+            </Button>
+          </div>
         </div>
       </section>
 
