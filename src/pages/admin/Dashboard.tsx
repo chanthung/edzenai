@@ -43,6 +43,10 @@ export default function Dashboard() {
         description={`Welcome to ${school?.name || 'your school'} fee management`}
       />
 
+      <div className="mt-4">
+        <TrialBanner />
+      </div>
+
       <Tabs defaultValue="overview" className="mt-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>

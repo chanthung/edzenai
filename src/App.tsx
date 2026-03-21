@@ -42,6 +42,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
             
             {/* Parent view - unique link access */}
             <Route path="/view/:name/:token" element={<ParentView />} />
