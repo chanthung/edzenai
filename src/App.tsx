@@ -44,6 +44,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/onboard" element={<Onboard />} />
             
             {/* Parent view - unique link access */}
             <Route path="/view/:name/:token" element={<ParentView />} />

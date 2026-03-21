@@ -52,7 +52,8 @@ export default function Login() {
         return;
       }
 
-      navigate("/admin", { replace: true });
+      // No role found — new OAuth user needs onboarding
+      navigate("/onboard", { replace: true });
     };
 
     redirectByRole();
