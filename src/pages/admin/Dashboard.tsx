@@ -20,6 +20,7 @@ import { ClassWiseReport } from "@/components/admin/reports/ClassWiseReport";
 import { StudentPendingReport } from "@/components/admin/reports/StudentPendingReport";
 import { MonthWiseCollectionReport } from "@/components/admin/reports/MonthWiseCollectionReport";
 import { PendingProofsPanel } from "@/components/admin/PendingProofsPanel";
+import { TrialBanner } from "@/components/admin/TrialBanner";
 import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
