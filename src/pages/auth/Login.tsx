@@ -5,22 +5,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { GraduationCap, Loader2, Mail, RefreshCw } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
   const { signIn, signInWithOAuth, user, session } = useAuth();
   const navigate = useNavigate();
 
-  // Role-based redirection when session is detected (e.g. after OAuth callback)
+  // Role-based redirection when session is detected
   useEffect(() => {
     if (!session || !user) return;
+
+    // Check if email is verified
+    if (!user.email_confirmed_at) {
+      setUnverifiedEmail(user.email || null);
+      supabase.auth.signOut();
+      return;
+    }
 
     const redirectByRole = async () => {
       const { data: isPlatformAdmin } = await supabase.rpc('is_platform_admin');
@@ -52,7 +61,38 @@ export default function Login() {
         return;
       }
 
-      // No role found — new OAuth user needs onboarding
+      // Verified user with no role — check if they have school metadata from signup
+      const meta = user.user_metadata;
+      if (meta?.school_name) {
+        // Auto-activate school from signup metadata
+        try {
+          const { data, error } = await supabase.functions.invoke("onboard-school", {
+            body: {
+              schoolName: meta.school_name,
+              adminName: meta.full_name || "",
+              phone: meta.phone || "",
+              selectedPlan: meta.selected_plan || "starter",
+            },
+          });
+
+          if (error || !data?.success) {
+            console.error("Auto-activate failed:", data?.error || error?.message);
+            toast.error("School setup failed. Please try again.");
+            navigate("/onboard", { replace: true });
+            return;
+          }
+
+          toast.success("Welcome! Your 30-day free trial has started 🎉");
+          navigate("/admin", { replace: true });
+          return;
+        } catch (err) {
+          console.error("Auto-activate error:", err);
+          navigate("/onboard", { replace: true });
+          return;
+        }
+      }
+
+      // No metadata — OAuth user needs manual onboarding
       navigate("/onboard", { replace: true });
     };
 
@@ -62,10 +102,17 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setUnverifiedEmail(null);
 
     const { error } = await signIn(email, password);
 
     if (error) {
+      // Supabase returns "Email not confirmed" for unverified users
+      if (error.message?.toLowerCase().includes("email not confirmed")) {
+        setUnverifiedEmail(email);
+        setLoading(false);
+        return;
+      }
       toast.error("Login failed", { description: error.message });
       setLoading(false);
       return;
@@ -74,14 +121,36 @@ export default function Login() {
     // Redirection will be handled by the useEffect above
   };
 
-  const handleOAuth = async (provider: 'google' | 'apple') => {
+  const handleOAuth = async (provider: 'google') => {
     setOauthLoading(provider);
     const { error } = await signInWithOAuth(provider);
     if (error) {
       toast.error(`Sign in with ${provider} failed`, { description: error.message });
       setOauthLoading(null);
     }
-    // If successful, the page will redirect or useEffect will handle navigation
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return;
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: unverifiedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Verification email resent!");
+      }
+    } catch {
+      toast.error("Failed to resend email");
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -94,6 +163,31 @@ export default function Login() {
           <h1 className="text-2xl font-bold">EduTrack</h1>
           <p className="text-muted-foreground mt-1">Fee Transparency & Student Progress Analysis</p>
         </div>
+
+        {/* Unverified email banner */}
+        {unverifiedEmail && (
+          <Card className="border-destructive/30 bg-destructive/5 mb-4">
+            <CardContent className="pt-4 pb-4 text-center space-y-3">
+              <div className="flex items-center justify-center gap-2 text-destructive">
+                <Mail className="h-5 w-5" />
+                <span className="font-medium text-sm">Email not verified</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Please verify your email to activate your account. Check your inbox (and spam folder) for the verification link.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="gap-2"
+              >
+                {resending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                Resend verification email
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-border/50 shadow-card">
           <CardHeader className="text-center">

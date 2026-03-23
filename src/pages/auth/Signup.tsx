@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,14 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { GraduationCap, Loader2, ArrowLeft, ArrowRight, Check, Shield, Sparkles } from "lucide-react";
+import { GraduationCap, Loader2, ArrowLeft, ArrowRight, Check, Shield, Sparkles, Mail, RefreshCw } from "lucide-react";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
 
 export default function Signup() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [resending, setResending] = useState(false);
 
   // Step 1 fields
   const [schoolName, setSchoolName] = useState("");
@@ -43,31 +42,53 @@ export default function Signup() {
   const handleSignup = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("signup-school", {
-        body: { schoolName, adminName, email, phone, password, selectedPlan },
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+          data: {
+            full_name: adminName,
+            phone,
+            school_name: schoolName,
+            selected_plan: selectedPlan,
+          },
+        },
       });
 
-      if (error || !data?.success) {
-        toast.error(data?.error || error?.message || "Signup failed");
+      if (error) {
+        toast.error(error.message);
         setLoading(false);
         return;
       }
 
-      // Sign in the newly created user
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (signInError) {
-        toast.error("Account created but login failed. Please sign in manually.");
-        navigate("/login");
-        return;
-      }
-
-      toast.success("Welcome! Your 30-day free trial has started 🎉");
-      navigate("/admin", { replace: true });
+      setStep(3);
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Verification email resent!");
+      }
+    } catch {
+      toast.error("Failed to resend email");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -79,28 +100,36 @@ export default function Signup() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
             <GraduationCap className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold">Start your free trial</h1>
-          <p className="text-muted-foreground mt-1">No credit card required · Free for 30 days</p>
+          <h1 className="text-2xl font-bold">
+            {step === 3 ? "Check your email" : "Start your free trial"}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {step === 3
+              ? "We've sent a verification link to your inbox"
+              : "No credit card required · Free for 30 days"}
+          </p>
         </div>
 
         {/* Step indicator */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
-            step === 1 ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
-          )}>
-            {step > 1 ? <Check className="h-4 w-4" /> : <span>1</span>}
-            School Info
+        {step !== 3 && (
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
+              step === 1 ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+            )}>
+              {step > 1 ? <Check className="h-4 w-4" /> : <span>1</span>}
+              School Info
+            </div>
+            <div className="w-8 h-px bg-border" />
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
+              step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            )}>
+              <span>2</span>
+              Choose Plan
+            </div>
           </div>
-          <div className="w-8 h-px bg-border" />
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
-            step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-          )}>
-            <span>2</span>
-            Choose Plan
-          </div>
-        </div>
+        )}
 
         {/* Step 1: Basic Info */}
         {step === 1 && (
@@ -204,7 +233,7 @@ export default function Signup() {
               </Button>
               <Button onClick={handleSignup} disabled={loading} className="flex-1">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Start Free Trial
+                Create Account
               </Button>
             </div>
 
@@ -213,6 +242,37 @@ export default function Signup() {
               No credit card required · Cancel anytime · 30-day free trial
             </div>
           </div>
+        )}
+
+        {/* Step 3: Email Verification Pending */}
+        {step === 3 && (
+          <Card className="border-border/50 shadow-card">
+            <CardContent className="pt-8 pb-8 text-center space-y-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Verification email sent!</h2>
+                <p className="text-muted-foreground">
+                  We've sent a verification link to <span className="font-medium text-foreground">{email}</span>.
+                  Click the link to activate your account and start your free trial.
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground space-y-1">
+                <p>📧 Can't find the email? Check your <span className="font-medium">spam or junk folder</span>.</p>
+                <p>⏱️ The link will expire in 24 hours.</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleResendEmail}
+                disabled={resending}
+                className="gap-2"
+              >
+                {resending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Resend verification email
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         <p className="text-sm text-muted-foreground text-center mt-6">
