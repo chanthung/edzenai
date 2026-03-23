@@ -20,6 +20,7 @@ export interface FeeCategoryInsert {
   description?: string;
   is_mandatory?: boolean;
   display_order?: number;
+  category_group?: string;
 }
 
 export function useFeeCategories() {

@@ -49,10 +49,12 @@ export function useUpdateFeeStructureClasses() {
       feeStructureId,
       classes,
       autoAssign,
+      newAdmissionOnly,
     }: {
       feeStructureId: string;
       classes: string[];
       autoAssign: boolean;
+      newAdmissionOnly?: boolean;
     }) => {
       // Delete existing
       await supabase
@@ -69,6 +71,7 @@ export function useUpdateFeeStructureClasses() {
               fee_structure_id: feeStructureId,
               class_name: c,
               auto_assign: autoAssign,
+              new_admission_only: newAdmissionOnly ?? false,
             }))
           );
         if (error) throw error;
