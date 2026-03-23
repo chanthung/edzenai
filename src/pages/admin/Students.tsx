@@ -597,6 +597,28 @@ export default function Students() {
           </SelectContent>
         </Select>
         
+        {/* Bulk Assign Fees Button */}
+        {studentsWithoutFees.length > 0 && !isRestricted && (
+          <Button
+            variant="outline"
+            onClick={handleBulkAssignFees}
+            disabled={isBulkAssigningFees}
+            className="gap-2"
+          >
+            {isBulkAssigningFees ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Assigning Fees...
+              </>
+            ) : (
+              <>
+                <IndianRupee className="h-4 w-4" />
+                Assign Fees ({classFilter !== 'all' ? studentsWithoutFees.filter(s => s.class_name === classFilter).length : studentsWithoutFees.length})
+              </>
+            )}
+          </Button>
+        )}
+
         {/* Bulk Share Button */}
         {selectedStudents.size > 0 && (
           <Button
