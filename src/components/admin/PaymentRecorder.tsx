@@ -212,11 +212,7 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
             <Skeleton className="h-40 w-full" />
           </div>
         ) : processedInstallments.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            <IndianRupee className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No fees assigned to this student</p>
-            <p className="text-sm mt-1">Use "Manage Fees" to assign fee structures first</p>
-          </div>
+          <NoFeesAssigned student={student} isRestricted={isRestricted} />
         ) : (
           <div className="flex-1 min-h-0 overflow-y-auto pr-2">
             {/* Summary Cards */}
