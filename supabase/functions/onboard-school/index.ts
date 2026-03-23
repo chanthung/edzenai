@@ -39,6 +39,19 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub as string
 
+    // Verify email is confirmed before allowing school creation
+    const supabaseAdmin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId)
+    if (!userData?.user?.email_confirmed_at) {
+      return new Response(
+        JSON.stringify({ error: 'Email not verified. Please verify your email first.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const { schoolName, adminName, phone, selectedPlan } = await req.json()
 
     if (!schoolName) {
