@@ -12,14 +12,16 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
 import { useFeeCategories, useCreateFeeCategory, useUpdateFeeCategory, useDeleteFeeCategory } from "@/hooks/useFeeCategories";
 import { useFeeStructures, useCreateFeeStructure, useUpdateFeeStructure, useCreateInstallment, useUpdateInstallment, useDeleteFeeStructure, useDeleteInstallment, FeeStructure, Installment } from "@/hooks/useFeeStructures";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useFeeStructureClasses, useUpdateFeeStructureClasses, useDistinctClasses } from "@/hooks/useFeeStructureClasses";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil, GraduationCap } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function FeeSetup() {
