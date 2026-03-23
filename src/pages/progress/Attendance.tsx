@@ -152,6 +152,27 @@ export default function Attendance() {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Daily Attendance</h1>
             <p className="text-sm text-muted-foreground">Mark attendance for your class</p>
           </div>
+          {attendanceData && attendanceData.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const rows = attendanceData.map(item => ({
+                  'Name': item.student.name,
+                  'Roll No': item.student.roll_number || '',
+                  'Class': item.student.class_name || '',
+                  'Section': item.student.section || '',
+                  'Date': selectedDate,
+                  'Status': (localEntries.get(item.student.id) || item.attendance?.status || 'present').toUpperCase(),
+                }));
+                exportToXLSX(rows, { filename: `attendance_${selectedClass || 'all'}_${selectedDate}`, sheetName: 'Attendance' });
+                toast({ title: "Exported", description: `${rows.length} records exported` });
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          )}
         </div>
 
         {/* Controls */}

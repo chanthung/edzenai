@@ -349,7 +349,31 @@ export default function Students() {
   return (
     <AdminLayout>
       <PageHeader title="Students" description="Manage student records and parent access links">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!filteredStudents?.length) return;
+              const rows = filteredStudents.map(s => ({
+                'Name': s.name,
+                'Roll Number': s.roll_number || '',
+                'Class': s.class_name || '',
+                'Section': s.section || '',
+                'Parent Name': s.parent_name || '',
+                'Parent Phone': s.parent_phone || '',
+                'Parent Email': s.parent_email || '',
+                'Guardian': s.guardian || '',
+                'Address': s.address || '',
+              }));
+              exportToXLSX(rows, { filename: `students_${classFilter !== 'all' ? classFilter + '_' : ''}${new Date().toISOString().slice(0, 10)}`, sheetName: 'Students' });
+              toast.success(`Exported ${rows.length} students`);
+            }}
+            disabled={!filteredStudents?.length}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
           <RestrictedButton isRestricted={isRestricted}>
             <Button variant="outline" disabled={isRestricted} onClick={() => setBulkUploadOpen(true)}>
               <FileSpreadsheet className="h-4 w-4 mr-2" />

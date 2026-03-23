@@ -286,6 +286,44 @@ export default function Dashboard() {
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6 mt-6">
+          {/* Export button */}
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (!feeReports) return;
+                const classSheet = feeReports.classWiseReports.map(r => ({
+                  'Class': r.className,
+                  'Total Students': r.totalStudents,
+                  'Students with Pending': r.studentsWithPending,
+                  'Total Fees': r.totalFees,
+                  'Collected': r.collectedFees,
+                  'Pending': r.pendingFees,
+                  'Collection Rate (%)': r.collectionRate,
+                }));
+                const studentSheet = feeReports.studentReports.map(r => ({
+                  'Student Name': r.studentName,
+                  'Class': r.className || '',
+                  'Section': r.section || '',
+                  'Roll No': r.rollNumber || '',
+                  'Total Fees': r.totalFees,
+                  'Paid': r.paidAmount,
+                  'Pending': r.pendingAmount,
+                  'Status': r.status,
+                }));
+                exportMultiSheetXLSX([
+                  { name: 'Class-wise Report', data: classSheet },
+                  { name: 'Student-wise Report', data: studentSheet },
+                ], `fee_report_${new Date().toISOString().slice(0, 10)}`);
+              }}
+              disabled={reportsLoading || !feeReports}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Fee Reports
+            </Button>
+          </div>
+
           {/* Fee Summary Cards */}
           <FeesSummaryCards
             isLoading={reportsLoading}
