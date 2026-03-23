@@ -13,7 +13,7 @@ import { useFeeReports } from "@/hooks/useFeeReports";
 import { usePendingPaymentProofs } from "@/hooks/usePaymentProofs";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { formatCurrency } from "@/lib/format";
-import { Users, CalendarDays, Receipt, ArrowRight, CheckCircle2, Clock, BarChart3, FileCheck, Lock } from "lucide-react";
+import { Users, CalendarDays, Receipt, ArrowRight, CheckCircle2, Clock, BarChart3, FileCheck, Lock, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { FeesSummaryCards } from "@/components/admin/reports/FeesSummaryCards";
 import { ClassWiseReport } from "@/components/admin/reports/ClassWiseReport";
