@@ -15,18 +15,10 @@ export function useClassReportCards(className: string | null, academicYearId: st
       if (!schoolId || !className || !academicYearId) return [];
 
       // Fetch students, school, year, marks, subjects, template assignments in parallel
-      const [studentsRes, schoolRes, yearRes, marksRes, subjectsRes, assignmentRes] = await Promise.all([
+      const [studentsRes, schoolRes, yearRes, assignmentRes] = await Promise.all([
         supabase.from('students').select('*').eq('school_id', schoolId).eq('class_name', className).order('name'),
         supabase.from('schools').select('name').eq('id', schoolId).single(),
         supabase.from('academic_years').select('name').eq('id', academicYearId).single(),
-        supabase.from('student_marks').select(`
-          *,
-          assessments!inner(id, name, assessment_type, class_name, academic_year_id),
-          subjects!inner(id, name, code, subject_type)
-        `)
-          .eq('assessments.academic_year_id', academicYearId)
-          .in('student_id', []), // placeholder — we'll re-fetch below
-        supabase.from('subjects').select('*').eq('school_id', schoolId).order('display_order'),
         supabase.from('class_template_assignments').select('template_id')
           .eq('school_id', schoolId)
           .eq('academic_year_id', academicYearId)
