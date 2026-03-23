@@ -362,6 +362,7 @@ export type Database = {
       }
       fee_categories: {
         Row: {
+          category_group: string | null
           created_at: string
           description: string | null
           display_order: number
@@ -372,6 +373,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_group?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -382,6 +384,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_group?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -408,6 +411,7 @@ export type Database = {
           created_at: string
           fee_structure_id: string
           id: string
+          new_admission_only: boolean
         }
         Insert: {
           auto_assign?: boolean
@@ -415,6 +419,7 @@ export type Database = {
           created_at?: string
           fee_structure_id: string
           id?: string
+          new_admission_only?: boolean
         }
         Update: {
           auto_assign?: boolean
@@ -422,6 +427,7 @@ export type Database = {
           created_at?: string
           fee_structure_id?: string
           id?: string
+          new_admission_only?: boolean
         }
         Relationships: [
           {
