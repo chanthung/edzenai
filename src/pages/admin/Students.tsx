@@ -264,9 +264,6 @@ export default function Students() {
         if (!error) assigned++;
       }
       toast.success(`Fees auto-assigned for ${assigned} student(s)`);
-      // Refresh fee counts
-      const queryClient = (await import('@tanstack/react-query')).useQueryClient;
-      // Invalidate using window approach
     } catch (error: any) {
       toast.error("Failed to assign fees", { description: error.message });
     } finally {
