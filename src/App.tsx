@@ -47,6 +47,8 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/onboard" element={<Onboard />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             
             {/* Parent view - unique link access */}
             <Route path="/view/:name/:token" element={<ParentView />} />
