@@ -635,6 +635,7 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
 
   const assignedSet = new Set(assignedClasses?.map((c) => c.class_name) ?? []);
   const autoAssign = assignedClasses?.[0]?.auto_assign ?? true;
+  const newAdmissionOnly = assignedClasses?.[0]?.new_admission_only ?? false;
 
   const handleToggleClass = async (className: string) => {
     const newSet = new Set(assignedSet);
@@ -648,6 +649,7 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
         feeStructureId: structureId,
         classes: Array.from(newSet),
         autoAssign,
+        newAdmissionOnly,
       });
     } catch (error: any) {
       toast.error("Failed to update classes", { description: error.message });
@@ -660,8 +662,23 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
         feeStructureId: structureId,
         classes: Array.from(assignedSet),
         autoAssign: checked,
+        newAdmissionOnly: checked ? newAdmissionOnly : false,
       });
       toast.success(checked ? "Auto-assign enabled" : "Auto-assign disabled");
+    } catch (error: any) {
+      toast.error("Failed to update", { description: error.message });
+    }
+  };
+
+  const handleToggleNewAdmissionOnly = async (checked: boolean) => {
+    try {
+      await updateClasses.mutateAsync({
+        feeStructureId: structureId,
+        classes: Array.from(assignedSet),
+        autoAssign,
+        newAdmissionOnly: checked,
+      });
+      toast.success(checked ? "New admissions only enabled" : "New admissions only disabled");
     } catch (error: any) {
       toast.error("Failed to update", { description: error.message });
     }
@@ -705,16 +722,32 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
           </div>
 
           {assignedSet.size > 0 && (
-            <div className="flex items-center justify-between bg-muted/30 rounded-md p-2">
-              <div>
-                <p className="text-sm font-medium">Auto-assign to new students</p>
-                <p className="text-xs text-muted-foreground">Automatically apply this fee when a student is added to a selected class</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between bg-muted/30 rounded-md p-2">
+                <div>
+                  <p className="text-sm font-medium">Auto-assign to new students</p>
+                  <p className="text-xs text-muted-foreground">Automatically apply this fee when a student is added to a selected class</p>
+                </div>
+                <Switch
+                  checked={autoAssign}
+                  onCheckedChange={handleToggleAutoAssign}
+                  disabled={isRestricted || updateClasses.isPending}
+                />
               </div>
-              <Switch
-                checked={autoAssign}
-                onCheckedChange={handleToggleAutoAssign}
-                disabled={isRestricted || updateClasses.isPending}
-              />
+
+              {autoAssign && (
+                <div className="flex items-center justify-between bg-muted/30 rounded-md p-2 ml-4 border-l-2 border-primary/20">
+                  <div>
+                    <p className="text-sm font-medium">New admissions only</p>
+                    <p className="text-xs text-muted-foreground">Skip for students continuing from a previous year (e.g. uniform items optional for existing students)</p>
+                  </div>
+                  <Switch
+                    checked={newAdmissionOnly}
+                    onCheckedChange={handleToggleNewAdmissionOnly}
+                    disabled={isRestricted || updateClasses.isPending}
+                  />
+                </div>
+              )}
             </div>
           )}
         </>
