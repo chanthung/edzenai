@@ -19,9 +19,11 @@ import {
   CheckCircle2, 
   Save,
   Users,
-  CalendarOff
+  CalendarOff,
+  Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { exportToXLSX } from "@/lib/export-utils";
 
 export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
