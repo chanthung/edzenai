@@ -316,6 +316,15 @@ export default function FeeSetup() {
                       onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label>Group <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Input
+                      placeholder="e.g. Uniforms, Books, Activities"
+                      value={newCategory.category_group}
+                      onChange={(e) => setNewCategory({ ...newCategory, category_group: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">Group related items together for easier management</p>
+                  </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <Label>Mandatory Fee</Label>
