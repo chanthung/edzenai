@@ -61,10 +61,14 @@ export default function FeeSetup() {
       return;
     }
     try {
-      await createCategory.mutateAsync(newCategory);
+      const payload: any = { name: newCategory.name, description: newCategory.description, is_mandatory: newCategory.is_mandatory };
+      if (newCategory.category_group.trim()) {
+        payload.category_group = newCategory.category_group.trim();
+      }
+      await createCategory.mutateAsync(payload);
       toast.success("Category created");
       setCategoryDialogOpen(false);
-      setNewCategory({ name: "", description: "", is_mandatory: true });
+      setNewCategory({ name: "", description: "", is_mandatory: true, category_group: "" });
     } catch (error: any) {
       toast.error("Failed to create category", { description: error.message });
     }
