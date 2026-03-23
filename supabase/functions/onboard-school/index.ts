@@ -63,9 +63,7 @@ Deno.serve(async (req) => {
 
     const plan = selectedPlan === 'pro' ? 'pro' : 'starter'
 
-    const supabaseAdmin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
+    // supabaseAdmin already created above
 
     // Check if user already has a school
     const { data: existingAdmin } = await supabaseAdmin
