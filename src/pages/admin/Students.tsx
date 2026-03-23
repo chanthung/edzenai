@@ -90,6 +90,7 @@ export default function Students() {
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
   const [bulkSendProgress, setBulkSendProgress] = useState({ current: 0, total: 0 });
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [isBulkAssigningFees, setIsBulkAssigningFees] = useState(false);
   
   const [newStudent, setNewStudent] = useState({
     name: "",
