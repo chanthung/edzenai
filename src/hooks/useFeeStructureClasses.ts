@@ -7,6 +7,7 @@ export interface FeeStructureClass {
   fee_structure_id: string;
   class_name: string;
   auto_assign: boolean;
+  new_admission_only: boolean;
   created_at: string;
 }
 
