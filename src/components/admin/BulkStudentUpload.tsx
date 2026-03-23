@@ -287,6 +287,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     // Invalidate queries
     queryClient.invalidateQueries({ queryKey: ["students"] });
     queryClient.invalidateQueries({ queryKey: ["student-enrollments"] });
+    queryClient.invalidateQueries({ queryKey: ["student-fees"] });
   };
 
   return (
