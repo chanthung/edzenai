@@ -41,6 +41,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
 import { useQuery } from "@tanstack/react-query";
+import { exportToXLSX } from "@/lib/export-utils";
 
 export default function Students() {
   const { data: students, isLoading } = useStudents();
