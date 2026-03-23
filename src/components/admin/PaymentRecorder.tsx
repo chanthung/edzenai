@@ -445,3 +445,51 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
     </Dialog>
   );
 }
+
+function NoFeesAssigned({ student, isRestricted }: { student: Student; isRestricted: boolean }) {
+  const [isAssigning, setIsAssigning] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: academicYears } = useAcademicYears();
+  const activeYear = academicYears?.find((y) => y.is_active);
+
+  const handleAutoAssign = async () => {
+    if (!activeYear) {
+      toast.error("No active academic year found");
+      return;
+    }
+    setIsAssigning(true);
+    try {
+      const { error } = await supabase.rpc('auto_assign_fees_for_student', {
+        _student_id: student.id,
+        _academic_year_id: activeYear.id,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['student-fees', student.id] });
+      queryClient.invalidateQueries({ queryKey: ['all-student-fees'] });
+      toast.success("Fees auto-assigned based on class");
+    } catch (error: any) {
+      toast.error("Failed to auto-assign fees", { description: error.message });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  return (
+    <div className="py-8 text-center text-muted-foreground">
+      <IndianRupee className="h-12 w-12 mx-auto mb-4 opacity-50" />
+      <p>No fees assigned to this student</p>
+      <p className="text-sm mt-2">Use "Manage Fees" to assign fee structures, or auto-assign based on class</p>
+      {!isRestricted && activeYear && (
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={handleAutoAssign}
+          disabled={isAssigning}
+        >
+          {isAssigning && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Auto-Assign Fees
+        </Button>
+      )}
+    </div>
+  );
+}
