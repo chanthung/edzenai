@@ -12,12 +12,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStudentFees, useStudentPayments, useRecordPayment, useDeletePayment, Payment } from "@/hooks/useStudentFees";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { formatCurrency, formatDate, getInstallmentStatus, getStatusLabel } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2, IndianRupee, Check, Clock, AlertCircle, Trash2, Calendar, Lock } from "lucide-react";
 import { Student } from "@/hooks/useStudents";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PaymentRecorderProps {
   student: Student;
@@ -212,11 +215,7 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
             <Skeleton className="h-40 w-full" />
           </div>
         ) : processedInstallments.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            <IndianRupee className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No fees assigned to this student</p>
-            <p className="text-sm mt-1">Use "Manage Fees" to assign fee structures first</p>
-          </div>
+          <NoFeesAssigned student={student} isRestricted={isRestricted} />
         ) : (
           <div className="flex-1 min-h-0 overflow-y-auto pr-2">
             {/* Summary Cards */}
@@ -447,5 +446,53 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function NoFeesAssigned({ student, isRestricted }: { student: Student; isRestricted: boolean }) {
+  const [isAssigning, setIsAssigning] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: academicYears } = useAcademicYears();
+  const activeYear = academicYears?.find((y) => y.is_active);
+
+  const handleAutoAssign = async () => {
+    if (!activeYear) {
+      toast.error("No active academic year found");
+      return;
+    }
+    setIsAssigning(true);
+    try {
+      const { error } = await supabase.rpc('auto_assign_fees_for_student', {
+        _student_id: student.id,
+        _academic_year_id: activeYear.id,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['student-fees', student.id] });
+      queryClient.invalidateQueries({ queryKey: ['all-student-fees'] });
+      toast.success("Fees auto-assigned based on class");
+    } catch (error: any) {
+      toast.error("Failed to auto-assign fees", { description: error.message });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  return (
+    <div className="py-8 text-center text-muted-foreground">
+      <IndianRupee className="h-12 w-12 mx-auto mb-4 opacity-50" />
+      <p>No fees assigned to this student</p>
+      <p className="text-sm mt-2">Use "Manage Fees" to assign fee structures, or auto-assign based on class</p>
+      {!isRestricted && activeYear && (
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={handleAutoAssign}
+          disabled={isAssigning}
+        >
+          {isAssigning && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Auto-Assign Fees
+        </Button>
+      )}
+    </div>
   );
 }
