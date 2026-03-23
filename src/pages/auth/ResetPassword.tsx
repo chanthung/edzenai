@@ -63,7 +63,7 @@ export default function ResetPassword() {
 
   if (!isRecovery && !success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="min-h-[100dvh] flex items-start pt-8 sm:items-center sm:pt-0 justify-center bg-background px-4 overflow-y-auto">
         <div className="w-full max-w-md animate-fade-in">
           <Card className="border-border/50 shadow-card">
             <CardHeader className="text-center">
@@ -84,7 +84,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-[100dvh] flex items-start pt-8 sm:items-center sm:pt-0 justify-center bg-background px-4 overflow-y-auto">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">

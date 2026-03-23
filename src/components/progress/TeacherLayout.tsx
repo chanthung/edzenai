@@ -80,7 +80,9 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
 
         {/* Mobile navigation */}
         {mobileMenuOpen && (
-          <nav className="absolute top-full left-0 right-0 bg-card border-b border-border shadow-lg animate-slide-up">
+          <>
+          <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
+          <nav className="absolute top-full left-0 right-0 z-50 bg-card border-b border-border shadow-lg animate-slide-up">
             <div className="p-2 space-y-1">
               {navItems.map((item) => (
                 <Link
@@ -107,6 +109,7 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
               </button>
             </div>
           </nav>
+          </>
         )}
       </header>
 
