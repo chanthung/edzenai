@@ -23,7 +23,6 @@ import { PendingProofsPanel } from "@/components/admin/PendingProofsPanel";
 import { TrialBanner } from "@/components/admin/TrialBanner";
 import { Badge } from "@/components/ui/badge";
 import { exportMultiSheetXLSX } from "@/lib/export-utils";
-import { formatCurrency as formatCurr } from "@/lib/format";
 
 export default function Dashboard() {
   const { data: students, isLoading: studentsLoading } = useStudents();
