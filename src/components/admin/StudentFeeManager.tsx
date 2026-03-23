@@ -76,6 +76,14 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
         </DialogHeader>
         
         <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(85vh-180px)] pr-2">
+          {assignedStructureIds.size > 0 && (
+            <Alert className="mb-4 border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20">
+              <CheckCircle2 className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-700 dark:text-blue-300">
+                Fees were auto-assigned based on class. You can customize below.
+              </AlertDescription>
+            </Alert>
+          )}
           {isRestricted && (
             <Alert className="mb-4 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
               <Lock className="h-4 w-4 text-amber-600" />
