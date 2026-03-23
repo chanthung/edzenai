@@ -35,12 +35,13 @@ import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { SiblingIndicator } from "@/components/admin/SiblingIndicator";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, Send, FileSpreadsheet } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, Send, FileSpreadsheet, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
 import { useQuery } from "@tanstack/react-query";
+import { exportToXLSX } from "@/lib/export-utils";
 
 export default function Students() {
   const { data: students, isLoading } = useStudents();
@@ -348,7 +349,31 @@ export default function Students() {
   return (
     <AdminLayout>
       <PageHeader title="Students" description="Manage student records and parent access links">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!filteredStudents?.length) return;
+              const rows = filteredStudents.map(s => ({
+                'Name': s.name,
+                'Roll Number': s.roll_number || '',
+                'Class': s.class_name || '',
+                'Section': s.section || '',
+                'Parent Name': s.parent_name || '',
+                'Parent Phone': s.parent_phone || '',
+                'Parent Email': s.parent_email || '',
+                'Guardian': s.guardian || '',
+                'Address': s.address || '',
+              }));
+              exportToXLSX(rows, { filename: `students_${classFilter !== 'all' ? classFilter + '_' : ''}${new Date().toISOString().slice(0, 10)}`, sheetName: 'Students' });
+              toast.success(`Exported ${rows.length} students`);
+            }}
+            disabled={!filteredStudents?.length}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
           <RestrictedButton isRestricted={isRestricted}>
             <Button variant="outline" disabled={isRestricted} onClick={() => setBulkUploadOpen(true)}>
               <FileSpreadsheet className="h-4 w-4 mr-2" />
