@@ -559,15 +559,115 @@ function FeeStructureCard({
               </p>
             )}
 
-            <RestrictedButton isRestricted={isRestricted}>
-              <Button variant="outline" size="sm" onClick={onAddInstallment} disabled={isRestricted}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add Installment
-              </Button>
-            </RestrictedButton>
+            <div className="flex items-center gap-2 mb-4">
+              <RestrictedButton isRestricted={isRestricted}>
+                <Button variant="outline" size="sm" onClick={onAddInstallment} disabled={isRestricted}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Installment
+                </Button>
+              </RestrictedButton>
+            </div>
+
+            {/* Class Assignment Section */}
+            <ClassAssignmentSection structureId={structure.id} isRestricted={isRestricted} />
           </CardContent>
         </CollapsibleContent>
       </Card>
     </Collapsible>
+  );
+}
+
+function ClassAssignmentSection({ structureId, isRestricted }: { structureId: string; isRestricted: boolean }) {
+  const { data: assignedClasses, isLoading } = useFeeStructureClasses(structureId);
+  const { data: allClasses } = useDistinctClasses();
+  const updateClasses = useUpdateFeeStructureClasses();
+
+  const assignedSet = new Set(assignedClasses?.map((c) => c.class_name) ?? []);
+  const autoAssign = assignedClasses?.[0]?.auto_assign ?? true;
+
+  const handleToggleClass = async (className: string) => {
+    const newSet = new Set(assignedSet);
+    if (newSet.has(className)) {
+      newSet.delete(className);
+    } else {
+      newSet.add(className);
+    }
+    try {
+      await updateClasses.mutateAsync({
+        feeStructureId: structureId,
+        classes: Array.from(newSet),
+        autoAssign,
+      });
+    } catch (error: any) {
+      toast.error("Failed to update classes", { description: error.message });
+    }
+  };
+
+  const handleToggleAutoAssign = async (checked: boolean) => {
+    try {
+      await updateClasses.mutateAsync({
+        feeStructureId: structureId,
+        classes: Array.from(assignedSet),
+        autoAssign: checked,
+      });
+      toast.success(checked ? "Auto-assign enabled" : "Auto-assign disabled");
+    } catch (error: any) {
+      toast.error("Failed to update", { description: error.message });
+    }
+  };
+
+  if (isLoading) return <Skeleton className="h-16 w-full" />;
+
+  return (
+    <div className="border-t pt-4 mt-2">
+      <div className="flex items-center gap-2 mb-3">
+        <GraduationCap className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Apply to Classes</span>
+        {assignedSet.size > 0 && (
+          <Badge variant="secondary" className="text-xs">{assignedSet.size} selected</Badge>
+        )}
+      </div>
+
+      {!allClasses || allClasses.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No classes found. Add students first to see classes here.</p>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {allClasses.map((cls) => (
+              <label
+                key={cls}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm cursor-pointer transition-colors ${
+                  assignedSet.has(cls)
+                    ? "bg-primary/10 border-primary/30 text-primary"
+                    : "bg-muted/30 border-border hover:bg-muted/60"
+                } ${isRestricted ? "opacity-50 pointer-events-none" : ""}`}
+              >
+                <Checkbox
+                  checked={assignedSet.has(cls)}
+                  onCheckedChange={() => handleToggleClass(cls)}
+                  disabled={isRestricted || updateClasses.isPending}
+                  className="h-3.5 w-3.5"
+                />
+                {cls}
+              </label>
+            ))}
+          </div>
+
+          {assignedSet.size > 0 && (
+            <div className="flex items-center justify-between bg-muted/30 rounded-md p-2">
+              <div>
+                <p className="text-sm font-medium">Auto-assign to new students</p>
+                <p className="text-xs text-muted-foreground">Automatically apply this fee when a student is added to a selected class</p>
+              </div>
+              <Switch
+                checked={autoAssign}
+                onCheckedChange={handleToggleAutoAssign}
+                disabled={isRestricted || updateClasses.isPending}
+              />
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
