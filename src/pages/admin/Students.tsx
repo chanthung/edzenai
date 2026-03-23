@@ -265,6 +265,7 @@ export default function Students() {
         if (!error) assigned++;
       }
       toast.success(`Fees auto-assigned for ${assigned} student(s)`);
+      queryClient.invalidateQueries({ queryKey: ['all-student-fees'] });
     } catch (error: any) {
       toast.error("Failed to assign fees", { description: error.message });
     } finally {
