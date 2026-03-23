@@ -24,12 +24,16 @@ export default function Login() {
   useEffect(() => {
     if (!session || !user) return;
 
-    // Check if email is verified
+    // Check if email is verified — block unverified users immediately
     if (!user.email_confirmed_at) {
       setUnverifiedEmail(user.email || null);
+      toast.error("Please verify your email before signing in.");
       supabase.auth.signOut();
       return;
     }
+    
+    // Clear any previous unverified state
+    setUnverifiedEmail(null);
 
     const redirectByRole = async () => {
       const { data: isPlatformAdmin } = await supabase.rpc('is_platform_admin');
