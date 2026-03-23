@@ -167,6 +167,7 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
               </button>
             </div>
           </nav>
+          </>
         )}
       </header>
 

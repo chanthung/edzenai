@@ -48,7 +48,7 @@ export default function Dashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="mt-6">
-        <TabsList>
+        <TabsList className="w-full sm:w-auto overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="proofs" className="flex items-center gap-2">
             <FileCheck className="h-4 w-4" />

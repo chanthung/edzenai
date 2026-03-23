@@ -109,6 +109,7 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
               </button>
             </div>
           </nav>
+          </>
         )}
       </header>
 

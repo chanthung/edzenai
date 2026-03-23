@@ -129,6 +129,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               </button>
             </div>
           </nav>
+          </>
         )}
       </header>
 
