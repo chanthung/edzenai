@@ -51,7 +51,7 @@ export default function FeeSetup() {
   const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
   const [editingInstallment, setEditingInstallment] = useState<Installment | null>(null);
   
-  const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true });
+  const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "" });
   const [newInstallment, setNewInstallment] = useState({ name: "", amount: "", due_date: "" });
 
