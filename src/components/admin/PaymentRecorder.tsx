@@ -12,12 +12,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStudentFees, useStudentPayments, useRecordPayment, useDeletePayment, Payment } from "@/hooks/useStudentFees";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { formatCurrency, formatDate, getInstallmentStatus, getStatusLabel } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2, IndianRupee, Check, Clock, AlertCircle, Trash2, Calendar, Lock } from "lucide-react";
 import { Student } from "@/hooks/useStudents";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PaymentRecorderProps {
   student: Student;
