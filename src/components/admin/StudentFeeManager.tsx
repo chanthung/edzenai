@@ -10,9 +10,8 @@ import { useFeeCategories } from "@/hooks/useFeeCategories";
 import { useStudentFees, useAssignFeeStructure, useRemoveFeeStructure } from "@/hooks/useStudentFees";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
-import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Loader2, IndianRupee, Calendar, CheckCircle2, XCircle, Lock } from "lucide-react";
+import { Loader2, IndianRupee, Calendar, CheckCircle2, Lock } from "lucide-react";
 import { Student } from "@/hooks/useStudents";
 
 interface StudentFeeManagerProps {
