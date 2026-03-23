@@ -368,34 +368,72 @@ export default function FeeSetup() {
             </Card>
           ) : (
             <div className="space-y-2">
-              {feeCategories?.map((category) => (
-                <Card key={category.id} className="card-elevated">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{category.name}</p>
-                        <Badge variant={category.is_mandatory ? "default" : "secondary"}>
-                          {category.is_mandatory ? "Mandatory" : "Optional"}
-                        </Badge>
+              {(() => {
+                // Group categories by category_group
+                const grouped = new Map<string, typeof feeCategories>();
+                const ungrouped: typeof feeCategories = [];
+                feeCategories?.forEach((cat) => {
+                  if (cat.category_group) {
+                    if (!grouped.has(cat.category_group)) grouped.set(cat.category_group, []);
+                    grouped.get(cat.category_group)!.push(cat);
+                  } else {
+                    ungrouped.push(cat);
+                  }
+                });
+
+                const renderCategoryCard = (category: any) => (
+                  <Card key={category.id} className="card-elevated">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{category.name}</p>
+                          <Badge variant={category.is_mandatory ? "default" : "secondary"}>
+                            {category.is_mandatory ? "Mandatory" : "Optional"}
+                          </Badge>
+                          {category.category_group && (
+                            <Badge variant="outline" className="text-xs">
+                              {category.category_group}
+                            </Badge>
+                          )}
+                        </div>
+                        {category.description && (
+                          <p className="text-sm text-muted-foreground">{category.description}</p>
+                        )}
                       </div>
-                      {category.description && (
-                        <p className="text-sm text-muted-foreground">{category.description}</p>
-                      )}
-                    </div>
-                    <RestrictedButton isRestricted={isRestricted}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteCategory.mutate(category.id)}
-                        disabled={isRestricted}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </RestrictedButton>
-                  </CardContent>
-                </Card>
-              ))}
+                      <RestrictedButton isRestricted={isRestricted}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => deleteCategory.mutate(category.id)}
+                          disabled={isRestricted}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </RestrictedButton>
+                    </CardContent>
+                  </Card>
+                );
+
+                return (
+                  <>
+                    {Array.from(grouped.entries()).map(([group, cats]) => (
+                      <div key={group} className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-2">{group}</p>
+                        {cats.map(renderCategoryCard)}
+                      </div>
+                    ))}
+                    {ungrouped.length > 0 && (
+                      <div className="space-y-2">
+                        {grouped.size > 0 && (
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-2">Other</p>
+                        )}
+                        {ungrouped.map(renderCategoryCard)}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
         </TabsContent>
