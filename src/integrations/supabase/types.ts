@@ -401,6 +401,38 @@ export type Database = {
           },
         ]
       }
+      fee_structure_classes: {
+        Row: {
+          auto_assign: boolean
+          class_name: string
+          created_at: string
+          fee_structure_id: string
+          id: string
+        }
+        Insert: {
+          auto_assign?: boolean
+          class_name: string
+          created_at?: string
+          fee_structure_id: string
+          id?: string
+        }
+        Update: {
+          auto_assign?: boolean
+          class_name?: string
+          created_at?: string
+          fee_structure_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_structure_classes_fee_structure_id_fkey"
+            columns: ["fee_structure_id"]
+            isOneToOne: false
+            referencedRelation: "fee_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_structures: {
         Row: {
           academic_year_id: string
@@ -1274,6 +1306,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_assign_fees_for_student: {
+        Args: { _academic_year_id: string; _student_id: string }
+        Returns: undefined
+      }
       create_school_with_primary_admin: {
         Args: { _school_name: string }
         Returns: string

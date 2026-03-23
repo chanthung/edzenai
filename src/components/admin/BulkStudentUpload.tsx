@@ -262,6 +262,18 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
           if (enrollError) {
             console.error("Enrollment error:", enrollError);
           }
+
+          // Auto-assign fees for each imported student
+          for (const s of insertedStudents) {
+            try {
+              await supabase.rpc("auto_assign_fees_for_student", {
+                _student_id: s.id,
+                _academic_year_id: academicYearId,
+              });
+            } catch (feeError) {
+              console.error("Fee auto-assign error for student:", s.id, feeError);
+            }
+          }
         }
       }
 
@@ -275,6 +287,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     // Invalidate queries
     queryClient.invalidateQueries({ queryKey: ["students"] });
     queryClient.invalidateQueries({ queryKey: ["student-enrollments"] });
+    queryClient.invalidateQueries({ queryKey: ["student-fees"] });
   };
 
   return (

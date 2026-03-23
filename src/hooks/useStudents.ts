@@ -106,7 +106,16 @@ export function useCreateStudent() {
         
         if (enrollmentError) {
           console.error('Failed to create enrollment:', enrollmentError);
-          // Don't throw - student was created successfully
+        }
+
+        // 3. Auto-assign fees based on class
+        try {
+          await supabase.rpc('auto_assign_fees_for_student', {
+            _student_id: data.id,
+            _academic_year_id: academic_year_id,
+          });
+        } catch (feeError) {
+          console.error('Failed to auto-assign fees:', feeError);
         }
       }
       
