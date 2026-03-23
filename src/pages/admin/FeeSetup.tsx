@@ -51,7 +51,7 @@ export default function FeeSetup() {
   const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
   const [editingInstallment, setEditingInstallment] = useState<Installment | null>(null);
   
-  const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true });
+  const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "" });
   const [newInstallment, setNewInstallment] = useState({ name: "", amount: "", due_date: "" });
 
@@ -61,10 +61,14 @@ export default function FeeSetup() {
       return;
     }
     try {
-      await createCategory.mutateAsync(newCategory);
+      const payload: any = { name: newCategory.name, description: newCategory.description, is_mandatory: newCategory.is_mandatory };
+      if (newCategory.category_group.trim()) {
+        payload.category_group = newCategory.category_group.trim();
+      }
+      await createCategory.mutateAsync(payload);
       toast.success("Category created");
       setCategoryDialogOpen(false);
-      setNewCategory({ name: "", description: "", is_mandatory: true });
+      setNewCategory({ name: "", description: "", is_mandatory: true, category_group: "" });
     } catch (error: any) {
       toast.error("Failed to create category", { description: error.message });
     }
@@ -312,6 +316,15 @@ export default function FeeSetup() {
                       onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label>Group <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Input
+                      placeholder="e.g. Uniforms, Books, Activities"
+                      value={newCategory.category_group}
+                      onChange={(e) => setNewCategory({ ...newCategory, category_group: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">Group related items together for easier management</p>
+                  </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <Label>Mandatory Fee</Label>
@@ -355,34 +368,72 @@ export default function FeeSetup() {
             </Card>
           ) : (
             <div className="space-y-2">
-              {feeCategories?.map((category) => (
-                <Card key={category.id} className="card-elevated">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{category.name}</p>
-                        <Badge variant={category.is_mandatory ? "default" : "secondary"}>
-                          {category.is_mandatory ? "Mandatory" : "Optional"}
-                        </Badge>
+              {(() => {
+                // Group categories by category_group
+                const grouped = new Map<string, typeof feeCategories>();
+                const ungrouped: typeof feeCategories = [];
+                feeCategories?.forEach((cat) => {
+                  if (cat.category_group) {
+                    if (!grouped.has(cat.category_group)) grouped.set(cat.category_group, []);
+                    grouped.get(cat.category_group)!.push(cat);
+                  } else {
+                    ungrouped.push(cat);
+                  }
+                });
+
+                const renderCategoryCard = (category: any) => (
+                  <Card key={category.id} className="card-elevated">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{category.name}</p>
+                          <Badge variant={category.is_mandatory ? "default" : "secondary"}>
+                            {category.is_mandatory ? "Mandatory" : "Optional"}
+                          </Badge>
+                          {category.category_group && (
+                            <Badge variant="outline" className="text-xs">
+                              {category.category_group}
+                            </Badge>
+                          )}
+                        </div>
+                        {category.description && (
+                          <p className="text-sm text-muted-foreground">{category.description}</p>
+                        )}
                       </div>
-                      {category.description && (
-                        <p className="text-sm text-muted-foreground">{category.description}</p>
-                      )}
-                    </div>
-                    <RestrictedButton isRestricted={isRestricted}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteCategory.mutate(category.id)}
-                        disabled={isRestricted}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </RestrictedButton>
-                  </CardContent>
-                </Card>
-              ))}
+                      <RestrictedButton isRestricted={isRestricted}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => deleteCategory.mutate(category.id)}
+                          disabled={isRestricted}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </RestrictedButton>
+                    </CardContent>
+                  </Card>
+                );
+
+                return (
+                  <>
+                    {Array.from(grouped.entries()).map(([group, cats]) => (
+                      <div key={group} className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-2">{group}</p>
+                        {cats.map(renderCategoryCard)}
+                      </div>
+                    ))}
+                    {ungrouped.length > 0 && (
+                      <div className="space-y-2">
+                        {grouped.size > 0 && (
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-2">Other</p>
+                        )}
+                        {ungrouped.map(renderCategoryCard)}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
         </TabsContent>
@@ -584,6 +635,7 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
 
   const assignedSet = new Set(assignedClasses?.map((c) => c.class_name) ?? []);
   const autoAssign = assignedClasses?.[0]?.auto_assign ?? true;
+  const newAdmissionOnly = assignedClasses?.[0]?.new_admission_only ?? false;
 
   const handleToggleClass = async (className: string) => {
     const newSet = new Set(assignedSet);
@@ -597,6 +649,7 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
         feeStructureId: structureId,
         classes: Array.from(newSet),
         autoAssign,
+        newAdmissionOnly,
       });
     } catch (error: any) {
       toast.error("Failed to update classes", { description: error.message });
@@ -609,8 +662,23 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
         feeStructureId: structureId,
         classes: Array.from(assignedSet),
         autoAssign: checked,
+        newAdmissionOnly: checked ? newAdmissionOnly : false,
       });
       toast.success(checked ? "Auto-assign enabled" : "Auto-assign disabled");
+    } catch (error: any) {
+      toast.error("Failed to update", { description: error.message });
+    }
+  };
+
+  const handleToggleNewAdmissionOnly = async (checked: boolean) => {
+    try {
+      await updateClasses.mutateAsync({
+        feeStructureId: structureId,
+        classes: Array.from(assignedSet),
+        autoAssign,
+        newAdmissionOnly: checked,
+      });
+      toast.success(checked ? "New admissions only enabled" : "New admissions only disabled");
     } catch (error: any) {
       toast.error("Failed to update", { description: error.message });
     }
@@ -654,16 +722,32 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
           </div>
 
           {assignedSet.size > 0 && (
-            <div className="flex items-center justify-between bg-muted/30 rounded-md p-2">
-              <div>
-                <p className="text-sm font-medium">Auto-assign to new students</p>
-                <p className="text-xs text-muted-foreground">Automatically apply this fee when a student is added to a selected class</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between bg-muted/30 rounded-md p-2">
+                <div>
+                  <p className="text-sm font-medium">Auto-assign to new students</p>
+                  <p className="text-xs text-muted-foreground">Automatically apply this fee when a student is added to a selected class</p>
+                </div>
+                <Switch
+                  checked={autoAssign}
+                  onCheckedChange={handleToggleAutoAssign}
+                  disabled={isRestricted || updateClasses.isPending}
+                />
               </div>
-              <Switch
-                checked={autoAssign}
-                onCheckedChange={handleToggleAutoAssign}
-                disabled={isRestricted || updateClasses.isPending}
-              />
+
+              {autoAssign && (
+                <div className="flex items-center justify-between bg-muted/30 rounded-md p-2 ml-4 border-l-2 border-primary/20">
+                  <div>
+                    <p className="text-sm font-medium">New admissions only</p>
+                    <p className="text-xs text-muted-foreground">Skip for students continuing from a previous year (e.g. uniform items optional for existing students)</p>
+                  </div>
+                  <Switch
+                    checked={newAdmissionOnly}
+                    onCheckedChange={handleToggleNewAdmissionOnly}
+                    disabled={isRestricted || updateClasses.isPending}
+                  />
+                </div>
+              )}
             </div>
           )}
         </>

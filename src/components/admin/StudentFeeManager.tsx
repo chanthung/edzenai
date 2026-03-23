@@ -1,9 +1,8 @@
 import { useState } from "react";
+import { FeeListGrouped } from "./FeeListGrouped";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
-import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFeeStructures } from "@/hooks/useFeeStructures";
@@ -11,9 +10,8 @@ import { useFeeCategories } from "@/hooks/useFeeCategories";
 import { useStudentFees, useAssignFeeStructure, useRemoveFeeStructure } from "@/hooks/useStudentFees";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
-import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Loader2, IndianRupee, Calendar, CheckCircle2, XCircle, Lock } from "lucide-react";
+import { Loader2, IndianRupee, Calendar, CheckCircle2, Lock } from "lucide-react";
 import { Student } from "@/hooks/useStudents";
 
 interface StudentFeeManagerProps {
@@ -116,85 +114,17 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
               <p className="text-sm mt-1">Go to Fee Setup to create fee categories</p>
             </div>
           ) : (
-            <div className="space-y-3 py-4">
-              {feeCategories?.map((category: any) => {
-                const structure = feeStructures?.find((s: any) => s.fee_category_id === category.id);
-                const structureId = structure?.id as string | undefined;
-                const isAssigned = structureId ? assignedStructureIds.has(structureId) : false;
-                const isProcessing = structureId ? processingId === structureId : false;
-                const hasStructure = !!structure;
-                
-                return (
-                  <div
-                    key={category.id}
-                    className={`flex items-start gap-4 p-4 border rounded-lg transition-colors ${
-                      isAssigned ? "bg-primary/5 border-primary/20" : "hover:bg-muted/50"
-                    }`}
-                  >
-                    <div className="pt-0.5">
-                      {isProcessing ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                      ) : (
-                        <Checkbox
-                          checked={isAssigned}
-                          onCheckedChange={() => {
-                            if (!structureId) return;
-                            handleToggleFee(structureId, isAssigned);
-                          }}
-                          disabled={isProcessing || isRestricted || !hasStructure}
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium">{category?.name}</span>
-                        {category?.is_mandatory && (
-                          <Badge variant="secondary" className="text-xs">Mandatory</Badge>
-                        )}
-                        {isAssigned && (
-                          <Badge className="text-xs bg-green-500/10 text-green-600 border-green-200">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Assigned
-                          </Badge>
-                        )}
-                      </div>
-                      {hasStructure ? (
-                        <>
-                          <p className="text-lg font-semibold text-primary mt-1">
-                            {formatCurrency(structure.total_amount)}
-                          </p>
-                          {structure.installments?.length > 0 && (
-                            <div className="mt-2 text-sm text-muted-foreground">
-                              <p>{structure.installments.length} installment(s)</p>
-                              <div className="mt-1 space-y-1">
-                                {structure.installments
-                                  .sort((a: any, b: any) => a.display_order - b.display_order)
-                                  .slice(0, 3)
-                                  .map((inst: any) => (
-                                    <div key={inst.id} className="flex justify-between text-xs">
-                                      <span>{inst.name}</span>
-                                      <span>{formatCurrency(inst.amount)} - Due {formatDate(inst.due_date)}</span>
-                                    </div>
-                                  ))}
-                                {structure.installments.length > 3 && (
-                                  <p className="text-xs text-muted-foreground">
-                                    +{structure.installments.length - 3} more...
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Not configured for {activeYear?.name}. Create a fee structure in Fee Setup to assign this.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <FeeListGrouped
+              feeCategories={feeCategories ?? []}
+              feeStructures={feeStructures ?? []}
+              assignedStructureIds={assignedStructureIds}
+              processingId={processingId}
+              isRestricted={isRestricted}
+              activeYear={activeYear}
+              academicYearId={activeYear?.id}
+              studentId={student.id}
+              onToggleFee={handleToggleFee}
+            />
           )}
         </div>
         

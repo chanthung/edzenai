@@ -10,6 +10,7 @@ export interface FeeCategory {
   description: string | null;
   is_mandatory: boolean;
   display_order: number;
+  category_group: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -19,6 +20,7 @@ export interface FeeCategoryInsert {
   description?: string;
   is_mandatory?: boolean;
   display_order?: number;
+  category_group?: string;
 }
 
 export function useFeeCategories() {
