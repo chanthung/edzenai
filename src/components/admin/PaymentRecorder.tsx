@@ -86,13 +86,21 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
           pending_amount: Math.max(0, Number(inst.amount) - paidAmount),
           status: getInstallmentStatus(inst.due_date, isPaid),
           categoryName: category?.name || "Unknown",
+          categoryGroup: category?.category_group || null,
+          categoryDisplayOrder: category?.display_order ?? 999,
+          installmentDisplayOrder: inst.display_order ?? 0,
           feeStructureId: structure.id,
         });
       });
     });
 
-    // Sort by due date
-    result.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+    // Sort by category display order, then installment display order, then due date
+    result.sort((a, b) => {
+      if (a.categoryDisplayOrder !== b.categoryDisplayOrder) return a.categoryDisplayOrder - b.categoryDisplayOrder;
+      if (a.categoryName !== b.categoryName) return a.categoryName.localeCompare(b.categoryName);
+      if (a.installmentDisplayOrder !== b.installmentDisplayOrder) return a.installmentDisplayOrder - b.installmentDisplayOrder;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    });
     return result;
   }, [studentFees, payments]);
 
