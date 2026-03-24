@@ -192,7 +192,7 @@ export default function Dashboard() {
                   <SetupItem 
                     title="Configure fee structure" 
                     description="Define fees and installment schedule"
-                    completed={false}
+                    completed={feeCategories && feeCategories.length > 0}
                     href="/admin/fee-setup"
                   />
                   <SetupItem 
