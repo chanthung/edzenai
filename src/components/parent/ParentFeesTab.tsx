@@ -20,6 +20,20 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
     ? Math.round((summary.total_paid / summary.total_fee) * 100) 
     : 0;
 
+  if (!fees || fees.length === 0) {
+    return (
+      <Card className="card-elevated">
+        <CardContent className="py-12 text-center">
+          <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No Fees Assigned</h3>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            No fees have been assigned yet. Please contact your school for more information.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Summary Card */}
