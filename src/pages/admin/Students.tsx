@@ -104,6 +104,11 @@ export default function Students() {
     parent_email: "",
     guardian: "",
     address: "",
+    gender: "",
+    date_of_birth: "",
+    social_category: "",
+    aadhaar_number: "",
+    religion: "",
   });
 
   // Pre-select active academic year when dialog opens
