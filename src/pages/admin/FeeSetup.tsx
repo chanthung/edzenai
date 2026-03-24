@@ -628,7 +628,7 @@ function FeeStructureCard({
   );
 }
 
-function ClassAssignmentSection({ structureId, isRestricted }: { structureId: string; isRestricted: boolean }) {
+function ClassAssignmentSection({ structureId, academicYearId, isRestricted }: { structureId: string; academicYearId: string; isRestricted: boolean }) {
   const { data: assignedClasses, isLoading } = useFeeStructureClasses(structureId);
   const { data: allClasses } = useDistinctClasses();
   const updateClasses = useUpdateFeeStructureClasses();
@@ -650,6 +650,7 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
         classes: Array.from(newSet),
         autoAssign,
         newAdmissionOnly,
+        academicYearId,
       });
     } catch (error: any) {
       toast.error("Failed to update classes", { description: error.message });
