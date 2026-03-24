@@ -458,94 +458,105 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
               </div>
             )}
 
-            {/* Installments List */}
+            {/* Fee Breakdown - Grouped */}
             <div className="space-y-3">
               <h3 className="font-medium">Fee Breakdown</h3>
-              <Accordion type="multiple" className="space-y-2">
-                {processedInstallments.map((inst) => (
-                  <AccordionItem 
-                    key={inst.id} 
-                    value={inst.id}
-                    className="border rounded-lg px-4"
-                  >
-                    <AccordionTrigger className="hover:no-underline py-3">
-                      <div className="flex items-center gap-3 flex-1 text-left">
-                        {getStatusIcon(inst.status)}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium">{inst.categoryName}</span>
-                            <span className="text-muted-foreground">-</span>
-                            <span>{inst.name}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
-                            <span>Due: {formatDate(inst.due_date)}</span>
-                          </div>
-                        </div>
-                        <div className="text-right mr-2">
-                          <p className="font-semibold">{formatCurrency(inst.amount)}</p>
-                          <Badge className={`text-xs ${getStatusBadgeClass(inst.status)}`}>
-                            {getStatusLabel(inst.status)}
-                          </Badge>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-4">
-                      <div className="pt-2 border-t">
-                        <div className="flex justify-between text-sm mb-2">
-                          <span>Amount:</span>
-                          <span>{formatCurrency(inst.amount)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm mb-2 text-green-600">
-                          <span>Paid:</span>
-                          <span>{formatCurrency(inst.paid_amount)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm font-medium">
-                          <span>Pending:</span>
-                          <span className={inst.pending_amount > 0 ? "text-amber-600" : "text-green-600"}>
-                            {formatCurrency(inst.pending_amount)}
-                          </span>
-                        </div>
-                        
-                        {/* Payment History for this installment */}
-                        {payments?.filter(p => p.installment_id === inst.id).length > 0 && (
-                          <div className="mt-4">
-                            <p className="text-sm font-medium mb-2">Payment History</p>
-                            <div className="space-y-2">
-                              {payments
-                                ?.filter(p => p.installment_id === inst.id)
-                                .map((payment) => (
-                                  <div 
-                                    key={payment.id} 
-                                    className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded"
-                                  >
-                                    <div>
-                                      <p>{formatCurrency(payment.amount_paid)}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {formatDate(payment.payment_date)} • {payment.payment_mode || "Cash"}
-                                        {payment.reference_number && ` • Ref: ${payment.reference_number}`}
-                                      </p>
-                                    </div>
-                                    <RestrictedButton isRestricted={isRestricted}>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                        onClick={() => handleDeletePayment(payment)}
-                                        disabled={isRestricted}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </RestrictedButton>
-                                  </div>
-                                ))}
+              {groupedAll.map((group, gi) => (
+                <div key={group.groupName || gi}>
+                  {group.groupName && (
+                    <div className="text-sm font-semibold text-muted-foreground mb-2 mt-4">
+                      {group.groupName}
+                    </div>
+                  )}
+                  <Accordion type="multiple" className="space-y-2">
+                    {group.categories.map((cat) =>
+                      cat.installments.map((inst) => (
+                        <AccordionItem
+                          key={inst.id}
+                          value={inst.id}
+                          className={`border rounded-lg px-4 ${group.groupName ? 'ml-4' : ''}`}
+                        >
+                          <AccordionTrigger className="hover:no-underline py-3">
+                            <div className="flex items-center gap-3 flex-1 text-left">
+                              {getStatusIcon(inst.status)}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium">
+                                    {group.groupName ? inst.categoryName : inst.categoryName}
+                                  </span>
+                                  <span className="text-muted-foreground">-</span>
+                                  <span>{inst.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+                                  <span>Due: {formatDate(inst.due_date)}</span>
+                                </div>
+                              </div>
+                              <div className="text-right mr-2">
+                                <p className="font-semibold">{formatCurrency(inst.amount)}</p>
+                                <Badge className={`text-xs ${getStatusBadgeClass(inst.status)}`}>
+                                  {getStatusLabel(inst.status)}
+                                </Badge>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-4">
+                            <div className="pt-2 border-t">
+                              <div className="flex justify-between text-sm mb-2">
+                                <span>Amount:</span>
+                                <span>{formatCurrency(inst.amount)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm mb-2 text-green-600">
+                                <span>Paid:</span>
+                                <span>{formatCurrency(inst.paid_amount)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm font-medium">
+                                <span>Pending:</span>
+                                <span className={inst.pending_amount > 0 ? "text-amber-600" : "text-green-600"}>
+                                  {formatCurrency(inst.pending_amount)}
+                                </span>
+                              </div>
+                              {payments?.filter(p => p.installment_id === inst.id).length > 0 && (
+                                <div className="mt-4">
+                                  <p className="text-sm font-medium mb-2">Payment History</p>
+                                  <div className="space-y-2">
+                                    {payments
+                                      ?.filter(p => p.installment_id === inst.id)
+                                      .map((payment) => (
+                                        <div
+                                          key={payment.id}
+                                          className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded"
+                                        >
+                                          <div>
+                                            <p>{formatCurrency(payment.amount_paid)}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {formatDate(payment.payment_date)} • {payment.payment_mode || "Cash"}
+                                              {payment.reference_number && ` • Ref: ${payment.reference_number}`}
+                                            </p>
+                                          </div>
+                                          <RestrictedButton isRestricted={isRestricted}>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                              onClick={() => handleDeletePayment(payment)}
+                                              disabled={isRestricted}
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </RestrictedButton>
+                                        </div>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))
+                    )}
+                  </Accordion>
+                </div>
+              ))}
             </div>
           </div>
         )}
