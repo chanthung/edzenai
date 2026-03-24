@@ -23,6 +23,7 @@ import ParentView from "./pages/parent/ParentView";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import SubscriptionSettings from "./pages/platform/SubscriptionSettings";
 import NotFound from "./pages/NotFound";
+import Pricing from "./pages/Pricing";
 
 // Progress Module Pages
 import ProgressDashboard from "./pages/progress/ProgressDashboard";
