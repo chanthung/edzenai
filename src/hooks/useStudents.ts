@@ -15,6 +15,11 @@ export interface Student {
   parent_email: string | null;
   guardian: string | null;
   address: string | null;
+  gender: string | null;
+  date_of_birth: string | null;
+  social_category: string | null;
+  aadhaar_number: string | null;
+  religion: string | null;
   access_token: string;
   telegram_registered: boolean;
   created_at: string;
@@ -31,6 +36,11 @@ export interface StudentInsert {
   parent_email?: string;
   guardian?: string;
   address?: string;
+  gender?: string;
+  date_of_birth?: string;
+  social_category?: string;
+  aadhaar_number?: string;
+  religion?: string;
   academic_year_id?: string;
 }
 

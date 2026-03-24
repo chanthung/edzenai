@@ -162,6 +162,11 @@ Map each source column to the correct target field. Target fields are:
 - parent_email (email address)
 - guardian (guardian name if different from parent)
 - address (home address)
+- gender (male, female, or other)
+- date_of_birth (date of birth, DOB)
+- social_category (General, Minority, OBC, SC, ST)
+- aadhaar_number (Aadhaar card number, 12 digits)
+- religion (Buddhism, Christianity, Hinduism, Islam, Jainism, Judaism, Sikhism, Zoroastrianism)
 
 Return the mapping as a JSON object where keys are source column names and values are target field names. If a column doesn't map to any target field, map it to null.`;
 
@@ -218,6 +223,8 @@ Return the mapping as a JSON object where keys are source column names and value
         name: "", roll_number: "", class_name: "", section: "",
         parent_name: "", parent_phone: "", parent_email: "",
         guardian: "", address: "",
+        gender: "", date_of_birth: "", social_category: "",
+        aadhaar_number: "", religion: "",
       };
 
       for (const [sourceCol, targetField] of Object.entries(mapping)) {
