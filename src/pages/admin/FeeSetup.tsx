@@ -77,6 +77,38 @@ export default function FeeSetup() {
     }
   };
 
+  const handleEditCategory = (category: any) => {
+    setEditingCategory(category);
+    setEditCategoryData({
+      name: category.name,
+      description: category.description || "",
+      is_mandatory: category.is_mandatory,
+      category_group: category.category_group || "",
+    });
+    setEditCategoryDialogOpen(true);
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory || !editCategoryData.name.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+    try {
+      await updateCategory.mutateAsync({
+        id: editingCategory.id,
+        name: editCategoryData.name,
+        description: editCategoryData.description || null,
+        is_mandatory: editCategoryData.is_mandatory,
+        category_group: editCategoryData.category_group.trim() || null,
+      });
+      toast.success("Category updated");
+      setEditCategoryDialogOpen(false);
+      setEditingCategory(null);
+    } catch (error: any) {
+      toast.error("Failed to update category", { description: error.message });
+    }
+  };
+
   const handleCreateStructure = async () => {
     if (!newStructure.fee_category_id || !newStructure.total_amount || !currentYearId) {
       toast.error("Please fill in all fields");
