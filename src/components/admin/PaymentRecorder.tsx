@@ -37,6 +37,9 @@ interface InstallmentWithPayment {
   pending_amount: number;
   status: 'paid' | 'upcoming' | 'due' | 'overdue';
   categoryName: string;
+  categoryGroup: string | null;
+  categoryDisplayOrder: number;
+  installmentDisplayOrder: number;
   feeStructureId: string;
 }
 
@@ -83,21 +86,106 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
           pending_amount: Math.max(0, Number(inst.amount) - paidAmount),
           status: getInstallmentStatus(inst.due_date, isPaid),
           categoryName: category?.name || "Unknown",
+          categoryGroup: category?.category_group || null,
+          categoryDisplayOrder: category?.display_order ?? 999,
+          installmentDisplayOrder: inst.display_order ?? 0,
           feeStructureId: structure.id,
         });
       });
     });
 
-    // Sort by due date
-    result.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+    // Sort by category display order, then installment display order, then due date
+    result.sort((a, b) => {
+      if (a.categoryDisplayOrder !== b.categoryDisplayOrder) return a.categoryDisplayOrder - b.categoryDisplayOrder;
+      if (a.categoryName !== b.categoryName) return a.categoryName.localeCompare(b.categoryName);
+      if (a.installmentDisplayOrder !== b.installmentDisplayOrder) return a.installmentDisplayOrder - b.installmentDisplayOrder;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    });
     return result;
   }, [studentFees, payments]);
 
-  // Unpaid installments for selection
+  // Group unpaid installments by category (with category_group nesting)
   const unpaidInstallments = useMemo(() => 
     processedInstallments.filter(i => i.status !== 'paid'),
     [processedInstallments]
   );
+
+  // Build grouped structure for display
+  interface CategorySection {
+    categoryName: string;
+    installments: InstallmentWithPayment[];
+  }
+  interface GroupedFees {
+    groupName: string | null; // null = standalone category
+    categories: CategorySection[];
+  }
+
+  const groupedUnpaid = useMemo((): GroupedFees[] => {
+    const groups: GroupedFees[] = [];
+    const seen = new Set<string>();
+
+    unpaidInstallments.forEach(inst => {
+      const key = inst.categoryGroup || inst.categoryName;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      if (inst.categoryGroup) {
+        // Collect all categories under this group
+        const groupItems = unpaidInstallments.filter(i => i.categoryGroup === inst.categoryGroup);
+        const catMap = new Map<string, InstallmentWithPayment[]>();
+        groupItems.forEach(i => {
+          const arr = catMap.get(i.categoryName) || [];
+          arr.push(i);
+          catMap.set(i.categoryName, arr);
+        });
+        groups.push({
+          groupName: inst.categoryGroup,
+          categories: Array.from(catMap.entries()).map(([name, items]) => ({ categoryName: name, installments: items })),
+        });
+      } else {
+        // Standalone category — group its installments together
+        const catItems = unpaidInstallments.filter(i => !i.categoryGroup && i.categoryName === inst.categoryName);
+        groups.push({
+          groupName: null,
+          categories: [{ categoryName: inst.categoryName, installments: catItems }],
+        });
+      }
+    });
+    return groups;
+  }, [unpaidInstallments]);
+
+  // Same grouped structure for all installments (fee breakdown)
+  const groupedAll = useMemo((): GroupedFees[] => {
+    const groups: GroupedFees[] = [];
+    const seen = new Set<string>();
+
+    processedInstallments.forEach(inst => {
+      const key = inst.categoryGroup || inst.categoryName;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      if (inst.categoryGroup) {
+        const groupItems = processedInstallments.filter(i => i.categoryGroup === inst.categoryGroup);
+        const catMap = new Map<string, InstallmentWithPayment[]>();
+        groupItems.forEach(i => {
+          const arr = catMap.get(i.categoryName) || [];
+          arr.push(i);
+          catMap.set(i.categoryName, arr);
+        });
+        groups.push({
+          groupName: inst.categoryGroup,
+          categories: Array.from(catMap.entries()).map(([name, items]) => ({ categoryName: name, installments: items })),
+        });
+      } else {
+        const catItems = processedInstallments.filter(i => !i.categoryGroup && i.categoryName === inst.categoryName);
+        groups.push({
+          groupName: null,
+          categories: [{ categoryName: inst.categoryName, installments: catItems }],
+        });
+      }
+    });
+    return groups;
+  }, [processedInstallments]);
 
   // Calculate total for selected installments
   const selectedTotal = useMemo(() => {
@@ -269,30 +357,53 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
                         {selectedInstallments.length === unpaidInstallments.length ? "Deselect All" : "Select All"}
                       </Button>
                     </div>
-                    {/* Installments list with independent scroll */}
-                    <div className="border rounded-lg divide-y max-h-[180px] overflow-y-auto">
-                      {unpaidInstallments.map((inst) => (
-                        <div 
-                          key={inst.id} 
-                          className="flex items-center gap-3 p-3 hover:bg-muted/50"
-                        >
-                          <Checkbox
-                            id={`inst-${inst.id}`}
-                            checked={selectedInstallments.includes(inst.id)}
-                            onCheckedChange={(checked) => 
-                              handleInstallmentToggle(inst.id, checked as boolean)
-                            }
-                          />
-                          <label 
-                            htmlFor={`inst-${inst.id}`}
-                            className="flex-1 flex items-center justify-between cursor-pointer"
-                          >
-                            <div>
-                              <p className="font-medium text-sm">{inst.categoryName} - {inst.name}</p>
-                              <p className="text-xs text-muted-foreground">Due: {formatDate(inst.due_date)}</p>
+                    {/* Installments list with independent scroll - grouped */}
+                    <div className="border rounded-lg max-h-[220px] overflow-y-auto">
+                      {groupedUnpaid.map((group, gi) => (
+                        <div key={group.groupName || gi}>
+                          {/* Group header for category_group (e.g. Uniforms) */}
+                          {group.groupName && (
+                            <div className="px-3 py-2 bg-muted/60 border-b font-medium text-sm text-muted-foreground sticky top-0">
+                              {group.groupName}
                             </div>
-                            <span className="font-semibold text-sm">{formatCurrency(inst.pending_amount)}</span>
-                          </label>
+                          )}
+                          {group.categories.map((cat) => (
+                            <div key={cat.categoryName}>
+                              {/* Category header inside a group — shown as sub-label */}
+                              {group.groupName && (
+                                <div className="px-3 pl-6 py-1.5 text-xs font-medium text-muted-foreground border-b bg-muted/30">
+                                  {cat.categoryName}
+                                </div>
+                              )}
+                              {/* If standalone (no group), show category name inline with installments */}
+                              {cat.installments.map((inst) => (
+                                <div
+                                  key={inst.id}
+                                  className={`flex items-center gap-3 p-3 hover:bg-muted/50 border-b last:border-b-0 ${group.groupName ? 'pl-8' : ''}`}
+                                >
+                                  <Checkbox
+                                    id={`inst-${inst.id}`}
+                                    checked={selectedInstallments.includes(inst.id)}
+                                    onCheckedChange={(checked) =>
+                                      handleInstallmentToggle(inst.id, checked as boolean)
+                                    }
+                                  />
+                                  <label
+                                    htmlFor={`inst-${inst.id}`}
+                                    className="flex-1 flex items-center justify-between cursor-pointer"
+                                  >
+                                    <div>
+                                      <p className="font-medium text-sm">
+                                        {group.groupName ? inst.name : `${inst.categoryName} - ${inst.name}`}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">Due: {formatDate(inst.due_date)}</p>
+                                    </div>
+                                    <span className="font-semibold text-sm">{formatCurrency(inst.pending_amount)}</span>
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>
@@ -347,94 +458,105 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
               </div>
             )}
 
-            {/* Installments List */}
+            {/* Fee Breakdown - Grouped */}
             <div className="space-y-3">
               <h3 className="font-medium">Fee Breakdown</h3>
-              <Accordion type="multiple" className="space-y-2">
-                {processedInstallments.map((inst) => (
-                  <AccordionItem 
-                    key={inst.id} 
-                    value={inst.id}
-                    className="border rounded-lg px-4"
-                  >
-                    <AccordionTrigger className="hover:no-underline py-3">
-                      <div className="flex items-center gap-3 flex-1 text-left">
-                        {getStatusIcon(inst.status)}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium">{inst.categoryName}</span>
-                            <span className="text-muted-foreground">-</span>
-                            <span>{inst.name}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
-                            <span>Due: {formatDate(inst.due_date)}</span>
-                          </div>
-                        </div>
-                        <div className="text-right mr-2">
-                          <p className="font-semibold">{formatCurrency(inst.amount)}</p>
-                          <Badge className={`text-xs ${getStatusBadgeClass(inst.status)}`}>
-                            {getStatusLabel(inst.status)}
-                          </Badge>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-4">
-                      <div className="pt-2 border-t">
-                        <div className="flex justify-between text-sm mb-2">
-                          <span>Amount:</span>
-                          <span>{formatCurrency(inst.amount)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm mb-2 text-green-600">
-                          <span>Paid:</span>
-                          <span>{formatCurrency(inst.paid_amount)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm font-medium">
-                          <span>Pending:</span>
-                          <span className={inst.pending_amount > 0 ? "text-amber-600" : "text-green-600"}>
-                            {formatCurrency(inst.pending_amount)}
-                          </span>
-                        </div>
-                        
-                        {/* Payment History for this installment */}
-                        {payments?.filter(p => p.installment_id === inst.id).length > 0 && (
-                          <div className="mt-4">
-                            <p className="text-sm font-medium mb-2">Payment History</p>
-                            <div className="space-y-2">
-                              {payments
-                                ?.filter(p => p.installment_id === inst.id)
-                                .map((payment) => (
-                                  <div 
-                                    key={payment.id} 
-                                    className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded"
-                                  >
-                                    <div>
-                                      <p>{formatCurrency(payment.amount_paid)}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {formatDate(payment.payment_date)} • {payment.payment_mode || "Cash"}
-                                        {payment.reference_number && ` • Ref: ${payment.reference_number}`}
-                                      </p>
-                                    </div>
-                                    <RestrictedButton isRestricted={isRestricted}>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                        onClick={() => handleDeletePayment(payment)}
-                                        disabled={isRestricted}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </RestrictedButton>
-                                  </div>
-                                ))}
+              {groupedAll.map((group, gi) => (
+                <div key={group.groupName || gi}>
+                  {group.groupName && (
+                    <div className="text-sm font-semibold text-muted-foreground mb-2 mt-4">
+                      {group.groupName}
+                    </div>
+                  )}
+                  <Accordion type="multiple" className="space-y-2">
+                    {group.categories.map((cat) =>
+                      cat.installments.map((inst) => (
+                        <AccordionItem
+                          key={inst.id}
+                          value={inst.id}
+                          className={`border rounded-lg px-4 ${group.groupName ? 'ml-4' : ''}`}
+                        >
+                          <AccordionTrigger className="hover:no-underline py-3">
+                            <div className="flex items-center gap-3 flex-1 text-left">
+                              {getStatusIcon(inst.status)}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium">
+                                    {group.groupName ? inst.categoryName : inst.categoryName}
+                                  </span>
+                                  <span className="text-muted-foreground">-</span>
+                                  <span>{inst.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+                                  <span>Due: {formatDate(inst.due_date)}</span>
+                                </div>
+                              </div>
+                              <div className="text-right mr-2">
+                                <p className="font-semibold">{formatCurrency(inst.amount)}</p>
+                                <Badge className={`text-xs ${getStatusBadgeClass(inst.status)}`}>
+                                  {getStatusLabel(inst.status)}
+                                </Badge>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-4">
+                            <div className="pt-2 border-t">
+                              <div className="flex justify-between text-sm mb-2">
+                                <span>Amount:</span>
+                                <span>{formatCurrency(inst.amount)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm mb-2 text-green-600">
+                                <span>Paid:</span>
+                                <span>{formatCurrency(inst.paid_amount)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm font-medium">
+                                <span>Pending:</span>
+                                <span className={inst.pending_amount > 0 ? "text-amber-600" : "text-green-600"}>
+                                  {formatCurrency(inst.pending_amount)}
+                                </span>
+                              </div>
+                              {payments?.filter(p => p.installment_id === inst.id).length > 0 && (
+                                <div className="mt-4">
+                                  <p className="text-sm font-medium mb-2">Payment History</p>
+                                  <div className="space-y-2">
+                                    {payments
+                                      ?.filter(p => p.installment_id === inst.id)
+                                      .map((payment) => (
+                                        <div
+                                          key={payment.id}
+                                          className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded"
+                                        >
+                                          <div>
+                                            <p>{formatCurrency(payment.amount_paid)}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {formatDate(payment.payment_date)} • {payment.payment_mode || "Cash"}
+                                              {payment.reference_number && ` • Ref: ${payment.reference_number}`}
+                                            </p>
+                                          </div>
+                                          <RestrictedButton isRestricted={isRestricted}>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                              onClick={() => handleDeletePayment(payment)}
+                                              disabled={isRestricted}
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </RestrictedButton>
+                                        </div>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))
+                    )}
+                  </Accordion>
+                </div>
+              ))}
             </div>
           </div>
         )}
