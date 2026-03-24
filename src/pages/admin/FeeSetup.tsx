@@ -620,7 +620,7 @@ function FeeStructureCard({
             </div>
 
             {/* Class Assignment Section */}
-            <ClassAssignmentSection structureId={structure.id} isRestricted={isRestricted} />
+            <ClassAssignmentSection structureId={structure.id} academicYearId={structure.academic_year_id} isRestricted={isRestricted} />
           </CardContent>
         </CollapsibleContent>
       </Card>
@@ -628,7 +628,7 @@ function FeeStructureCard({
   );
 }
 
-function ClassAssignmentSection({ structureId, isRestricted }: { structureId: string; isRestricted: boolean }) {
+function ClassAssignmentSection({ structureId, academicYearId, isRestricted }: { structureId: string; academicYearId: string; isRestricted: boolean }) {
   const { data: assignedClasses, isLoading } = useFeeStructureClasses(structureId);
   const { data: allClasses } = useDistinctClasses();
   const updateClasses = useUpdateFeeStructureClasses();
@@ -650,6 +650,7 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
         classes: Array.from(newSet),
         autoAssign,
         newAdmissionOnly,
+        academicYearId,
       });
     } catch (error: any) {
       toast.error("Failed to update classes", { description: error.message });
@@ -663,6 +664,7 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
         classes: Array.from(assignedSet),
         autoAssign: checked,
         newAdmissionOnly: checked ? newAdmissionOnly : false,
+        academicYearId,
       });
       toast.success(checked ? "Auto-assign enabled" : "Auto-assign disabled");
     } catch (error: any) {
@@ -677,6 +679,7 @@ function ClassAssignmentSection({ structureId, isRestricted }: { structureId: st
         classes: Array.from(assignedSet),
         autoAssign,
         newAdmissionOnly: checked,
+        academicYearId,
       });
       toast.success(checked ? "New admissions only enabled" : "New admissions only disabled");
     } catch (error: any) {

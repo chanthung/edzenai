@@ -1312,6 +1312,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_assign_fees_for_class: {
+        Args: {
+          _academic_year_id: string
+          _class_name: string
+          _fee_structure_id: string
+          _new_admission_only?: boolean
+        }
+        Returns: number
+      }
       auto_assign_fees_for_student: {
         Args: { _academic_year_id: string; _student_id: string }
         Returns: undefined

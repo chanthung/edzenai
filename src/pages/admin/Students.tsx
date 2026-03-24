@@ -91,7 +91,7 @@ export default function Students() {
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
   const [bulkSendProgress, setBulkSendProgress] = useState({ current: 0, total: 0 });
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
-  const [isBulkAssigningFees, setIsBulkAssigningFees] = useState(false);
+  
   
   const [newStudent, setNewStudent] = useState({
     name: "",
@@ -234,44 +234,7 @@ export default function Students() {
     }
   };
 
-  // Count students without fees assigned
-  const studentsWithoutFees = useMemo(() => {
-    if (!students) return [];
-    return students.filter(s => !studentFeeCountMap.has(s.id));
-  }, [students, studentFeeCountMap]);
 
-  const handleBulkAssignFees = async () => {
-    if (!activeAcademicYear) {
-      toast.error("No active academic year found");
-      return;
-    }
-    const targets = classFilter !== 'all' 
-      ? studentsWithoutFees.filter(s => s.class_name === classFilter)
-      : studentsWithoutFees;
-    
-    if (targets.length === 0) {
-      toast.info("All students already have fees assigned");
-      return;
-    }
-
-    setIsBulkAssigningFees(true);
-    let assigned = 0;
-    try {
-      for (const student of targets) {
-        const { error } = await supabase.rpc('auto_assign_fees_for_student', {
-          _student_id: student.id,
-          _academic_year_id: activeAcademicYear.id,
-        });
-        if (!error) assigned++;
-      }
-      toast.success(`Fees auto-assigned for ${assigned} student(s)`);
-      queryClient.invalidateQueries({ queryKey: ['all-student-fees'] });
-    } catch (error: any) {
-      toast.error("Failed to assign fees", { description: error.message });
-    } finally {
-      setIsBulkAssigningFees(false);
-    }
-  };
 
   const copyParentLink = (student: Student) => {
     const firstName = student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -597,28 +560,6 @@ export default function Students() {
           </SelectContent>
         </Select>
         
-        {/* Bulk Assign Fees Button */}
-        {studentsWithoutFees.length > 0 && !isRestricted && (
-          <Button
-            variant="outline"
-            onClick={handleBulkAssignFees}
-            disabled={isBulkAssigningFees}
-            className="gap-2"
-          >
-            {isBulkAssigningFees ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Assigning Fees...
-              </>
-            ) : (
-              <>
-                <IndianRupee className="h-4 w-4" />
-                Assign Fees ({classFilter !== 'all' ? studentsWithoutFees.filter(s => s.class_name === classFilter).length : studentsWithoutFees.length})
-              </>
-            )}
-          </Button>
-        )}
-
         {/* Bulk Share Button */}
         {selectedStudents.size > 0 && (
           <Button
