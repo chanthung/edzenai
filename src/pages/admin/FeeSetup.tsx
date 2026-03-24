@@ -435,17 +435,28 @@ export default function FeeSetup() {
                           <p className="text-sm text-muted-foreground">{category.description}</p>
                         )}
                       </div>
-                      <RestrictedButton isRestricted={isRestricted}>
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-muted-foreground hover:text-destructive"
-                          onClick={() => deleteCategory.mutate(category.id)}
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => handleEditCategory(category)}
                           disabled={isRestricted}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                      </RestrictedButton>
+                        <RestrictedButton isRestricted={isRestricted}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() => deleteCategory.mutate(category.id)}
+                            disabled={isRestricted}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </RestrictedButton>
+                      </div>
                     </CardContent>
                   </Card>
                 );
