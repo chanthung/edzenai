@@ -38,7 +38,7 @@ export default function ForgotPassword() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
             <GraduationCap className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold">EduTrack</h1>
+          <h1 className="text-2xl font-bold">EdZen AI</h1>
         </div>
 
         <Card className="border-border/50 shadow-card">

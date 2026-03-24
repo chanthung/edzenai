@@ -229,7 +229,7 @@ export default function Index() {
             <span className="font-semibold">EdZen AI</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Fee Transparency & Student Progress Analysis System
+            Fee Transparency & Student Progress Analysis
           </p>
         </div>
       </footer>

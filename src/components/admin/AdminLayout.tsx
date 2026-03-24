@@ -144,7 +144,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="font-bold text-sidebar-foreground">SchoolFees</h1>
+                  <h1 className="font-bold text-sidebar-foreground">EdZen AI</h1>
                   {schoolLoading ? (
                     <Skeleton className="h-3 w-24 mt-1" />
                   ) : (
