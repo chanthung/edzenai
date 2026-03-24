@@ -357,30 +357,53 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
                         {selectedInstallments.length === unpaidInstallments.length ? "Deselect All" : "Select All"}
                       </Button>
                     </div>
-                    {/* Installments list with independent scroll */}
-                    <div className="border rounded-lg divide-y max-h-[180px] overflow-y-auto">
-                      {unpaidInstallments.map((inst) => (
-                        <div 
-                          key={inst.id} 
-                          className="flex items-center gap-3 p-3 hover:bg-muted/50"
-                        >
-                          <Checkbox
-                            id={`inst-${inst.id}`}
-                            checked={selectedInstallments.includes(inst.id)}
-                            onCheckedChange={(checked) => 
-                              handleInstallmentToggle(inst.id, checked as boolean)
-                            }
-                          />
-                          <label 
-                            htmlFor={`inst-${inst.id}`}
-                            className="flex-1 flex items-center justify-between cursor-pointer"
-                          >
-                            <div>
-                              <p className="font-medium text-sm">{inst.categoryName} - {inst.name}</p>
-                              <p className="text-xs text-muted-foreground">Due: {formatDate(inst.due_date)}</p>
+                    {/* Installments list with independent scroll - grouped */}
+                    <div className="border rounded-lg max-h-[220px] overflow-y-auto">
+                      {groupedUnpaid.map((group, gi) => (
+                        <div key={group.groupName || gi}>
+                          {/* Group header for category_group (e.g. Uniforms) */}
+                          {group.groupName && (
+                            <div className="px-3 py-2 bg-muted/60 border-b font-medium text-sm text-muted-foreground sticky top-0">
+                              {group.groupName}
                             </div>
-                            <span className="font-semibold text-sm">{formatCurrency(inst.pending_amount)}</span>
-                          </label>
+                          )}
+                          {group.categories.map((cat) => (
+                            <div key={cat.categoryName}>
+                              {/* Category header inside a group — shown as sub-label */}
+                              {group.groupName && (
+                                <div className="px-3 pl-6 py-1.5 text-xs font-medium text-muted-foreground border-b bg-muted/30">
+                                  {cat.categoryName}
+                                </div>
+                              )}
+                              {/* If standalone (no group), show category name inline with installments */}
+                              {cat.installments.map((inst) => (
+                                <div
+                                  key={inst.id}
+                                  className={`flex items-center gap-3 p-3 hover:bg-muted/50 border-b last:border-b-0 ${group.groupName ? 'pl-8' : ''}`}
+                                >
+                                  <Checkbox
+                                    id={`inst-${inst.id}`}
+                                    checked={selectedInstallments.includes(inst.id)}
+                                    onCheckedChange={(checked) =>
+                                      handleInstallmentToggle(inst.id, checked as boolean)
+                                    }
+                                  />
+                                  <label
+                                    htmlFor={`inst-${inst.id}`}
+                                    className="flex-1 flex items-center justify-between cursor-pointer"
+                                  >
+                                    <div>
+                                      <p className="font-medium text-sm">
+                                        {group.groupName ? inst.name : `${inst.categoryName} - ${inst.name}`}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">Due: {formatDate(inst.due_date)}</p>
+                                    </div>
+                                    <span className="font-semibold text-sm">{formatCurrency(inst.pending_amount)}</span>
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>
