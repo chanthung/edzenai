@@ -18,6 +18,7 @@ import AcademicYears from "./pages/admin/AcademicYears";
 import FeeSetup from "./pages/admin/FeeSetup";
 import Settings from "./pages/admin/Settings";
 import Teachers from "./pages/admin/Teachers";
+import GettingStarted from "./pages/admin/GettingStarted";
 import ParentView from "./pages/parent/ParentView";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import SubscriptionSettings from "./pages/platform/SubscriptionSettings";
@@ -64,7 +65,8 @@ const App = () => (
             <Route path="/admin/fee-setup" element={<FeeSetup />} />
             <Route path="/admin/settings" element={<Settings />} />
             <Route path="/admin/teachers" element={<Teachers />} />
-            
+            <Route path="/admin/getting-started" element={<GettingStarted />} />
+
             {/* Student Progress Module */}
             <Route path="/progress" element={<ProgressDashboard />} />
             <Route path="/progress/subjects" element={<ProgressSubjects />} />

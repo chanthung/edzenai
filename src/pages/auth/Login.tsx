@@ -87,7 +87,7 @@ export default function Login() {
           }
 
           toast.success("Welcome! Your 30-day free trial has started 🎉");
-          navigate("/admin", { replace: true });
+          navigate("/admin/getting-started", { replace: true });
           return;
         } catch (err) {
           console.error("Auto-activate error:", err);

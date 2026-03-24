@@ -744,6 +744,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          onboarding_completed: boolean
           payment_verified: boolean | null
           payment_verified_at: string | null
           payment_verified_by: string | null
@@ -771,6 +772,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          onboarding_completed?: boolean
           payment_verified?: boolean | null
           payment_verified_at?: string | null
           payment_verified_by?: string | null
@@ -798,6 +800,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          onboarding_completed?: boolean
           payment_verified?: boolean | null
           payment_verified_at?: string | null
           payment_verified_by?: string | null

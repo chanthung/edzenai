@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { exportMultiSheetXLSX } from "@/lib/export-utils";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { data: students, isLoading: studentsLoading } = useStudents();
   const { data: academicYears, isLoading: yearsLoading } = useAcademicYears();
   const { data: feeCategories, isLoading: categoriesLoading } = useFeeCategories();
@@ -32,6 +35,13 @@ export default function Dashboard() {
   const { data: feeReports, isLoading: reportsLoading } = useFeeReports();
   const { data: pendingProofs } = usePendingPaymentProofs(school?.id);
   const { isRestricted } = useSubscriptionStatus();
+
+  // Redirect to onboarding if not completed and no students
+  useEffect(() => {
+    if (school && !(school as any).onboarding_completed && (!students || students.length === 0) && !studentsLoading) {
+      navigate("/admin/getting-started", { replace: true });
+    }
+  }, [school, students, studentsLoading, navigate]);
 
   const activeYear = academicYears?.find(y => y.is_active) ?? academicYears?.[0];
   const isSetupComplete = students && students.length > 0 && academicYears && academicYears.length > 0;
