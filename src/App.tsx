@@ -23,6 +23,7 @@ import ParentView from "./pages/parent/ParentView";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import SubscriptionSettings from "./pages/platform/SubscriptionSettings";
 import NotFound from "./pages/NotFound";
+import Pricing from "./pages/Pricing";
 
 // Progress Module Pages
 import ProgressDashboard from "./pages/progress/ProgressDashboard";
@@ -45,6 +46,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/onboard" element={<Onboard />} />
