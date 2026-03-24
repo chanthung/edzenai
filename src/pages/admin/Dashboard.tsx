@@ -269,12 +269,42 @@ export default function Dashboard() {
 
             <Card className="card-elevated">
               <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+                <CardTitle>Collection Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Activity feed will appear here as you record payments and add students.
-                </p>
+                {reportsLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                ) : feeReports && (feeReports.totalCollected > 0 || feeReports.totalPending > 0) ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Collected</span>
+                      <span className="font-semibold text-status-paid">{formatCurrency(feeReports.totalCollected)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Pending</span>
+                      <span className="font-semibold text-destructive">{formatCurrency(feeReports.totalPending)}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${Math.min(feeReports.collectionRate, 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      {feeReports.collectionRate.toFixed(1)}% collection rate • {feeReports.studentsWithPending} student{feeReports.studentsWithPending !== 1 ? 's' : ''} with pending fees
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <Receipt className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm font-medium">No fee data yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Set up fee structures to see collection stats</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
