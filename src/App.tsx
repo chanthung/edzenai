@@ -64,7 +64,8 @@ const App = () => (
             <Route path="/admin/fee-setup" element={<FeeSetup />} />
             <Route path="/admin/settings" element={<Settings />} />
             <Route path="/admin/teachers" element={<Teachers />} />
-            
+            <Route path="/admin/getting-started" element={<GettingStarted />} />
+
             {/* Student Progress Module */}
             <Route path="/progress" element={<ProgressDashboard />} />
             <Route path="/progress/subjects" element={<ProgressSubjects />} />
