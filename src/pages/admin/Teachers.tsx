@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useTeachers } from "@/hooks/useTeachers";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
-import { Plus, UserPlus, Mail, User, Eye, EyeOff } from "lucide-react";
+import { Plus, UserPlus, Mail, User, Eye, EyeOff, Pencil } from "lucide-react";
 
 export default function Teachers() {
   const { teachers, isLoading, createTeacher, updateTeacher } = useTeachers();
@@ -26,6 +26,11 @@ export default function Teachers() {
     email: "",
     password: "",
   });
+
+  // Edit teacher state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingTeacher, setEditingTeacher] = useState<{ id: string; name: string; is_active: boolean } | null>(null);
+  const [editName, setEditName] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +47,23 @@ export default function Teachers() {
       name: teacher.name,
       is_active: !teacher.is_active,
     });
+  };
+
+  const handleEditTeacher = (teacher: { id: string; name: string; is_active: boolean }) => {
+    setEditingTeacher(teacher);
+    setEditName(teacher.name);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateTeacher = async () => {
+    if (!editingTeacher || !editName.trim()) return;
+    await updateTeacher.mutateAsync({
+      id: editingTeacher.id,
+      name: editName.trim(),
+      is_active: editingTeacher.is_active,
+    });
+    setEditDialogOpen(false);
+    setEditingTeacher(null);
   };
 
   return (
@@ -156,7 +178,7 @@ export default function Teachers() {
                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Active</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -173,11 +195,21 @@ export default function Teachers() {
                       {new Date(teacher.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Switch
-                        checked={teacher.is_active}
-                        onCheckedChange={() => handleToggleActive(teacher)}
-                        disabled={updateTeacher.isPending || isRestricted}
-                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditTeacher(teacher)}
+                          disabled={isRestricted}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Switch
+                          checked={teacher.is_active}
+                          onCheckedChange={() => handleToggleActive(teacher)}
+                          disabled={updateTeacher.isPending || isRestricted}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -186,6 +218,34 @@ export default function Teachers() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Teacher Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        setEditDialogOpen(open);
+        if (!open) setEditingTeacher(null);
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Teacher</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Teacher's name"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateTeacher} disabled={updateTeacher.isPending}>
+              {updateTeacher.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card className="mt-6">
         <CardHeader>

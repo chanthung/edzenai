@@ -483,6 +483,60 @@ export default function FeeSetup() {
             </div>
           )}
         </TabsContent>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={editCategoryDialogOpen} onOpenChange={(open) => {
+        setEditCategoryDialogOpen(open);
+        if (!open) setEditingCategory(null);
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Fee Category</DialogTitle>
+            <DialogDescription>Update the category details</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Category Name</Label>
+              <Input
+                value={editCategoryData.name}
+                onChange={(e) => setEditCategoryData({ ...editCategoryData, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                value={editCategoryData.description}
+                onChange={(e) => setEditCategoryData({ ...editCategoryData, description: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Group <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input
+                placeholder="e.g. Uniforms, Books, Activities"
+                value={editCategoryData.category_group}
+                onChange={(e) => setEditCategoryData({ ...editCategoryData, category_group: e.target.value })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Mandatory Fee</Label>
+                <p className="text-sm text-muted-foreground">Required for all students</p>
+              </div>
+              <Switch
+                checked={editCategoryData.is_mandatory}
+                onCheckedChange={(checked) => setEditCategoryData({ ...editCategoryData, is_mandatory: checked })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditCategoryDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateCategory} disabled={updateCategory.isPending}>
+              {updateCategory.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </Tabs>
 
       {/* Installment Dialog */}
