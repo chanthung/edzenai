@@ -1020,53 +1020,68 @@ export type Database = {
       }
       students: {
         Row: {
+          aadhaar_number: string | null
           access_token: string
           address: string | null
           class_name: string | null
           created_at: string
+          date_of_birth: string | null
+          gender: string | null
           guardian: string | null
           id: string
           name: string
           parent_email: string | null
           parent_name: string | null
           parent_phone: string | null
+          religion: string | null
           roll_number: string | null
           school_id: string
           section: string | null
+          social_category: string | null
           telegram_registered: boolean
           updated_at: string
         }
         Insert: {
+          aadhaar_number?: string | null
           access_token?: string
           address?: string | null
           class_name?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          gender?: string | null
           guardian?: string | null
           id?: string
           name: string
           parent_email?: string | null
           parent_name?: string | null
           parent_phone?: string | null
+          religion?: string | null
           roll_number?: string | null
           school_id: string
           section?: string | null
+          social_category?: string | null
           telegram_registered?: boolean
           updated_at?: string
         }
         Update: {
+          aadhaar_number?: string | null
           access_token?: string
           address?: string | null
           class_name?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          gender?: string | null
           guardian?: string | null
           id?: string
           name?: string
           parent_email?: string | null
           parent_name?: string | null
           parent_phone?: string | null
+          religion?: string | null
           roll_number?: string | null
           school_id?: string
           section?: string | null
+          social_category?: string | null
           telegram_registered?: boolean
           updated_at?: string
         }

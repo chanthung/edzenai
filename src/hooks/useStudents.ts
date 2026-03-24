@@ -36,6 +36,11 @@ export interface StudentInsert {
   parent_email?: string;
   guardian?: string;
   address?: string;
+  gender?: string;
+  date_of_birth?: string;
+  social_category?: string;
+  aadhaar_number?: string;
+  religion?: string;
   academic_year_id?: string;
 }
 
