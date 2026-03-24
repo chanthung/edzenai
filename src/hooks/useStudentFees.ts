@@ -43,7 +43,7 @@ export function useStudentFees(studentId: string | undefined) {
           *,
           fee_structure:fee_structures(
             *,
-            fee_category:fee_categories(id, name, is_mandatory),
+            fee_category:fee_categories(id, name, is_mandatory, category_group, display_order),
             installments(*)
           )
         `)
