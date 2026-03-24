@@ -51,7 +51,7 @@ export default function Index() {
             <span className="text-primary">Student Progress Analysis</span>
           </h1>
           <p className="text-lg font-medium text-foreground/80 mb-2">
-            EduTrack — Complete School Management System
+            EdZen AI — Complete School Management System
           </p>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
             A unified platform that brings fee transparency to parents and AI-powered 
