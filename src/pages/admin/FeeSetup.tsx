@@ -50,6 +50,9 @@ export default function FeeSetup() {
   const [installmentDialogOpen, setInstallmentDialogOpen] = useState(false);
   const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
   const [editingInstallment, setEditingInstallment] = useState<Installment | null>(null);
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [editCategoryDialogOpen, setEditCategoryDialogOpen] = useState(false);
+  const [editCategoryData, setEditCategoryData] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   
   const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "" });
@@ -71,6 +74,38 @@ export default function FeeSetup() {
       setNewCategory({ name: "", description: "", is_mandatory: true, category_group: "" });
     } catch (error: any) {
       toast.error("Failed to create category", { description: error.message });
+    }
+  };
+
+  const handleEditCategory = (category: any) => {
+    setEditingCategory(category);
+    setEditCategoryData({
+      name: category.name,
+      description: category.description || "",
+      is_mandatory: category.is_mandatory,
+      category_group: category.category_group || "",
+    });
+    setEditCategoryDialogOpen(true);
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory || !editCategoryData.name.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+    try {
+      await updateCategory.mutateAsync({
+        id: editingCategory.id,
+        name: editCategoryData.name,
+        description: editCategoryData.description || null,
+        is_mandatory: editCategoryData.is_mandatory,
+        category_group: editCategoryData.category_group.trim() || null,
+      });
+      toast.success("Category updated");
+      setEditCategoryDialogOpen(false);
+      setEditingCategory(null);
+    } catch (error: any) {
+      toast.error("Failed to update category", { description: error.message });
     }
   };
 
@@ -400,17 +435,28 @@ export default function FeeSetup() {
                           <p className="text-sm text-muted-foreground">{category.description}</p>
                         )}
                       </div>
-                      <RestrictedButton isRestricted={isRestricted}>
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-muted-foreground hover:text-destructive"
-                          onClick={() => deleteCategory.mutate(category.id)}
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => handleEditCategory(category)}
                           disabled={isRestricted}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                      </RestrictedButton>
+                        <RestrictedButton isRestricted={isRestricted}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() => deleteCategory.mutate(category.id)}
+                            disabled={isRestricted}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </RestrictedButton>
+                      </div>
                     </CardContent>
                   </Card>
                 );
@@ -437,6 +483,60 @@ export default function FeeSetup() {
             </div>
           )}
         </TabsContent>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={editCategoryDialogOpen} onOpenChange={(open) => {
+        setEditCategoryDialogOpen(open);
+        if (!open) setEditingCategory(null);
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Fee Category</DialogTitle>
+            <DialogDescription>Update the category details</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Category Name</Label>
+              <Input
+                value={editCategoryData.name}
+                onChange={(e) => setEditCategoryData({ ...editCategoryData, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                value={editCategoryData.description}
+                onChange={(e) => setEditCategoryData({ ...editCategoryData, description: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Group <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input
+                placeholder="e.g. Uniforms, Books, Activities"
+                value={editCategoryData.category_group}
+                onChange={(e) => setEditCategoryData({ ...editCategoryData, category_group: e.target.value })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Mandatory Fee</Label>
+                <p className="text-sm text-muted-foreground">Required for all students</p>
+              </div>
+              <Switch
+                checked={editCategoryData.is_mandatory}
+                onCheckedChange={(checked) => setEditCategoryData({ ...editCategoryData, is_mandatory: checked })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditCategoryDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateCategory} disabled={updateCategory.isPending}>
+              {updateCategory.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </Tabs>
 
       {/* Installment Dialog */}
