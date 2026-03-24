@@ -135,10 +135,22 @@ export default function Index() {
             <h2 className="text-3xl font-bold mb-4">Built for real school workflows</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard icon={Users} title="Student Management" description="Add, organize, and manage all student data in one place" />
-            <FeatureCard icon={BarChart3} title="Fee Automation" description="Assign fees automatically — no manual work" />
+            <FeatureCard
+              icon={Users}
+              title="Student Management"
+              description="Add, organize, and manage all student data in one place"
+            />
+            <FeatureCard
+              icon={BarChart3}
+              title="Fee Automation"
+              description="Assign fees automatically — no manual work"
+            />
             <FeatureCard icon={FileText} title="Report Generation" description="Generate report cards instantly" />
-            <FeatureCard icon={Upload} title="Excel Import" description="Upload student data and get started in minutes" />
+            <FeatureCard
+              icon={Upload}
+              title="Excel Import"
+              description="Upload student data and get started in minutes"
+            />
           </div>
         </div>
       </section>
@@ -169,7 +181,7 @@ export default function Index() {
                 <h3 className="text-xl font-bold mb-1">Starter</h3>
                 <p className="text-muted-foreground text-sm mb-4">For core school operations</p>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold">₹6</span>
+                  <span className="text-4xl font-bold">₹5</span>
                   <span className="text-muted-foreground">/student/month</span>
                 </div>
                 <div className="space-y-3 mb-8">
@@ -196,7 +208,7 @@ export default function Index() {
                 <h3 className="text-xl font-bold mb-1">Pro</h3>
                 <p className="text-muted-foreground text-sm mb-4">For AI insights and automation</p>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold">₹9</span>
+                  <span className="text-4xl font-bold">₹8</span>
                   <span className="text-muted-foreground">/student/month</span>
                 </div>
                 <div className="space-y-3 mb-8">
@@ -237,9 +249,21 @@ export default function Index() {
             <h2 className="text-3xl font-bold mb-4">Built for modern Indian schools</h2>
           </div>
           <div className="grid sm:grid-cols-3 gap-6">
-            <TrustItem icon={Shield} title="NEP 2020 aligned" description="Competency-based assessment and report cards following national guidelines." />
-            <TrustItem icon={BookOpen} title="Designed for busy teachers" description="Minimal clicks for marks entry. AI handles the analysis." />
-            <TrustItem icon={GraduationCap} title="Works for all boards" description="CBSE, ICSE, State Boards — one platform fits all." />
+            <TrustItem
+              icon={Shield}
+              title="NEP 2020 aligned"
+              description="Competency-based assessment and report cards following national guidelines."
+            />
+            <TrustItem
+              icon={BookOpen}
+              title="Designed for busy teachers"
+              description="Minimal clicks for marks entry. AI handles the analysis."
+            />
+            <TrustItem
+              icon={GraduationCap}
+              title="Works for all boards"
+              description="CBSE, ICSE, State Boards — one platform fits all."
+            />
           </div>
         </div>
       </section>
