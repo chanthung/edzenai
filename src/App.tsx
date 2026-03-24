@@ -18,6 +18,7 @@ import AcademicYears from "./pages/admin/AcademicYears";
 import FeeSetup from "./pages/admin/FeeSetup";
 import Settings from "./pages/admin/Settings";
 import Teachers from "./pages/admin/Teachers";
+import GettingStarted from "./pages/admin/GettingStarted";
 import ParentView from "./pages/parent/ParentView";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import SubscriptionSettings from "./pages/platform/SubscriptionSettings";
