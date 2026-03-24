@@ -470,6 +470,95 @@ export default function Students() {
                   </div>
                 </div>
                 <div className="border-t pt-4 mt-2">
+                  <p className="text-sm font-medium mb-3">Personal Details</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="gender">Gender</Label>
+                      <Select
+                        value={newStudent.gender}
+                        onValueChange={(value) => setNewStudent({ ...newStudent, gender: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dob">Date of Birth</Label>
+                      <Input
+                        id="dob"
+                        type="date"
+                        value={newStudent.date_of_birth}
+                        onChange={(e) => setNewStudent({ ...newStudent, date_of_birth: e.target.value })}
+                      />
+                      {newStudent.date_of_birth && (
+                        <p className="text-xs text-muted-foreground">
+                          Age: {calculateAge(newStudent.date_of_birth)} years
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="social_category">Social Category</Label>
+                      <Select
+                        value={newStudent.social_category}
+                        onValueChange={(value) => setNewStudent({ ...newStudent, social_category: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="General">General</SelectItem>
+                          <SelectItem value="Minority">Minority</SelectItem>
+                          <SelectItem value="OBC">OBC</SelectItem>
+                          <SelectItem value="SC">SC</SelectItem>
+                          <SelectItem value="ST">ST</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="religion">Religion</Label>
+                      <Select
+                        value={newStudent.religion}
+                        onValueChange={(value) => setNewStudent({ ...newStudent, religion: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select religion" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Buddhism">Buddhism</SelectItem>
+                          <SelectItem value="Christianity">Christianity</SelectItem>
+                          <SelectItem value="Hinduism">Hinduism</SelectItem>
+                          <SelectItem value="Islam">Islam</SelectItem>
+                          <SelectItem value="Jainism">Jainism</SelectItem>
+                          <SelectItem value="Judaism">Judaism</SelectItem>
+                          <SelectItem value="Sikhism">Sikhism</SelectItem>
+                          <SelectItem value="Zoroastrianism">Zoroastrianism</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="aadhaar">Aadhaar Number</Label>
+                    <Input
+                      id="aadhaar"
+                      placeholder="123456789012"
+                      maxLength={12}
+                      value={newStudent.aadhaar_number}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                        setNewStudent({ ...newStudent, aadhaar_number: val });
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="border-t pt-4 mt-2">
                   <p className="text-sm font-medium mb-3">Parent & Contact Details</p>
                   <div className="space-y-4">
                     <div className="space-y-2">
