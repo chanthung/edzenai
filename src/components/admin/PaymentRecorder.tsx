@@ -104,11 +104,88 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
     return result;
   }, [studentFees, payments]);
 
-  // Unpaid installments for selection
+  // Group unpaid installments by category (with category_group nesting)
   const unpaidInstallments = useMemo(() => 
     processedInstallments.filter(i => i.status !== 'paid'),
     [processedInstallments]
   );
+
+  // Build grouped structure for display
+  interface CategorySection {
+    categoryName: string;
+    installments: InstallmentWithPayment[];
+  }
+  interface GroupedFees {
+    groupName: string | null; // null = standalone category
+    categories: CategorySection[];
+  }
+
+  const groupedUnpaid = useMemo((): GroupedFees[] => {
+    const groups: GroupedFees[] = [];
+    const seen = new Set<string>();
+
+    unpaidInstallments.forEach(inst => {
+      const key = inst.categoryGroup || inst.categoryName;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      if (inst.categoryGroup) {
+        // Collect all categories under this group
+        const groupItems = unpaidInstallments.filter(i => i.categoryGroup === inst.categoryGroup);
+        const catMap = new Map<string, InstallmentWithPayment[]>();
+        groupItems.forEach(i => {
+          const arr = catMap.get(i.categoryName) || [];
+          arr.push(i);
+          catMap.set(i.categoryName, arr);
+        });
+        groups.push({
+          groupName: inst.categoryGroup,
+          categories: Array.from(catMap.entries()).map(([name, items]) => ({ categoryName: name, installments: items })),
+        });
+      } else {
+        // Standalone category — group its installments together
+        const catItems = unpaidInstallments.filter(i => !i.categoryGroup && i.categoryName === inst.categoryName);
+        groups.push({
+          groupName: null,
+          categories: [{ categoryName: inst.categoryName, installments: catItems }],
+        });
+      }
+    });
+    return groups;
+  }, [unpaidInstallments]);
+
+  // Same grouped structure for all installments (fee breakdown)
+  const groupedAll = useMemo((): GroupedFees[] => {
+    const groups: GroupedFees[] = [];
+    const seen = new Set<string>();
+
+    processedInstallments.forEach(inst => {
+      const key = inst.categoryGroup || inst.categoryName;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      if (inst.categoryGroup) {
+        const groupItems = processedInstallments.filter(i => i.categoryGroup === inst.categoryGroup);
+        const catMap = new Map<string, InstallmentWithPayment[]>();
+        groupItems.forEach(i => {
+          const arr = catMap.get(i.categoryName) || [];
+          arr.push(i);
+          catMap.set(i.categoryName, arr);
+        });
+        groups.push({
+          groupName: inst.categoryGroup,
+          categories: Array.from(catMap.entries()).map(([name, items]) => ({ categoryName: name, installments: items })),
+        });
+      } else {
+        const catItems = processedInstallments.filter(i => !i.categoryGroup && i.categoryName === inst.categoryName);
+        groups.push({
+          groupName: null,
+          categories: [{ categoryName: inst.categoryName, installments: catItems }],
+        });
+      }
+    });
+    return groups;
+  }, [processedInstallments]);
 
   // Calculate total for selected installments
   const selectedTotal = useMemo(() => {
