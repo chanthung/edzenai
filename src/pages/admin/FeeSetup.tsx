@@ -704,6 +704,34 @@ function ClassAssignmentSection({ structureId, academicYearId, isRestricted }: {
       ) : (
         <>
           <div className="flex flex-wrap gap-2 mb-3">
+            <label
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm cursor-pointer transition-colors font-medium ${
+                allClasses.length > 0 && assignedSet.size === allClasses.length
+                  ? "bg-primary/10 border-primary/30 text-primary"
+                  : "bg-muted/30 border-border hover:bg-muted/60"
+              } ${isRestricted ? "opacity-50 pointer-events-none" : ""}`}
+            >
+              <Checkbox
+                checked={allClasses.length > 0 && assignedSet.size === allClasses.length}
+                onCheckedChange={async (checked) => {
+                  const newClasses = checked ? [...allClasses] : [];
+                  try {
+                    await updateClasses.mutateAsync({
+                      feeStructureId: structureId,
+                      classes: newClasses,
+                      autoAssign,
+                      newAdmissionOnly,
+                      academicYearId,
+                    });
+                  } catch (error: any) {
+                    toast.error("Failed to update classes", { description: error.message });
+                  }
+                }}
+                disabled={isRestricted || updateClasses.isPending}
+                className="h-3.5 w-3.5"
+              />
+              Select All
+            </label>
             {allClasses.map((cls) => (
               <label
                 key={cls}
