@@ -664,6 +664,7 @@ function ClassAssignmentSection({ structureId, academicYearId, isRestricted }: {
         classes: Array.from(assignedSet),
         autoAssign: checked,
         newAdmissionOnly: checked ? newAdmissionOnly : false,
+        academicYearId,
       });
       toast.success(checked ? "Auto-assign enabled" : "Auto-assign disabled");
     } catch (error: any) {
