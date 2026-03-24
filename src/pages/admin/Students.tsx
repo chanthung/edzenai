@@ -43,6 +43,15 @@ import { useSchool } from "@/hooks/useSchool";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { exportToXLSX } from "@/lib/export-utils";
 
+function calculateAge(dob: string): number {
+  const birth = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 export default function Students() {
   const { data: students, isLoading } = useStudents();
   const createStudent = useCreateStudent();

@@ -223,6 +223,8 @@ Return the mapping as a JSON object where keys are source column names and value
         name: "", roll_number: "", class_name: "", section: "",
         parent_name: "", parent_phone: "", parent_email: "",
         guardian: "", address: "",
+        gender: "", date_of_birth: "", social_category: "",
+        aadhaar_number: "", religion: "",
       };
 
       for (const [sourceCol, targetField] of Object.entries(mapping)) {
