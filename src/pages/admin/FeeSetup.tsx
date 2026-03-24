@@ -50,6 +50,9 @@ export default function FeeSetup() {
   const [installmentDialogOpen, setInstallmentDialogOpen] = useState(false);
   const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
   const [editingInstallment, setEditingInstallment] = useState<Installment | null>(null);
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [editCategoryDialogOpen, setEditCategoryDialogOpen] = useState(false);
+  const [editCategoryData, setEditCategoryData] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   
   const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "" });
