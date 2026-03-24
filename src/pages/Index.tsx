@@ -170,7 +170,7 @@ export default function Index() {
                     <GraduationCap className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold">Delhi Public School</p>
+                    <p className="font-semibold">Royal Public School</p>
                     <p className="text-sm text-muted-foreground">Student Dashboard</p>
                   </div>
                 </div>
