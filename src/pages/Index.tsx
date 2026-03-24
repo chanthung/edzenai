@@ -2,12 +2,12 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  GraduationCap, 
-  Shield, 
-  Clock, 
-  Users, 
-  CheckCircle2, 
+import {
+  GraduationCap,
+  Shield,
+  Clock,
+  Users,
+  CheckCircle2,
   ArrowRight,
   Smartphone,
   Eye,
@@ -20,7 +20,7 @@ import {
   BookOpen,
   TrendingUp,
   Check,
-  X
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +36,9 @@ export default function Index() {
             </div>
             <div className="flex flex-col">
               <span className="font-bold text-lg leading-tight">EdZen AI</span>
-              <span className="text-[10px] text-muted-foreground leading-tight hidden sm:block">AI-Powered School Management</span>
+              <span className="text-[10px] text-muted-foreground leading-tight hidden sm:block">
+                AI-Powered School Management
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -55,16 +57,14 @@ export default function Index() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
             <Sparkles className="h-4 w-4" />
-            AI-Powered School Management for India
+            AI-Powered School Management
           </div>
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-            Fees, Progress & AI Insights —{" "}
-            <span className="text-primary">All in One Platform</span>
+            Fees, Progress & AI Insights — <span className="text-primary">All in One Platform</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
-            EdZen AI unifies fee transparency, student progress tracking, attendance, 
-            and AI-powered analytics. Detect at-risk students, generate NEP 2020 report cards, 
-            and run smarter PTMs — without the manual work.
+            EdZen AI unifies fee transparency, student progress tracking, attendance, and AI-powered analytics. Detect
+            at-risk students, generate NEP 2020 report cards, and run smarter PTMs — without the manual work.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
             <Button size="lg" asChild className="min-w-[200px]">
@@ -87,7 +87,8 @@ export default function Index() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Everything your school needs</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              From fee collection to AI-powered academic insights — one platform that replaces scattered spreadsheets, WhatsApp groups, and paper registers.
+              From fee collection to AI-powered academic insights — one platform that replaces scattered spreadsheets,
+              WhatsApp groups, and paper registers.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -190,7 +191,9 @@ export default function Index() {
                 <div className="space-y-2 pt-2">
                   <div className="flex items-center justify-between p-3 bg-status-paid-bg rounded-lg">
                     <span className="text-sm">Q1 Fees</span>
-                    <span className="text-xs font-medium text-status-paid px-2 py-1 rounded-full bg-status-paid/10">Paid</span>
+                    <span className="text-xs font-medium text-status-paid px-2 py-1 rounded-full bg-status-paid/10">
+                      Paid
+                    </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg">
                     <span className="text-sm">Math Assessment</span>
@@ -198,7 +201,9 @@ export default function Index() {
                   </div>
                   <div className="flex items-center justify-between p-3 bg-accent/5 rounded-lg">
                     <span className="text-sm">AI Insight</span>
-                    <span className="text-xs font-medium text-accent px-2 py-1 rounded-full bg-accent/10">Improving</span>
+                    <span className="text-xs font-medium text-accent px-2 py-1 rounded-full bg-accent/10">
+                      Improving
+                    </span>
                   </div>
                 </div>
               </div>
@@ -314,12 +319,10 @@ export default function Index() {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-primary text-primary-foreground">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Ready to transform how your school runs?
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to transform how your school runs?</h2>
           <p className="text-primary-foreground/80 text-lg mb-8 max-w-2xl mx-auto">
-            Join schools across India using EdZen AI to reduce admin workload, 
-            improve parent trust, and make data-driven academic decisions.
+            Join schools across India using EdZen AI to reduce admin workload, improve parent trust, and make
+            data-driven academic decisions.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
             <Button size="lg" variant="secondary" asChild>
@@ -328,11 +331,18 @@ export default function Index() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="ghost" className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/10" asChild>
+            <Button
+              size="lg"
+              variant="ghost"
+              className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/10"
+              asChild
+            >
               <Link to="/login">Sign In</Link>
             </Button>
           </div>
-          <p className="text-sm text-primary-foreground/60 mt-4">No credit card required · Free for 30 days · Cancel anytime</p>
+          <p className="text-sm text-primary-foreground/60 mt-4">
+            No credit card required · Free for 30 days · Cancel anytime
+          </p>
         </div>
       </section>
 
@@ -343,9 +353,7 @@ export default function Index() {
             <GraduationCap className="h-5 w-5 text-primary" />
             <span className="font-semibold">EdZen AI</span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            AI-Powered School Management System
-          </p>
+          <p className="text-sm text-muted-foreground">AI-Powered School Management System</p>
         </div>
       </footer>
     </div>
@@ -420,15 +428,7 @@ function PricingFeature({ children, included = false }: { children: React.ReactN
   );
 }
 
-function TrustItem({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: typeof Shield;
-  title: string;
-  description: string;
-}) {
+function TrustItem({ icon: Icon, title, description }: { icon: typeof Shield; title: string; description: string }) {
   return (
     <div className="text-center p-6">
       <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
