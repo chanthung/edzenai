@@ -620,7 +620,7 @@ function FeeStructureCard({
             </div>
 
             {/* Class Assignment Section */}
-            <ClassAssignmentSection structureId={structure.id} isRestricted={isRestricted} />
+            <ClassAssignmentSection structureId={structure.id} academicYearId={structure.academic_year_id} isRestricted={isRestricted} />
           </CardContent>
         </CollapsibleContent>
       </Card>
