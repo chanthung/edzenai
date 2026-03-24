@@ -37,6 +37,9 @@ interface InstallmentWithPayment {
   pending_amount: number;
   status: 'paid' | 'upcoming' | 'due' | 'overdue';
   categoryName: string;
+  categoryGroup: string | null;
+  categoryDisplayOrder: number;
+  installmentDisplayOrder: number;
   feeStructureId: string;
 }
 
