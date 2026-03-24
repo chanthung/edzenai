@@ -50,12 +50,21 @@ export function useUpdateFeeStructureClasses() {
       classes,
       autoAssign,
       newAdmissionOnly,
+      academicYearId,
     }: {
       feeStructureId: string;
       classes: string[];
       autoAssign: boolean;
       newAdmissionOnly?: boolean;
+      academicYearId?: string;
     }) => {
+      // Get existing classes before deleting
+      const { data: existingClasses } = await supabase
+        .from('fee_structure_classes')
+        .select('class_name')
+        .eq('fee_structure_id', feeStructureId);
+      const existingSet = new Set(existingClasses?.map(c => c.class_name) ?? []);
+
       // Delete existing
       await supabase
         .from('fee_structure_classes')
@@ -75,10 +84,25 @@ export function useUpdateFeeStructureClasses() {
             }))
           );
         if (error) throw error;
+
+        // Auto-assign fees to existing students for newly added classes
+        if (autoAssign && academicYearId) {
+          const newClasses = classes.filter(c => !existingSet.has(c));
+          for (const className of newClasses) {
+            await supabase.rpc('auto_assign_fees_for_class', {
+              _fee_structure_id: feeStructureId,
+              _class_name: className,
+              _academic_year_id: academicYearId,
+              _new_admission_only: newAdmissionOnly ?? false,
+            });
+          }
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fee-structure-classes'] });
+      queryClient.invalidateQueries({ queryKey: ['student-fees'] });
+      queryClient.invalidateQueries({ queryKey: ['all-student-fees'] });
     },
   });
 }
