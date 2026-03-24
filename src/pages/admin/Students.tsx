@@ -222,6 +222,11 @@ export default function Students() {
         parent_email: "",
         guardian: "",
         address: "",
+        gender: "",
+        date_of_birth: "",
+        social_category: "",
+        aadhaar_number: "",
+        religion: "",
       });
     } catch (error: any) {
       toast.error("Failed to add student", { description: error.message });
