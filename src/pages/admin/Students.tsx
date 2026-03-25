@@ -263,16 +263,15 @@ export default function Students() {
   };
 
   // Ref guard to prevent duplicate sends
-  const sendingRef = useRef<Set<string>>(new Set());
+  const sendingRef = useRef<string | null>(null);
 
   const handleShareLink = async (student: Student) => {
     // Prevent duplicate sends using ref guard
-    if (sendingRef.current.has(student.id) || isSendingLink === student.id) {
-      console.log('Duplicate send blocked for:', student.id);
+    if (sendingRef.current === student.id) {
       return;
     }
     
-    sendingRef.current.add(student.id);
+    sendingRef.current = student.id;
     setShareStudent(null);
     setIsSendingLink(student.id);
     
@@ -306,7 +305,7 @@ export default function Students() {
       });
     } finally {
       setIsSendingLink(null);
-      sendingRef.current.delete(student.id);
+      sendingRef.current = null;
     }
   };
 
