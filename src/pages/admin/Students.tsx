@@ -263,15 +263,16 @@ export default function Students() {
   };
 
   // Ref guard to prevent duplicate sends
-  const sendingRef = useRef<string | null>(null);
+  const sendingRef = useRef<Set<string>>(new Set());
 
   const handleShareLink = async (student: Student) => {
     // Prevent duplicate sends using ref guard
-    if (sendingRef.current === student.id) {
+    if (sendingRef.current.has(student.id) || isSendingLink === student.id) {
+      console.log('Duplicate send blocked for:', student.id);
       return;
     }
     
-    sendingRef.current = student.id;
+    sendingRef.current.add(student.id);
     setShareStudent(null);
     setIsSendingLink(student.id);
     
