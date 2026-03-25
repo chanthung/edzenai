@@ -9,62 +9,56 @@ interface SendLinkRequest {
   studentId: string;
 }
 
-interface DispatchClaimResult {
-  dispatch_id: string;
-  is_duplicate: boolean;
-}
-
-const jsonResponse = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-
 Deno.serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  let dispatchId: string | null = null;
-
   try {
+    // Get auth header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('Missing or invalid authorization header');
-      return jsonResponse({ error: 'Unauthorized' }, 401);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // Create Supabase client with user's auth
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
 
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-      console.error('Required backend environment variables are missing');
-      return jsonResponse({ error: 'Server configuration error' }, 500);
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-
+    // Validate user auth
     const token = authHeader.replace('Bearer ', '');
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
+    if (claimsError || !claimsData?.claims) {
       console.error('Auth validation failed:', claimsError);
-      return jsonResponse({ error: 'Unauthorized' }, 401);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const userId = claimsData.claims.sub;
-    const { studentId }: SendLinkRequest = await req.json();
+    console.log('Request from user:', userId);
 
+    // Parse request body
+    const { studentId }: SendLinkRequest = await req.json();
     if (!studentId) {
-      return jsonResponse({ error: 'Student ID is required' }, 400);
+      return new Response(
+        JSON.stringify({ error: 'Student ID is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Sending link for student:', studentId, 'requested by:', userId);
+    console.log('Sending link for student:', studentId);
 
+    // Fetch student details (RLS will ensure user can only access their school's students)
     const { data: student, error: studentError } = await supabase
       .from('students')
       .select('id, name, parent_phone, access_token, school_id')
@@ -73,39 +67,21 @@ Deno.serve(async (req) => {
 
     if (studentError || !student) {
       console.error('Failed to fetch student:', studentError);
-      return jsonResponse({ error: 'Student not found or access denied' }, 404);
+      return new Response(
+        JSON.stringify({ error: 'Student not found or access denied' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
+    // Validate parent phone
     if (!student.parent_phone?.trim()) {
-      return jsonResponse({ error: 'Parent phone number is missing for this student' }, 400);
+      return new Response(
+        JSON.stringify({ error: 'Parent phone number is missing for this student' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const { data: dispatchClaim, error: dispatchClaimError } = await adminSupabase
-      .rpc('claim_parent_link_dispatch', {
-        _student_id: student.id,
-        _school_id: student.school_id,
-        _initiated_by: userId,
-        _window_seconds: 120,
-      })
-      .single<DispatchClaimResult>();
-
-    if (dispatchClaimError || !dispatchClaim) {
-      console.error('Failed to claim parent link dispatch:', dispatchClaimError);
-      return jsonResponse({ error: 'Could not create send lock' }, 500);
-    }
-
-    dispatchId = dispatchClaim.dispatch_id;
-
-    if (dispatchClaim.is_duplicate) {
-      console.log('Duplicate send blocked for student:', student.id, 'dispatch:', dispatchId);
-      return jsonResponse({
-        success: true,
-        duplicate: true,
-        message: `Link was already sent recently to ${student.parent_phone}`,
-        studentName: student.name,
-      });
-    }
-
+    // Fetch school name
     const { data: school, error: schoolError } = await supabase
       .from('schools')
       .select('name')
@@ -114,31 +90,33 @@ Deno.serve(async (req) => {
 
     if (schoolError || !school) {
       console.error('Failed to fetch school:', schoolError);
-      await adminSupabase
-        .from('parent_link_dispatches')
-        .update({ status: 'failed', error_message: 'School not found' })
-        .eq('id', dispatchId);
-      return jsonResponse({ error: 'School not found' }, 404);
+      return new Response(
+        JSON.stringify({ error: 'School not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
+    // Build the parent link URL
+    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '');
+    // Use the app's published URL or preview URL
     const firstName = student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
     const parentLink = `https://easykiwi.lovable.app/view/${firstName}/${student.access_token}`;
 
+    // Get n8n webhook URL from secrets
     const n8nWebhookUrl = Deno.env.get('N8N_PARENT_LINK_WEBHOOK_URL');
     if (!n8nWebhookUrl) {
       console.error('N8N_PARENT_LINK_WEBHOOK_URL secret not configured');
-      await adminSupabase
-        .from('parent_link_dispatches')
-        .update({ status: 'failed', error_message: 'Messaging service not configured' })
-        .eq('id', dispatchId);
-      return jsonResponse({ error: 'Messaging service not configured' }, 500);
+      return new Response(
+        JSON.stringify({ error: 'Messaging service not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
+    // Prepare payload for n8n
     const payload = {
-      dispatchId,
       studentName: student.name,
       parentPhone: student.parent_phone,
-      parentLink,
+      parentLink: parentLink,
       schoolName: school.name,
       studentId: student.id,
       timestamp: new Date().toISOString(),
@@ -146,6 +124,7 @@ Deno.serve(async (req) => {
 
     console.log('Calling n8n webhook with payload:', JSON.stringify(payload));
 
+    // Call n8n webhook
     const n8nResponse = await fetch(n8nWebhookUrl, {
       method: 'POST',
       headers: {
@@ -157,51 +136,28 @@ Deno.serve(async (req) => {
     if (!n8nResponse.ok) {
       const errorText = await n8nResponse.text();
       console.error('n8n webhook failed:', n8nResponse.status, errorText);
-      await adminSupabase
-        .from('parent_link_dispatches')
-        .update({
-          status: 'failed',
-          error_message: `Webhook failed with status ${n8nResponse.status}`,
-        })
-        .eq('id', dispatchId);
-      return jsonResponse({ error: 'Failed to send message via automation service' }, 502);
+      return new Response(
+        JSON.stringify({ error: 'Failed to send message via automation service' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    await adminSupabase
-      .from('parent_link_dispatches')
-      .update({
-        status: 'sent',
-        sent_at: new Date().toISOString(),
-        error_message: null,
-      })
-      .eq('id', dispatchId);
+    console.log('n8n webhook called successfully');
 
-    console.log('n8n webhook called successfully for dispatch:', dispatchId);
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: `Link sent to ${student.parent_phone}`,
+        studentName: student.name 
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
-    return jsonResponse({
-      success: true,
-      message: `Link sent to ${student.parent_phone}`,
-      studentName: student.name,
-    });
   } catch (error) {
     console.error('Unexpected error:', error);
-
-    if (dispatchId) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-      if (supabaseUrl && supabaseServiceRoleKey) {
-        const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-        await adminSupabase
-          .from('parent_link_dispatches')
-          .update({
-            status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Unexpected error',
-          })
-          .eq('id', dispatchId);
-      }
-    }
-
-    return jsonResponse({ error: 'Internal server error' }, 500);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });

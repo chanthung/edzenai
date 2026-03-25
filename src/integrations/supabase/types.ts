@@ -532,54 +532,6 @@ export type Database = {
           },
         ]
       }
-      parent_link_dispatches: {
-        Row: {
-          created_at: string
-          error_message: string | null
-          id: string
-          initiated_by: string
-          school_id: string
-          sent_at: string | null
-          status: string
-          student_id: string
-        }
-        Insert: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          initiated_by: string
-          school_id: string
-          sent_at?: string | null
-          status?: string
-          student_id: string
-        }
-        Update: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          initiated_by?: string
-          school_id?: string
-          sent_at?: string | null
-          status?: string
-          student_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "parent_link_dispatches_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "schools"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "parent_link_dispatches_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       payment_proofs: {
         Row: {
           admin_notes: string | null
@@ -1390,18 +1342,6 @@ export type Database = {
       auto_assign_fees_for_student: {
         Args: { _academic_year_id: string; _student_id: string }
         Returns: undefined
-      }
-      claim_parent_link_dispatch: {
-        Args: {
-          _initiated_by: string
-          _school_id: string
-          _student_id: string
-          _window_seconds?: number
-        }
-        Returns: {
-          dispatch_id: string
-          is_duplicate: boolean
-        }[]
       }
       create_school_with_primary_admin: {
         Args: { _school_name: string }
