@@ -93,7 +93,11 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
 
     try {
       const { academic_year_id, ...studentData } = formData;
-      await updateStudent.mutateAsync({ id: student.id, ...studentData });
+      // Convert empty strings to null for nullable fields to avoid DB type errors
+      const sanitized = Object.fromEntries(
+        Object.entries(studentData).map(([key, value]) => [key, value === "" ? null : value])
+      ) as typeof studentData;
+      await updateStudent.mutateAsync({ id: student.id, ...sanitized });
       
       if (academic_year_id) {
         if (currentEnrollment) {
