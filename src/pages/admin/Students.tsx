@@ -306,7 +306,7 @@ export default function Students() {
       });
     } finally {
       setIsSendingLink(null);
-      sendingRef.current = null;
+      sendingRef.current.delete(student.id);
     }
   };
 
