@@ -21,6 +21,7 @@ import {
   Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HelpChatbot } from "@/components/admin/HelpChatbot";
 
 interface AdminLayoutProps {
   children: ReactNode;
