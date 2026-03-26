@@ -1,57 +1,54 @@
 
 
-# Add Gender, DOB, Age, Social Category, Aadhaar, and Religion to Students
+# AI Help Assistant for EduTrack Admins
 
-## Database Migration
+## What We're Building
 
-Add 5 new columns to the `students` table:
+A floating AI chatbot widget available on all admin pages. Admins can ask questions about fee setup, student management, report cards, attendance, and other EduTrack features. The assistant uses Lovable AI (Gemini) with a detailed system prompt containing full product knowledge.
 
-| Column | Type | Nullable | Notes |
-|--------|------|----------|-------|
-| `gender` | text | Yes | Values: male, female, other |
-| `date_of_birth` | date | Yes | Used to auto-calculate age |
-| `social_category` | text | Yes | General, Minority, OBC, SC, ST |
-| `aadhaar_number` | text | Yes | 12-digit Aadhaar card number |
-| `religion` | text | Yes | Buddhism, Christianity, Hinduism, Islam, Jainism, Judaism, Sikhism, Zoroastrianism |
+## Architecture
 
-Age is **not stored** -- it is calculated from `date_of_birth` on the client side (e.g., `differenceInYears(new Date(), dob)`).
-
-No RLS changes needed -- existing policies cover all columns.
-
-## Code Changes
-
-### 1. `src/hooks/useStudents.ts`
-- Add `gender`, `date_of_birth`, `social_category`, `aadhaar_number`, `religion` to `Student` and `StudentInsert` interfaces.
-
-### 2. `src/pages/admin/Students.tsx` (Add Student form)
-- Add fields to `newStudent` state and the add-student dialog form:
-  - Gender dropdown (Male / Female / Other)
-  - Date of birth date picker
-  - Social Category dropdown (General, Minority, OBC, SC, ST)
-  - Aadhaar Number text input (12 digits)
-  - Religion dropdown (8 options listed above)
-
-### 3. `src/components/admin/EditStudentDialog.tsx`
-- Add the same 5 fields to the edit form with pre-populated values.
-- Display calculated age next to the DOB field (read-only).
-
-### 4. `supabase/functions/process-student-excel/index.ts`
-- Add `gender`, `date_of_birth`, `social_category`, `aadhaar_number`, `religion` to the AI column mapping target fields so Excel imports can capture these.
-
-### 5. Student detail/list views
-- Show age (calculated) where student details are displayed.
-
-## Age Calculation Logic
-```typescript
-function calculateAge(dob: string): number {
-  const birth = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
-}
+```text
+┌─────────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
+│  React Chat Widget  │────▶│  Edge Function       │────▶│  Lovable AI     │
+│  (floating bubble)  │◀────│  /help-assistant      │◀────│  Gateway        │
+│  in AdminLayout     │     │  (streaming SSE)     │     │  (Gemini Flash) │
+└─────────────────────┘     └──────────────────────┘     └─────────────────┘
 ```
 
-Displayed as "X years" next to the DOB picker in both add and edit forms.
+## Plan
+
+### 1. Create edge function `supabase/functions/help-assistant/index.ts`
+- Accepts `{ messages }` from the client
+- Adds a comprehensive system prompt with EduTrack product knowledge covering:
+  - Fee setup flow (categories, structures, installments, class assignments, auto-assignment)
+  - Student management (add, edit, bulk import, promote, parent links)
+  - Academic years and enrollment
+  - Report cards, assessments, marks entry, competencies
+  - Attendance tracking
+  - Teacher management
+  - Subscription plans (Starter vs Pro)
+  - Settings (school info, UPI/QR, logo)
+- Streams response via SSE using Lovable AI Gateway
+- Model: `google/gemini-3-flash-preview`
+
+### 2. Create `src/components/admin/HelpChatbot.tsx`
+- Floating chat bubble (bottom-right corner) with a help/sparkles icon
+- Expandable chat panel with message history
+- Token-by-token streaming display using SSE parsing
+- Markdown rendering for AI responses via `react-markdown`
+- Persists conversation in component state (resets on page navigation or close)
+- Mobile-responsive (full-width on small screens)
+
+### 3. Integrate into AdminLayout
+- Import and render `<HelpChatbot />` inside `AdminLayout` so it appears on all admin pages
+- No database tables needed — conversation is ephemeral (client-side only)
+
+## Technical Details
+
+- **No new database tables** — chat is stateless/ephemeral
+- **No new secrets** — uses existing `LOVABLE_API_KEY`
+- **System prompt** will be ~2000 words of product knowledge baked into the edge function, not editable by end users
+- **Rate limit handling** — 429/402 errors surfaced as toast messages
+- Uses existing shadcn/ui components (Button, Card, ScrollArea) plus `react-markdown` for rendering
 
