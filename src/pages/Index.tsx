@@ -221,6 +221,7 @@ export default function Index() {
                   <PricingFeature included>Performance charts & analytics</PricingFeature>
                   <PricingFeature included>At-Risk detection & learning gaps</PricingFeature>
                   <PricingFeature included>CSV/PDF exports</PricingFeature>
+                  <PricingFeature included>AI Help Assistant (Chatbot)</PricingFeature>
                 </div>
                 <Button asChild className="w-full">
                   <Link to="/signup">

@@ -30,6 +30,7 @@ const proFeatures = [
   "Competency & at-risk detection",
   "PTM summary generation",
   "CSV / PDF exports",
+  "AI Help Assistant (Chatbot)",
 ];
 
 function formatINR(n: number) {
