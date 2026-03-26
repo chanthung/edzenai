@@ -137,15 +137,34 @@ export default function Students() {
     return Array.from(classes).sort();
   }, [students]);
 
-  const filteredStudents = students?.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.roll_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.class_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesClass = classFilter === "all" || student.class_name === classFilter;
-    
-    return matchesSearch && matchesClass;
-  });
+  const filteredStudents = useMemo(() => {
+    const filtered = students?.filter(student => {
+      const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.roll_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.class_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesClass = classFilter === "all" || student.class_name === classFilter;
+      
+      return matchesSearch && matchesClass;
+    });
+
+    // Sort by class (numeric extraction), then section, then name
+    return filtered?.sort((a, b) => {
+      const classA = a.class_name || '';
+      const classB = b.class_name || '';
+      const numA = parseInt((classA.match(/(\d+)/) || ['0', '0'])[1], 10);
+      const numB = parseInt((classB.match(/(\d+)/) || ['0', '0'])[1], 10);
+      if (numA !== numB) return numA - numB;
+      // Same numeric class — compare full class string for non-numeric classes
+      if (classA.localeCompare(classB) !== 0) return classA.localeCompare(classB);
+      // Then section
+      const secA = (a.section || '').toLowerCase();
+      const secB = (b.section || '').toLowerCase();
+      if (secA !== secB) return secA.localeCompare(secB);
+      // Then name alphabetically
+      return a.name.localeCompare(b.name);
+    });
+  }, [students, searchQuery, classFilter]);
 
   // Get selected students that have valid phone numbers for sharing
   const selectedShareableStudents = useMemo(() => {
