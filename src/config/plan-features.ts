@@ -96,6 +96,7 @@ export const PLAN_DISPLAY: Record<SubscriptionPlan, PlanDisplayInfo> = {
       'Competency tracking',
       'Assessment Templates',
       'NEP 2020 Report Cards',
+      'AI Help Assistant (Chatbot)',
       'Performance charts & analytics',
       'At-Risk detection & learning gaps',
       'CSV/PDF exports',
