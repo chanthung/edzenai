@@ -218,6 +218,21 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </main>
       </div>
       <HelpChatbot />
+
+      <AlertDialog open={showSignOutConfirm} onOpenChange={setShowSignOutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be logged out of your account and redirected to the login page.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => signOut()}>Sign Out</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
