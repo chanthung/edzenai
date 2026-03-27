@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Navigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSchool } from "@/hooks/useSchool";
@@ -43,6 +44,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { effectiveState, daysRemaining, isRestricted, currentPlan, canAccessFeature } = useSubscriptionStatus();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   if (authLoading) {
     return (
@@ -122,7 +124,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 );
               })}
               <button
-                onClick={() => signOut()}
+                onClick={() => { setMobileMenuOpen(false); setShowSignOutConfirm(true); }}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium w-full text-destructive hover:bg-destructive/10 transition-colors"
               >
                 <LogOut className="h-5 w-5" />
@@ -192,7 +194,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Button
                 variant="ghost"
                 className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                onClick={() => signOut()}
+                onClick={() => setShowSignOutConfirm(true)}
               >
                 <LogOut className="h-5 w-5 mr-3" />
                 Sign Out
@@ -216,6 +218,21 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </main>
       </div>
       <HelpChatbot />
+
+      <AlertDialog open={showSignOutConfirm} onOpenChange={setShowSignOutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be logged out of your account and redirected to the login page.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => signOut()}>Sign Out</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

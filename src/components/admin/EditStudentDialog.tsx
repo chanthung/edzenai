@@ -89,7 +89,9 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
   const handleSubmit = async () => {
     if (!student) return;
     if (!formData.name.trim()) { toast.error("Student name is required"); return; }
-    if (!formData.parent_phone.trim()) { toast.error("Parent phone number is required"); return; }
+    const phoneDigits = formData.parent_phone.replace(/\D/g, '');
+    if (!phoneDigits) { toast.error("Parent phone number is required"); return; }
+    if (phoneDigits.length !== 10) { toast.error("Phone number must be exactly 10 digits"); return; }
 
     try {
       const { academic_year_id, ...studentData } = formData;
@@ -235,7 +237,10 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-parentPhone">Phone *</Label>
-                    <Input id="edit-parentPhone" placeholder="9876543210" value={formData.parent_phone} onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })} required />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">+91</span>
+                      <Input id="edit-parentPhone" placeholder="9876543210" className="pl-12" maxLength={10} value={formData.parent_phone} onChange={(e) => { const val = e.target.value.replace(/\D/g, '').slice(0, 10); setFormData({ ...formData, parent_phone: val }); }} required />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-parentEmail">Email</Label>

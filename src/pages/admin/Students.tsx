@@ -230,8 +230,13 @@ export default function Students() {
       return;
     }
 
-    if (!newStudent.parent_phone.trim()) {
+    const phoneDigits = newStudent.parent_phone.replace(/\D/g, '');
+    if (!phoneDigits) {
       toast.error("Parent phone number is required");
+      return;
+    }
+    if (phoneDigits.length !== 10) {
+      toast.error("Phone number must be exactly 10 digits");
       return;
     }
 
@@ -602,13 +607,21 @@ export default function Students() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="parentPhone">Phone *</Label>
-                        <Input
-                          id="parentPhone"
-                          placeholder="9876543210"
-                          value={newStudent.parent_phone}
-                          onChange={(e) => setNewStudent({ ...newStudent, parent_phone: e.target.value })}
-                          required
-                        />
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">+91</span>
+                          <Input
+                            id="parentPhone"
+                            placeholder="9876543210"
+                            className="pl-12"
+                            maxLength={10}
+                            value={newStudent.parent_phone}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              setNewStudent({ ...newStudent, parent_phone: val });
+                            }}
+                            required
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="parentEmail">Email</Label>
