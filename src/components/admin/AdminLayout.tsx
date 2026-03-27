@@ -194,7 +194,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Button
                 variant="ghost"
                 className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                onClick={() => signOut()}
+                onClick={() => setShowSignOutConfirm(true)}
               >
                 <LogOut className="h-5 w-5 mr-3" />
                 Sign Out
