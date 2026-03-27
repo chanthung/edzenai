@@ -89,7 +89,9 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
   const handleSubmit = async () => {
     if (!student) return;
     if (!formData.name.trim()) { toast.error("Student name is required"); return; }
-    if (!formData.parent_phone.trim()) { toast.error("Parent phone number is required"); return; }
+    const phoneDigits = formData.parent_phone.replace(/\D/g, '');
+    if (!phoneDigits) { toast.error("Parent phone number is required"); return; }
+    if (phoneDigits.length !== 10) { toast.error("Phone number must be exactly 10 digits"); return; }
 
     try {
       const { academic_year_id, ...studentData } = formData;
