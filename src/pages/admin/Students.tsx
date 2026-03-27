@@ -230,8 +230,13 @@ export default function Students() {
       return;
     }
 
-    if (!newStudent.parent_phone.trim()) {
+    const phoneDigits = newStudent.parent_phone.replace(/\D/g, '');
+    if (!phoneDigits) {
       toast.error("Parent phone number is required");
+      return;
+    }
+    if (phoneDigits.length !== 10) {
+      toast.error("Phone number must be exactly 10 digits");
       return;
     }
 
