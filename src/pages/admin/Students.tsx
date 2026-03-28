@@ -138,10 +138,13 @@ export default function Students() {
   }, [students]);
 
   const filteredStudents = useMemo(() => {
+    const q = searchQuery.toLowerCase();
     const filtered = students?.filter(student => {
-      const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.roll_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.class_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = student.name.toLowerCase().includes(q) ||
+        student.roll_number?.toLowerCase().includes(q) ||
+        student.class_name?.toLowerCase().includes(q) ||
+        student.parent_name?.toLowerCase().includes(q) ||
+        student.parent_phone?.includes(searchQuery);
       
       const matchesClass = classFilter === "all" || student.class_name === classFilter;
       
@@ -165,6 +168,36 @@ export default function Students() {
       return a.name.localeCompare(b.name);
     });
   }, [students, searchQuery, classFilter]);
+
+  // Family row grouping: assign alternating colors based on parent_phone groups
+  const familyRowColors = useMemo(() => {
+    if (!filteredStudents) return new Map<string, boolean>();
+    const phoneGroups = new Map<string, string[]>();
+    filteredStudents.forEach((s) => {
+      const phone = (s.parent_phone ?? "").trim();
+      if (phone.length >= 10) {
+        const ids = phoneGroups.get(phone) || [];
+        ids.push(s.id);
+        phoneGroups.set(phone, ids);
+      }
+    });
+    // Only color groups with 2+ members
+    const colorMap = new Map<string, boolean>();
+    let colorToggle = false;
+    phoneGroups.forEach((ids) => {
+      if (ids.length >= 2) {
+        ids.forEach((id) => colorMap.set(id, colorToggle));
+        colorToggle = !colorToggle;
+      }
+    });
+    return colorMap;
+  }, [filteredStudents]);
+
+  // Callback to set search from family indicator sibling click
+  const handleFilterToStudent = (name: string) => {
+    setSearchQuery(name);
+    setClassFilter("all");
+  };
 
   // Get selected students that have valid phone numbers for sharing
   const selectedShareableStudents = useMemo(() => {
@@ -786,8 +819,15 @@ export default function Students() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents?.map((student) => (
-                  <TableRow key={student.id} data-state={selectedStudents.has(student.id) ? "selected" : undefined}>
+                {filteredStudents?.map((student) => {
+                  const hasFamilyColor = familyRowColors.has(student.id);
+                  const familyColorAlt = familyRowColors.get(student.id);
+                  return (
+                  <TableRow
+                    key={student.id}
+                    data-state={selectedStudents.has(student.id) ? "selected" : undefined}
+                    className={hasFamilyColor ? (familyColorAlt ? "bg-accent/30" : "bg-primary/5") : ""}
+                  >
                     <TableCell>
                       <Checkbox
                         checked={selectedStudents.has(student.id)}
@@ -799,7 +839,7 @@ export default function Students() {
                       <div>
                         <div className="flex items-center">
                           <p className="font-medium">{student.name}</p>
-                          <SiblingIndicator student={student} allStudents={students || []} />
+                          <SiblingIndicator student={student} allStudents={students || []} onFilterStudent={handleFilterToStudent} />
                         </div>
                         {student.roll_number && (
                           <p className="text-sm text-muted-foreground">Roll: {student.roll_number}</p>
@@ -814,10 +854,25 @@ export default function Students() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">
-                        <p>{student.parent_name || "—"}</p>
-                        <p className="text-muted-foreground">{student.parent_phone || ""}</p>
-                      </div>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-sm cursor-default">
+                              <p>{student.parent_name || "—"}</p>
+                              <p className="text-muted-foreground">{student.parent_phone || ""}</p>
+                            </div>
+                          </TooltipTrigger>
+                          {(student.parent_name || student.parent_phone || student.parent_email || student.guardian || student.address) && (
+                            <TooltipContent side="bottom" className="max-w-xs space-y-1 text-xs">
+                              {student.parent_name && <p><span className="font-medium">Parent:</span> {student.parent_name}</p>}
+                              {student.parent_phone && <p><span className="font-medium">Phone:</span> +91 {student.parent_phone}</p>}
+                              {student.parent_email && <p><span className="font-medium">Email:</span> {student.parent_email}</p>}
+                              {student.guardian && <p><span className="font-medium">Guardian:</span> {student.guardian}</p>}
+                              {student.address && <p><span className="font-medium">Address:</span> {student.address}</p>}
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -939,7 +994,8 @@ export default function Students() {
                       </RestrictedButton>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

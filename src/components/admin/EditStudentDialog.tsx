@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { Student, useUpdateStudent } from "@/hooks/useStudents";
+import { Student, useUpdateStudent, useStudents } from "@/hooks/useStudents";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { StudentFamilyCard } from "./StudentFamilyCard";
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
@@ -28,6 +29,7 @@ interface EditStudentDialogProps {
 
 export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDialogProps) {
   const updateStudent = useUpdateStudent();
+  const { data: allStudents } = useStudents();
   const queryClient = useQueryClient();
   const { data: academicYears } = useAcademicYears();
   
@@ -260,6 +262,13 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                 <Input id="edit-guardian" placeholder="Mr. Ramesh Sharma (Uncle)" value={formData.guardian} onChange={(e) => setFormData({ ...formData, guardian: e.target.value })} />
               </div>
             </div>
+
+            {/* Family Information Card */}
+            {student && allStudents && (
+              <div className="border-t pt-4 mt-2">
+                <StudentFamilyCard student={student} allStudents={allStudents} />
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter className="mt-4 shrink-0">
