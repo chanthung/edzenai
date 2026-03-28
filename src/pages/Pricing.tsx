@@ -38,6 +38,7 @@ function formatINR(n: number) {
 
 export default function Pricing() {
   const [students, setStudents] = useState(100);
+  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('pro');
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
 
