@@ -213,7 +213,7 @@ export default function Index() {
                 <h3 className="text-xl font-bold mb-1">Pro</h3>
                 <p className="text-muted-foreground text-sm mb-4">For AI insights and automation</p>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold">₹8</span>
+                  <span className="text-4xl font-bold">₹{proRate}</span>
                   <span className="text-muted-foreground">/student/month</span>
                 </div>
                 <div className="space-y-3 mb-8">
