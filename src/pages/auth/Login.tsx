@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { GraduationCap, Loader2, Mail, RefreshCw } from "lucide-react";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function Login() {
   const [email, setEmail] = useState("");
