@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { Student, useUpdateStudent } from "@/hooks/useStudents";
+import { Student, useUpdateStudent, useStudents } from "@/hooks/useStudents";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { StudentFamilyCard } from "./StudentFamilyCard";
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
