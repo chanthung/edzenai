@@ -819,8 +819,15 @@ export default function Students() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents?.map((student) => (
-                  <TableRow key={student.id} data-state={selectedStudents.has(student.id) ? "selected" : undefined}>
+                {filteredStudents?.map((student) => {
+                  const hasFamilyColor = familyRowColors.has(student.id);
+                  const familyColorAlt = familyRowColors.get(student.id);
+                  return (
+                  <TableRow
+                    key={student.id}
+                    data-state={selectedStudents.has(student.id) ? "selected" : undefined}
+                    className={hasFamilyColor ? (familyColorAlt ? "bg-accent/30" : "bg-primary/5") : ""}
+                  >
                     <TableCell>
                       <Checkbox
                         checked={selectedStudents.has(student.id)}
@@ -832,7 +839,7 @@ export default function Students() {
                       <div>
                         <div className="flex items-center">
                           <p className="font-medium">{student.name}</p>
-                          <SiblingIndicator student={student} allStudents={students || []} />
+                          <SiblingIndicator student={student} allStudents={students || []} onFilterStudent={handleFilterToStudent} />
                         </div>
                         {student.roll_number && (
                           <p className="text-sm text-muted-foreground">Roll: {student.roll_number}</p>
@@ -847,10 +854,25 @@ export default function Students() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">
-                        <p>{student.parent_name || "—"}</p>
-                        <p className="text-muted-foreground">{student.parent_phone || ""}</p>
-                      </div>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-sm cursor-default">
+                              <p>{student.parent_name || "—"}</p>
+                              <p className="text-muted-foreground">{student.parent_phone || ""}</p>
+                            </div>
+                          </TooltipTrigger>
+                          {(student.parent_name || student.parent_phone || student.parent_email || student.guardian || student.address) && (
+                            <TooltipContent side="bottom" className="max-w-xs space-y-1 text-xs">
+                              {student.parent_name && <p><span className="font-medium">Parent:</span> {student.parent_name}</p>}
+                              {student.parent_phone && <p><span className="font-medium">Phone:</span> +91 {student.parent_phone}</p>}
+                              {student.parent_email && <p><span className="font-medium">Email:</span> {student.parent_email}</p>}
+                              {student.guardian && <p><span className="font-medium">Guardian:</span> {student.guardian}</p>}
+                              {student.address && <p><span className="font-medium">Address:</span> {student.address}</p>}
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
