@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useVolumeDiscounts } from "@/hooks/useVolumeDiscounts";
 import {
   GraduationCap,
   ArrowRight,
@@ -29,6 +30,7 @@ import { cn } from "@/lib/utils";
 
 export default function Index() {
   const { data: pricing } = useSubscriptionPricing();
+  const { data: discountTiers = [] } = useVolumeDiscounts();
   const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 5;
   const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 8;
 
@@ -241,9 +243,19 @@ export default function Index() {
               </CardContent>
             </Card>
           </div>
-          <p className="text-center text-muted-foreground text-sm mt-6">
-            Volume discounts available for larger schools
-          </p>
+          {discountTiers.length > 0 ? (
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
+              {discountTiers.map((t) => (
+                <Badge key={t.id} variant="outline" className="text-xs">
+                  {t.max_students != null ? `${t.min_students}–${t.max_students}` : `${t.min_students}+`} students → {t.discount_percent}% off
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground text-sm mt-6">
+              Volume discounts available for larger schools
+            </p>
+          )}
           <div className="text-center mt-4">
             <Button variant="link" asChild>
               <Link to="/signup">View Pricing →</Link>

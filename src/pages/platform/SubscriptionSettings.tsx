@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { useSubscriptionPricing, useUpdateSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
+import { VolumeDiscountEditor } from "@/components/platform/VolumeDiscountEditor";
+import { PricingCalculator } from "@/components/platform/PricingCalculator";
 
 export default function SubscriptionSettings() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -212,6 +214,11 @@ export default function SubscriptionSettings() {
               </Card>
             );
           })}
+        </div>
+
+        <div className="grid gap-6 mt-8">
+          <VolumeDiscountEditor />
+          <PricingCalculator />
         </div>
       </main>
     </div>

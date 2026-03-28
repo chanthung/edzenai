@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
 
 const starterFeatures = [
   "Student management & bulk upload",
@@ -38,9 +39,11 @@ function formatINR(n: number) {
 export default function Pricing() {
   const [students, setStudents] = useState(100);
   const { data: pricing } = useSubscriptionPricing();
+  const { data: tiers = [] } = useVolumeDiscounts();
 
   const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 6;
   const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 9;
+  const discountPct = getApplicableDiscount(students, tiers);
 
   const handleSlider = (v: number[]) => setStudents(v[0]);
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,8 +52,9 @@ export default function Pricing() {
     if (e.target.value === "") setStudents(1);
   };
 
-  const starterTotal = students * STARTER_RATE;
-  const proTotal = students * PRO_RATE;
+  const applyDiscount = (total: number) => Math.max(0, total - total * (discountPct / 100));
+  const starterTotal = applyDiscount(students * STARTER_RATE);
+  const proTotal = applyDiscount(students * PRO_RATE);
   const diff = PRO_RATE - STARTER_RATE;
 
   return (
@@ -110,6 +114,23 @@ export default function Pricing() {
           <p className="text-xs text-muted-foreground text-center">
             Drag or type to see your monthly cost
           </p>
+          {discountPct > 0 && (
+            <p className="text-center mt-2">
+              <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200">
+                <BadgePercent className="h-3 w-3 mr-1" />
+                {discountPct}% volume discount applied!
+              </Badge>
+            </p>
+          )}
+          {discountPct === 0 && tiers.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mt-2">
+              {tiers.map((t) => (
+                <span key={t.id} className="text-xs text-muted-foreground">
+                  {t.min_students}+ students → {t.discount_percent}% off
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Pricing cards */}
