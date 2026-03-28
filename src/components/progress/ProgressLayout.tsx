@@ -72,7 +72,7 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
           <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto">
             <Lock className="h-8 w-8 text-purple-600" />
           </div>
-          <h1 className="text-2xl font-bold">Upgrade to Pro</h1>
+          <h1 className="text-2xl font-bold">Upgrade Required</h1>
           <p className="text-muted-foreground">
             The Student Progress module — including subjects, assessments, marks entry, report cards, and AI insights — is available on the Pro plan.
           </p>
