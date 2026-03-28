@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Dialog,
   DialogContent,
@@ -12,9 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
+import { INDIAN_STATES } from "@/lib/indian-states";
 
 interface CreateSchoolDialogProps {
   open: boolean;
@@ -27,9 +35,11 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
   const [schoolEmail, setSchoolEmail] = useState("");
   const [schoolPhone, setSchoolPhone] = useState("");
   const [schoolAddress, setSchoolAddress] = useState("");
+  const [schoolState, setSchoolState] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailingPassword, setEmailingPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,37 +62,27 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
     setLoading(true);
 
     try {
-      // Call edge function to create school and admin
+      const fullAddress = [schoolAddress.trim(), schoolState].filter(Boolean).join(", ");
+
       const { data, error } = await supabase.functions.invoke('create-school', {
         body: {
           schoolName: schoolName.trim(),
           schoolEmail: schoolEmail.trim() || null,
           schoolPhone: schoolPhone.trim() || null,
-          schoolAddress: schoolAddress.trim() || null,
+          schoolAddress: fullAddress || null,
           adminEmail: adminEmail.trim(),
           adminPassword,
         },
       });
 
-      if (error) {
-        throw error;
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success("School created successfully!", {
         description: `Admin account created for ${adminEmail}`,
       });
 
-      // Reset form
-      setSchoolName("");
-      setSchoolEmail("");
-      setSchoolPhone("");
-      setSchoolAddress("");
-      setAdminEmail("");
-      setAdminPassword("");
+      resetForm();
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -93,6 +93,43 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEmailPassword = async () => {
+    if (!adminEmail.trim() || !adminPassword.trim()) {
+      toast.error("Please enter admin email and password first");
+      return;
+    }
+
+    setEmailingPassword(true);
+    try {
+      // Use Supabase's built-in password reset as the email mechanism
+      const { error } = await supabase.auth.resetPasswordForEmail(adminEmail.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password reset link sent!", {
+        description: `A password reset email has been sent to ${adminEmail}. The school admin can use it to set their own password.`,
+      });
+    } catch (error: any) {
+      toast.error("Failed to send email", {
+        description: error.message || "Please try again",
+      });
+    } finally {
+      setEmailingPassword(false);
+    }
+  };
+
+  const resetForm = () => {
+    setSchoolName("");
+    setSchoolEmail("");
+    setSchoolPhone("");
+    setSchoolAddress("");
+    setSchoolState("");
+    setAdminEmail("");
+    setAdminPassword("");
   };
 
   return (
@@ -141,10 +178,25 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
                   </div>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="schoolState">State / UT *</Label>
+                  <Select value={schoolState} onValueChange={setSchoolState}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDIAN_STATES.map((state) => (
+                        <SelectItem key={state} value={state}>
+                          {state}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="schoolAddress">Address</Label>
                   <Textarea
                     id="schoolAddress"
-                    placeholder="123, Main Street, City, State - PIN Code"
+                    placeholder="123, Main Street, City - PIN Code"
                     value={schoolAddress}
                     onChange={(e) => setSchoolAddress(e.target.value)}
                     rows={2}
@@ -167,18 +219,34 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="adminPassword">Temporary Password *</Label>
-                  <Input
+                  <PasswordInput
                     id="adminPassword"
-                    type="password"
                     placeholder="••••••••"
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     required
                     minLength={6}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Share this password with the school admin. They should change it after first login.
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Share this password with the school admin.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1.5 text-primary"
+                      onClick={handleEmailPassword}
+                      disabled={emailingPassword || !adminEmail.trim()}
+                    >
+                      {emailingPassword ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Mail className="h-3 w-3" />
+                      )}
+                      Email Reset Link
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

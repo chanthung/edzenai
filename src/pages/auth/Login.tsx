@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { GraduationCap, Loader2, Mail, RefreshCw } from "lucide-react";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -251,9 +252,8 @@ export default function Login() {
                     Forgot password?
                   </Link>
                 </div>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
