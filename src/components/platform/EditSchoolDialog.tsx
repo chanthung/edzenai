@@ -136,6 +136,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
           subscription_plan: formData.subscription_plan,
           custom_per_student_fee: customFee,
           discount_percent: discount,
+          billing_cycle: formData.billing_cycle,
+          next_billing_date: formData.next_billing_date || null,
         } as any)
         .eq('id', school.id);
 
