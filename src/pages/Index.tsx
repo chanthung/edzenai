@@ -437,3 +437,17 @@ function TrustItem({ icon: Icon, title, description }: { icon: typeof Shield; ti
     </div>
   );
 }
+
+function SecurityCard({ icon: Icon, title, description }: { icon: typeof Shield; title: string; description: string }) {
+  return (
+    <Card className="border border-border/60 bg-card shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="pt-6">
+        <div className="w-11 h-11 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-4">
+          <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+        </div>
+        <h3 className="font-semibold text-base mb-2">{title}</h3>
+        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+      </CardContent>
+    </Card>
+  );
+}
