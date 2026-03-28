@@ -64,6 +64,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
         subscription_plan: ((school as any).subscription_plan as SubscriptionPlan) || "starter",
         custom_per_student_fee: (school as any).custom_per_student_fee != null ? String((school as any).custom_per_student_fee) : "",
         discount_percent: String((school as any).discount_percent || 0),
+        billing_cycle: (school as any).billing_cycle || "monthly",
+        next_billing_date: (school as any).next_billing_date || "",
       });
       fetchStudentCount(school.id);
     }
