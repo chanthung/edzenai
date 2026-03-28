@@ -79,12 +79,20 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
           <p className="text-sm text-muted-foreground">
             Contact your administrator to upgrade your subscription.
           </p>
-          <Link to="/admin">
-            <Button variant="outline" className="mt-2">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
+          <div className="flex gap-3 justify-center mt-2">
+            <Link to="/pricing">
+              <Button>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Upgrade Now
+              </Button>
+            </Link>
+            <Link to="/admin">
+              <Button variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
