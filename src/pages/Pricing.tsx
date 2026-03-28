@@ -7,9 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-
-const STARTER_RATE = 6;
-const PRO_RATE = 9;
+import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
 
 const starterFeatures = [
   "Student management & bulk upload",
