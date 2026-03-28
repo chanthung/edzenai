@@ -1,54 +1,65 @@
 
 
-# AI Help Assistant for EduTrack Admins
+# Dynamic Pricing Calculator with Volume Discounts
 
-## What We're Building
+## Summary
 
-A floating AI chatbot widget available on all admin pages. Admins can ask questions about fee setup, student management, report cards, attendance, and other EduTrack features. The assistant uses Lovable AI (Gemini) with a detailed system prompt containing full product knowledge.
+Add a volume discount system to the Platform Admin's Subscription Settings page. Platform admins can configure discount tiers (e.g., 500-999 students → 5%, 1000+ → 10%), and a live pricing calculator previews the effect. The public pricing page will also reflect these discount tiers.
 
-## Architecture
+## Database Changes
 
-```text
-┌─────────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
-│  React Chat Widget  │────▶│  Edge Function       │────▶│  Lovable AI     │
-│  (floating bubble)  │◀────│  /help-assistant      │◀────│  Gateway        │
-│  in AdminLayout     │     │  (streaming SSE)     │     │  (Gemini Flash) │
-└─────────────────────┘     └──────────────────────┘     └─────────────────┘
-```
+**New table: `volume_discount_tiers`**
+- `id` (uuid, PK)
+- `min_students` (integer, not null)
+- `max_students` (integer, nullable — null means unlimited)
+- `discount_percent` (numeric, not null)
+- `updated_at` (timestamptz, default now())
 
-## Plan
+Seeded with two rows: (500, 999, 5) and (1000, null, 10).
 
-### 1. Create edge function `supabase/functions/help-assistant/index.ts`
-- Accepts `{ messages }` from the client
-- Adds a comprehensive system prompt with EduTrack product knowledge covering:
-  - Fee setup flow (categories, structures, installments, class assignments, auto-assignment)
-  - Student management (add, edit, bulk import, promote, parent links)
-  - Academic years and enrollment
-  - Report cards, assessments, marks entry, competencies
-  - Attendance tracking
-  - Teacher management
-  - Subscription plans (Starter vs Pro)
-  - Settings (school info, UPI/QR, logo)
-- Streams response via SSE using Lovable AI Gateway
-- Model: `google/gemini-3-flash-preview`
+**RLS policies:**
+- Platform admins: full access (ALL)
+- Public/anon: SELECT (so pricing page can read tiers)
 
-### 2. Create `src/components/admin/HelpChatbot.tsx`
-- Floating chat bubble (bottom-right corner) with a help/sparkles icon
-- Expandable chat panel with message history
-- Token-by-token streaming display using SSE parsing
-- Markdown rendering for AI responses via `react-markdown`
-- Persists conversation in component state (resets on page navigation or close)
-- Mobile-responsive (full-width on small screens)
+## Frontend Changes
 
-### 3. Integrate into AdminLayout
-- Import and render `<HelpChatbot />` inside `AdminLayout` so it appears on all admin pages
-- No database tables needed — conversation is ephemeral (client-side only)
+### 1. `src/hooks/useVolumeDiscounts.ts` (new)
+- `useVolumeDiscounts()` — fetches tiers ordered by `min_students`
+- `useUpdateVolumeDiscount()` — mutation to update a tier
+- `useCreateVolumeDiscount()` / `useDeleteVolumeDiscount()` — CRUD mutations
+- `getApplicableDiscount(studentCount, tiers)` — pure helper that returns the matching discount percent
 
-## Technical Details
+### 2. `src/pages/platform/SubscriptionSettings.tsx` (updated)
+Add a new section below the existing plan cards:
 
-- **No new database tables** — chat is stateless/ephemeral
-- **No new secrets** — uses existing `LOVABLE_API_KEY`
-- **System prompt** will be ~2000 words of product knowledge baked into the edge function, not editable by end users
-- **Rate limit handling** — 429/402 errors surfaced as toast messages
-- Uses existing shadcn/ui components (Button, Card, ScrollArea) plus `react-markdown` for rendering
+**Volume Discount Tiers Editor:**
+- Table listing each tier: min students, max students, discount %
+- Editable inline fields for each tier
+- Add/remove tier buttons
+- Save button per tier
+
+**Live Pricing Calculator:**
+- Plan toggle (Starter / Pro)
+- Student count input with slider (10-2000)
+- Real-time display showing:
+  - Base total (rate x students)
+  - Applicable discount tier and percentage
+  - Discount amount
+  - Final monthly fee
+  - Effective per-student price after discount
+- Tooltips on discount tiers explaining thresholds
+
+### 3. `src/pages/Pricing.tsx` and `src/pages/Index.tsx` (updated)
+- Fetch volume discount tiers via `useVolumeDiscounts()`
+- Show discount badges/notes below the calculator (e.g., "5% off for 500+ students, 10% off for 1000+")
+- Apply discount in the displayed totals when student count crosses thresholds
+
+### 4. `src/components/platform/BillingBreakdown.tsx` (updated)
+- Accept optional `volumeDiscountTiers` prop
+- Auto-apply volume discount based on student count when rendering billing for a school
+
+## Technical Notes
+- No new secrets required
+- Volume discount is separate from the per-school `discount_percent` field on the `schools` table (which is for custom school-specific discounts)
+- The calculator is purely client-side math using fetched tier data
 
