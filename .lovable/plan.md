@@ -1,60 +1,108 @@
 
 
-# Enhanced Sibling & Parent Details in Student Table
+# Enhanced Platform Admin Dashboard — Billing, Invoices & Payments
 
 ## Summary
 
-Upgrade the existing student table and sibling indicator to show richer family information via tooltips and hover cards, including a "Family" column with sibling count badge, enhanced parent contact tooltips, family-based row grouping, and a search-by-parent filter. Also add a student profile "Family" section accessible from the table.
+Add billing cycle support, a GST-compliant invoice modal, manual payment recording, search/filter on the school table, and expanded KPI cards to the existing Platform Admin Dashboard. All data comes from real database records (not mock data).
 
-## What Changes
+## Database Changes
 
-### 1. Enhanced `SiblingIndicator` → `FamilyIndicator` (rewrite `src/components/admin/SiblingIndicator.tsx`)
+### 1. Add columns to `schools` table
+- `billing_cycle` (text, default `'monthly'`, values: `monthly` | `annual`)
+- `next_billing_date` (date, nullable)
+- `pending_amount` (numeric, default 0)
 
-- Replace the small icon with a **badge** showing `👪 N members` (sibling count + 1 for the student).
-- On hover, show a **HoverCard** (not just tooltip) containing:
-  - **Siblings section**: each sibling's name, class/section, with a link to filter the table to that student.
-  - **Parent/Guardian section**: parent name, phone, email, address (truncated if >60 chars).
-- On mobile (use `useIsMobile`), replace hover with a **Dialog** triggered on tap.
-- Add `aria-describedby` for accessibility.
+### 2. Create `platform_payments` table
+Tracks manual payment recordings by platform admin.
 
-### 2. Enhanced Parent Column in `src/pages/admin/Students.tsx`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | gen_random_uuid() |
+| school_id | uuid NOT NULL | references schools |
+| amount | numeric NOT NULL | |
+| payment_date | date NOT NULL | |
+| reference_number | text | optional |
+| notes | text | optional |
+| recorded_by | uuid | auth.uid() |
+| created_at | timestamptz | now() |
 
-- Current: shows parent name and phone as plain text.
-- New: wrap in a **TooltipProvider** so hovering reveals full contact details:
-  - Parent name, phone (with +91 prefix), email, guardian name, full address.
-- Add subtle styling for the tooltip content.
+RLS: Platform admins only (ALL + SELECT via `is_platform_admin()`).
 
-### 3. Family Row Grouping (visual)
+### 3. Create `platform_invoices` table
+Stores generated invoices for audit trail.
 
-- In the student table, compute `familyGroups` by grouping students sharing the same parent_phone (the strongest sibling signal).
-- Apply alternating subtle background colors (`bg-blue-50/30` / default) for rows belonging to the same family group.
-- This is purely visual — no DB changes needed.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| school_id | uuid NOT NULL | |
+| invoice_number | text NOT NULL | auto-generated |
+| subtotal | numeric | |
+| volume_discount | numeric | |
+| annual_discount | numeric | |
+| taxable_amount | numeric | |
+| cgst | numeric | 9% |
+| sgst | numeric | 9% |
+| total_amount | numeric | including GST |
+| status | text | `pending` / `paid` |
+| paid_at | timestamptz | |
+| created_at | timestamptz | now() |
 
-### 4. Search by Parent Name/Phone
+RLS: Platform admins only.
 
-- Extend the existing `searchQuery` filter to also match against `parent_name` and `parent_phone` fields.
-- This allows finding all students in a family by searching the parent's name or number.
+## UI Changes
 
-### 5. Student Profile Family Section (new component `src/components/admin/StudentFamilyCard.tsx`)
+### 1. KPI Cards — expand from 5 to 7 cards (2 rows)
+Keep existing 5 cards, add:
+- **Total Students** — sum of all student counts
+- **Overdue Amount** — sum of `pending_amount` across schools
 
-- A card component shown inside the `EditStudentDialog` (or as a new expandable section).
-- Displays:
-  - **Parent cards**: name, phone, email, address.
-  - **Sibling list**: name, class/section for each detected sibling.
-- Reuses the same sibling detection logic from the indicator.
+Update **Monthly Revenue** to become **MRR** — for annual schools, divide their annual fee by 12.
+
+### 2. School Table Enhancements
+- Add **search bar** filtering by school name or email
+- Add columns: **Billing Cycle**, **Next Billing Date**
+- Add **Invoice** button in Actions column
+- Annual schools show fee as annual total with "(annual)" suffix
+
+### 3. Invoice Modal (new component `src/components/platform/InvoiceModal.tsx`)
+Triggered from the Invoice action button. Shows:
+- School name, dummy billing address, dummy GSTIN
+- Auto-generated invoice number (`INV-YYYYMMDD-XXXX`)
+- Line items: plan, student count, rate, subtotal
+- Volume discount line (if applicable)
+- Annual discount line (10% off, if annual billing)
+- Taxable amount
+- GST breakdown: CGST 9% + SGST 9%
+- Grand total
+- "Mark as Paid" button — records payment, updates `pending_amount`
+- "Download PDF" button (placeholder toast)
+
+### 4. Payment Recording Dialog (new component `src/components/platform/RecordPaymentDialog.tsx`)
+- Fields: amount, date, reference number (optional), notes (optional)
+- On submit: inserts into `platform_payments`, decrements school's `pending_amount`
+- Accessible from school row actions or invoice modal
+
+### 5. Edit School Dialog Update
+- Add `billing_cycle` selector (Monthly / Annual)
+- Add `next_billing_date` date picker
 
 ## Files to Create/Modify
 
 | File | Action |
 |------|--------|
-| `src/components/admin/SiblingIndicator.tsx` | Rewrite as `FamilyIndicator` with HoverCard + mobile Dialog |
-| `src/components/admin/StudentFamilyCard.tsx` | New — family detail card for profile/edit views |
-| `src/pages/admin/Students.tsx` | Update: parent column tooltip, search filter extension, family row grouping, import new components |
+| Migration SQL | New: add columns + 2 tables |
+| `src/components/platform/InvoiceModal.tsx` | New |
+| `src/components/platform/RecordPaymentDialog.tsx` | New |
+| `src/pages/platform/PlatformDashboard.tsx` | Update: KPI cards, table columns, search, action buttons |
+| `src/components/platform/EditSchoolDialog.tsx` | Update: billing_cycle + next_billing_date fields |
+| `src/hooks/useSubscriptionPricing.ts` | Update: extend `calculateMonthlyFee` to support annual calculation |
 
 ## Technical Notes
 
-- No database changes needed — all sibling detection remains logic-based using existing fields.
-- Uses existing UI components: `HoverCard`, `Badge`, `Dialog`, `Tooltip`, `useIsMobile`.
-- The `FamilyIndicator` component remains a drop-in replacement for `SiblingIndicator` with the same props interface.
-- Family row grouping uses a Map keyed by normalized parent_phone; students without a phone get no grouping color.
+- Volume discounts are auto-applied from the existing `volume_discount_tiers` table via `getApplicableDiscount()`
+- Annual discount is a flat 10% on top of volume discount, applied only when `billing_cycle = 'annual'`
+- GST (18%) is only shown on invoices, not in KPI cards or table (standard accounting practice)
+- All amounts in ₹ (INR)
+- No mock data — uses real Supabase records throughout
 
