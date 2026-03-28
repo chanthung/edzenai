@@ -195,10 +195,23 @@ export default function Pricing() {
           </Card>
 
           {/* Pro */}
-          <Card className="relative flex flex-col border-primary shadow-lg ring-2 ring-primary/20">
+          <Card
+            className={cn(
+              "relative flex flex-col cursor-pointer transition-all",
+              selectedPlan === 'pro'
+                ? "border-primary shadow-lg ring-2 ring-primary/20"
+                : "hover:border-primary/40"
+            )}
+            onClick={() => setSelectedPlan('pro')}
+          >
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-              <Badge className="bg-primary text-primary-foreground px-3 py-1 text-xs gap-1">
-                <Star className="h-3 w-3" /> Most Popular
+              <Badge className={cn(
+                "px-3 py-1 text-xs gap-1",
+                selectedPlan === 'pro'
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {selectedPlan === 'pro' ? <><Check className="h-3 w-3" /> Selected</> : <><Star className="h-3 w-3" /> Most Popular</>}
               </Badge>
             </div>
             <CardHeader className="pb-4">
