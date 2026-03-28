@@ -15,11 +15,15 @@ import {
   Sparkles,
   AlertTriangle,
   Shield,
+  ShieldCheck,
   TrendingUp,
   Upload,
   BookOpen,
   Check,
   X,
+  Lock,
+  CloudUpload,
+  IndianRupee,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
