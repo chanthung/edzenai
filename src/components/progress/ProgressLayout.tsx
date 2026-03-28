@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   ArrowLeft,
-  Lock
+  Lock,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,19 +73,27 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
           <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto">
             <Lock className="h-8 w-8 text-purple-600" />
           </div>
-          <h1 className="text-2xl font-bold">Upgrade to Pro</h1>
+          <h1 className="text-2xl font-bold">Upgrade Required</h1>
           <p className="text-muted-foreground">
             The Student Progress module — including subjects, assessments, marks entry, report cards, and AI insights — is available on the Pro plan.
           </p>
           <p className="text-sm text-muted-foreground">
             Contact your administrator to upgrade your subscription.
           </p>
-          <Link to="/admin">
-            <Button variant="outline" className="mt-2">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
+          <div className="flex gap-3 justify-center mt-2">
+            <Link to="/pricing">
+              <Button>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Upgrade Now
+              </Button>
+            </Link>
+            <Link to="/admin">
+              <Button variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );

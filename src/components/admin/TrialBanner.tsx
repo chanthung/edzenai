@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Clock, AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function TrialBanner() {
   const { effectiveState, daysRemaining, currentPlan, isRestricted } = useSubscriptionStatus();
@@ -54,12 +55,12 @@ export function TrialBanner() {
               )}
             </div>
           </div>
-          {currentPlan === "starter" && (
-            <Button size="sm" variant={isExpired ? "destructive" : "default"}>
+          <Button size="sm" variant={isExpired ? "destructive" : "default"} asChild>
+            <Link to="/pricing">
               <Sparkles className="h-3.5 w-3.5 mr-1" />
-              Upgrade to Pro
-            </Button>
-          )}
+              Upgrade Now
+            </Link>
+          </Button>
         </div>
       </CardContent>
     </Card>
