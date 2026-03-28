@@ -256,12 +256,19 @@ export default function Pricing() {
           </Card>
         </div>
 
-        {/* Value message */}
-        <div className="text-center mb-12">
-          <p className="inline-flex items-center gap-2 bg-accent/10 text-accent-foreground border border-accent/20 rounded-full px-5 py-2 text-sm font-medium">
-            <Star className="h-4 w-4 text-accent" />
-            Only {formatINR(diff)} more per student for AI-powered automation
-          </p>
+        {/* CTA + Value message */}
+        <div className="text-center mb-12 space-y-4">
+          <Button size="lg" className="px-10 text-base" asChild>
+            <Link to={`/signup?plan=${selectedPlan}`}>
+              Continue with {selectedPlan === 'pro' ? 'Pro' : 'Starter'} →
+            </Link>
+          </Button>
+          {selectedPlan === 'starter' && (
+            <p className="inline-flex items-center gap-2 bg-accent/10 text-accent-foreground border border-accent/20 rounded-full px-5 py-2 text-sm font-medium">
+              <Star className="h-4 w-4 text-accent" />
+              Only {formatINR(diff)} more per student for AI-powered automation
+            </p>
+          )}
         </div>
 
         {/* Trust elements */}
