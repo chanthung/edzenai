@@ -44,6 +44,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     subscription_plan: "starter" as SubscriptionPlan,
     custom_per_student_fee: "",
     discount_percent: "0",
+    billing_cycle: "monthly",
+    next_billing_date: "",
   });
 
   useEffect(() => {
@@ -64,6 +66,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
         subscription_plan: ((school as any).subscription_plan as SubscriptionPlan) || "starter",
         custom_per_student_fee: (school as any).custom_per_student_fee != null ? String((school as any).custom_per_student_fee) : "",
         discount_percent: String((school as any).discount_percent || 0),
+        billing_cycle: (school as any).billing_cycle || "monthly",
+        next_billing_date: (school as any).next_billing_date || "",
       });
       fetchStudentCount(school.id);
     }
@@ -132,6 +136,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
           subscription_plan: formData.subscription_plan,
           custom_per_student_fee: customFee,
           discount_percent: discount,
+          billing_cycle: formData.billing_cycle,
+          next_billing_date: formData.next_billing_date || null,
         } as any)
         .eq('id', school.id);
 
@@ -227,6 +233,35 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                   value={formData.qr_code_url}
                   onChange={(e) => setFormData({ ...formData, qr_code_url: e.target.value })}
                 />
+              </div>
+            </div>
+
+            {/* Billing Cycle & Next Billing */}
+            <div className="border-t pt-4 space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Billing</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Billing Cycle</Label>
+                  <Select
+                    value={formData.billing_cycle}
+                    onValueChange={(value) => setFormData({ ...formData, billing_cycle: value })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="annual">Annual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-next-billing">Next Billing Date</Label>
+                  <Input
+                    id="edit-next-billing"
+                    type="date"
+                    value={formData.next_billing_date}
+                    onChange={(e) => setFormData({ ...formData, next_billing_date: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
 

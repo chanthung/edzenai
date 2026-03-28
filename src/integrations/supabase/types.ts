@@ -709,6 +709,103 @@ export type Database = {
           },
         ]
       }
+      platform_invoices: {
+        Row: {
+          annual_discount: number
+          cgst: number
+          created_at: string
+          id: string
+          invoice_number: string
+          paid_at: string | null
+          school_id: string
+          sgst: number
+          status: string
+          subtotal: number
+          taxable_amount: number
+          total_amount: number
+          volume_discount: number
+        }
+        Insert: {
+          annual_discount?: number
+          cgst?: number
+          created_at?: string
+          id?: string
+          invoice_number: string
+          paid_at?: string | null
+          school_id: string
+          sgst?: number
+          status?: string
+          subtotal?: number
+          taxable_amount?: number
+          total_amount?: number
+          volume_discount?: number
+        }
+        Update: {
+          annual_discount?: number
+          cgst?: number
+          created_at?: string
+          id?: string
+          invoice_number?: string
+          paid_at?: string | null
+          school_id?: string
+          sgst?: number
+          status?: string
+          subtotal?: number
+          taxable_amount?: number
+          total_amount?: number
+          volume_discount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_invoices_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          payment_date: string
+          recorded_by: string | null
+          reference_number: string | null
+          school_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date: string
+          recorded_by?: string | null
+          reference_number?: string | null
+          school_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          recorded_by?: string | null
+          reference_number?: string | null
+          school_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_payments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_admins: {
         Row: {
           created_at: string
@@ -785,6 +882,7 @@ export type Database = {
       schools: {
         Row: {
           address: string | null
+          billing_cycle: string
           created_at: string
           custom_per_student_fee: number | null
           discount_percent: number
@@ -792,10 +890,12 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          next_billing_date: string | null
           onboarding_completed: boolean
           payment_verified: boolean | null
           payment_verified_at: string | null
           payment_verified_by: string | null
+          pending_amount: number
           phone: string | null
           qr_code_url: string | null
           subscription_plan: string
@@ -813,6 +913,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          billing_cycle?: string
           created_at?: string
           custom_per_student_fee?: number | null
           discount_percent?: number
@@ -820,10 +921,12 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          next_billing_date?: string | null
           onboarding_completed?: boolean
           payment_verified?: boolean | null
           payment_verified_at?: string | null
           payment_verified_by?: string | null
+          pending_amount?: number
           phone?: string | null
           qr_code_url?: string | null
           subscription_plan?: string
@@ -841,6 +944,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          billing_cycle?: string
           created_at?: string
           custom_per_student_fee?: number | null
           discount_percent?: number
@@ -848,10 +952,12 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          next_billing_date?: string | null
           onboarding_completed?: boolean
           payment_verified?: boolean | null
           payment_verified_at?: string | null
           payment_verified_by?: string | null
+          pending_amount?: number
           phone?: string | null
           qr_code_url?: string | null
           subscription_plan?: string
