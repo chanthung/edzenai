@@ -44,6 +44,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     subscription_plan: "starter" as SubscriptionPlan,
     custom_per_student_fee: "",
     discount_percent: "0",
+    billing_cycle: "monthly",
+    next_billing_date: "",
   });
 
   useEffect(() => {
