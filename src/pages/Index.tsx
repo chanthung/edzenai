@@ -252,6 +252,52 @@ export default function Index() {
         </div>
       </section>
 
+      {/* Security & Compliance Section */}
+      <section className="py-20 px-4 bg-white dark:bg-background">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-4">
+            <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 mb-6">
+              <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+              GDPR & DPDP Compliant
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-foreground">
+              Bank-Grade Security for Your School's Future
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Your school's data deserves the highest level of protection. EdZen AI is built with enterprise-grade security from the ground up.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+            <SecurityCard
+              icon={ShieldCheck}
+              title="Student Data Protection"
+              description="Fully compliant with global privacy standards. All sensitive student records are encrypted at rest and in transit."
+            />
+            <SecurityCard
+              icon={IndianRupee}
+              title="Secure Fee Management"
+              description="UPI-based payment verification with encrypted proof uploads. Automatically track and assign fees with full audit trails."
+            />
+            <SecurityCard
+              icon={Lock}
+              title="Role-Based Permissions"
+              description="Strict access levels for Admins, Teachers, and Parents. Ensure only authorized staff can modify grades or attendance."
+            />
+            <SecurityCard
+              icon={CloudUpload}
+              title="99.9% Uptime & Backups"
+              description="Never lose a report card. Automated daily backups and real-time syncing across secure cloud servers."
+            />
+          </div>
+          <div className="text-center mt-10">
+            <Button variant="outline" size="lg" className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-950">
+              <FileText className="mr-2 h-4 w-4" />
+              Security Whitepaper
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Trust Section */}
       <section className="py-16 px-4 bg-muted/30">
         <div className="max-w-6xl mx-auto">
