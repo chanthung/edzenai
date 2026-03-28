@@ -54,12 +54,12 @@ export function TrialBanner() {
               )}
             </div>
           </div>
-          {currentPlan === "starter" && (
-            <Button size="sm" variant={isExpired ? "destructive" : "default"}>
+          <Button size="sm" variant={isExpired ? "destructive" : "default"} asChild>
+            <Link to="/pricing">
               <Sparkles className="h-3.5 w-3.5 mr-1" />
-              Upgrade to Pro
-            </Button>
-          )}
+              Upgrade Now
+            </Link>
+          </Button>
         </div>
       </CardContent>
     </Card>
