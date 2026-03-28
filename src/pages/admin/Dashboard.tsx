@@ -18,6 +18,7 @@ import { formatCurrency } from "@/lib/format";
 import { Users, CalendarDays, Receipt, ArrowRight, CheckCircle2, Clock, BarChart3, FileCheck, Lock, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { FeesSummaryCards } from "@/components/admin/reports/FeesSummaryCards";
+import { BirthdayReminder } from "@/components/admin/BirthdayReminder";
 import { ClassWiseReport } from "@/components/admin/reports/ClassWiseReport";
 import { StudentPendingReport } from "@/components/admin/reports/StudentPendingReport";
 import { MonthWiseCollectionReport } from "@/components/admin/reports/MonthWiseCollectionReport";
@@ -214,6 +215,11 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Birthday Reminder */}
+          {students && students.length > 0 && (
+            <BirthdayReminder students={students} />
           )}
 
           {/* Quick actions */}
