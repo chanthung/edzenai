@@ -71,12 +71,20 @@ export default function Pricing() {
             EdZen AI
           </Link>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">Log in</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link to="/signup">Start Free Trial</Link>
-            </Button>
+            {user ? (
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/admin">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">Log in</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/signup">Start Free Trial</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
