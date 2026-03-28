@@ -262,6 +262,13 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                 <Input id="edit-guardian" placeholder="Mr. Ramesh Sharma (Uncle)" value={formData.guardian} onChange={(e) => setFormData({ ...formData, guardian: e.target.value })} />
               </div>
             </div>
+
+            {/* Family Information Card */}
+            {student && allStudents && (
+              <div className="border-t pt-4 mt-2">
+                <StudentFamilyCard student={student} allStudents={allStudents} />
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter className="mt-4 shrink-0">
