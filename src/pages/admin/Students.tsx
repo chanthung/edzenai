@@ -994,7 +994,8 @@ export default function Students() {
                       </RestrictedButton>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
