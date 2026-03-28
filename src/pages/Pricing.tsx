@@ -184,8 +184,12 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/signup">Start Free Trial</Link>
+              <Button
+                variant={selectedPlan === 'starter' ? 'default' : 'outline'}
+                className="w-full"
+                onClick={(e) => { e.stopPropagation(); setSelectedPlan('starter'); }}
+              >
+                {selectedPlan === 'starter' ? '✓ Selected' : 'Select Starter'}
               </Button>
             </CardContent>
           </Card>
