@@ -38,6 +38,7 @@ function formatINR(n: number) {
 
 export default function Pricing() {
   const [students, setStudents] = useState(100);
+  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('pro');
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
 
@@ -136,7 +137,22 @@ export default function Pricing() {
         {/* Pricing cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Starter */}
-          <Card className="relative flex flex-col">
+          <Card
+            className={cn(
+              "relative flex flex-col cursor-pointer transition-all",
+              selectedPlan === 'starter'
+                ? "border-primary shadow-lg ring-2 ring-primary/20"
+                : "hover:border-primary/40"
+            )}
+            onClick={() => setSelectedPlan('starter')}
+          >
+            {selectedPlan === 'starter' && (
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                <Badge className="bg-primary text-primary-foreground px-3 py-1 text-xs gap-1">
+                  <Check className="h-3 w-3" /> Selected
+                </Badge>
+              </div>
+            )}
             <CardHeader className="pb-4">
               <CardTitle className="text-xl">Starter</CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -168,17 +184,34 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/signup">Start Free Trial</Link>
+              <Button
+                variant={selectedPlan === 'starter' ? 'default' : 'outline'}
+                className="w-full"
+                onClick={(e) => { e.stopPropagation(); setSelectedPlan('starter'); }}
+              >
+                {selectedPlan === 'starter' ? '✓ Selected' : 'Select Starter'}
               </Button>
             </CardContent>
           </Card>
 
           {/* Pro */}
-          <Card className="relative flex flex-col border-primary shadow-lg ring-2 ring-primary/20">
+          <Card
+            className={cn(
+              "relative flex flex-col cursor-pointer transition-all",
+              selectedPlan === 'pro'
+                ? "border-primary shadow-lg ring-2 ring-primary/20"
+                : "hover:border-primary/40"
+            )}
+            onClick={() => setSelectedPlan('pro')}
+          >
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-              <Badge className="bg-primary text-primary-foreground px-3 py-1 text-xs gap-1">
-                <Star className="h-3 w-3" /> Most Popular
+              <Badge className={cn(
+                "px-3 py-1 text-xs gap-1",
+                selectedPlan === 'pro'
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {selectedPlan === 'pro' ? <><Check className="h-3 w-3" /> Selected</> : <><Star className="h-3 w-3" /> Most Popular</>}
               </Badge>
             </div>
             <CardHeader className="pb-4">
@@ -212,19 +245,30 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <Button className="w-full" asChild>
-                <Link to="/signup">Start Free Trial</Link>
+              <Button
+                variant={selectedPlan === 'pro' ? 'default' : 'outline'}
+                className="w-full"
+                onClick={(e) => { e.stopPropagation(); setSelectedPlan('pro'); }}
+              >
+                {selectedPlan === 'pro' ? '✓ Selected' : 'Select Pro'}
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Value message */}
-        <div className="text-center mb-12">
-          <p className="inline-flex items-center gap-2 bg-accent/10 text-accent-foreground border border-accent/20 rounded-full px-5 py-2 text-sm font-medium">
-            <Star className="h-4 w-4 text-accent" />
-            Only {formatINR(diff)} more per student for AI-powered automation
-          </p>
+        {/* CTA + Value message */}
+        <div className="text-center mb-12 space-y-4">
+          <Button size="lg" className="px-10 text-base" asChild>
+            <Link to={`/signup?plan=${selectedPlan}`}>
+              Continue with {selectedPlan === 'pro' ? 'Pro' : 'Starter'} →
+            </Link>
+          </Button>
+          {selectedPlan === 'starter' && (
+            <p className="inline-flex items-center gap-2 bg-accent/10 text-accent-foreground border border-accent/20 rounded-full px-5 py-2 text-sm font-medium">
+              <Star className="h-4 w-4 text-accent" />
+              Only {formatINR(diff)} more per student for AI-powered automation
+            </p>
+          )}
         </div>
 
         {/* Trust elements */}
