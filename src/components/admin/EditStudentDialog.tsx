@@ -29,6 +29,7 @@ interface EditStudentDialogProps {
 
 export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDialogProps) {
   const updateStudent = useUpdateStudent();
+  const { data: allStudents } = useStudents();
   const queryClient = useQueryClient();
   const { data: academicYears } = useAcademicYears();
   
