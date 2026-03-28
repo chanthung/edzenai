@@ -7,9 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-
-const STARTER_RATE = 6;
-const PRO_RATE = 9;
+import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
 
 const starterFeatures = [
   "Student management & bulk upload",
@@ -39,6 +37,10 @@ function formatINR(n: number) {
 
 export default function Pricing() {
   const [students, setStudents] = useState(100);
+  const { data: pricing } = useSubscriptionPricing();
+
+  const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 6;
+  const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 9;
 
   const handleSlider = (v: number[]) => setStudents(v[0]);
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {

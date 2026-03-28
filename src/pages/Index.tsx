@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
 import {
   GraduationCap,
   ArrowRight,
@@ -23,6 +24,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function Index() {
+  const { data: pricing } = useSubscriptionPricing();
+  const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 5;
+  const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 8;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -181,7 +186,7 @@ export default function Index() {
                 <h3 className="text-xl font-bold mb-1">Starter</h3>
                 <p className="text-muted-foreground text-sm mb-4">For core school operations</p>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold">₹5</span>
+                  <span className="text-4xl font-bold">₹{starterRate}</span>
                   <span className="text-muted-foreground">/student/month</span>
                 </div>
                 <div className="space-y-3 mb-8">
@@ -208,7 +213,7 @@ export default function Index() {
                 <h3 className="text-xl font-bold mb-1">Pro</h3>
                 <p className="text-muted-foreground text-sm mb-4">For AI insights and automation</p>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold">₹8</span>
+                  <span className="text-4xl font-bold">₹{proRate}</span>
                   <span className="text-muted-foreground">/student/month</span>
                 </div>
                 <div className="space-y-3 mb-8">
