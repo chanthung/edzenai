@@ -1,0 +1,1 @@
+CREATE POLICY "Public can view subscription pricing" ON public.subscription_pricing FOR SELECT TO anon USING (true);

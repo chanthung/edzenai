@@ -31,8 +31,8 @@ import { cn } from "@/lib/utils";
 export default function Index() {
   const { data: pricing } = useSubscriptionPricing();
   const { data: discountTiers = [] } = useVolumeDiscounts();
-  const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 5;
-  const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 8;
+  const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
+  const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
 
   return (
     <div className="min-h-screen bg-background">

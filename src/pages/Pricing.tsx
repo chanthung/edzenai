@@ -41,8 +41,8 @@ export default function Pricing() {
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
 
-  const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 6;
-  const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 9;
+  const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
+  const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
   const discountPct = getApplicableDiscount(students, tiers);
 
   const handleSlider = (v: number[]) => setStudents(v[0]);
