@@ -1,65 +1,60 @@
 
 
-# Dynamic Pricing Calculator with Volume Discounts
+# Enhanced Sibling & Parent Details in Student Table
 
 ## Summary
 
-Add a volume discount system to the Platform Admin's Subscription Settings page. Platform admins can configure discount tiers (e.g., 500-999 students → 5%, 1000+ → 10%), and a live pricing calculator previews the effect. The public pricing page will also reflect these discount tiers.
+Upgrade the existing student table and sibling indicator to show richer family information via tooltips and hover cards, including a "Family" column with sibling count badge, enhanced parent contact tooltips, family-based row grouping, and a search-by-parent filter. Also add a student profile "Family" section accessible from the table.
 
-## Database Changes
+## What Changes
 
-**New table: `volume_discount_tiers`**
-- `id` (uuid, PK)
-- `min_students` (integer, not null)
-- `max_students` (integer, nullable — null means unlimited)
-- `discount_percent` (numeric, not null)
-- `updated_at` (timestamptz, default now())
+### 1. Enhanced `SiblingIndicator` → `FamilyIndicator` (rewrite `src/components/admin/SiblingIndicator.tsx`)
 
-Seeded with two rows: (500, 999, 5) and (1000, null, 10).
+- Replace the small icon with a **badge** showing `👪 N members` (sibling count + 1 for the student).
+- On hover, show a **HoverCard** (not just tooltip) containing:
+  - **Siblings section**: each sibling's name, class/section, with a link to filter the table to that student.
+  - **Parent/Guardian section**: parent name, phone, email, address (truncated if >60 chars).
+- On mobile (use `useIsMobile`), replace hover with a **Dialog** triggered on tap.
+- Add `aria-describedby` for accessibility.
 
-**RLS policies:**
-- Platform admins: full access (ALL)
-- Public/anon: SELECT (so pricing page can read tiers)
+### 2. Enhanced Parent Column in `src/pages/admin/Students.tsx`
 
-## Frontend Changes
+- Current: shows parent name and phone as plain text.
+- New: wrap in a **TooltipProvider** so hovering reveals full contact details:
+  - Parent name, phone (with +91 prefix), email, guardian name, full address.
+- Add subtle styling for the tooltip content.
 
-### 1. `src/hooks/useVolumeDiscounts.ts` (new)
-- `useVolumeDiscounts()` — fetches tiers ordered by `min_students`
-- `useUpdateVolumeDiscount()` — mutation to update a tier
-- `useCreateVolumeDiscount()` / `useDeleteVolumeDiscount()` — CRUD mutations
-- `getApplicableDiscount(studentCount, tiers)` — pure helper that returns the matching discount percent
+### 3. Family Row Grouping (visual)
 
-### 2. `src/pages/platform/SubscriptionSettings.tsx` (updated)
-Add a new section below the existing plan cards:
+- In the student table, compute `familyGroups` by grouping students sharing the same parent_phone (the strongest sibling signal).
+- Apply alternating subtle background colors (`bg-blue-50/30` / default) for rows belonging to the same family group.
+- This is purely visual — no DB changes needed.
 
-**Volume Discount Tiers Editor:**
-- Table listing each tier: min students, max students, discount %
-- Editable inline fields for each tier
-- Add/remove tier buttons
-- Save button per tier
+### 4. Search by Parent Name/Phone
 
-**Live Pricing Calculator:**
-- Plan toggle (Starter / Pro)
-- Student count input with slider (10-2000)
-- Real-time display showing:
-  - Base total (rate x students)
-  - Applicable discount tier and percentage
-  - Discount amount
-  - Final monthly fee
-  - Effective per-student price after discount
-- Tooltips on discount tiers explaining thresholds
+- Extend the existing `searchQuery` filter to also match against `parent_name` and `parent_phone` fields.
+- This allows finding all students in a family by searching the parent's name or number.
 
-### 3. `src/pages/Pricing.tsx` and `src/pages/Index.tsx` (updated)
-- Fetch volume discount tiers via `useVolumeDiscounts()`
-- Show discount badges/notes below the calculator (e.g., "5% off for 500+ students, 10% off for 1000+")
-- Apply discount in the displayed totals when student count crosses thresholds
+### 5. Student Profile Family Section (new component `src/components/admin/StudentFamilyCard.tsx`)
 
-### 4. `src/components/platform/BillingBreakdown.tsx` (updated)
-- Accept optional `volumeDiscountTiers` prop
-- Auto-apply volume discount based on student count when rendering billing for a school
+- A card component shown inside the `EditStudentDialog` (or as a new expandable section).
+- Displays:
+  - **Parent cards**: name, phone, email, address.
+  - **Sibling list**: name, class/section for each detected sibling.
+- Reuses the same sibling detection logic from the indicator.
+
+## Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `src/components/admin/SiblingIndicator.tsx` | Rewrite as `FamilyIndicator` with HoverCard + mobile Dialog |
+| `src/components/admin/StudentFamilyCard.tsx` | New — family detail card for profile/edit views |
+| `src/pages/admin/Students.tsx` | Update: parent column tooltip, search filter extension, family row grouping, import new components |
 
 ## Technical Notes
-- No new secrets required
-- Volume discount is separate from the per-school `discount_percent` field on the `schools` table (which is for custom school-specific discounts)
-- The calculator is purely client-side math using fetched tier data
+
+- No database changes needed — all sibling detection remains logic-based using existing fields.
+- Uses existing UI components: `HoverCard`, `Badge`, `Dialog`, `Tooltip`, `useIsMobile`.
+- The `FamilyIndicator` component remains a drop-in replacement for `SiblingIndicator` with the same props interface.
+- Family row grouping uses a Map keyed by normalized parent_phone; students without a phone get no grouping color.
 
