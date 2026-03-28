@@ -138,10 +138,13 @@ export default function Students() {
   }, [students]);
 
   const filteredStudents = useMemo(() => {
+    const q = searchQuery.toLowerCase();
     const filtered = students?.filter(student => {
-      const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.roll_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.class_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = student.name.toLowerCase().includes(q) ||
+        student.roll_number?.toLowerCase().includes(q) ||
+        student.class_name?.toLowerCase().includes(q) ||
+        student.parent_name?.toLowerCase().includes(q) ||
+        student.parent_phone?.includes(searchQuery);
       
       const matchesClass = classFilter === "all" || student.class_name === classFilter;
       
