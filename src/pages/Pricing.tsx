@@ -43,6 +43,8 @@ export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('pro');
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
+  const { user } = useAuth();
+  const { effectiveState } = useSubscriptionStatus();
 
   const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
   const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
