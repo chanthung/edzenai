@@ -39,9 +39,11 @@ function formatINR(n: number) {
 export default function Pricing() {
   const [students, setStudents] = useState(100);
   const { data: pricing } = useSubscriptionPricing();
+  const { data: tiers = [] } = useVolumeDiscounts();
 
   const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 6;
   const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 9;
+  const discountPct = getApplicableDiscount(students, tiers);
 
   const handleSlider = (v: number[]) => setStudents(v[0]);
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,8 +52,9 @@ export default function Pricing() {
     if (e.target.value === "") setStudents(1);
   };
 
-  const starterTotal = students * STARTER_RATE;
-  const proTotal = students * PRO_RATE;
+  const applyDiscount = (total: number) => Math.max(0, total - total * (discountPct / 100));
+  const starterTotal = applyDiscount(students * STARTER_RATE);
+  const proTotal = applyDiscount(students * PRO_RATE);
   const diff = PRO_RATE - STARTER_RATE;
 
   return (

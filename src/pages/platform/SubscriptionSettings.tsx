@@ -215,6 +215,11 @@ export default function SubscriptionSettings() {
             );
           })}
         </div>
+
+        <div className="grid gap-6 mt-8">
+          <VolumeDiscountEditor />
+          <PricingCalculator />
+        </div>
       </main>
     </div>
   );
