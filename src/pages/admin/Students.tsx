@@ -169,6 +169,36 @@ export default function Students() {
     });
   }, [students, searchQuery, classFilter]);
 
+  // Family row grouping: assign alternating colors based on parent_phone groups
+  const familyRowColors = useMemo(() => {
+    if (!filteredStudents) return new Map<string, boolean>();
+    const phoneGroups = new Map<string, string[]>();
+    filteredStudents.forEach((s) => {
+      const phone = (s.parent_phone ?? "").trim();
+      if (phone.length >= 10) {
+        const ids = phoneGroups.get(phone) || [];
+        ids.push(s.id);
+        phoneGroups.set(phone, ids);
+      }
+    });
+    // Only color groups with 2+ members
+    const colorMap = new Map<string, boolean>();
+    let colorToggle = false;
+    phoneGroups.forEach((ids) => {
+      if (ids.length >= 2) {
+        ids.forEach((id) => colorMap.set(id, colorToggle));
+        colorToggle = !colorToggle;
+      }
+    });
+    return colorMap;
+  }, [filteredStudents]);
+
+  // Callback to set search from family indicator sibling click
+  const handleFilterToStudent = (name: string) => {
+    setSearchQuery(name);
+    setClassFilter("all");
+  };
+
   // Get selected students that have valid phone numbers for sharing
   const selectedShareableStudents = useMemo(() => {
     if (!filteredStudents) return [];
