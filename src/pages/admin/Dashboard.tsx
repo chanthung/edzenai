@@ -217,6 +217,11 @@ export default function Dashboard() {
             </Card>
           )}
 
+          {/* Birthday Reminder */}
+          {students && students.length > 0 && (
+            <BirthdayReminder students={students} />
+          )}
+
           {/* Quick actions */}
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="card-elevated">
