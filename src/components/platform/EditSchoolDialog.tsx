@@ -236,6 +236,35 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
               </div>
             </div>
 
+            {/* Billing Cycle & Next Billing */}
+            <div className="border-t pt-4 space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Billing</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Billing Cycle</Label>
+                  <Select
+                    value={formData.billing_cycle}
+                    onValueChange={(value) => setFormData({ ...formData, billing_cycle: value })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="annual">Annual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-next-billing">Next Billing Date</Label>
+                  <Input
+                    id="edit-next-billing"
+                    type="date"
+                    value={formData.next_billing_date}
+                    onChange={(e) => setFormData({ ...formData, next_billing_date: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Trial Period */}
             <div className="border-t pt-4 space-y-4">
               <h4 className="text-sm font-medium text-muted-foreground">Trial Period</h4>
