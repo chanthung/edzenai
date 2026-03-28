@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   ArrowLeft,
-  Lock
+  Lock,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
