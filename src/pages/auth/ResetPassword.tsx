@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { GraduationCap, Loader2, CheckCircle } from "lucide-react";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
