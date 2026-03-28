@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, Star, Users, ShieldCheck, Clock, BadgePercent } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +43,8 @@ export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('pro');
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
+  const { user } = useAuth();
+  const { effectiveState } = useSubscriptionStatus();
 
   const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
   const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
@@ -67,12 +71,20 @@ export default function Pricing() {
             EdZen AI
           </Link>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">Log in</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link to="/signup">Start Free Trial</Link>
-            </Button>
+            {user ? (
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/admin">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">Log in</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/signup">Start Free Trial</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
