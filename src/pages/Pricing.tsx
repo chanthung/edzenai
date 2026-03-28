@@ -137,7 +137,22 @@ export default function Pricing() {
         {/* Pricing cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Starter */}
-          <Card className="relative flex flex-col">
+          <Card
+            className={cn(
+              "relative flex flex-col cursor-pointer transition-all",
+              selectedPlan === 'starter'
+                ? "border-primary shadow-lg ring-2 ring-primary/20"
+                : "hover:border-primary/40"
+            )}
+            onClick={() => setSelectedPlan('starter')}
+          >
+            {selectedPlan === 'starter' && (
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                <Badge className="bg-primary text-primary-foreground px-3 py-1 text-xs gap-1">
+                  <Check className="h-3 w-3" /> Selected
+                </Badge>
+              </div>
+            )}
             <CardHeader className="pb-4">
               <CardTitle className="text-xl">Starter</CardTitle>
               <p className="text-sm text-muted-foreground">
