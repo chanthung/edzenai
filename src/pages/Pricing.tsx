@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
 
 const starterFeatures = [
   "Student management & bulk upload",
