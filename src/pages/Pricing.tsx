@@ -114,6 +114,23 @@ export default function Pricing() {
           <p className="text-xs text-muted-foreground text-center">
             Drag or type to see your monthly cost
           </p>
+          {discountPct > 0 && (
+            <p className="text-center mt-2">
+              <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200">
+                <BadgePercent className="h-3 w-3 mr-1" />
+                {discountPct}% volume discount applied!
+              </Badge>
+            </p>
+          )}
+          {discountPct === 0 && tiers.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mt-2">
+              {tiers.map((t) => (
+                <span key={t.id} className="text-xs text-muted-foreground">
+                  {t.min_students}+ students → {t.discount_percent}% off
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Pricing cards */}
