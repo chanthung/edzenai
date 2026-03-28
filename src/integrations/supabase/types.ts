@@ -1373,6 +1373,30 @@ export type Database = {
         }
         Relationships: []
       }
+      volume_discount_tiers: {
+        Row: {
+          discount_percent: number
+          id: string
+          max_students: number | null
+          min_students: number
+          updated_at: string
+        }
+        Insert: {
+          discount_percent?: number
+          id?: string
+          max_students?: number | null
+          min_students: number
+          updated_at?: string
+        }
+        Update: {
+          discount_percent?: number
+          id?: string
+          max_students?: number | null
+          min_students?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
