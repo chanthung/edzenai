@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { INDIAN_STATES } from "@/lib/indian-states";
 
 interface CreateSchoolDialogProps {
