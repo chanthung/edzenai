@@ -30,6 +30,16 @@ interface CreateSchoolDialogProps {
   onSuccess: () => void;
 }
 
+const generateTempPassword = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const special = '!@#$%&*';
+  let pwd = '';
+  for (let i = 0; i < 8; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+  pwd += special[Math.floor(Math.random() * special.length)];
+  pwd += Math.floor(Math.random() * 90 + 10);
+  return pwd;
+};
+
 export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateSchoolDialogProps) {
   const [schoolName, setSchoolName] = useState("");
   const [schoolEmail, setSchoolEmail] = useState("");
@@ -37,9 +47,16 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
   const [schoolAddress, setSchoolAddress] = useState("");
   const [schoolState, setSchoolState] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
-  const [adminPassword, setAdminPassword] = useState("");
+  const [adminPassword, setAdminPassword] = useState(() => generateTempPassword());
   const [loading, setLoading] = useState(false);
   const [emailingPassword, setEmailingPassword] = useState(false);
+
+  // Regenerate password each time dialog opens
+  useEffect(() => {
+    if (open) {
+      setAdminPassword(generateTempPassword());
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
