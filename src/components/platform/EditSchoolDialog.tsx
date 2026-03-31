@@ -26,6 +26,7 @@ interface EditSchoolDialogProps {
 
 export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: EditSchoolDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [emailingReset, setEmailingReset] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
   const { data: pricing } = useSubscriptionPricing();
   const [formData, setFormData] = useState({
