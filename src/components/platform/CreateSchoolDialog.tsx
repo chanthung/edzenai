@@ -49,7 +49,6 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState(() => generateTempPassword());
   const [loading, setLoading] = useState(false);
-  const [emailingPassword, setEmailingPassword] = useState(false);
 
   // Regenerate password each time dialog opens
   useEffect(() => {
