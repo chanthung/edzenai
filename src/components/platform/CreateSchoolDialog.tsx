@@ -111,33 +111,6 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
     }
   };
 
-  const handleEmailPassword = async () => {
-    if (!adminEmail.trim() || !adminPassword.trim()) {
-      toast.error("Please enter admin email and password first");
-      return;
-    }
-
-    setEmailingPassword(true);
-    try {
-      // Use Supabase's built-in password reset as the email mechanism
-      const { error } = await supabase.auth.resetPasswordForEmail(adminEmail.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) throw error;
-
-      toast.success("Password reset link sent!", {
-        description: `A password reset email has been sent to ${adminEmail}. The school admin can use it to set their own password.`,
-      });
-    } catch (error: any) {
-      toast.error("Failed to send email", {
-        description: error.message || "Please try again",
-      });
-    } finally {
-      setEmailingPassword(false);
-    }
-  };
-
   const resetForm = () => {
     setSchoolName("");
     setSchoolEmail("");
