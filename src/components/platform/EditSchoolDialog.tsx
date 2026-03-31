@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
@@ -26,6 +26,7 @@ interface EditSchoolDialogProps {
 
 export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: EditSchoolDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [emailingReset, setEmailingReset] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
   const { data: pricing } = useSubscriptionPricing();
   const [formData, setFormData] = useState({
@@ -411,6 +412,65 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                     onChange={(e) => setFormData({ ...formData, subscription_renewal_date: e.target.value })}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Admin Password Reset */}
+            <div className="border-t pt-4 space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Admin Password Reset</h4>
+              <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                <div>
+                  <p className="text-sm font-medium">Send Password Reset Link</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sends a reset email to the school admin so they can set a new password.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 shrink-0"
+                  disabled={emailingReset || !school?.id}
+                  onClick={async () => {
+                    if (!school) return;
+                    // Look up admin email from school_admins + auth
+                    setEmailingReset(true);
+                    try {
+                      const { data: adminRow } = await supabase
+                        .from('school_admins')
+                        .select('user_id')
+                        .eq('school_id', school.id)
+                        .eq('is_primary', true)
+                        .single();
+
+                      if (!adminRow) throw new Error('No primary admin found for this school');
+
+                      // Use the school email or form email as target
+                      const targetEmail = formData.email?.trim();
+                      if (!targetEmail) throw new Error('School has no email set — add one above first');
+
+                      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      });
+                      if (error) throw error;
+
+                      toast.success("Password reset link sent!", {
+                        description: `Sent to ${targetEmail}`,
+                      });
+                    } catch (err: any) {
+                      toast.error("Failed to send reset link", { description: err.message });
+                    } finally {
+                      setEmailingReset(false);
+                    }
+                  }}
+                >
+                  {emailingReset ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Mail className="h-3.5 w-3.5" />
+                  )}
+                  Email Reset Link
+                </Button>
               </div>
             </div>
           </div>

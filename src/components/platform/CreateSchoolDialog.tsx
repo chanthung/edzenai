@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { INDIAN_STATES } from "@/lib/indian-states";
 
 interface CreateSchoolDialogProps {
@@ -49,7 +49,6 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState(() => generateTempPassword());
   const [loading, setLoading] = useState(false);
-  const [emailingPassword, setEmailingPassword] = useState(false);
 
   // Regenerate password each time dialog opens
   useEffect(() => {
@@ -109,33 +108,6 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleEmailPassword = async () => {
-    if (!adminEmail.trim() || !adminPassword.trim()) {
-      toast.error("Please enter admin email and password first");
-      return;
-    }
-
-    setEmailingPassword(true);
-    try {
-      // Use Supabase's built-in password reset as the email mechanism
-      const { error } = await supabase.auth.resetPasswordForEmail(adminEmail.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) throw error;
-
-      toast.success("Password reset link sent!", {
-        description: `A password reset email has been sent to ${adminEmail}. The school admin can use it to set their own password.`,
-      });
-    } catch (error: any) {
-      toast.error("Failed to send email", {
-        description: error.message || "Please try again",
-      });
-    } finally {
-      setEmailingPassword(false);
     }
   };
 
@@ -245,26 +217,9 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
                     minLength={6}
                     autoComplete="new-password"
                   />
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      Share this password with the school admin.
-                    </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs gap-1.5 text-primary"
-                      onClick={handleEmailPassword}
-                      disabled={emailingPassword || !adminEmail.trim()}
-                    >
-                      {emailingPassword ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Mail className="h-3 w-3" />
-                      )}
-                      Email Reset Link
-                    </Button>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Share this password with the school admin.
+                  </p>
                 </div>
               </div>
             </div>
