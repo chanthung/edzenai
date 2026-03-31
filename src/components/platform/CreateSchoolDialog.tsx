@@ -243,6 +243,7 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
                     onChange={(e) => setAdminPassword(e.target.value)}
                     required
                     minLength={6}
+                    autoComplete="new-password"
                   />
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
