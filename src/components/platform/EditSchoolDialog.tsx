@@ -433,19 +433,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                   disabled={emailingReset || !school?.id}
                   onClick={async () => {
                     if (!school) return;
-                    // Look up admin email from school_admins + auth
                     setEmailingReset(true);
                     try {
-                      const { data: adminRow } = await supabase
-                        .from('school_admins')
-                        .select('user_id')
-                        .eq('school_id', school.id)
-                        .eq('is_primary', true)
-                        .single();
-
-                      if (!adminRow) throw new Error('No primary admin found for this school');
-
-                      // Use the school email or form email as target
                       const targetEmail = formData.email?.trim();
                       if (!targetEmail) throw new Error('School has no email set — add one above first');
 
