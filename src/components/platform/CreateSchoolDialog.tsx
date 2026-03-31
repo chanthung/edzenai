@@ -245,26 +245,9 @@ export function CreateSchoolDialog({ open, onOpenChange, onSuccess }: CreateScho
                     minLength={6}
                     autoComplete="new-password"
                   />
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      Share this password with the school admin.
-                    </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs gap-1.5 text-primary"
-                      onClick={handleEmailPassword}
-                      disabled={emailingPassword || !adminEmail.trim()}
-                    >
-                      {emailingPassword ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Mail className="h-3 w-3" />
-                      )}
-                      Email Reset Link
-                    </Button>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Share this password with the school admin.
+                  </p>
                 </div>
               </div>
             </div>
