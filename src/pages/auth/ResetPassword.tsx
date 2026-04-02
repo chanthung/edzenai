@@ -161,7 +161,14 @@ export default function ResetPassword() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     minLength={6}
+                    className={confirmPassword && password !== confirmPassword ? "border-destructive focus-visible:ring-destructive" : confirmPassword && password === confirmPassword ? "border-emerald-500 focus-visible:ring-emerald-500" : ""}
                   />
+                  {confirmPassword && password !== confirmPassword && (
+                    <p className="text-xs text-destructive">Passwords do not match</p>
+                  )}
+                  {confirmPassword && password === confirmPassword && (
+                    <p className="text-xs text-emerald-600">Passwords match</p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -336,7 +336,13 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <PasswordInput id="confirmPassword" placeholder="Confirm new password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} disabled={isRestricted} />
+                  <PasswordInput id="confirmPassword" placeholder="Confirm new password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} disabled={isRestricted} className={passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword ? "border-destructive focus-visible:ring-destructive" : passwordData.confirmPassword && passwordData.newPassword === passwordData.confirmPassword ? "border-emerald-500 focus-visible:ring-emerald-500" : ""} />
+                  {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                    <p className="text-xs text-destructive">Passwords do not match</p>
+                  )}
+                  {passwordData.confirmPassword && passwordData.newPassword === passwordData.confirmPassword && (
+                    <p className="text-xs text-emerald-600">Passwords match</p>
+                  )}
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">Password must be at least 6 characters long.</p>
