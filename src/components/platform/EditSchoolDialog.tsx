@@ -182,7 +182,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
         body: {
           schoolId: school.id,
           action: 'send-reset',
-          redirectTo: `${window.location.origin}/reset-password`,
+          redirectTo: 'https://edzenai.com/reset-password',
         },
       });
 
