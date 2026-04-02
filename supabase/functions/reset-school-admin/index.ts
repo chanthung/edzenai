@@ -31,17 +31,16 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    // Verify caller
-    const token = authHeader.replace('Bearer ', '')
-    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token)
-    if (claimsError || !claimsData?.claims) {
+    // Verify caller using getUser()
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser()
+    if (userError || !user) {
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const userId = claimsData.claims.sub
+    const userId = user.id
 
     // Verify platform admin
     const { data: adminRole } = await supabaseAdmin
@@ -95,7 +94,6 @@ Deno.serve(async (req) => {
     const adminEmail = authUser.user.email
 
     if (action === 'get-admin-email') {
-      // Just return the admin email for display
       return new Response(
         JSON.stringify({ adminEmail }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -103,14 +101,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'send-reset') {
-      // Send password reset to the actual admin login email
-      const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email: adminEmail,
-        options: {
-          redirectTo: redirectTo || undefined,
-        },
-      })
+      // Use resetPasswordForEmail which actually SENDS the recovery email
+      const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(
+        adminEmail,
+        { redirectTo: redirectTo || undefined }
+      )
 
       if (resetError) {
         return new Response(
