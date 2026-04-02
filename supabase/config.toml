@@ -1,31 +1,25 @@
 project_id = "fwnvfkaihuqdfdcwkakj"
 
-[functions.create-school]
-verify_jwt = false
-
-[functions.send-parent-link]
-verify_jwt = false
-
-[functions.mark-telegram-registered]
-verify_jwt = false
-
-[functions.create-teacher]
-verify_jwt = false
-
-[functions.analyze-progress]
-verify_jwt = false
-
-[functions.signup-school]
-verify_jwt = false
-
-[functions.process-student-excel]
-verify_jwt = false
-
-[functions.onboard-school]
-verify_jwt = false
-
-[functions.help-assistant]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.analyze-progress]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.create-school]
+    verify_jwt = false
+  [functions.create-teacher]
+    verify_jwt = false
+  [functions.help-assistant]
+    verify_jwt = false
+  [functions.mark-telegram-registered]
+    verify_jwt = false
+  [functions.onboard-school]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.process-student-excel]
+    verify_jwt = false
+  [functions.send-parent-link]
+    verify_jwt = false
+  [functions.signup-school]
+    verify_jwt = false
