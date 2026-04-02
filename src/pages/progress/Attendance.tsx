@@ -80,7 +80,7 @@ export default function Attendance() {
 
     return allSections;
   }, [allStudents, selectedClass, isTeacher, myClassAssignments]);
-  }, [allStudents, selectedClass]);
+  
 
   // Auto-select first class
   useEffect(() => {
