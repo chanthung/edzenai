@@ -6,38 +6,54 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useTeachers } from "@/hooks/useTeachers";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
-import { Plus, UserPlus, Mail, User, Eye, EyeOff, Pencil } from "lucide-react";
+import { EditTeacherDialog } from "@/components/admin/EditTeacherDialog";
+import { Plus, UserPlus, Mail, User, Pencil } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Teachers() {
   const { teachers, isLoading, createTeacher, updateTeacher } = useTeachers();
   const { isRestricted } = useSubscriptionStatus();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
   // Edit teacher state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingTeacher, setEditingTeacher] = useState<{ id: string; name: string; is_active: boolean } | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editingTeacher, setEditingTeacher] = useState<typeof teachers[0] | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) return;
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
     
-    await createTeacher.mutateAsync(formData);
-    setFormData({ name: "", email: "", password: "" });
+    await createTeacher.mutateAsync({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+    });
+    setFormData({ name: "", email: "", password: "", confirmPassword: "" });
     setDialogOpen(false);
   };
 
@@ -49,21 +65,9 @@ export default function Teachers() {
     });
   };
 
-  const handleEditTeacher = (teacher: { id: string; name: string; is_active: boolean }) => {
+  const handleEditTeacher = (teacher: typeof teachers[0]) => {
     setEditingTeacher(teacher);
-    setEditName(teacher.name);
     setEditDialogOpen(true);
-  };
-
-  const handleUpdateTeacher = async () => {
-    if (!editingTeacher || !editName.trim()) return;
-    await updateTeacher.mutateAsync({
-      id: editingTeacher.id,
-      name: editName.trim(),
-      is_active: editingTeacher.is_active,
-    });
-    setEditDialogOpen(false);
-    setEditingTeacher(null);
   };
 
   return (
@@ -116,25 +120,25 @@ export default function Teachers() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Create a password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="pr-10"
-                      required
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+                  <PasswordInput
+                    id="password"
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <PasswordInput
+                    id="confirmPassword"
+                    placeholder="Confirm password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    required
+                    minLength={6}
+                  />
                   <p className="text-xs text-muted-foreground">
                     Minimum 6 characters. Share this password with the teacher securely.
                   </p>
@@ -220,32 +224,14 @@ export default function Teachers() {
       </Card>
 
       {/* Edit Teacher Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={(open) => {
-        setEditDialogOpen(open);
-        if (!open) setEditingTeacher(null);
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Teacher</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                placeholder="Teacher's name"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpdateTeacher} disabled={updateTeacher.isPending}>
-              {updateTeacher.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditTeacherDialog
+        teacher={editingTeacher}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) setEditingTeacher(null);
+        }}
+      />
 
       <Card className="mt-6">
         <CardHeader>
