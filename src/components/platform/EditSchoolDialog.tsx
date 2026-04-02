@@ -28,6 +28,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
   const [loading, setLoading] = useState(false);
   const [emailingReset, setEmailingReset] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
+  const [adminLoginEmail, setAdminLoginEmail] = useState<string | null>(null);
+  const [loadingAdminEmail, setLoadingAdminEmail] = useState(false);
   const { data: pricing } = useSubscriptionPricing();
   const [formData, setFormData] = useState({
     name: "",
@@ -71,6 +73,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
         next_billing_date: (school as any).next_billing_date || "",
       });
       fetchStudentCount(school.id);
+      fetchAdminEmail(school.id);
     }
   }, [school]);
 
@@ -80,6 +83,23 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
       .select('id', { count: 'exact', head: true })
       .eq('school_id', schoolId);
     setStudentCount(count || 0);
+  };
+
+  const fetchAdminEmail = async (schoolId: string) => {
+    setLoadingAdminEmail(true);
+    setAdminLoginEmail(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-school-admin', {
+        body: { schoolId, action: 'get-admin-email' },
+      });
+      if (!error && data?.adminEmail) {
+        setAdminLoginEmail(data.adminEmail);
+      }
+    } catch {
+      // Non-critical - just won't show the admin email
+    } finally {
+      setLoadingAdminEmail(false);
+    }
   };
 
   const getPlanPricing = (plan: string) => {
@@ -154,6 +174,31 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     }
   };
 
+  const handleSendReset = async () => {
+    if (!school) return;
+    setEmailingReset(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-school-admin', {
+        body: {
+          schoolId: school.id,
+          action: 'send-reset',
+          redirectTo: `${window.location.origin}/reset-password`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success("Password reset link sent!", {
+        description: `Sent to ${data.adminEmail}`,
+      });
+    } catch (err: any) {
+      toast.error("Failed to send reset link", { description: err.message });
+    } finally {
+      setEmailingReset(false);
+    }
+  };
+
   const planPricing = getPlanPricing(formData.subscription_plan);
 
   return (
@@ -203,7 +248,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-school-email">Email</Label>
+                  <Label htmlFor="edit-school-email">School Contact Email</Label>
                   <Input
                     id="edit-school-email"
                     type="email"
@@ -418,11 +463,30 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
             {/* Admin Password Reset */}
             <div className="border-t pt-4 space-y-4">
               <h4 className="text-sm font-medium text-muted-foreground">Admin Password Reset</h4>
+              
+              {/* Admin Login Email (read-only) */}
+              <div className="space-y-2">
+                <Label>Admin Login Email</Label>
+                {loadingAdminEmail ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Resolving admin email...
+                  </div>
+                ) : adminLoginEmail ? (
+                  <Input value={adminLoginEmail} readOnly className="bg-muted/50" />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Could not resolve admin login email</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  This is the email the school admin uses to log in (may differ from the school contact email above).
+                </p>
+              </div>
+
               <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
                 <div>
                   <p className="text-sm font-medium">Send Password Reset Link</p>
                   <p className="text-xs text-muted-foreground">
-                    Sends a reset email to the school admin so they can set a new password.
+                    Sends a reset email to the admin login email above so they can set a new password.
                   </p>
                 </div>
                 <Button
@@ -430,28 +494,8 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                   variant="outline"
                   size="sm"
                   className="gap-1.5 shrink-0"
-                  disabled={emailingReset || !school?.id}
-                  onClick={async () => {
-                    if (!school) return;
-                    setEmailingReset(true);
-                    try {
-                      const targetEmail = formData.email?.trim();
-                      if (!targetEmail) throw new Error('School has no email set — add one above first');
-
-                      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-                        redirectTo: `${window.location.origin}/reset-password`,
-                      });
-                      if (error) throw error;
-
-                      toast.success("Password reset link sent!", {
-                        description: `Sent to ${targetEmail}`,
-                      });
-                    } catch (err: any) {
-                      toast.error("Failed to send reset link", { description: err.message });
-                    } finally {
-                      setEmailingReset(false);
-                    }
-                  }}
+                  disabled={emailingReset || !school?.id || !adminLoginEmail}
+                  onClick={handleSendReset}
                 >
                   {emailingReset ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
