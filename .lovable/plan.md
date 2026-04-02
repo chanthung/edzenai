@@ -1,54 +1,36 @@
 
-I inspected the current flow and the main problem is not Cloudflare itself.
 
-What I found
+## Plan: Fix Password Reset Flow + Re-setup Email Domain
 
-1. In `src/components/platform/EditSchoolDialog.tsx`, the “Email Reset Link” button sends the reset to `formData.email`, which comes from `schools.email`.
-2. In `supabase/functions/create-school/index.ts`, the actual login account is created with `adminEmail`, and that email is not stored in the public school record. The public data only stores the relationship in `school_admins (user_id, school_id, is_primary)`.
-3. So right now, Platform Admin is often sending the reset to the school’s contact email, not the real school admin login email.
-4. The reset page itself is already in place and valid (`/reset-password` exists), so the issue is before the user ever receives the email.
-5. Separately, the sender domain for auth email is still not active in the backend email setup. The current status for `notify.edzenai.com` is still pending. So Cloudflare showing the root domain as active does not yet mean password reset emails are configured to send from `support@edzenai.com`.
+### Current State
+- NS records for `notify.edzenai.com` have been deleted from Cloudflare (as recommended by Cloudflare support)
+- The email domain status is still **Pending** — it needs to be re-configured using a Cloudflare-compatible method
+- Password reset links use `window.location.origin` (preview URL) instead of `https://edzenai.com`
+- ResetPassword page shows "Invalid or expired link" immediately without waiting for the auth client to process the recovery token
 
-Plan
+### What Will Be Done
 
-1. Fix the reset target
-   - Replace the current client-side reset call in `EditSchoolDialog` with a platform-admin-only backend action.
-   - That backend action should:
-     - verify the caller is a platform admin,
-     - find the school’s primary admin via `school_admins`,
-     - resolve that admin’s real login email from the auth system,
-     - send the password reset to that exact account.
+**Step 1: Re-setup email domain (Cloudflare-compatible)**
 
-2. Fix the Edit School UI
-   - Update the reset section so it clearly says it sends to the primary school admin login.
-   - Show the resolved admin login email in the dialog as a separate read-only field.
-   - Keep `School Email` as the school contact email only.
+Delete the current `notify.edzenai.com` email domain configuration and re-add it through the setup dialog. This time, the setup will detect Cloudflare and provide CNAME-based verification instructions (which Cloudflare Free supports) instead of NS delegation.
 
-3. Prevent future confusion in school setup
-   - Make the labels more explicit in create/edit flows:
-     - `School Contact Email`
-     - `Admin Login Email`
-   - This keeps billing/contact email and login email clearly separate.
+You'll see a setup dialog — follow the new DNS instructions it provides (likely a CNAME record instead of NS records).
 
-4. Finish branded auth email setup
-   - Complete the email sender activation for `notify.edzenai.com` in Lovable Cloud.
-   - Once active, wire auth emails to use the branded sender so resets can come from `support@edzenai.com` instead of the default sender.
+**Step 2: Fix `EditSchoolDialog.tsx` — hardcode production redirect URL**
 
-5. Verify end-to-end
-   - Test with a school where contact email and admin login email are different.
-   - Test with a school where they are the same.
-   - From Platform Admin: open Edit School → send reset → receive email → open `/reset-password` → set new password → sign in successfully.
+Change `redirectTo` from `window.location.origin` to `https://edzenai.com/reset-password` so password reset links always point to the live site, not preview URLs.
 
-Technical details
+**Step 3: Fix `ResetPassword.tsx` — add loading state + PKCE detection**
 
-- Files directly involved:
-  - `src/components/platform/EditSchoolDialog.tsx`
-  - `supabase/functions/create-school/index.ts`
-  - `src/pages/auth/ResetPassword.tsx`
-- Best implementation path: add a secure backend reset endpoint rather than relying on the client to guess the correct auth email.
-- Minimal fix does not require a database migration.
-- Optional later enhancement: add a managed public record for admin login email if you want it editable/searchable in the dashboard, but that is not required to make reset emails work.
+- Add a 3-second "checking" state before showing "Invalid or expired link"
+- Detect PKCE flow tokens (`?code=` query parameter) in addition to hash fragments
+- This prevents the page from rendering the error before the auth client processes the recovery session
 
-Bottom line
+**Step 4: Scaffold branded auth email templates (after domain verifies)**
 
-Cloudflare being active only means the website/domain DNS is live. The Platform Admin reset is failing because it is wired to the wrong email field, and the branded auth sender is still not fully active.
+Once the email domain is verified, scaffold and deploy branded auth email templates so emails come from `support@edzenai.com` instead of `no-reply@auth.lovable.cloud`.
+
+### Files Changed
+- `src/components/platform/EditSchoolDialog.tsx` — hardcode `redirectTo` to `https://edzenai.com/reset-password`
+- `src/pages/auth/ResetPassword.tsx` — add loading state, PKCE token detection, and delayed fallback
+
