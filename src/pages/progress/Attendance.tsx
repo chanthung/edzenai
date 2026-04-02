@@ -3,6 +3,8 @@ import { format, addDays, subDays } from "date-fns";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { useAttendanceByDate, useSaveAttendance, AttendanceStatus } from "@/hooks/useAttendance";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useMyClassAssignments } from "@/hooks/useTeacherClasses";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
