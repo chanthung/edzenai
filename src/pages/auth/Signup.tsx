@@ -23,6 +23,7 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Step 2
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("starter");
