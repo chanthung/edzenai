@@ -166,6 +166,10 @@ export default function Signup() {
                   <Label htmlFor="password">Password</Label>
                   <PasswordInput id="password" placeholder="Min 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <PasswordInput id="confirmPassword" placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
+                </div>
                 <Button type="submit" className="w-full">
                   Next — Choose Plan
                   <ArrowRight className="ml-2 h-4 w-4" />
