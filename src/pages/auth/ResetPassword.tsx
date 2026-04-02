@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -15,6 +14,7 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,16 +22,35 @@ export default function ResetPassword() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
+        setChecking(false);
       }
     });
 
-    // Also check hash for type=recovery (handles page refresh)
+    // Check hash for type=recovery (handles page refresh)
     const hash = window.location.hash;
     if (hash.includes("type=recovery")) {
       setIsRecovery(true);
+      setChecking(false);
     }
 
-    return () => subscription.unsubscribe();
+    // Check for PKCE flow tokens (?code=... query parameter)
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("code")) {
+      // PKCE flow: Supabase client will exchange the code automatically
+      // Give it time to process
+      setIsRecovery(true);
+      setChecking(false);
+    }
+
+    // Allow up to 3 seconds for the auth client to process the recovery token
+    const timeout = setTimeout(() => {
+      setChecking(false);
+    }, 3000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,6 +80,18 @@ export default function ResetPassword() {
     setSuccess(true);
     setTimeout(() => navigate("/login", { replace: true }), 2000);
   };
+
+  // Show loading spinner while checking for recovery token
+  if (checking) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4">
+        <div className="text-center animate-fade-in">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isRecovery && !success) {
     return (
