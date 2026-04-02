@@ -59,14 +59,27 @@ export default function Attendance() {
     return allClasses;
   }, [allStudents, isTeacher, myClassAssignments]);
 
-  // Derive sections for selected class
+  // Derive sections for selected class — filter by teacher's assigned sections
   const sections = useMemo(() => {
     if (!selectedClass) return [];
     const sectionSet = new Set<string>();
     (allStudents ?? []).forEach(s => {
       if (s.class_name === selectedClass && s.section) sectionSet.add(s.section);
     });
-    return Array.from(sectionSet).sort();
+    let allSections = Array.from(sectionSet).sort();
+
+    // If teacher with assigned classes, filter sections for this class
+    if (isTeacher && myClassAssignments.length > 0) {
+      const assignedSections = myClassAssignments
+        .filter(a => a.class_name === selectedClass && a.section)
+        .map(a => a.section!);
+      if (assignedSections.length > 0) {
+        allSections = allSections.filter(s => assignedSections.includes(s));
+      }
+    }
+
+    return allSections;
+  }, [allStudents, selectedClass, isTeacher, myClassAssignments]);
   }, [allStudents, selectedClass]);
 
   // Auto-select first class
