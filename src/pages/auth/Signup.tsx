@@ -168,7 +168,13 @@ export default function Signup() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <PasswordInput id="confirmPassword" placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
+                  <PasswordInput id="confirmPassword" placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} className={confirmPassword && password !== confirmPassword ? "border-destructive focus-visible:ring-destructive" : confirmPassword && password === confirmPassword ? "border-emerald-500 focus-visible:ring-emerald-500" : ""} />
+                  {confirmPassword && password !== confirmPassword && (
+                    <p className="text-xs text-destructive">Passwords do not match</p>
+                  )}
+                  {confirmPassword && password === confirmPassword && (
+                    <p className="text-xs text-emerald-600">Passwords match</p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full">
                   Next — Choose Plan

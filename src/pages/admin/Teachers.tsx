@@ -165,7 +165,13 @@ export default function Teachers() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <PasswordInput id="confirmPassword" placeholder="Confirm password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} required minLength={6} />
+                  <PasswordInput id="confirmPassword" placeholder="Confirm password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} required minLength={6} className={formData.confirmPassword && formData.password !== formData.confirmPassword ? "border-destructive focus-visible:ring-destructive" : formData.confirmPassword && formData.password === formData.confirmPassword ? "border-emerald-500 focus-visible:ring-emerald-500" : ""} />
+                  {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                    <p className="text-xs text-destructive">Passwords do not match</p>
+                  )}
+                  {formData.confirmPassword && formData.password === formData.confirmPassword && (
+                    <p className="text-xs text-emerald-600">Passwords match</p>
+                  )}
                   <p className="text-xs text-muted-foreground">Minimum 6 characters. Share this password with the teacher securely.</p>
                 </div>
 
