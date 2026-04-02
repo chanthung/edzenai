@@ -30,12 +30,16 @@ export default function Signup() {
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schoolName || !adminName || !email || !phone || !password) {
+    if (!schoolName || !adminName || !email || !phone || !password || !confirmPassword) {
       toast.error("Please fill all fields");
       return;
     }
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
     setStep(2);
