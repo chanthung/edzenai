@@ -34,20 +34,30 @@ export default function Attendance() {
   const [localEntries, setLocalEntries] = useState<Map<string, AttendanceStatus>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  const { isTeacher } = useUserRole();
+  const { data: myClassAssignments = [] } = useMyClassAssignments();
   const { data: allStudents, isLoading: studentsLoading } = useResolvedStudents();
 
-  // Derive unique classes
+  // Derive unique classes — filter by teacher's assigned classes if teacher
   const classes = useMemo(() => {
     const classSet = new Set<string>();
     (allStudents ?? []).forEach(s => {
       if (s.class_name) classSet.add(s.class_name);
     });
-    return Array.from(classSet).sort((a, b) => {
+    let allClasses = Array.from(classSet).sort((a, b) => {
       const numA = parseInt(a.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.replace(/\D/g, '')) || 0;
       return numA - numB || a.localeCompare(b);
     });
-  }, [allStudents]);
+
+    // If teacher with assigned classes, filter to only those
+    if (isTeacher && myClassAssignments.length > 0) {
+      const assignedClassNames = new Set(myClassAssignments.map(a => a.class_name));
+      allClasses = allClasses.filter(c => assignedClassNames.has(c));
+    }
+
+    return allClasses;
+  }, [allStudents, isTeacher, myClassAssignments]);
 
   // Derive sections for selected class
   const sections = useMemo(() => {
