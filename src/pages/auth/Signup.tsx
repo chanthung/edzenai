@@ -23,18 +23,23 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Step 2
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("starter");
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schoolName || !adminName || !email || !phone || !password) {
+    if (!schoolName || !adminName || !email || !phone || !password || !confirmPassword) {
       toast.error("Please fill all fields");
       return;
     }
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
     setStep(2);
@@ -160,6 +165,10 @@ export default function Signup() {
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <PasswordInput id="password" placeholder="Min 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <PasswordInput id="confirmPassword" placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
                 </div>
                 <Button type="submit" className="w-full">
                   Next — Choose Plan

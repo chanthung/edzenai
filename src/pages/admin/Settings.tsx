@@ -18,6 +18,7 @@ import { ClassAssignment } from "@/components/admin/templates/ClassAssignment";
 import type { AssessmentTemplate } from "@/hooks/progress/useAssessmentTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown } from "lucide-react";
 
 export default function Settings() {
@@ -331,11 +332,11 @@ export default function Settings() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">New Password</Label>
-                  <Input id="newPassword" type="password" placeholder="Enter new password" value={passwordData.newPassword} onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })} disabled={isRestricted} />
+                  <PasswordInput id="newPassword" placeholder="Enter new password" value={passwordData.newPassword} onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })} disabled={isRestricted} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input id="confirmPassword" type="password" placeholder="Confirm new password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} disabled={isRestricted} />
+                  <PasswordInput id="confirmPassword" placeholder="Confirm new password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} disabled={isRestricted} />
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">Password must be at least 6 characters long.</p>
