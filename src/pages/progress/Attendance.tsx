@@ -3,6 +3,8 @@ import { format, addDays, subDays } from "date-fns";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { useAttendanceByDate, useSaveAttendance, AttendanceStatus } from "@/hooks/useAttendance";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useMyClassAssignments } from "@/hooks/useTeacherClasses";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,30 +34,53 @@ export default function Attendance() {
   const [localEntries, setLocalEntries] = useState<Map<string, AttendanceStatus>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  const { isTeacher } = useUserRole();
+  const { data: myClassAssignments = [] } = useMyClassAssignments();
   const { data: allStudents, isLoading: studentsLoading } = useResolvedStudents();
 
-  // Derive unique classes
+  // Derive unique classes — filter by teacher's assigned classes if teacher
   const classes = useMemo(() => {
     const classSet = new Set<string>();
     (allStudents ?? []).forEach(s => {
       if (s.class_name) classSet.add(s.class_name);
     });
-    return Array.from(classSet).sort((a, b) => {
+    let allClasses = Array.from(classSet).sort((a, b) => {
       const numA = parseInt(a.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.replace(/\D/g, '')) || 0;
       return numA - numB || a.localeCompare(b);
     });
-  }, [allStudents]);
 
-  // Derive sections for selected class
+    // If teacher with assigned classes, filter to only those
+    if (isTeacher && myClassAssignments.length > 0) {
+      const assignedClassNames = new Set(myClassAssignments.map(a => a.class_name));
+      allClasses = allClasses.filter(c => assignedClassNames.has(c));
+    }
+
+    return allClasses;
+  }, [allStudents, isTeacher, myClassAssignments]);
+
+  // Derive sections for selected class — filter by teacher's assigned sections
   const sections = useMemo(() => {
     if (!selectedClass) return [];
     const sectionSet = new Set<string>();
     (allStudents ?? []).forEach(s => {
       if (s.class_name === selectedClass && s.section) sectionSet.add(s.section);
     });
-    return Array.from(sectionSet).sort();
-  }, [allStudents, selectedClass]);
+    let allSections = Array.from(sectionSet).sort();
+
+    // If teacher with assigned classes, filter sections for this class
+    if (isTeacher && myClassAssignments.length > 0) {
+      const assignedSections = myClassAssignments
+        .filter(a => a.class_name === selectedClass && a.section)
+        .map(a => a.section!);
+      if (assignedSections.length > 0) {
+        allSections = allSections.filter(s => assignedSections.includes(s));
+      }
+    }
+
+    return allSections;
+  }, [allStudents, selectedClass, isTeacher, myClassAssignments]);
+  
 
   // Auto-select first class
   useEffect(() => {

@@ -106,14 +106,16 @@ Deno.serve(async (req) => {
     }
 
     // Add to school_teachers table
-    const { error: teacherError } = await supabaseAdmin
+    const { data: teacherRecord, error: teacherError } = await supabaseAdmin
       .from('school_teachers')
       .insert({
         user_id: authData.user.id,
         school_id: schoolId,
         name,
         email,
-      });
+      })
+      .select('id')
+      .single();
 
     if (teacherError) {
       console.error('Teacher table error:', teacherError);
@@ -128,7 +130,7 @@ Deno.serve(async (req) => {
     console.log('Teacher created successfully:', email);
 
     return new Response(
-      JSON.stringify({ success: true, userId: authData.user.id }),
+      JSON.stringify({ success: true, userId: authData.user.id, teacherId: teacherRecord.id }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
