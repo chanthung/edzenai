@@ -29,19 +29,22 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Confirm your email for {siteName}</Preview>
+    <Preview>Verify your email for EdZen AI</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
+        <div style={header}>
+          <Text style={logoText}>🎓 EdZen AI</Text>
+        </div>
+        <Heading style={h1}>Verify your email</Heading>
         <Text style={text}>
-          Thanks for signing up for{' '}
+          Welcome to{' '}
           <Link href={siteUrl} style={link}>
-            <strong>{siteName}</strong>
+            <strong>EdZen AI</strong>
           </Link>
-          !
+          ! We're excited to have you on board.
         </Text>
         <Text style={text}>
-          Please confirm your email address (
+          Please verify your email address (
           <Link href={`mailto:${recipient}`} style={link}>
             {recipient}
           </Link>
@@ -51,7 +54,7 @@ export const SignupEmail = ({
           Verify Email
         </Button>
         <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
+          If you didn't create an account on EdZen AI, you can safely ignore this email.
         </Text>
       </Container>
     </Body>
@@ -60,27 +63,30 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, Arial, sans-serif' }
+const container = { padding: '20px 25px', maxWidth: '480px', margin: '0 auto' }
+const header = { textAlign: 'center' as const, marginBottom: '24px' }
+const logoText = { fontSize: '20px', fontWeight: 'bold' as const, color: 'hsl(174, 60%, 40%)', margin: '0' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: 'hsl(215, 25%, 15%)',
   margin: '0 0 20px',
 }
 const text = {
   fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
+  color: 'hsl(215, 15%, 50%)',
+  lineHeight: '1.6',
   margin: '0 0 25px',
 }
-const link = { color: 'inherit', textDecoration: 'underline' }
+const link = { color: 'hsl(174, 60%, 40%)', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: 'hsl(174, 60%, 40%)',
   color: '#ffffff',
   fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
+  borderRadius: '12px',
+  padding: '12px 24px',
   textDecoration: 'none',
+  fontWeight: 'bold' as const,
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
