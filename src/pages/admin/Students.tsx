@@ -981,8 +981,8 @@ export default function Students() {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="flex items-center justify-center w-6 h-6">
-                                  <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                                <span className="flex items-center justify-center w-5 h-5">
+                                  <img src={whatsappIcon} alt="WhatsApp link sent" className="h-4 w-4" />
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
