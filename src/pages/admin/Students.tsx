@@ -967,8 +967,7 @@ export default function Students() {
                           size="sm"
                           onClick={() => setShareStudent(student)}
                           disabled={!student.parent_phone || isSendingLink === student.id}
-                          title={!student.parent_phone ? "Parent phone required" : "Share via Telegram"}
-                          className={student.telegram_registered ? "hover:bg-[#0088cc]/10 hover:text-[#0088cc]" : ""}
+                          title={!student.parent_phone ? "Parent phone required" : "Share via WhatsApp"}
                         >
                           {isSendingLink === student.id ? (
                             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -977,16 +976,16 @@ export default function Students() {
                           )}
                           Share
                         </Button>
-                        {student.telegram_registered && (
+                        {sentStudentIds.has(student.id) && (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span className="flex items-center justify-center w-6 h-6">
-                                  <Send className="h-4 w-4 text-[#0088cc]" />
+                                  <MessageCircle className="h-4 w-4 text-[#25D366]" />
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Registered on Telegram</p>
+                                <p>WhatsApp link sent</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
