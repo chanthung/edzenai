@@ -76,6 +76,22 @@ export default function Students() {
     enabled: !!school?.id,
   });
 
+  // Fetch sent parent link dispatches to show WhatsApp sent indicator
+  const { data: sentDispatches } = useQuery({
+    queryKey: ['parent-link-dispatches', school?.id],
+    queryFn: async () => {
+      if (!school?.id) return [];
+      const { data, error } = await supabase
+        .from('parent_link_dispatches')
+        .select('student_id')
+        .eq('school_id', school.id)
+        .eq('status', 'sent');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!school?.id,
+  });
+
   // Create a map of student_id -> count of assigned fees
   const studentFeeCountMap = useMemo(() => {
     const map = new Map<string, number>();
