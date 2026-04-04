@@ -376,6 +376,7 @@ export default function Students() {
         toast.success("Link sent!", { 
           description: `Parent link sent to ${student.parent_phone}` 
         });
+        queryClient.invalidateQueries({ queryKey: ['parent-link-dispatches'] });
       } else {
         throw new Error(data.error || 'Failed to send link');
       }
