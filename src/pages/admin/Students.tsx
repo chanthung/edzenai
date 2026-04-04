@@ -35,7 +35,7 @@ import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { SiblingIndicator } from "@/components/admin/SiblingIndicator";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, Send, FileSpreadsheet, Download } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, FileSpreadsheet, Download, MessageCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,6 +76,22 @@ export default function Students() {
     enabled: !!school?.id,
   });
 
+  // Fetch sent parent link dispatches to show WhatsApp sent indicator
+  const { data: sentDispatches } = useQuery({
+    queryKey: ['parent-link-dispatches', school?.id],
+    queryFn: async () => {
+      if (!school?.id) return [];
+      const { data, error } = await supabase
+        .from('parent_link_dispatches')
+        .select('student_id')
+        .eq('school_id', school.id)
+        .eq('status', 'sent');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!school?.id,
+  });
+
   // Create a map of student_id -> count of assigned fees
   const studentFeeCountMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -84,6 +100,13 @@ export default function Students() {
     });
     return map;
   }, [allStudentFees]);
+
+  // Set of student IDs that have had a link sent
+  const sentStudentIds = useMemo(() => {
+    const set = new Set<string>();
+    sentDispatches?.forEach(d => set.add(d.student_id));
+    return set;
+  }, [sentDispatches]);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
@@ -353,6 +376,7 @@ export default function Students() {
         toast.success("Link sent!", { 
           description: `Parent link sent to ${student.parent_phone}` 
         });
+        queryClient.invalidateQueries({ queryKey: ['parent-link-dispatches'] });
       } else {
         throw new Error(data.error || 'Failed to send link');
       }
@@ -944,8 +968,7 @@ export default function Students() {
                           size="sm"
                           onClick={() => setShareStudent(student)}
                           disabled={!student.parent_phone || isSendingLink === student.id}
-                          title={!student.parent_phone ? "Parent phone required" : "Share via Telegram"}
-                          className={student.telegram_registered ? "hover:bg-[#0088cc]/10 hover:text-[#0088cc]" : ""}
+                          title={!student.parent_phone ? "Parent phone required" : "Share via WhatsApp"}
                         >
                           {isSendingLink === student.id ? (
                             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -954,16 +977,16 @@ export default function Students() {
                           )}
                           Share
                         </Button>
-                        {student.telegram_registered && (
+                        {sentStudentIds.has(student.id) && (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span className="flex items-center justify-center w-6 h-6">
-                                  <Send className="h-4 w-4 text-[#0088cc]" />
+                                  <MessageCircle className="h-4 w-4 text-[#25D366]" />
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Registered on Telegram</p>
+                                <p>WhatsApp link sent</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
