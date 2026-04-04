@@ -10,44 +10,33 @@ interface SendLinkRequest {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get auth header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      console.error('Missing or invalid authorization header');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create Supabase client with user's auth
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Validate user auth
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      console.error('Auth validation failed:', claimsError);
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = claimsData.claims.sub;
-    console.log('Request from user:', userId);
-
-    // Parse request body
     const { studentId }: SendLinkRequest = await req.json();
     if (!studentId) {
       return new Response(
@@ -56,9 +45,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Sending link for student:', studentId);
-
-    // Fetch student details (RLS will ensure user can only access their school's students)
+    // Fetch student details
     const { data: student, error: studentError } = await supabase
       .from('students')
       .select('id, name, parent_phone, access_token, school_id')
@@ -66,14 +53,12 @@ Deno.serve(async (req) => {
       .single();
 
     if (studentError || !student) {
-      console.error('Failed to fetch student:', studentError);
       return new Response(
         JSON.stringify({ error: 'Student not found or access denied' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Validate parent phone
     if (!student.parent_phone?.trim()) {
       return new Response(
         JSON.stringify({ error: 'Parent phone number is missing for this student' }),
@@ -89,66 +74,62 @@ Deno.serve(async (req) => {
       .single();
 
     if (schoolError || !school) {
-      console.error('Failed to fetch school:', schoolError);
       return new Response(
         JSON.stringify({ error: 'School not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Build the parent link URL
-    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '');
-    // Use the app's published URL or preview URL
+    // Build parent link
     const firstName = student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-    const parentLink = `https://easykiwi.lovable.app/view/${firstName}/${student.access_token}`;
+    const parentLink = `https://www.edzenai.com/view/${firstName}/${student.access_token}`;
 
-    // Get n8n webhook URL from secrets
-    const n8nWebhookUrl = Deno.env.get('N8N_PARENT_LINK_WEBHOOK_URL');
-    if (!n8nWebhookUrl) {
-      console.error('N8N_PARENT_LINK_WEBHOOK_URL secret not configured');
+    // Get WhatsApp API key
+    const waApiKey = Deno.env.get('WA_API_KEY');
+    if (!waApiKey) {
+      console.error('WA_API_KEY secret not configured');
       return new Response(
-        JSON.stringify({ error: 'Messaging service not configured' }),
+        JSON.stringify({ error: 'WhatsApp service not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Prepare payload for n8n
+    // Build WhatsApp message
+    const message = `Hello,\n\n${student.name}'s parent portal is ready. View fees, attendance & progress here:\n${parentLink}\n\n- ${school.name}`;
+
     const payload = {
-      studentName: student.name,
-      parentPhone: student.parent_phone,
-      parentLink: parentLink,
-      schoolName: school.name,
-      studentId: student.id,
-      timestamp: new Date().toISOString(),
+      api_key: waApiKey,
+      sender: '919436078446',
+      number: student.parent_phone.replace(/\D/g, ''),
+      message,
+      footer: `Sent via ${school.name}`,
     };
 
-    console.log('Calling n8n webhook with payload:', JSON.stringify(payload));
+    console.log('Sending WhatsApp message to:', student.parent_phone);
 
-    // Call n8n webhook
-    const n8nResponse = await fetch(n8nWebhookUrl, {
+    const waResponse = await fetch('https://wp.mayaviinfotech.in/send-message', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    if (!n8nResponse.ok) {
-      const errorText = await n8nResponse.text();
-      console.error('n8n webhook failed:', n8nResponse.status, errorText);
+    const waResult = await waResponse.json();
+
+    if (!waResponse.ok || !waResult.status) {
+      console.error('WhatsApp API failed:', waResponse.status, JSON.stringify(waResult));
       return new Response(
-        JSON.stringify({ error: 'Failed to send message via automation service' }),
+        JSON.stringify({ error: 'Failed to send WhatsApp message' }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('n8n webhook called successfully');
+    console.log('WhatsApp message sent successfully');
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: `Link sent to ${student.parent_phone}`,
-        studentName: student.name 
+        studentName: student.name,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
