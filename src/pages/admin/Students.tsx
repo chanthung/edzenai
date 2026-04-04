@@ -35,7 +35,8 @@ import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { SiblingIndicator } from "@/components/admin/SiblingIndicator";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, FileSpreadsheet, Download, MessageCircle } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, FileSpreadsheet, Download } from "lucide-react";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -981,8 +982,8 @@ export default function Students() {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="flex items-center justify-center w-6 h-6">
-                                  <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                                <span className="flex items-center justify-center w-5 h-5">
+                                  <img src={whatsappIcon} alt="WhatsApp link sent" className="h-4 w-4" />
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
