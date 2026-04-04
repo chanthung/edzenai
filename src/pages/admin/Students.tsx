@@ -100,6 +100,13 @@ export default function Students() {
     });
     return map;
   }, [allStudentFees]);
+
+  // Set of student IDs that have had a link sent
+  const sentStudentIds = useMemo(() => {
+    const set = new Set<string>();
+    sentDispatches?.forEach(d => set.add(d.student_id));
+    return set;
+  }, [sentDispatches]);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
