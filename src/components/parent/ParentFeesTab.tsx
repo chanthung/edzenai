@@ -1,10 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency } from '@/lib/format';
 import { QrCode, CreditCard, Phone, Mail, CheckCircle2, Clock, AlertTriangle, Upload } from 'lucide-react';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
 import { PaymentProofUploader } from '@/components/parent/PaymentProofUploader';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ParentViewData } from '@/hooks/useParentView';
 
 interface ParentFeesTabProps {
