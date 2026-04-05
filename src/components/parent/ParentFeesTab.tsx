@@ -192,6 +192,23 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
       )}
 
       {/* Fee Details */}
+      {/* Select All / Deselect bar */}
+      {unpaidInstallments.size > 0 && (
+        <div className="flex items-center justify-between px-1">
+          <p className="text-sm text-muted-foreground">
+            Select installments to pay together
+          </p>
+          <Button
+            variant="link"
+            size="sm"
+            className="text-xs h-auto p-0"
+            onClick={selectedInstallments.size === unpaidInstallments.size ? deselectAll : selectAll}
+          >
+            {selectedInstallments.size === unpaidInstallments.size ? 'Deselect All' : 'Select All'}
+          </Button>
+        </div>
+      )}
+
       {fees.length === 0 ? (
         <Card className="card-elevated">
           <CardContent className="py-12 text-center">
