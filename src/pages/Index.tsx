@@ -401,13 +401,23 @@ export default function Index() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 border-t">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-primary" />
-            <span className="font-semibold">EdZen AI</span>
+      <footer className="py-10 px-4 border-t">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-primary" />
+              <span className="font-semibold">EdZen AI</span>
+            </div>
+            <nav className="flex items-center gap-6 text-sm">
+              <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
+              <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
+              <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
+            </nav>
           </div>
-          <p className="text-sm text-muted-foreground">AI-Powered School Management System</p>
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            © {new Date().getFullYear()} EdZen AI. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>

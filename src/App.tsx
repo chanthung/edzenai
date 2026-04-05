@@ -24,6 +24,9 @@ import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import SubscriptionSettings from "./pages/platform/SubscriptionSettings";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
+import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 // Progress Module Pages
 import ProgressDashboard from "./pages/progress/ProgressDashboard";
@@ -47,6 +50,9 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/onboard" element={<Onboard />} />
