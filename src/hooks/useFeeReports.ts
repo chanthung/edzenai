@@ -114,6 +114,8 @@ export function useFeeReports() {
           className: student.class_name,
           section: student.section,
           rollNumber: student.roll_number,
+          parentPhone: student.parent_phone,
+          accessToken: student.access_token,
           totalFees,
           paidAmount,
           pendingAmount,
