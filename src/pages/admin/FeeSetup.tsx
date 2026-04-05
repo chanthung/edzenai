@@ -119,10 +119,11 @@ export default function FeeSetup() {
         academic_year_id: currentYearId,
         fee_category_id: newStructure.fee_category_id,
         total_amount: parseFloat(newStructure.total_amount),
+        due_date: newStructure.due_date || undefined,
       });
       toast.success("Fee structure created");
       setStructureDialogOpen(false);
-      setNewStructure({ fee_category_id: "", total_amount: "" });
+      setNewStructure({ fee_category_id: "", total_amount: "", due_date: "" });
     } catch (error: any) {
       toast.error("Failed to create structure", { description: error.message });
     }
@@ -267,6 +268,15 @@ export default function FeeSetup() {
                           value={newStructure.total_amount}
                           onChange={(e) => setNewStructure({ ...newStructure, total_amount: e.target.value })}
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Due Date</Label>
+                        <Input
+                          type="date"
+                          value={newStructure.due_date}
+                          onChange={(e) => setNewStructure({ ...newStructure, due_date: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">Default due date for the initial installment. Can be edited later per installment.</p>
                       </div>
                     </div>
                     <DialogFooter>
