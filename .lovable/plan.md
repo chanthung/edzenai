@@ -1,56 +1,50 @@
 
 
-## Plan: Auto WhatsApp Fee Reminders + Share Button on Student-wise Fee Report
+## Plan: Modern Hero Section with Product Screenshot Placeholder
 
-### Feature 1: Automated WhatsApp Fee Reminders (5 days before, on, and after due date)
+### What changes
 
-This requires a scheduled/cron Edge Function that runs daily, checks all installments with upcoming or overdue due dates, and sends WhatsApp reminders to parents.
+**File: `src/pages/Index.tsx`** — Replace the existing Hero section (lines 64-92) with an enhanced version that includes:
 
-**New Edge Function: `send-fee-reminders`**
-- Runs on a daily cron schedule (via `pg_cron` or Supabase cron in config.toml)
-- Queries all unpaid installments where:
-  - `due_date = today + 5 days` → "Reminder: ₹X for {{studentName}} is due on {{date}}"
-  - `due_date = today` → "⚠️ ₹X for {{studentName}} is due today"
-  - `due_date = today - 1 day` (just passed) → "🔴 ₹X for {{studentName}} is overdue"
-- For each match, fetches student's parent_phone, builds parent link, sends WhatsApp via Mayavi API
-- Skips students without phone numbers
-- Logs results for debugging
+1. **Product screenshot placeholder** — A macOS-style browser mockup frame below the headline containing a gradient placeholder with the EdZen AI logo and "Dashboard Preview" label, styled with rounded corners, a subtle shadow, and a perspective tilt for visual depth.
 
-**Database: New `fee_reminder_logs` table** to prevent duplicate messages:
-- Columns: `id`, `student_id`, `installment_id`, `reminder_type` (before/on/after), `sent_at`
-- Before sending, check if reminder already sent for this installment + type combo
+2. **Bolder headline** — Larger typography with a gradient text accent on the key phrase (e.g., "AI-Powered" in a teal-to-blue gradient).
 
-**Config: `supabase/config.toml`** — add cron schedule for the function (daily at 8 AM IST / 2:30 AM UTC)
+3. **Trust indicators row** — Small logos/badges below the CTA (e.g., "NEP 2020 Aligned", "500+ Schools", "CBSE · ICSE · State Boards") for social proof.
 
-### Feature 2: Share Button + Multi-select on Student-wise Fee Report
+4. **Primary CTA preserved** — "Start Free 30-Day Trial" button stays prominent with the existing "Book Demo" secondary button.
 
-**File: `src/components/admin/reports/StudentPendingReport.tsx`**
-- Add a checkbox column for multi-selection (same pattern used in Students page for bulk parent link sharing)
-- Add "Select All" checkbox in header
-- Add a "Share via WhatsApp" button in the toolbar that:
-  - Shows count of selected students
-  - Opens confirmation dialog listing recipients
-  - Sequentially invokes `send-parent-link` edge function for each selected student (with 500ms throttle)
-  - Shows progress bar during sending
-- Only enabled when `statusFilter` shows pending students
+### Layout
 
-**File: `src/hooks/useFeeReports.ts`**
-- Add `parentPhone` and `accessToken` fields to `StudentFeeReport` interface so the report component has the data needed for sharing
+```text
+┌──────────────────────────────────────┐
+│  Badge: "AI-Powered School Mgmt"     │
+│                                      │
+│  Run Your School Smarter             │
+│  with AI                             │
+│  (subtitle paragraph)               │
+│                                      │
+│  [Start Free Trial]  [Book Demo]     │
+│  "No credit card · Indian schools"   │
+│                                      │
+│  ┌────────────────────────────────┐  │
+│  │ ● ● ●   EdZen AI Dashboard    │  │
+│  │┌──────────────────────────────┐│  │
+│  ││                              ││  │
+│  ││   (gradient placeholder      ││  │
+│  ││    with logo + text)         ││  │
+│  ││                              ││  │
+│  │└──────────────────────────────┘│  │
+│  └────────────────────────────────┘  │
+│                                      │
+│  NEP 2020 · CBSE · ICSE · 500+      │
+└──────────────────────────────────────┘
+```
 
-### Files to Create/Edit
+### Technical details
 
-| File | Action |
-|------|--------|
-| `supabase/functions/send-fee-reminders/index.ts` | New — daily cron function for automated reminders |
-| `supabase/config.toml` | Add cron schedule for send-fee-reminders |
-| Database migration | New `fee_reminder_logs` table to prevent duplicate sends |
-| `src/hooks/useFeeReports.ts` | Add `parentPhone`, `accessToken` to StudentFeeReport |
-| `src/components/admin/reports/StudentPendingReport.tsx` | Add checkboxes, select all, share button with progress |
-
-### Technical Details
-
-- The cron function uses `SUPABASE_SERVICE_ROLE_KEY` (not user auth) since it runs unattended
-- Reminder messages include the parent link for quick access
-- The multi-select share reuses the existing `send-parent-link` edge function and bulk-sharing pattern from the Students page
-- Fee reminder logs use a unique constraint on `(student_id, installment_id, reminder_type)` per academic period to prevent spam
+- The screenshot mockup uses pure CSS (no images): a `div` with traffic-light dots, a title bar, and an inner area with a `bg-gradient-to-br from-primary/10 via-primary/5 to-background` placeholder. A subtle `transform: perspective(1000px) rotateX(2deg)` adds depth.
+- Headline uses `bg-gradient-to-r from-primary to-teal-400 bg-clip-text text-transparent` for the accent words.
+- Responsive: stacks cleanly on mobile, mockup scales down gracefully.
+- One file changed, no new dependencies.
 
