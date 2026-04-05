@@ -423,9 +423,9 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                 <p className="text-sm font-medium">Or pay via UPI</p>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" asChild className="flex-1">
-                    <a href={`upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`}>
+                    <a href={upiPayUrl!}>
                       <QrCode className="h-4 w-4 mr-2" />
-                      Open UPI App
+                      Open UPI App {selectedTotal > 0 ? `• ${formatCurrency(selectedTotal)}` : ''}
                     </a>
                   </Button>
                 </div>
