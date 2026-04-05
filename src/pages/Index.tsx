@@ -62,32 +62,77 @@ export default function Index() {
       </nav>
 
       {/* Hero */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+      <section className="py-20 md:py-28 px-4 overflow-hidden">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
             <Sparkles className="h-4 w-4" />
             AI-Powered School Management
           </div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-            Run Your School Smarter <span className="text-primary">with AI</span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]">
+            Run Your School Smarter{" "}
+            <span className="bg-gradient-to-r from-primary to-teal-400 bg-clip-text text-transparent">
+              with AI
+            </span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10">
             Automate reports, track student performance, and reduce teacher workload — all in one simple platform.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
-            <Button size="lg" asChild className="min-w-[200px]">
+            <Button size="lg" asChild className="min-w-[200px] h-12 text-base">
               <Link to="/signup">
                 Start Free 30-Day Trial
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild>
+            <Button size="lg" variant="outline" asChild className="h-12 text-base">
               <Link to="/login">Book Demo</Link>
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground mt-3">
+          <p className="text-sm text-muted-foreground mt-4">
             No credit card required · Built for Indian schools · NEP aligned
           </p>
+
+          {/* Product Screenshot Mockup */}
+          <div className="mt-16 mx-auto max-w-4xl" style={{ perspective: "1200px" }}>
+            <div
+              className="rounded-xl border border-border/60 bg-card shadow-2xl shadow-primary/10 overflow-hidden"
+              style={{ transform: "rotateX(2deg)" }}
+            >
+              {/* Title Bar */}
+              <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/40">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-destructive/60" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
+                  <div className="w-3 h-3 rounded-full bg-green-400/60" />
+                </div>
+                <span className="text-xs text-muted-foreground ml-2 font-medium">
+                  EdZen AI — Dashboard
+                </span>
+              </div>
+              {/* Placeholder Content */}
+              <div className="h-[220px] sm:h-[300px] md:h-[380px] bg-gradient-to-br from-primary/10 via-primary/5 to-background flex flex-col items-center justify-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <GraduationCap className="h-7 w-7 text-primary" />
+                </div>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Dashboard Preview — Coming Soon
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Trust Indicators */}
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+            <Badge variant="outline" className="gap-1.5 px-3 py-1">
+              <Shield className="h-3 w-3" /> NEP 2020 Aligned
+            </Badge>
+            <Badge variant="outline" className="gap-1.5 px-3 py-1">
+              <BookOpen className="h-3 w-3" /> CBSE · ICSE · State Boards
+            </Badge>
+            <Badge variant="outline" className="gap-1.5 px-3 py-1">
+              <Users className="h-3 w-3" /> 500+ Schools
+            </Badge>
+          </div>
         </div>
       </section>
 
