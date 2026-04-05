@@ -491,6 +491,45 @@ export type Database = {
           },
         ]
       }
+      fee_reminder_logs: {
+        Row: {
+          id: string
+          installment_id: string
+          reminder_type: string
+          sent_at: string
+          student_id: string
+        }
+        Insert: {
+          id?: string
+          installment_id: string
+          reminder_type: string
+          sent_at?: string
+          student_id: string
+        }
+        Update: {
+          id?: string
+          installment_id?: string
+          reminder_type?: string
+          sent_at?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_reminder_logs_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_reminder_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_structure_classes: {
         Row: {
           auto_assign: boolean
