@@ -464,6 +464,32 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Floating selection bar */}
+      {selectedTotal > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg p-3">
+          <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {selectedInstallments.size} selected
+              </p>
+              <p className="text-lg font-bold">{formatCurrency(selectedTotal)}</p>
+            </div>
+            {upiPayUrl ? (
+              <Button asChild size="sm">
+                <a href={upiPayUrl}>
+                  Pay {formatCurrency(selectedTotal)}
+                </a>
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">Scan QR above to pay</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Spacer when floating bar is visible */}
+      {selectedTotal > 0 && <div className="h-20" />}
     </div>
   );
 }
