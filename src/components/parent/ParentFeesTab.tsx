@@ -15,11 +15,54 @@ interface ParentFeesTabProps {
 
 export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
   const [expandedInstallment, setExpandedInstallment] = useState<string | null>(null);
+  const [selectedInstallments, setSelectedInstallments] = useState<Set<string>>(new Set());
   const { student, school, fees, summary } = data;
 
-  const paidPercentage = summary.total_fee > 0 
-    ? Math.round((summary.total_paid / summary.total_fee) * 100) 
-    : 0;
+  // Build a map of installment id -> pending amount for unpaid installments
+  const unpaidInstallments = useMemo(() => {
+    const map = new Map<string, number>();
+    fees.forEach(fee => {
+      fee.installments.forEach(inst => {
+        const isPaid = inst.status === 'paid';
+        const proofVerified = inst.proof?.status === 'verified';
+        const proofPending = inst.proof?.status === 'pending';
+        if (!isPaid && !proofVerified && !proofPending) {
+          const pending = inst.amount - (inst.paid_amount || 0);
+          if (pending > 0) map.set(inst.id, pending);
+        }
+      });
+    });
+    return map;
+  }, [fees]);
+
+  const selectedTotal = useMemo(() => {
+    let total = 0;
+    selectedInstallments.forEach(id => {
+      total += unpaidInstallments.get(id) || 0;
+    });
+    return total;
+  }, [selectedInstallments, unpaidInstallments]);
+
+  const toggleInstallment = (id: string) => {
+    setSelectedInstallments(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedInstallments(new Set(unpaidInstallments.keys()));
+  };
+
+  const deselectAll = () => {
+    setSelectedInstallments(new Set());
+  };
+
+  const upiPayUrl = school.upi_id
+    ? `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}${selectedTotal > 0 ? `&am=${selectedTotal}` : ''}`
+    : null;
 
   if (!fees || fees.length === 0) {
     return (
