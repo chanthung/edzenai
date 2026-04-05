@@ -64,6 +64,10 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
     ? `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}${selectedTotal > 0 ? `&am=${selectedTotal}` : ''}`
     : null;
 
+  const paidPercentage = summary.total_fee > 0 
+    ? Math.round((summary.total_paid / summary.total_fee) * 100) 
+    : 0;
+
   if (!fees || fees.length === 0) {
     return (
       <Card className="card-elevated">
