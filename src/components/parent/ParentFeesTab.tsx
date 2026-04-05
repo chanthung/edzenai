@@ -1,10 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency } from '@/lib/format';
 import { QrCode, CreditCard, Phone, Mail, CheckCircle2, Clock, AlertTriangle, Upload } from 'lucide-react';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
 import { PaymentProofUploader } from '@/components/parent/PaymentProofUploader';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ParentViewData } from '@/hooks/useParentView';
 
 interface ParentFeesTabProps {
@@ -14,7 +15,54 @@ interface ParentFeesTabProps {
 
 export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
   const [expandedInstallment, setExpandedInstallment] = useState<string | null>(null);
+  const [selectedInstallments, setSelectedInstallments] = useState<Set<string>>(new Set());
   const { student, school, fees, summary } = data;
+
+  // Build a map of installment id -> pending amount for unpaid installments
+  const unpaidInstallments = useMemo(() => {
+    const map = new Map<string, number>();
+    fees.forEach(fee => {
+      fee.installments.forEach(inst => {
+        const isPaid = inst.status === 'paid';
+        const proofVerified = inst.proof?.status === 'verified';
+        const proofPending = inst.proof?.status === 'pending';
+        if (!isPaid && !proofVerified && !proofPending) {
+          const pending = inst.amount - (inst.paid_amount || 0);
+          if (pending > 0) map.set(inst.id, pending);
+        }
+      });
+    });
+    return map;
+  }, [fees]);
+
+  const selectedTotal = useMemo(() => {
+    let total = 0;
+    selectedInstallments.forEach(id => {
+      total += unpaidInstallments.get(id) || 0;
+    });
+    return total;
+  }, [selectedInstallments, unpaidInstallments]);
+
+  const toggleInstallment = (id: string) => {
+    setSelectedInstallments(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedInstallments(new Set(unpaidInstallments.keys()));
+  };
+
+  const deselectAll = () => {
+    setSelectedInstallments(new Set());
+  };
+
+  const upiPayUrl = school.upi_id
+    ? `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}${selectedTotal > 0 ? `&am=${selectedTotal}` : ''}`
+    : null;
 
   const paidPercentage = summary.total_fee > 0 
     ? Math.round((summary.total_paid / summary.total_fee) * 100) 
@@ -78,16 +126,14 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
               {school.upi_id ? (
                 <div 
                   onClick={() => {
-                    const upiUrl = `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`;
-                    window.location.href = upiUrl;
+                    if (upiPayUrl) window.location.href = upiPayUrl;
                   }}
                   className="flex flex-col items-center p-3 bg-background rounded-xl border hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer active:scale-95"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      const upiUrl = `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`;
-                      window.location.href = upiUrl;
+                    if ((e.key === 'Enter' || e.key === ' ') && upiPayUrl) {
+                      window.location.href = upiPayUrl;
                     }
                   }}
                 >
@@ -114,16 +160,23 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                     {summary.total_pending > 0 ? 'Scan to Pay School Fees' : 'All Fees Cleared!'}
                   </p>
                 </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {summary.total_pending > 0 
-                    ? `Pending: ${formatCurrency(summary.total_pending)}`
-                    : 'Save this QR for future payments'
+                <p className="text-sm text-muted-foreground mb-1">
+                  {selectedTotal > 0 
+                    ? `Selected: ${formatCurrency(selectedTotal)}`
+                    : summary.total_pending > 0 
+                      ? `Pending: ${formatCurrency(summary.total_pending)}`
+                      : 'Save this QR for future payments'
                   }
                 </p>
+                {selectedTotal > 0 && (
+                  <p className="text-xs text-primary font-medium mb-2">
+                    ✓ Amount will be pre-filled in UPI app
+                  </p>
+                )}
                 {school.upi_id && summary.total_pending > 0 && (
                   <Button variant="outline" size="sm" asChild>
-                    <a href={`upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`}>
-                      Open UPI App
+                    <a href={upiPayUrl!}>
+                      Open UPI App {selectedTotal > 0 ? `• ${formatCurrency(selectedTotal)}` : ''}
                     </a>
                   </Button>
                 )}
@@ -139,6 +192,23 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
       )}
 
       {/* Fee Details */}
+      {/* Select All / Deselect bar */}
+      {unpaidInstallments.size > 0 && (
+        <div className="flex items-center justify-between px-1">
+          <p className="text-sm text-muted-foreground">
+            Select installments to pay together
+          </p>
+          <Button
+            variant="link"
+            size="sm"
+            className="text-xs h-auto p-0"
+            onClick={selectedInstallments.size === unpaidInstallments.size ? deselectAll : selectAll}
+          >
+            {selectedInstallments.size === unpaidInstallments.size ? 'Deselect All' : 'Select All'}
+          </Button>
+        </div>
+      )}
+
       {fees.length === 0 ? (
         <Card className="card-elevated">
           <CardContent className="py-12 text-center">
@@ -189,10 +259,15 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                   const isExpanded = expandedInstallment === inst.id;
                   const canUploadProof = !isPaid && !proofPending && !proofVerified;
                   
+                  const isSelectable = unpaidInstallments.has(inst.id);
+                  const isSelected = selectedInstallments.has(inst.id);
+                  
                   return (
                     <div key={inst.id} className="space-y-2">
                       <div 
-                        className={`flex items-center justify-between p-3 rounded-lg ${
+                        className={`flex items-center gap-2 justify-between p-3 rounded-lg ${
+                          isSelected ? 'ring-2 ring-primary/40 ' : ''
+                        }${
                           isPaid || proofVerified
                             ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' 
                             : proofPending
@@ -204,6 +279,13 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                                   : 'bg-muted/50'
                         }`}
                       >
+                        {isSelectable && (
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleInstallment(inst.id)}
+                            className="mt-0.5 shrink-0"
+                          />
+                        )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             {isPaid || proofVerified ? (
@@ -341,9 +423,9 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                 <p className="text-sm font-medium">Or pay via UPI</p>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" asChild className="flex-1">
-                    <a href={`upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`}>
+                    <a href={upiPayUrl!}>
                       <QrCode className="h-4 w-4 mr-2" />
-                      Open UPI App
+                      Open UPI App {selectedTotal > 0 ? `• ${formatCurrency(selectedTotal)}` : ''}
                     </a>
                   </Button>
                 </div>
@@ -382,6 +464,32 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Floating selection bar */}
+      {selectedTotal > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg p-3">
+          <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {selectedInstallments.size} selected
+              </p>
+              <p className="text-lg font-bold">{formatCurrency(selectedTotal)}</p>
+            </div>
+            {upiPayUrl ? (
+              <Button asChild size="sm">
+                <a href={upiPayUrl}>
+                  Pay {formatCurrency(selectedTotal)}
+                </a>
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">Scan QR above to pay</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Spacer when floating bar is visible */}
+      {selectedTotal > 0 && <div className="h-20" />}
     </div>
   );
 }
