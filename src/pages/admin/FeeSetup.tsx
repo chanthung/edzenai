@@ -56,6 +56,7 @@ export default function FeeSetup() {
   
   const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "", due_date: "" });
+  const [defaultDueDate, setDefaultDueDate] = useState("");
   const [newInstallment, setNewInstallment] = useState({ name: "", amount: "", due_date: "" });
 
   const handleCreateCategory = async () => {
@@ -119,7 +120,7 @@ export default function FeeSetup() {
         academic_year_id: currentYearId,
         fee_category_id: newStructure.fee_category_id,
         total_amount: parseFloat(newStructure.total_amount),
-        due_date: newStructure.due_date || undefined,
+        due_date: defaultDueDate || undefined,
       });
       toast.success("Fee structure created");
       setStructureDialogOpen(false);
@@ -225,7 +226,24 @@ export default function FeeSetup() {
             </Card>
           ) : (
             <>
-              <div className="flex justify-end mb-4">
+              <div className="flex items-end justify-between gap-4 mb-4 flex-wrap">
+                <div className="flex items-end gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Default Due Date (applies to all new fees)</Label>
+                    <Input
+                      type="date"
+                      className="w-[200px]"
+                      value={defaultDueDate}
+                      onChange={(e) => setDefaultDueDate(e.target.value)}
+                    />
+                  </div>
+                  {defaultDueDate && (
+                    <Badge variant="secondary" className="mb-1">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Due: {formatDate(defaultDueDate)}
+                    </Badge>
+                  )}
+                </div>
                 <RestrictedButton isRestricted={isRestricted}>
                   <Dialog open={structureDialogOpen} onOpenChange={setStructureDialogOpen}>
                     <DialogTrigger asChild>
@@ -269,15 +287,15 @@ export default function FeeSetup() {
                           onChange={(e) => setNewStructure({ ...newStructure, total_amount: e.target.value })}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Due Date</Label>
-                        <Input
-                          type="date"
-                          value={newStructure.due_date}
-                          onChange={(e) => setNewStructure({ ...newStructure, due_date: e.target.value })}
-                        />
-                        <p className="text-xs text-muted-foreground">Default due date for the initial installment. Can be edited later per installment.</p>
-                      </div>
+                      {defaultDueDate && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+                          <Calendar className="h-4 w-4" />
+                          <span>Due date: <span className="font-medium text-foreground">{formatDate(defaultDueDate)}</span></span>
+                        </div>
+                      )}
+                      {!defaultDueDate && (
+                        <p className="text-xs text-amber-600">No default due date set. A date 1 month from today will be used.</p>
+                      )}
                     </div>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setStructureDialogOpen(false)}>Cancel</Button>
