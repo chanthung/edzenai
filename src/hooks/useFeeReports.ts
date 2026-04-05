@@ -32,6 +32,7 @@ export interface FeeReportSummary {
   totalCollected: number;
   totalPending: number;
   collectionRate: number;
+  totalCollectedThisMonth: number;
   classWiseReports: ClassFeeReport[];
   studentReports: StudentFeeReport[];
 }
@@ -147,7 +148,7 @@ export function useFeeReports() {
             totalFees,
             collectedFees,
             pendingFees,
-            collectionRate,
+            collectionRate: Math.min(collectionRate, 100),
           };
         })
         .sort((a, b) => a.className.localeCompare(b.className));
@@ -159,7 +160,18 @@ export function useFeeReports() {
       const totalFeesExpected = studentReports.reduce((sum, s) => sum + s.totalFees, 0);
       const totalCollected = studentReports.reduce((sum, s) => sum + s.paidAmount, 0);
       const totalPending = studentReports.reduce((sum, s) => sum + s.pendingAmount, 0);
-      const collectionRate = totalFeesExpected > 0 ? (totalCollected / totalFeesExpected) * 100 : 0;
+      const collectionRate = totalFeesExpected > 0 ? Math.min((totalCollected / totalFeesExpected) * 100, 100) : 0;
+
+      // Calculate this month's collection
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const totalCollectedThisMonth = (payments || [])
+        .filter(p => {
+          const d = new Date(p.payment_date);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        })
+        .reduce((sum, p) => sum + Number(p.amount_paid), 0);
 
       return {
         totalStudents,
@@ -169,6 +181,7 @@ export function useFeeReports() {
         totalCollected,
         totalPending,
         collectionRate,
+        totalCollectedThisMonth,
         classWiseReports,
         studentReports,
       };

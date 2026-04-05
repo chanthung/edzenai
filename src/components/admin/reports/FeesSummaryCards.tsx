@@ -10,6 +10,7 @@ interface FeesSummaryCardsProps {
   totalCollected: number;
   totalPending: number;
   collectionRate: number;
+  totalCollectedThisMonth?: number;
 }
 
 export function FeesSummaryCards({
@@ -19,11 +20,12 @@ export function FeesSummaryCards({
   totalCollected,
   totalPending,
   collectionRate,
+  totalCollectedThisMonth = 0,
 }: FeesSummaryCardsProps) {
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {[...Array(5)].map((_, i) => (
           <Card key={i} className="card-elevated">
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-24" />
@@ -37,12 +39,22 @@ export function FeesSummaryCards({
     );
   }
 
+  const cappedRate = Math.min(collectionRate, 100);
+
   const cards = [
+    {
+      title: "Collected This Month",
+      value: formatCurrency(totalCollectedThisMonth),
+      icon: CheckCircle2,
+      description: "Current month collection",
+      iconColor: "text-status-paid",
+      bgColor: "bg-status-paid/10",
+    },
     {
       title: "Total Collected",
       value: formatCurrency(totalCollected),
       icon: IndianRupee,
-      description: `${collectionRate.toFixed(1)}% collection rate`,
+      description: `${cappedRate.toFixed(1)}% collection rate`,
       iconColor: "text-status-paid",
       bgColor: "bg-status-paid/10",
     },
@@ -64,16 +76,16 @@ export function FeesSummaryCards({
     },
     {
       title: "Collection Rate",
-      value: `${collectionRate.toFixed(1)}%`,
-      icon: collectionRate >= 75 ? TrendingUp : TrendingDown,
-      description: collectionRate >= 75 ? "On track" : "Needs attention",
-      iconColor: collectionRate >= 75 ? "text-status-paid" : "text-status-overdue",
-      bgColor: collectionRate >= 75 ? "bg-status-paid/10" : "bg-status-overdue/10",
+      value: `${cappedRate.toFixed(1)}%`,
+      icon: cappedRate >= 75 ? TrendingUp : TrendingDown,
+      description: cappedRate >= 75 ? "On track" : "Needs attention",
+      iconColor: cappedRate >= 75 ? "text-status-paid" : "text-status-overdue",
+      bgColor: cappedRate >= 75 ? "bg-status-paid/10" : "bg-status-overdue/10",
     },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       {cards.map((card) => (
         <Card key={card.title} className="card-elevated">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
