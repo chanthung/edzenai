@@ -262,6 +262,13 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                                   : 'bg-muted/50'
                         }`}
                       >
+                        {isSelectable && (
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleInstallment(inst.id)}
+                            className="mt-0.5 shrink-0"
+                          />
+                        )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             {isPaid || proofVerified ? (
