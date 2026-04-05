@@ -126,16 +126,14 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
               {school.upi_id ? (
                 <div 
                   onClick={() => {
-                    const upiUrl = `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`;
-                    window.location.href = upiUrl;
+                    if (upiPayUrl) window.location.href = upiPayUrl;
                   }}
                   className="flex flex-col items-center p-3 bg-background rounded-xl border hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer active:scale-95"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      const upiUrl = `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`;
-                      window.location.href = upiUrl;
+                    if ((e.key === 'Enter' || e.key === ' ') && upiPayUrl) {
+                      window.location.href = upiPayUrl;
                     }
                   }}
                 >
@@ -162,16 +160,23 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                     {summary.total_pending > 0 ? 'Scan to Pay School Fees' : 'All Fees Cleared!'}
                   </p>
                 </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {summary.total_pending > 0 
-                    ? `Pending: ${formatCurrency(summary.total_pending)}`
-                    : 'Save this QR for future payments'
+                <p className="text-sm text-muted-foreground mb-1">
+                  {selectedTotal > 0 
+                    ? `Selected: ${formatCurrency(selectedTotal)}`
+                    : summary.total_pending > 0 
+                      ? `Pending: ${formatCurrency(summary.total_pending)}`
+                      : 'Save this QR for future payments'
                   }
                 </p>
+                {selectedTotal > 0 && (
+                  <p className="text-xs text-primary font-medium mb-2">
+                    ✓ Amount will be pre-filled in UPI app
+                  </p>
+                )}
                 {school.upi_id && summary.total_pending > 0 && (
                   <Button variant="outline" size="sm" asChild>
-                    <a href={`upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}`}>
-                      Open UPI App
+                    <a href={upiPayUrl!}>
+                      Open UPI App {selectedTotal > 0 ? `• ${formatCurrency(selectedTotal)}` : ''}
                     </a>
                   </Button>
                 )}
