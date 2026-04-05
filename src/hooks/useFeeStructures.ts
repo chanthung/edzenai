@@ -34,6 +34,7 @@ export interface FeeStructureInsert {
   academic_year_id: string;
   fee_category_id: string;
   total_amount: number;
+  due_date?: string;
 }
 
 export interface InstallmentInsert {
@@ -87,14 +88,17 @@ export function useCreateFeeStructure() {
       if (error) throw error;
 
       // Auto-create default installment with full amount
-      const defaultDueDate = new Date();
-      defaultDueDate.setMonth(defaultDueDate.getMonth() + 1);
+      const dueDate = structure.due_date || (() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() + 1);
+        return d.toISOString().split('T')[0];
+      })();
       
       await supabase.from('installments').insert({
         fee_structure_id: feeStructure.id,
         name: 'Full Payment',
         amount: structure.total_amount,
-        due_date: defaultDueDate.toISOString().split('T')[0],
+        due_date: dueDate,
         display_order: 1,
       });
 

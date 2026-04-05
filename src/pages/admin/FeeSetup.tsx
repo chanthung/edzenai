@@ -55,7 +55,7 @@ export default function FeeSetup() {
   const [editCategoryData, setEditCategoryData] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   
   const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
-  const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "" });
+  const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "", due_date: "" });
   const [newInstallment, setNewInstallment] = useState({ name: "", amount: "", due_date: "" });
 
   const handleCreateCategory = async () => {
