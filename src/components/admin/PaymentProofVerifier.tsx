@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -117,6 +118,13 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
         installmentId: proof.installments.id,
         amount: proof.installments.amount,
       });
+
+      // Fire-and-forget WhatsApp confirmation
+      supabase.functions.invoke('send-payment-confirmation', {
+        body: { studentId: proof.students.id, amount: proof.installments.amount },
+      }).then(({ error }) => {
+        if (error) console.warn('WhatsApp confirmation failed:', error);
+      }).catch(console.warn);
 
       toast.success('Payment verified and recorded successfully');
       handleClose();
