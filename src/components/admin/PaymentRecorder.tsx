@@ -243,6 +243,19 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
       }
       
       toast.success(`${selectedInstallments.length} payment${selectedInstallments.length > 1 ? 's' : ''} recorded successfully`);
+      
+      // Send WhatsApp payment confirmation (fire-and-forget)
+      try {
+        const { data: waResult } = await supabase.functions.invoke('send-payment-confirmation', {
+          body: { studentId: student.id, amount: selectedTotal },
+        });
+        if (waResult?.success) {
+          toast.success("WhatsApp payment confirmation sent to parent", { duration: 3000 });
+        }
+      } catch (waErr) {
+        console.warn("WhatsApp confirmation failed (non-blocking):", waErr);
+      }
+
       setSelectedInstallments([]);
       setReferenceNumber("");
     } catch (error: any) {

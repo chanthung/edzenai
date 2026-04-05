@@ -311,7 +311,7 @@ export default function Dashboard() {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground text-center">
-                      {feeReports.collectionRate.toFixed(1)}% collection rate • {feeReports.studentsWithPending} student{feeReports.studentsWithPending !== 1 ? 's' : ''} with pending fees
+                      {Math.min(feeReports.collectionRate, 100).toFixed(1)}% collection rate • {feeReports.studentsWithPending} student{feeReports.studentsWithPending !== 1 ? 's' : ''} with pending fees
                     </p>
                   </div>
                 ) : (
@@ -377,6 +377,7 @@ export default function Dashboard() {
             totalCollected={feeReports?.totalCollected || 0}
             totalPending={feeReports?.totalPending || 0}
             collectionRate={feeReports?.collectionRate || 0}
+            totalCollectedThisMonth={feeReports?.totalCollectedThisMonth || 0}
           />
 
           {/* Month-wise Collection Report */}
