@@ -70,7 +70,7 @@ export function useFeeReports() {
       // Fetch all payments
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
-        .select('student_id, installment_id, amount_paid');
+        .select('student_id, installment_id, amount_paid, payment_date');
 
       if (paymentsError) throw paymentsError;
 
