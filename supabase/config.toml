@@ -21,6 +21,8 @@ project_id = "fwnvfkaihuqdfdcwkakj"
     verify_jwt = false
   [functions.send-parent-link]
     verify_jwt = false
+  [functions.send-fee-reminders]
+    verify_jwt = false
   [functions.send-payment-confirmation]
     verify_jwt = false
   [functions.signup-school]

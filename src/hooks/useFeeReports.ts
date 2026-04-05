@@ -18,6 +18,8 @@ export interface StudentFeeReport {
   className: string | null;
   section: string | null;
   rollNumber: string | null;
+  parentPhone: string | null;
+  accessToken: string | null;
   totalFees: number;
   paidAmount: number;
   pendingAmount: number;
@@ -48,7 +50,7 @@ export function useFeeReports() {
       // Fetch all students
       const { data: students, error: studentsError } = await supabase
         .from('students')
-        .select('id, name, class_name, section, roll_number')
+        .select('id, name, class_name, section, roll_number, parent_phone, access_token')
         .eq('school_id', school.id);
 
       if (studentsError) throw studentsError;
@@ -112,6 +114,8 @@ export function useFeeReports() {
           className: student.class_name,
           section: student.section,
           rollNumber: student.roll_number,
+          parentPhone: student.parent_phone,
+          accessToken: student.access_token,
           totalFees,
           paidAmount,
           pendingAmount,
