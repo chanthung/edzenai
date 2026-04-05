@@ -242,10 +242,15 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                   const isExpanded = expandedInstallment === inst.id;
                   const canUploadProof = !isPaid && !proofPending && !proofVerified;
                   
+                  const isSelectable = unpaidInstallments.has(inst.id);
+                  const isSelected = selectedInstallments.has(inst.id);
+                  
                   return (
                     <div key={inst.id} className="space-y-2">
                       <div 
-                        className={`flex items-center justify-between p-3 rounded-lg ${
+                        className={`flex items-center gap-2 justify-between p-3 rounded-lg ${
+                          isSelected ? 'ring-2 ring-primary/40 ' : ''
+                        }${
                           isPaid || proofVerified
                             ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' 
                             : proofPending
