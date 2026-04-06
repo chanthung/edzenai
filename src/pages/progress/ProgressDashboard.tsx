@@ -174,50 +174,58 @@ export default function ProgressDashboard() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Students</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-muted-foreground" />
-              <span className="text-2xl font-bold">{classProgress.length}</span>
+        <Card className="rounded-xl border-border/50 shadow-sm">
+          <CardContent className="pt-5 pb-4 px-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Total Students</p>
+                <p className="text-2xl font-bold tracking-tight">{classProgress.length}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Class Average</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-muted-foreground" />
-              <span className="text-2xl font-bold">{averagePercentage}%</span>
+        <Card className="rounded-xl border-border/50 shadow-sm">
+          <CardContent className="pt-5 pb-4 px-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Class Average</p>
+                <p className="text-2xl font-bold tracking-tight">{averagePercentage}%</p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Improving</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-              <span className="text-2xl font-bold text-emerald-600">{improvingCount}</span>
+        <Card className="rounded-xl border-border/50 shadow-sm">
+          <CardContent className="pt-5 pb-4 px-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Improving</p>
+                <p className="text-2xl font-bold tracking-tight text-emerald-600">{improvingCount}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">At Risk</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <span className="text-2xl font-bold text-red-600">{atRiskCount}</span>
+        <Card className="rounded-xl border-border/50 shadow-sm">
+          <CardContent className="pt-5 pb-4 px-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">At Risk</p>
+                <p className="text-2xl font-bold tracking-tight text-red-600">{atRiskCount}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -225,16 +233,20 @@ export default function ProgressDashboard() {
 
       {/* Charts Section */}
       {classProgress.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-6 mt-6">
-          <ClassDistributionChart 
-            data={distributionData} 
-            totalStudents={classProgress.length}
-            title="Score Distribution"
-          />
-          <SubjectComparisonChart 
-            data={subjectChartData}
-            title="Subject Averages"
-          />
+        <div className="grid md:grid-cols-2 gap-4 mt-6">
+          <Card className="rounded-xl border-border/50 shadow-sm p-1">
+            <ClassDistributionChart 
+              data={distributionData} 
+              totalStudents={classProgress.length}
+              title="Score Distribution"
+            />
+          </Card>
+          <Card className="rounded-xl border-border/50 shadow-sm p-1">
+            <SubjectComparisonChart 
+              data={subjectChartData}
+              title="Subject Averages"
+            />
+          </Card>
         </div>
       )}
 
@@ -252,7 +264,7 @@ export default function ProgressDashboard() {
       )}
 
       {/* Student List */}
-      <Card className="mt-6">
+      <Card className="mt-6 rounded-xl border-border/50 shadow-sm">
         <CardHeader>
           <CardTitle>Student Progress</CardTitle>
         </CardHeader>
@@ -281,7 +293,7 @@ export default function ProgressDashboard() {
               {filteredStudents.map((student) => (
                 <div
                   key={student.studentId}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-card hover:bg-muted/40 transition-all"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
