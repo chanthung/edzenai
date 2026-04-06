@@ -256,7 +256,7 @@ export default function Assessments() {
           </Dialog>
         </div>
 
-        <Card>
+        <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader>
             <CardTitle>Assessments</CardTitle>
           </CardHeader>
