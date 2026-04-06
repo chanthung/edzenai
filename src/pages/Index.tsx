@@ -310,14 +310,14 @@ export default function Index() {
       </section>
 
       {/* Security & Compliance Section */}
-      <section className="py-20 px-4 bg-white dark:bg-background">
+      <section className="py-20 px-4 bg-card">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-4">
-            <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 mb-6">
+            <Badge className="bg-primary/10 text-primary border-primary/20 mb-6">
               <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
               GDPR & DPDP Compliant
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-foreground">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Bank-Grade Security for Your School's Future
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -347,7 +347,7 @@ export default function Index() {
             />
           </div>
           <div className="text-center mt-10">
-            <Button variant="outline" size="lg" className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-950">
+            <Button variant="outline" size="lg">
               <FileText className="mr-2 h-4 w-4" />
               Security Whitepaper
             </Button>
@@ -507,10 +507,10 @@ function TrustItem({ icon: Icon, title, description }: { icon: typeof Shield; ti
 
 function SecurityCard({ icon: Icon, title, description }: { icon: typeof Shield; title: string; description: string }) {
   return (
-    <Card className="border border-border/60 bg-card shadow-sm hover:shadow-md transition-shadow">
+    <Card className="border border-border/60 bg-card hover:shadow-md transition-shadow">
       <CardContent className="pt-6">
-        <div className="w-11 h-11 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-4">
-          <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+          <Icon className="h-5 w-5 text-primary" />
         </div>
         <h3 className="font-semibold text-base mb-2">{title}</h3>
         <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
