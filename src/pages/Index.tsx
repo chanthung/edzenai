@@ -38,8 +38,8 @@ import { cn } from "@/lib/utils";
 export default function Index() {
   const { data: pricing } = useSubscriptionPricing();
   const { data: discountTiers = [] } = useVolumeDiscounts();
-  const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
-  const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
+  const starterRate = pricing?.find((p) => p.plan === "starter")?.per_student_fee ?? 8;
+  const proRate = pricing?.find((p) => p.plan === "pro")?.per_student_fee ?? 10;
 
   return (
     <div className="min-h-screen bg-background">
@@ -58,8 +58,12 @@ export default function Index() {
             </div>
           </div>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+            <a href="#features" className="hover:text-foreground transition-colors">
+              Features
+            </a>
+            <a href="#pricing" className="hover:text-foreground transition-colors">
+              Pricing
+            </a>
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm">
@@ -78,16 +82,13 @@ export default function Index() {
           {/* Left */}
           <div className="text-center lg:text-left">
             <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-6">
-              Know Exactly What{" "}
-              <br className="hidden sm:block" />
-              You{" "}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Owe
-              </span>{" "}
-              — No Surprises
+              Know Exactly What <br className="hidden sm:block" />
+              You <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Owe</span> —
+              No Surprises
             </h1>
             <p className="text-lg text-muted-foreground max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed">
-              Clear, real-time fee visibility for parents and schools. Eliminate manual tracking and miscommunication with a single source of truth.
+              Clear, real-time fee visibility for parents and schools. Eliminate manual tracking and miscommunication
+              with a single source of truth.
             </p>
             <div className="flex flex-col sm:flex-row items-center lg:items-start gap-3">
               <Button size="lg" asChild className="min-w-[180px] h-12 text-base shadow-md shadow-primary/20">
@@ -148,7 +149,9 @@ export default function Index() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 text-muted-foreground/60">
             {["ACADEMY", "Lumine", "Edvence", "GLOBAL-X", "Summit Prep"].map((name) => (
-              <span key={name} className="font-bold text-sm tracking-wide">{name}</span>
+              <span key={name} className="font-bold text-sm tracking-wide">
+                {name}
+              </span>
             ))}
           </div>
         </div>
@@ -164,10 +167,26 @@ export default function Index() {
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <ProblemCard icon={MessageSquareWarning} title="Fragmented comms" description="Scattered in emails, WhatsApp, papers, and phone calls." />
-            <ProblemCard icon={Receipt} title="Lost receipts" description="No digital archive of past payments leading to proof disputes." />
-            <ProblemCard icon={BarChart3} title="Unclear balances" description="Parents never know the remaining fees or upcoming due dates." />
-            <ProblemCard icon={AlertTriangle} title="Late surprises" description="Monthly fees and add-ons keep creating unnecessary stress." />
+            <ProblemCard
+              icon={MessageSquareWarning}
+              title="Fragmented comms"
+              description="Scattered in emails, WhatsApp, papers, and phone calls."
+            />
+            <ProblemCard
+              icon={Receipt}
+              title="Lost receipts"
+              description="No digital archive of past payments leading to proof disputes."
+            />
+            <ProblemCard
+              icon={BarChart3}
+              title="Unclear balances"
+              description="Parents never know the remaining fees or upcoming due dates."
+            />
+            <ProblemCard
+              icon={AlertTriangle}
+              title="Late surprises"
+              description="Monthly fees and add-ons keep creating unnecessary stress."
+            />
           </div>
         </div>
       </section>
@@ -196,7 +215,8 @@ export default function Index() {
           <div>
             <h2 className="text-3xl md:text-4xl font-bold mb-6">A Single Source of Truth</h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">
-              We prioritize clarity over complexity. Our dashboard shows the Status First, so you never have to interpret the numbers yourself.
+              We prioritize clarity over complexity. Our dashboard shows the Status First, so you never have to
+              interpret the numbers yourself.
             </p>
             <div className="space-y-4">
               <SolutionBullet text="Instant status verification" />
@@ -245,7 +265,9 @@ export default function Index() {
             <Card className="rounded-3xl border-primary/40 shadow-lg shadow-primary/8 relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-accent" />
               <div className="absolute -top-0 right-6 top-0">
-                <Badge className="bg-primary text-primary-foreground rounded-b-xl rounded-t-none px-4 py-1.5 text-xs">Recommended</Badge>
+                <Badge className="bg-primary text-primary-foreground rounded-b-xl rounded-t-none px-4 py-1.5 text-xs">
+                  Recommended
+                </Badge>
               </div>
               <CardContent className="p-8 pt-10">
                 <h3 className="text-xl font-bold mb-1">Pro</h3>
@@ -279,7 +301,8 @@ export default function Index() {
             <div className="flex flex-wrap justify-center gap-3 mt-8">
               {discountTiers.map((t) => (
                 <Badge key={t.id} variant="outline" className="text-xs">
-                  {t.max_students != null ? `${t.min_students}–${t.max_students}` : `${t.min_students}+`} students → {t.discount_percent}% off
+                  {t.max_students != null ? `${t.min_students}–${t.max_students}` : `${t.min_students}+`} students →{" "}
+                  {t.discount_percent}% off
                 </Badge>
               ))}
             </div>
@@ -298,9 +321,21 @@ export default function Index() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">3 Steps to Clarity</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <StepCard step={1} title="School uploads data" description="Administrators sync current fee data via secure API or CSV upload." />
-            <StepCard step={2} title="Parent opens link" description="No app to download, no login to remember. Access via secure unique link." />
-            <StepCard step={3} title="View status" description="Parents see real-time status and pay reliably with zero friction." />
+            <StepCard
+              step={1}
+              title="School uploads data"
+              description="Administrators sync current fee data via secure API or CSV upload."
+            />
+            <StepCard
+              step={2}
+              title="Parent opens link"
+              description="No app to download, no login to remember. Access via secure unique link."
+            />
+            <StepCard
+              step={3}
+              title="View status"
+              description="Parents see real-time status and pay reliably with zero friction."
+            />
           </div>
         </div>
       </section>
@@ -312,12 +347,36 @@ export default function Index() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Built for Transparency</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard icon={Lock} title="No Login Required" description="Access everything through a secure, unique access token for each student." />
-            <FeatureCard icon={Shield} title="Secure Access" description="Bank-grade encryption for all financial records and student identity data." />
-            <FeatureCard icon={BarChart3} title="Installment Breakdown" description="Automated fee schedules and installment tracking based on your plan." />
-            <FeatureCard icon={AlertTriangle} title="Dynamic Due Dates" description="Automated reminders adjusted based on your personalized payment plan." />
-            <FeatureCard icon={IndianRupee} title="QR/UPI Payment" description="Scan and pay in seconds. Auto-updates your ledger status instantly." />
-            <FeatureCard icon={RefreshCw} title="Instant Sync" description="Everything works in real-time. As soon as you pay, your records update." />
+            <FeatureCard
+              icon={Lock}
+              title="No Login Required"
+              description="Access everything through a secure, unique access token for each student."
+            />
+            <FeatureCard
+              icon={Shield}
+              title="Secure Access"
+              description="Bank-grade encryption for all financial records and student identity data."
+            />
+            <FeatureCard
+              icon={BarChart3}
+              title="Installment Breakdown"
+              description="Automated fee schedules and installment tracking based on your plan."
+            />
+            <FeatureCard
+              icon={AlertTriangle}
+              title="Dynamic Due Dates"
+              description="Automated reminders adjusted based on your personalized payment plan."
+            />
+            <FeatureCard
+              icon={IndianRupee}
+              title="QR/UPI Payment"
+              description="Scan and pay in seconds. Auto-updates your ledger status instantly."
+            />
+            <FeatureCard
+              icon={RefreshCw}
+              title="Instant Sync"
+              description="Everything works in real-time. As soon as you pay, your records update."
+            />
           </div>
         </div>
       </section>
@@ -330,8 +389,16 @@ export default function Index() {
               <p className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">For Parents</p>
               <h3 className="text-2xl font-bold mb-6">Confidence in Every Payment</h3>
               <div className="space-y-4">
-                <BenefitItem icon={CheckCircle2} title="No surprises" description="Know exactly what's due, including tuition, transport, and extras." />
-                <BenefitItem icon={Clock} title="Always know status" description="Access your full payment history and download receipts anytime." />
+                <BenefitItem
+                  icon={CheckCircle2}
+                  title="No surprises"
+                  description="Know exactly what's due, including tuition, transport, and extras."
+                />
+                <BenefitItem
+                  icon={Clock}
+                  title="Always know status"
+                  description="Access your full payment history and download receipts anytime."
+                />
               </div>
             </CardContent>
           </Card>
@@ -340,8 +407,16 @@ export default function Index() {
               <p className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">For Schools</p>
               <h3 className="text-2xl font-bold mb-6">Efficiency in Every Collection</h3>
               <div className="space-y-4">
-                <BenefitItem icon={TrendingUp} title="Reduce fee queries" description="Cut admin calls by 70% by giving parents self-service access." />
-                <BenefitItem icon={Zap} title="Save admin time" description="Automated fee collection means your team spends less time chasing spreadsheets." />
+                <BenefitItem
+                  icon={TrendingUp}
+                  title="Reduce fee queries"
+                  description="Cut admin calls by 70% by giving parents self-service access."
+                />
+                <BenefitItem
+                  icon={Zap}
+                  title="Save admin time"
+                  description="Automated fee collection means your team spends less time chasing spreadsheets."
+                />
               </div>
             </CardContent>
           </Card>
@@ -375,7 +450,12 @@ export default function Index() {
             <Button size="lg" variant="secondary" asChild className="h-12 text-base min-w-[160px]">
               <Link to="/signup">Get Started</Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="h-12 text-base min-w-[160px] border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="h-12 text-base min-w-[160px] border-primary-foreground/30 text-primary hover:bg-primary-foreground/10"
+            >
               <Link to="/login">Book a Demo</Link>
             </Button>
           </div>
@@ -401,24 +481,34 @@ export default function Index() {
             <div>
               <p className="font-semibold text-sm mb-3 uppercase tracking-wider text-muted-foreground">Platform</p>
               <nav className="space-y-2 text-sm">
-                <Link to="/signup" className="block text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-                <Link to="/pricing" className="block text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
-                <Link to="/login" className="block text-muted-foreground hover:text-foreground transition-colors">School Portal</Link>
+                <Link to="/signup" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Features
+                </Link>
+                <Link to="/pricing" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Pricing
+                </Link>
+                <Link to="/login" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  School Portal
+                </Link>
               </nav>
             </div>
             <div>
               <p className="font-semibold text-sm mb-3 uppercase tracking-wider text-muted-foreground">Legal</p>
               <nav className="space-y-2 text-sm">
-                <Link to="/privacy" className="block text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
-                <Link to="/terms" className="block text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
-                <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">Contact Support</Link>
+                <Link to="/privacy" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Privacy Policy
+                </Link>
+                <Link to="/terms" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Terms of Service
+                </Link>
+                <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Contact Support
+                </Link>
               </nav>
             </div>
           </div>
           <div className="border-t border-border/30 pt-6 text-center">
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} EdZen AI. All rights reserved.
-            </p>
+            <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} EdZen AI. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -428,7 +518,15 @@ export default function Index() {
 
 /* ── Sub-components ─────────────────────────────────────────────── */
 
-function ProblemCard({ icon: Icon, title, description }: { icon: typeof AlertTriangle; title: string; description: string }) {
+function ProblemCard({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: typeof AlertTriangle;
+  title: string;
+  description: string;
+}) {
   return (
     <Card className="rounded-2xl border-border/50 hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -490,7 +588,15 @@ function PricingFeature({ children, included = false }: { children: React.ReactN
   );
 }
 
-function BenefitItem({ icon: Icon, title, description }: { icon: typeof CheckCircle2; title: string; description: string }) {
+function BenefitItem({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: typeof CheckCircle2;
+  title: string;
+  description: string;
+}) {
   return (
     <div className="flex items-start gap-3">
       <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
