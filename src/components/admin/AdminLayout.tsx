@@ -138,12 +138,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       <div className="flex">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-sidebar border-r border-sidebar-border">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-sidebar border-r border-sidebar-border backdrop-blur-sm">
           <div className="flex flex-col h-full">
             {/* Logo */}
             <div className="p-6 border-b border-sidebar-border">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-sidebar-primary flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-sidebar-primary flex items-center justify-center shadow-sm">
                   <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -174,7 +174,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     to={isProgressLocked ? '#' : item.href}
                     onClick={isProgressLocked ? (e) => e.preventDefault() : undefined}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
                       location.pathname === item.href
                         ? "bg-sidebar-primary text-sidebar-primary-foreground"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

@@ -43,10 +43,10 @@ export default function ParentView() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-primary text-primary-foreground">
-        <div className="max-w-2xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
+      <header className="bg-gradient-to-br from-primary to-primary/85 text-primary-foreground">
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-12 h-12 rounded-2xl bg-primary-foreground/20 flex items-center justify-center backdrop-blur-sm">
               <GraduationCap className="h-6 w-6" />
             </div>
             <div>
@@ -55,7 +55,7 @@ export default function ParentView() {
             </div>
           </div>
           
-          <div className="bg-primary-foreground/10 rounded-xl p-4">
+          <div className="bg-primary-foreground/10 rounded-2xl p-5 backdrop-blur-sm">
             <p className="text-primary-foreground/80 text-sm mb-1">Student</p>
             <p className="font-semibold text-xl">{student.name}</p>
             {student.class_name && (
