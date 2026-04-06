@@ -25,6 +25,13 @@ import {
   Lock,
   CloudUpload,
   IndianRupee,
+  Eye,
+  MessageSquareWarning,
+  Receipt,
+  Clock,
+  Zap,
+  RefreshCw,
+  Quote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,10 +44,10 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <nav className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center">
               <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
             <div className="flex flex-col">
@@ -50,195 +57,172 @@ export default function Index() {
               </span>
             </div>
           </div>
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+            <a href="#features" className="hover:text-foreground transition-colors">Features</a>
+            <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+          </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/login">Sign In</Link>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/login">Login</Link>
             </Button>
             <Button asChild size="sm">
-              <Link to="/signup">Start Free Trial</Link>
+              <Link to="/signup">Get Started</Link>
             </Button>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="py-20 md:py-28 px-4 overflow-hidden">
-        <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
-            <Sparkles className="h-4 w-4" />
-            AI-Powered School Management
-          </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]">
-            Run Your School Smarter{" "}
-             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-               with AI
-             </span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10">
-            Automate reports, track student performance, and reduce teacher workload — all in one simple platform.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
-            <Button size="lg" asChild className="min-w-[200px] h-12 text-base">
-              <Link to="/signup">
-                Start Free 30-Day Trial
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild className="h-12 text-base">
-              <Link to="/login">Book Demo</Link>
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground mt-4">
-            No credit card required · Built for Indian schools · NEP aligned
-          </p>
-
-          {/* Product Screenshot Mockup */}
-          <div className="mt-16 mx-auto max-w-4xl" style={{ perspective: "1200px" }}>
-            <div
-              className="rounded-xl border border-border/60 bg-card shadow-2xl shadow-primary/10 overflow-hidden"
-              style={{ transform: "rotateX(2deg)" }}
-            >
-              {/* Title Bar */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/40">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
-                  <div className="w-3 h-3 rounded-full bg-green-400/60" />
-                </div>
-                <span className="text-xs text-muted-foreground ml-2 font-medium">
-                  EdZen AI — Dashboard
-                </span>
-              </div>
-              {/* Placeholder Content */}
-              <div className="h-[220px] sm:h-[300px] md:h-[380px] bg-gradient-to-br from-primary/10 via-primary/5 to-background flex flex-col items-center justify-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
-                  <GraduationCap className="h-7 w-7 text-primary" />
-                </div>
-                <p className="text-muted-foreground text-sm font-medium">
-                  Dashboard Preview — Coming Soon
-                </p>
-              </div>
+      {/* ═══ HERO ═══ */}
+      <section className="py-20 md:py-32 px-4 sm:px-6 overflow-hidden">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left */}
+          <div className="text-center lg:text-left">
+            <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] mb-6">
+              Know Exactly What{" "}
+              <br className="hidden sm:block" />
+              You{" "}
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Owe
+              </span>{" "}
+              — No Surprises
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed">
+              Clear, real-time fee visibility for parents and schools. Eliminate manual tracking and miscommunication with a single source of truth.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center lg:items-start gap-3">
+              <Button size="lg" asChild className="min-w-[180px] h-12 text-base shadow-md shadow-primary/20">
+                <Link to="/signup">
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="h-12 text-base">
+                <Link to="/login">
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Demo
+                </Link>
+              </Button>
             </div>
           </div>
 
-          {/* Trust Indicators */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-            <Badge variant="outline" className="gap-1.5 px-3 py-1">
-              <Shield className="h-3 w-3" /> NEP 2020 Aligned
-            </Badge>
-            <Badge variant="outline" className="gap-1.5 px-3 py-1">
-              <BookOpen className="h-3 w-3" /> CBSE · ICSE · State Boards
-            </Badge>
-            <Badge variant="outline" className="gap-1.5 px-3 py-1">
-              <Users className="h-3 w-3" /> 500+ Schools
-            </Badge>
+          {/* Right — Fee Summary Card */}
+          <div className="flex justify-center lg:justify-end">
+            <Card className="w-full max-w-sm rounded-3xl shadow-xl shadow-primary/5 border-border/60 overflow-hidden">
+              <CardContent className="p-0">
+                <div className="p-6 pb-4">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Balance</p>
+                  <p className="text-4xl font-extrabold tracking-tight">₹1,200.00</p>
+                  <Badge className="mt-2 bg-primary/10 text-primary border-primary/20 text-xs">Up to date</Badge>
+                </div>
+                <div className="px-6 pb-6 space-y-3">
+                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-status-paid/5 border border-status-paid/15">
+                    <div className="flex items-center gap-2.5">
+                      <CheckCircle2 className="h-4.5 w-4.5 text-status-paid" />
+                      <span className="text-sm font-medium">Paid Amount</span>
+                    </div>
+                    <span className="font-bold text-status-paid">₹800</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-status-due/5 border border-status-due/15">
+                    <div className="flex items-center gap-2.5">
+                      <Clock className="h-4.5 w-4.5 text-status-due" />
+                      <span className="text-sm font-medium">Pending</span>
+                    </div>
+                    <span className="font-bold text-status-due">₹400</span>
+                  </div>
+                </div>
+                <div className="px-6 pb-6 flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
+                  <span>Due Date</span>
+                  <span className="font-medium text-foreground">Dec 19, 2024</span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* Problem Section */}
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-8">Managing a school shouldn't feel overwhelming</h2>
-          <div className="grid sm:grid-cols-2 gap-6 text-left max-w-2xl mx-auto">
-            <ProblemPoint text="Teachers spend hours on reports and evaluations" />
-            <ProblemPoint text="Student performance is hard to track" />
-            <ProblemPoint text="Fee management is repetitive and manual" />
-            <ProblemPoint text="Too many disconnected systems" />
+      {/* ═══ TRUST BAR ═══ */}
+      <section className="py-8 px-4 border-y border-border/30 bg-muted/20">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs text-center text-muted-foreground uppercase tracking-widest mb-5">
+            Trusted by 100+ forward-thinking schools
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 text-muted-foreground/60">
+            {["ACADEMY", "Lumine", "Edvence", "GLOBAL-X", "Summit Prep"].map((name) => (
+              <span key={name} className="font-bold text-sm tracking-wide">{name}</span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Solution Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-8">One platform. Everything simplified.</h2>
-          <div className="grid sm:grid-cols-2 gap-6 text-left max-w-2xl mx-auto">
-            <SolutionPoint text="Manage students, classes, and attendance" />
-            <SolutionPoint text="Automatically assign and track fees" />
-            <SolutionPoint text="Generate report cards in seconds" />
-            <SolutionPoint text="Get AI-powered student insights" />
-          </div>
-        </div>
-      </section>
-
-      {/* AI Insights Section */}
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <Brain className="h-4 w-4" />
-            Key Differentiator
-          </div>
-          <h2 className="text-3xl font-bold mb-8">Let AI do the hard work</h2>
-          <div className="grid sm:grid-cols-3 gap-6 mb-8">
-            <AIInsightCard icon={AlertTriangle} title="Detect weak students instantly" />
-            <AIInsightCard icon={TrendingUp} title="Identify performance trends across classes" />
-            <AIInsightCard icon={CalendarCheck} title="Get alerts for attendance and academic risks" />
-          </div>
-          <Button size="lg" variant="outline" asChild>
-            <Link to="/signup">
-              See How It Works
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Built for real school workflows</h2>
+      {/* ═══ PROBLEM SECTION — "Why Fee Confusion Happens" ═══ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Fee Confusion Happens</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Traditional systems create blind spots that frustrate both parents and administrators.
+            </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard
-              icon={Users}
-              title="Student Management"
-              description="Add, organize, and manage all student data in one place"
-            />
-            <FeatureCard
-              icon={BarChart3}
-              title="Fee Automation"
-              description="Assign fees automatically — no manual work"
-            />
-            <FeatureCard icon={FileText} title="Report Generation" description="Generate report cards instantly" />
-            <FeatureCard
-              icon={Upload}
-              title="Excel Import"
-              description="Upload student data and get started in minutes"
-            />
+            <ProblemCard icon={MessageSquareWarning} title="Fragmented comms" description="Scattered in emails, WhatsApp, papers, and phone calls." />
+            <ProblemCard icon={Receipt} title="Lost receipts" description="No digital archive of past payments leading to proof disputes." />
+            <ProblemCard icon={BarChart3} title="Unclear balances" description="Parents never know the remaining fees or upcoming due dates." />
+            <ProblemCard icon={AlertTriangle} title="Late surprises" description="Monthly fees and add-ons keep creating unnecessary stress." />
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Get started in minutes</h2>
+      {/* ═══ SOLUTION — "A Single Source of Truth" ═══ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6 bg-muted/30">
+        <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+          {/* Visual Card */}
+          <div>
+            <Card className="rounded-3xl shadow-lg border-border/50 overflow-hidden">
+              <CardContent className="p-0">
+                <div className="p-5 bg-muted/40">
+                  <p className="text-2xs uppercase text-muted-foreground tracking-wider mb-1">Pending Settled</p>
+                  <p className="text-3xl font-extrabold">₹0.00</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Remaining balance</p>
+                </div>
+                <div className="p-5 border-t border-border/30">
+                  <p className="text-2xs uppercase text-muted-foreground tracking-wider mb-1">Total Paid</p>
+                  <p className="text-3xl font-extrabold text-primary">₹150.00</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Out of ₹150</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <StepCard step={1} title="Upload your student list" />
-            <StepCard step={2} title="Set up classes and subjects" />
-            <StepCard step={3} title="Start tracking and generating reports" />
+          {/* Text */}
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">A Single Source of Truth</h2>
+            <p className="text-muted-foreground mb-8 leading-relaxed">
+              We prioritize clarity over complexity. Our dashboard shows the Status First, so you never have to interpret the numbers yourself.
+            </p>
+            <div className="space-y-4">
+              <SolutionBullet text="Instant status verification" />
+              <SolutionBullet text="Automated breakdown of every payment" />
+              <SolutionBullet text="Transparent installment tracking" />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing Preview */}
-      <section className="py-20 px-4">
+      {/* ═══ PRICING ═══ */}
+      <section id="pricing" className="py-20 md:py-28 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Simple, transparent pricing</h2>
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
+            <p className="text-muted-foreground">Choose the plan that fits your school's needs.</p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <Card className="card-elevated relative">
-              <CardContent className="pt-8 pb-8">
+            {/* Starter */}
+            <Card className="rounded-3xl border-border/60 shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-8">
                 <h3 className="text-xl font-bold mb-1">Starter</h3>
-                <p className="text-muted-foreground text-sm mb-4">For core school operations</p>
-                <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold">₹{starterRate}</span>
-                  <span className="text-muted-foreground">/student/month</span>
+                <p className="text-muted-foreground text-sm mb-5">For core school operations</p>
+                <div className="flex items-baseline gap-1 mb-8">
+                  <span className="text-4xl font-extrabold">₹{starterRate}</span>
+                  <span className="text-muted-foreground text-sm">/student/month</span>
                 </div>
                 <div className="space-y-3 mb-8">
                   <PricingFeature included>Student management & bulk import</PricingFeature>
@@ -251,21 +235,24 @@ export default function Index() {
                   <PricingFeature>NEP 2020 Report Cards</PricingFeature>
                   <PricingFeature>At-Risk detection</PricingFeature>
                 </div>
-                <Button asChild variant="outline" className="w-full">
-                  <Link to="/signup">Get Started</Link>
+                <Button asChild variant="outline" className="w-full h-11 rounded-xl">
+                  <Link to="/signup">Start Free Trial</Link>
                 </Button>
               </CardContent>
             </Card>
-            <Card className="card-elevated relative border-primary/50 shadow-lg shadow-primary/5">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground px-4 py-1">Recommended</Badge>
+
+            {/* Pro */}
+            <Card className="rounded-3xl border-primary/40 shadow-lg shadow-primary/8 relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-accent" />
+              <div className="absolute -top-0 right-6 top-0">
+                <Badge className="bg-primary text-primary-foreground rounded-b-xl rounded-t-none px-4 py-1.5 text-xs">Recommended</Badge>
               </div>
-              <CardContent className="pt-8 pb-8">
+              <CardContent className="p-8 pt-10">
                 <h3 className="text-xl font-bold mb-1">Pro</h3>
-                <p className="text-muted-foreground text-sm mb-4">For AI insights and automation</p>
-                <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold">₹{proRate}</span>
-                  <span className="text-muted-foreground">/student/month</span>
+                <p className="text-muted-foreground text-sm mb-5">For AI insights and automation</p>
+                <div className="flex items-baseline gap-1 mb-8">
+                  <span className="text-4xl font-extrabold">₹{proRate}</span>
+                  <span className="text-muted-foreground text-sm">/student/month</span>
                 </div>
                 <div className="space-y-3 mb-8">
                   <PricingFeature included>Everything in Starter</PricingFeature>
@@ -279,9 +266,9 @@ export default function Index() {
                   <PricingFeature included>CSV/PDF exports</PricingFeature>
                   <PricingFeature included>AI Help Assistant (Chatbot)</PricingFeature>
                 </div>
-                <Button asChild className="w-full">
+                <Button asChild className="w-full h-11 rounded-xl shadow-sm">
                   <Link to="/signup">
-                    Start Free Trial
+                    Get Started Pro
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -289,7 +276,7 @@ export default function Index() {
             </Card>
           </div>
           {discountTiers.length > 0 ? (
-            <div className="flex flex-wrap justify-center gap-3 mt-6">
+            <div className="flex flex-wrap justify-center gap-3 mt-8">
               {discountTiers.map((t) => (
                 <Badge key={t.id} variant="outline" className="text-xs">
                   {t.max_students != null ? `${t.min_students}–${t.max_students}` : `${t.min_students}+`} students → {t.discount_percent}% off
@@ -297,127 +284,142 @@ export default function Index() {
               ))}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground text-sm mt-6">
+            <p className="text-center text-muted-foreground text-sm mt-8">
               Volume discounts available for larger schools
             </p>
           )}
-          <div className="text-center mt-4">
-            <Button variant="link" asChild>
-              <Link to="/signup">View Pricing →</Link>
-            </Button>
+        </div>
+      </section>
+
+      {/* ═══ 3 STEPS TO CLARITY ═══ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6 bg-muted/30">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">3 Steps to Clarity</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <StepCard step={1} title="School uploads data" description="Administrators sync current fee data via secure API or CSV upload." />
+            <StepCard step={2} title="Parent opens link" description="No app to download, no login to remember. Access via secure unique link." />
+            <StepCard step={3} title="View status" description="Parents see real-time status and pay reliably with zero friction." />
           </div>
         </div>
       </section>
 
-      {/* Security & Compliance Section */}
-      <section className="py-20 px-4 bg-card">
+      {/* ═══ FEATURES — "Built for Transparency" ═══ */}
+      <section id="features" className="py-20 md:py-28 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-4">
-            <Badge className="bg-primary/10 text-primary border-primary/20 mb-6">
-              <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
-              GDPR & DPDP Compliant
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Bank-Grade Security for Your School's Future
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Your school's data deserves the highest level of protection. EdZen AI is built with enterprise-grade security from the ground up.
-            </p>
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Built for Transparency</h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
-            <SecurityCard
-              icon={ShieldCheck}
-              title="Student Data Protection"
-              description="Fully compliant with global privacy standards. All sensitive student records are encrypted at rest and in transit."
-            />
-            <SecurityCard
-              icon={IndianRupee}
-              title="Secure Fee Management"
-              description="UPI-based payment verification with encrypted proof uploads. Automatically track and assign fees with full audit trails."
-            />
-            <SecurityCard
-              icon={Lock}
-              title="Role-Based Permissions"
-              description="Strict access levels for Admins, Teachers, and Parents. Ensure only authorized staff can modify grades or attendance."
-            />
-            <SecurityCard
-              icon={CloudUpload}
-              title="99.9% Uptime & Backups"
-              description="Never lose a report card. Automated daily backups and real-time syncing across secure cloud servers."
-            />
-          </div>
-          <div className="text-center mt-10">
-            <Button variant="outline" size="lg">
-              <FileText className="mr-2 h-4 w-4" />
-              Security Whitepaper
-            </Button>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <FeatureCard icon={Lock} title="No Login Required" description="Access everything through a secure, unique access token for each student." />
+            <FeatureCard icon={Shield} title="Secure Access" description="Bank-grade encryption for all financial records and student identity data." />
+            <FeatureCard icon={BarChart3} title="Installment Breakdown" description="Automated fee schedules and installment tracking based on your plan." />
+            <FeatureCard icon={AlertTriangle} title="Dynamic Due Dates" description="Automated reminders adjusted based on your personalized payment plan." />
+            <FeatureCard icon={IndianRupee} title="QR/UPI Payment" description="Scan and pay in seconds. Auto-updates your ledger status instantly." />
+            <FeatureCard icon={RefreshCw} title="Instant Sync" description="Everything works in real-time. As soon as you pay, your records update." />
           </div>
         </div>
       </section>
 
-      {/* Trust Section */}
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Built for modern Indian schools</h2>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-6">
-            <TrustItem
-              icon={Shield}
-              title="NEP 2020 aligned"
-              description="Competency-based assessment and report cards following national guidelines."
-            />
-            <TrustItem
-              icon={BookOpen}
-              title="Designed for busy teachers"
-              description="Minimal clicks for marks entry. AI handles the analysis."
-            />
-            <TrustItem
-              icon={GraduationCap}
-              title="Works for all boards"
-              description="CBSE, ICSE, State Boards — one platform fits all."
-            />
-          </div>
+      {/* ═══ FOR PARENTS / FOR SCHOOLS split ═══ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6 bg-muted/30">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+          <Card className="rounded-3xl border-border/50">
+            <CardContent className="p-8">
+              <p className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">For Parents</p>
+              <h3 className="text-2xl font-bold mb-6">Confidence in Every Payment</h3>
+              <div className="space-y-4">
+                <BenefitItem icon={CheckCircle2} title="No surprises" description="Know exactly what's due, including tuition, transport, and extras." />
+                <BenefitItem icon={Clock} title="Always know status" description="Access your full payment history and download receipts anytime." />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-3xl border-border/50">
+            <CardContent className="p-8">
+              <p className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">For Schools</p>
+              <h3 className="text-2xl font-bold mb-6">Efficiency in Every Collection</h3>
+              <div className="space-y-4">
+                <BenefitItem icon={TrendingUp} title="Reduce fee queries" description="Cut admin calls by 70% by giving parents self-service access." />
+                <BenefitItem icon={Zap} title="Save admin time" description="Automated fee collection means your team spends less time chasing spreadsheets." />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-20 px-4 bg-primary text-primary-foreground">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Start your free trial today</h2>
-          <p className="text-primary-foreground/80 text-lg mb-8 max-w-2xl mx-auto">
-            Set up your school in minutes. No risk.
+      {/* ═══ TESTIMONIALS ═══ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+          <TestimonialCard
+            quote="For the first time in three years, I didn't have to call the accounts office every month to check my balance. The transparency Ledger provides is a game-changer for our family budget!"
+            name="Sarah Jenkins"
+            title="Parent at Westview Academy"
+          />
+          <TestimonialCard
+            quote="Ledger has reduced our daily aide-in fee queries by almost 80%. Our administrative team is now focused on helping students rather than digging through payment logs."
+            name="Dr. David Chow"
+            title="Administrator, Oasis Prep Schools"
+          />
+        </div>
+      </section>
+
+      {/* ═══ FINAL CTA ═══ */}
+      <section className="py-24 px-4 sm:px-6 bg-gradient-to-br from-primary via-primary/95 to-accent text-primary-foreground">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Bring clarity to fee communication</h2>
+          <p className="text-primary-foreground/80 text-lg mb-10 max-w-xl mx-auto">
+            Join hundreds of schools that have simplified their fee management.
           </p>
-          <Button size="lg" variant="secondary" asChild>
-            <Link to="/signup">
-              Start Free Trial
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-          <p className="text-sm text-primary-foreground/60 mt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button size="lg" variant="secondary" asChild className="h-12 text-base min-w-[160px]">
+              <Link to="/signup">Get Started</Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="h-12 text-base min-w-[160px] border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+              <Link to="/login">Book a Demo</Link>
+            </Button>
+          </div>
+          <p className="text-sm text-primary-foreground/60 mt-5">
             No credit card required · Free for 30 days · Cancel anytime
           </p>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-10 px-4 border-t">
+      {/* ═══ FOOTER ═══ */}
+      <footer className="py-12 px-4 sm:px-6 border-t border-border/40">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-primary" />
-              <span className="font-semibold">EdZen AI</span>
+          <div className="grid sm:grid-cols-3 gap-8 mb-10">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <GraduationCap className="h-5 w-5 text-primary" />
+                <span className="font-bold text-lg">EdZen AI</span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Affordably. Transparently. Educational finance through clarity.
+              </p>
             </div>
-            <nav className="flex items-center gap-6 text-sm">
-              <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
-              <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
-              <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
-              <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
-            </nav>
+            <div>
+              <p className="font-semibold text-sm mb-3 uppercase tracking-wider text-muted-foreground">Platform</p>
+              <nav className="space-y-2 text-sm">
+                <Link to="/signup" className="block text-muted-foreground hover:text-foreground transition-colors">Features</Link>
+                <Link to="/pricing" className="block text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
+                <Link to="/login" className="block text-muted-foreground hover:text-foreground transition-colors">School Portal</Link>
+              </nav>
+            </div>
+            <div>
+              <p className="font-semibold text-sm mb-3 uppercase tracking-wider text-muted-foreground">Legal</p>
+              <nav className="space-y-2 text-sm">
+                <Link to="/privacy" className="block text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
+                <Link to="/terms" className="block text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
+                <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">Contact Support</Link>
+              </nav>
+            </div>
           </div>
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            © {new Date().getFullYear()} EdZen AI. All rights reserved.
-          </p>
+          <div className="border-t border-border/30 pt-6 text-center">
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} EdZen AI. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
@@ -426,94 +428,97 @@ export default function Index() {
 
 /* ── Sub-components ─────────────────────────────────────────────── */
 
-function ProblemPoint({ text }: { text: string }) {
+function ProblemCard({ icon: Icon, title, description }: { icon: typeof AlertTriangle; title: string; description: string }) {
   return (
-    <div className="flex items-start gap-3 p-4 rounded-lg bg-destructive/5 border border-destructive/10">
-      <X className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-      <span className="text-sm text-foreground">{text}</span>
-    </div>
+    <Card className="rounded-2xl border-border/50 hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="w-11 h-11 rounded-2xl bg-destructive/8 flex items-center justify-center mb-4">
+          <Icon className="h-5 w-5 text-destructive/70" />
+        </div>
+        <h3 className="font-semibold text-base mb-1.5">{title}</h3>
+        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+      </CardContent>
+    </Card>
   );
 }
 
-function SolutionPoint({ text }: { text: string }) {
+function SolutionBullet({ text }: { text: string }) {
   return (
-    <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/5 border border-primary/10">
-      <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-      <span className="text-sm text-foreground">{text}</span>
-    </div>
-  );
-}
-
-function AIInsightCard({ icon: Icon, title }: { icon: typeof Brain; title: string }) {
-  return (
-    <div className="p-6 rounded-xl bg-card border text-center">
-      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-        <Icon className="h-6 w-6 text-primary" />
-      </div>
-      <p className="font-medium text-sm">{title}</p>
+    <div className="flex items-center gap-3">
+      <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+      <span className="text-sm font-medium">{text}</span>
     </div>
   );
 }
 
 function FeatureCard({ icon: Icon, title, description }: { icon: typeof Users; title: string; description: string }) {
   return (
-    <Card className="card-elevated group hover:shadow-md transition-shadow">
-      <CardContent className="pt-6">
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-          <Icon className="h-6 w-6 text-primary" />
+    <Card className="rounded-2xl border-border/50 hover:shadow-md transition-all group">
+      <CardContent className="p-6">
+        <div className="w-11 h-11 rounded-2xl bg-primary/8 flex items-center justify-center mb-4 group-hover:bg-primary/12 transition-colors">
+          <Icon className="h-5 w-5 text-primary" />
         </div>
-        <h3 className="font-semibold text-lg mb-2">{title}</h3>
-        <p className="text-muted-foreground text-sm">{description}</p>
+        <h3 className="font-semibold text-base mb-1.5">{title}</h3>
+        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
       </CardContent>
     </Card>
   );
 }
 
-function StepCard({ step, title }: { step: number; title: string }) {
+function StepCard({ step, title, description }: { step: number; title: string; description: string }) {
   return (
     <div className="text-center p-6">
-      <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-lg font-bold">
+      <div className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-5 text-xl font-bold shadow-md shadow-primary/20">
         {step}
       </div>
-      <p className="font-medium">{title}</p>
+      <h3 className="font-semibold text-lg mb-2">{title}</h3>
+      <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
     </div>
   );
 }
 
 function PricingFeature({ children, included = false }: { children: React.ReactNode; included?: boolean }) {
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex items-center gap-2.5 text-sm">
       {included ? (
         <Check className="h-4 w-4 text-primary flex-shrink-0" />
       ) : (
-        <X className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
+        <X className="h-4 w-4 text-muted-foreground/30 flex-shrink-0" />
       )}
-      <span className={cn(!included && "text-muted-foreground/60")}>{children}</span>
+      <span className={cn(!included && "text-muted-foreground/50")}>{children}</span>
     </div>
   );
 }
 
-function TrustItem({ icon: Icon, title, description }: { icon: typeof Shield; title: string; description: string }) {
+function BenefitItem({ icon: Icon, title, description }: { icon: typeof CheckCircle2; title: string; description: string }) {
   return (
-    <div className="text-center p-6">
-      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-        <Icon className="h-6 w-6 text-primary" />
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Icon className="h-4 w-4 text-primary" />
       </div>
-      <h3 className="font-semibold mb-2">{title}</h3>
-      <p className="text-muted-foreground text-sm">{description}</p>
+      <div>
+        <h4 className="font-semibold text-sm mb-0.5">{title}</h4>
+        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+      </div>
     </div>
   );
 }
 
-function SecurityCard({ icon: Icon, title, description }: { icon: typeof Shield; title: string; description: string }) {
+function TestimonialCard({ quote, name, title }: { quote: string; name: string; title: string }) {
   return (
-    <Card className="border border-border/60 bg-card hover:shadow-md transition-shadow">
-      <CardContent className="pt-6">
-        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-          <Icon className="h-5 w-5 text-primary" />
+    <Card className="rounded-3xl border-border/40">
+      <CardContent className="p-8">
+        <Quote className="h-6 w-6 text-primary/30 mb-4" />
+        <p className="text-foreground/90 leading-relaxed mb-6 italic">"{quote}"</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+            {name.charAt(0)}
+          </div>
+          <div>
+            <p className="font-semibold text-sm">{name}</p>
+            <p className="text-xs text-muted-foreground">{title}</p>
+          </div>
         </div>
-        <h3 className="font-semibold text-base mb-2">{title}</h3>
-        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
       </CardContent>
     </Card>
   );
