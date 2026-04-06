@@ -70,9 +70,9 @@ export default function Index() {
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]">
             Run Your School Smarter{" "}
-            <span className="bg-gradient-to-r from-primary to-teal-400 bg-clip-text text-transparent">
-              with AI
-            </span>
+             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+               with AI
+             </span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10">
             Automate reports, track student performance, and reduce teacher workload — all in one simple platform.
