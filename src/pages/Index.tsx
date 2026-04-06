@@ -251,7 +251,7 @@ export default function Index() {
                   <PricingFeature included>Student management & bulk import</PricingFeature>
                   <PricingFeature included>Fee structures & payments</PricingFeature>
                   <PricingFeature included>Attendance tracking</PricingFeature>
-                  <PricingFeature included>Parent Link & Telegram</PricingFeature>
+                  <PricingFeature included>Parent Link & WhatsApp</PricingFeature>
                   <PricingFeature included>AI Excel Import</PricingFeature>
                   <PricingFeature included>AI Class Summary (3/month)</PricingFeature>
                   <PricingFeature>Student Progress module</PricingFeature>
