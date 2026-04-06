@@ -274,23 +274,23 @@ export default function Attendance() {
         {/* Summary bar */}
         {summary.total > 0 && (
           <div className="grid grid-cols-5 gap-2">
-            <div className="bg-muted rounded-lg p-2 text-center">
+            <div className="bg-muted/60 rounded-xl p-3 text-center">
               <p className="text-lg font-bold text-foreground">{summary.total}</p>
               <p className="text-xs text-muted-foreground">Total</p>
             </div>
-            <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-2 text-center">
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-xl p-3 text-center">
               <p className="text-lg font-bold text-emerald-600">{summary.present}</p>
               <p className="text-xs text-muted-foreground">Present</p>
             </div>
-            <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-2 text-center">
+            <div className="bg-red-50 dark:bg-red-950/30 rounded-xl p-3 text-center">
               <p className="text-lg font-bold text-red-600">{summary.absent}</p>
               <p className="text-xs text-muted-foreground">Absent</p>
             </div>
-            <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-2 text-center">
+            <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-3 text-center">
               <p className="text-lg font-bold text-amber-600">{summary.late}</p>
               <p className="text-xs text-muted-foreground">Late</p>
             </div>
-            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2 text-center">
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 text-center">
               <p className="text-lg font-bold text-blue-600">{summary.leave}</p>
               <p className="text-xs text-muted-foreground">Leave</p>
             </div>
@@ -357,7 +357,7 @@ export default function Attendance() {
                   key={item.student.id}
                   onClick={() => toggleStatus(item.student.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-3 rounded-lg border transition-colors text-left",
+                    "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all text-left",
                     status === 'present' && "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900",
                     status === 'absent' && "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900",
                     status === 'late' && "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900",

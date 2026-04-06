@@ -402,7 +402,7 @@ export default function MarksEntry() {
           )}
         </div>
 
-        <Card>
+        <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Enter Marks</CardTitle>
             <Button onClick={handleSave} disabled={!canSave || saveMarks.isPending}>

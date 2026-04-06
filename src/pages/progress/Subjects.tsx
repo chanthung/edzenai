@@ -336,7 +336,7 @@ export default function Subjects() {
           </Dialog>
         </div>
 
-        <Card>
+        <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader>
             <CardTitle>Subjects List</CardTitle>
           </CardHeader>

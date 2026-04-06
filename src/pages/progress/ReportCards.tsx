@@ -107,7 +107,7 @@ export default function ReportCards() {
         </TabsList>
 
         {/* Filters */}
-        <Card className="mt-4">
+        <Card className="mt-4 rounded-xl border-border/50 shadow-sm">
           <CardContent className="py-4">
             <div className="flex flex-wrap gap-3 items-end">
               {/* Academic Year */}
