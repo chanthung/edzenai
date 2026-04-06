@@ -167,11 +167,11 @@
 
   /* Card variants */
   .card-elevated {
-    @apply bg-card shadow-[var(--shadow-card)] border border-border/50 rounded-xl;
+    @apply bg-card shadow-[var(--shadow-card)] border border-border/40 rounded-2xl;
   }
 
   .card-summary {
-    @apply bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-2xl p-6 shadow-lg;
+    @apply bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-2xl p-7 shadow-lg;
   }
 
   /* Amount display */

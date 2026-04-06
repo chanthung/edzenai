@@ -156,12 +156,12 @@ export default function Dashboard() {
 
           {/* Pending proofs alert */}
           {pendingProofsCount > 0 && (
-            <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+            <Card className="border-[hsl(var(--status-due)/.3)]">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                      <FileCheck className="h-5 w-5 text-amber-600" />
+                    <div className="h-10 w-10 rounded-xl bg-[hsl(var(--status-due)/.1)] flex items-center justify-center">
+                      <FileCheck className="h-5 w-5 text-[hsl(var(--status-due))]" />
                     </div>
                     <div>
                       <p className="font-medium">
