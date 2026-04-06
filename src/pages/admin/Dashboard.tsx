@@ -85,13 +85,15 @@ export default function Dashboard() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Total Students
                 </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
               </CardHeader>
               <CardContent>
                 {studentsLoading ? (
                   <Skeleton className="h-8 w-16" />
                 ) : (
-                  <div className="text-2xl font-bold">{students?.length || 0}</div>
+                  <div className="text-2xl font-bold tracking-tight">{students?.length || 0}</div>
                 )}
               </CardContent>
             </Card>
@@ -101,13 +103,15 @@ export default function Dashboard() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Active Year
                 </CardTitle>
-                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                </div>
               </CardHeader>
               <CardContent>
                 {yearsLoading ? (
                   <Skeleton className="h-8 w-24" />
                 ) : (
-                  <div className="text-2xl font-bold">{activeYear?.name || "Not set"}</div>
+                  <div className="text-2xl font-bold tracking-tight">{activeYear?.name || "Not set"}</div>
                 )}
               </CardContent>
             </Card>
@@ -117,30 +121,34 @@ export default function Dashboard() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Fee Categories
                 </CardTitle>
-                <Receipt className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 rounded-xl bg-[hsl(var(--status-paid)/.1)]">
+                  <Receipt className="h-4 w-4 text-[hsl(var(--status-paid))]" />
+                </div>
               </CardHeader>
               <CardContent>
                 {categoriesLoading ? (
                   <Skeleton className="h-8 w-12" />
                 ) : (
-                  <div className="text-2xl font-bold">{feeCategories?.length || 0}</div>
+                  <div className="text-2xl font-bold tracking-tight">{feeCategories?.length || 0}</div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className={`card-elevated ${pendingProofsCount > 0 ? 'border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20' : ''}`}>
+            <Card className={`card-elevated ${pendingProofsCount > 0 ? 'border-[hsl(var(--status-due)/.4)]' : ''}`}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Pending Proofs
                 </CardTitle>
-                <FileCheck className={`h-4 w-4 ${pendingProofsCount > 0 ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                <div className={`p-2 rounded-xl ${pendingProofsCount > 0 ? 'bg-[hsl(var(--status-due)/.1)]' : 'bg-muted'}`}>
+                  <FileCheck className={`h-4 w-4 ${pendingProofsCount > 0 ? 'text-[hsl(var(--status-due))]' : 'text-muted-foreground'}`} />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${pendingProofsCount > 0 ? 'text-amber-600' : ''}`}>
+                <div className={`text-2xl font-bold tracking-tight ${pendingProofsCount > 0 ? 'text-[hsl(var(--status-due))]' : ''}`}>
                   {pendingProofsCount}
                 </div>
                 {pendingProofsCount > 0 && (
-                  <p className="text-xs text-amber-600 mt-1">Requires review</p>
+                  <p className="text-xs text-[hsl(var(--status-due))] mt-1">Requires review</p>
                 )}
               </CardContent>
             </Card>
@@ -148,12 +156,12 @@ export default function Dashboard() {
 
           {/* Pending proofs alert */}
           {pendingProofsCount > 0 && (
-            <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+            <Card className="border-[hsl(var(--status-due)/.3)]">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                      <FileCheck className="h-5 w-5 text-amber-600" />
+                    <div className="h-10 w-10 rounded-xl bg-[hsl(var(--status-due)/.1)] flex items-center justify-center">
+                      <FileCheck className="h-5 w-5 text-[hsl(var(--status-due))]" />
                     </div>
                     <div>
                       <p className="font-medium">
