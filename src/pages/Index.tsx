@@ -97,12 +97,15 @@ export default function Index() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="h-12 text-base">
-                <Link to="/login">
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Demo
-                </Link>
-              </Button>
+              <a
+                href="https://calendly.com/edzenai-admin/30min"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Book a demo call"
+                className="inline-flex items-center justify-center h-12 min-w-[180px] text-base font-medium rounded-full border border-border/60 bg-transparent text-foreground hover:bg-muted/60 transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-ring/40 px-6"
+              >
+                Book a Demo
+              </a>
             </div>
           </div>
 
@@ -450,14 +453,15 @@ export default function Index() {
             <Button size="lg" variant="secondary" asChild className="h-12 text-base min-w-[160px]">
               <Link to="/signup">Get Started</Link>
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              asChild
-              className="h-12 text-base min-w-[160px] border-primary-foreground/30 text-primary hover:bg-primary-foreground/10"
+            <a
+              href="https://calendly.com/edzenai-admin/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Book a demo call"
+              className="inline-flex items-center justify-center h-12 min-w-[160px] text-base font-medium rounded-full border border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary-foreground/40 px-6"
             >
-              <Link to="/login">Book a Demo</Link>
-            </Button>
+              Book a Demo
+            </a>
           </div>
           <p className="text-sm text-primary-foreground/60 mt-5">
             No credit card required · Free for 30 days · Cancel anytime
