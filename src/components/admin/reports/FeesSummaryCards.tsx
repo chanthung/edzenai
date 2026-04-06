@@ -89,16 +89,16 @@ export function FeesSummaryCards({
       {cards.map((card) => (
         <Card key={card.title} className="card-elevated">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {card.title}
             </CardTitle>
-            <div className={`p-2 rounded-full ${card.bgColor}`}>
+            <div className={`p-2.5 rounded-xl ${card.bgColor}`}>
               <card.icon className={`h-4 w-4 ${card.iconColor}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{card.value}</div>
-            <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+            <div className="text-2xl font-bold tracking-tight">{card.value}</div>
+            <p className="text-xs text-muted-foreground mt-1.5">{card.description}</p>
           </CardContent>
         </Card>
       ))}

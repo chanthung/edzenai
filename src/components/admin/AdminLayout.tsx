@@ -138,25 +138,25 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       <div className="flex">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-sidebar border-r border-sidebar-border backdrop-blur-sm">
+        <aside className="hidden lg:flex lg:flex-col lg:w-[260px] lg:fixed lg:inset-y-0 bg-card border-r border-border/60">
           <div className="flex flex-col h-full">
             {/* Logo */}
-            <div className="p-6 border-b border-sidebar-border">
+            <div className="px-6 pt-7 pb-5">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-sidebar-primary flex items-center justify-center shadow-sm">
-                  <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <GraduationCap className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="font-bold text-sidebar-foreground">EdZen AI</h1>
+                  <h1 className="font-bold text-foreground text-base tracking-tight">EdZen AI</h1>
                   {schoolLoading ? (
                     <Skeleton className="h-3 w-24 mt-1" />
                   ) : (
-                    <p className="text-xs text-muted-foreground truncate max-w-[140px]">{school?.name}</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[140px] mt-0.5">{school?.name}</p>
                   )}
                 </div>
               </div>
               {/* Plan Badge + Status */}
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-4 flex items-center gap-2">
                 <Badge className={cn("text-xs", planInfo.colorClass)}>
                   {planInfo.badge}
                 </Badge>
@@ -165,23 +165,24 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-1">
+            <nav className="flex-1 px-3 py-2 space-y-0.5">
               {navItems.map((item) => {
                 const isProgressLocked = item.href === '/progress' && !canAccessFeature('progress_module');
+                const isActive = location.pathname === item.href;
                 return (
                   <Link
                     key={item.href}
                     to={isProgressLocked ? '#' : item.href}
                     onClick={isProgressLocked ? (e) => e.preventDefault() : undefined}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-                      location.pathname === item.href
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      "flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                       isProgressLocked && "opacity-50 cursor-not-allowed"
                     )}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className={cn("h-[18px] w-[18px]", isActive ? "" : "text-muted-foreground")} />
                     {item.label}
                     {isProgressLocked && <Lock className="h-3.5 w-3.5 ml-auto" />}
                   </Link>
@@ -190,13 +191,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             </nav>
 
             {/* Footer */}
-            <div className="p-4 border-t border-sidebar-border">
+            <div className="px-3 pb-5 pt-2 border-t border-border/40 mt-auto">
               <Button
                 variant="ghost"
-                className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                size="sm"
+                className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 text-[13px] rounded-xl"
                 onClick={() => setShowSignOutConfirm(true)}
               >
-                <LogOut className="h-5 w-5 mr-3" />
+                <LogOut className="h-4 w-4 mr-3" />
                 Sign Out
               </Button>
             </div>
@@ -204,8 +206,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 lg:pl-64">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <main className="flex-1 lg:pl-[260px]">
+          <div className="p-4 sm:p-6 lg:px-8 lg:py-7 max-w-7xl mx-auto">
             {/* Subscription Banner */}
             <SubscriptionBanner 
               effectiveState={effectiveState} 
