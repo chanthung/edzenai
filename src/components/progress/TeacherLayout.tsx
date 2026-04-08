@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import edzenIcon from "@/assets/edzen-icon.png";
 import { Navigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
