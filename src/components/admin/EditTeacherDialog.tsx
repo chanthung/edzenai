@@ -7,12 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTeachers, type Teacher } from "@/hooks/useTeachers";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
-import { useTeacherClasses, type TeacherClassAssignment } from "@/hooks/useTeacherClasses";
 import { useSubjectsWithClasses } from "@/hooks/progress/useSubjects";
-import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mail, User, BookOpen, School } from "lucide-react";
+import { Loader2, Mail, User, BookOpen } from "lucide-react";
 
 interface EditTeacherDialogProps {
   teacher: Teacher | null;
