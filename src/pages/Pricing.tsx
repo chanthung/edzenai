@@ -81,7 +81,7 @@ export default function Pricing() {
                   <Link to="/login">Log in</Link>
                 </Button>
                 <Button size="sm" asChild>
-                  <Link to="/signup">Start Free Trial</Link>
+                  <Link to="/signup?plan=pro">Start Free Trial</Link>
                 </Button>
               </>
             )}
