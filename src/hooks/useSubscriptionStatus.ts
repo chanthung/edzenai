@@ -177,7 +177,10 @@ export function useSubscriptionStatus() {
 
   const getRestrictionMessage = (): string => {
     if (!data?.isRestricted) return '';
-    return 'Your trial has expired. Some features are restricted. Contact your administrator to activate your subscription.';
+    if (data?.subscriptionPlan === 'pro') {
+      return 'Your Pro trial has expired. You\'ve been downgraded to Starter. Upgrade to continue using Pro features.';
+    }
+    return 'Upgrade to Pro to unlock advanced features like AI insights, report cards, and more.';
   };
 
   return {

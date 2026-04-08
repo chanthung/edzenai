@@ -81,7 +81,7 @@ export default function Pricing() {
                   <Link to="/login">Log in</Link>
                 </Button>
                 <Button size="sm" asChild>
-                  <Link to="/signup">Start Free Trial</Link>
+                  <Link to="/signup?plan=pro">Start Free Trial</Link>
                 </Button>
               </>
             )}
@@ -168,7 +168,7 @@ export default function Pricing() {
             <CardHeader className="pb-4">
               <CardTitle className="text-xl">Starter</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Core school operations
+                Basic features for small schools
               </p>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
@@ -201,7 +201,7 @@ export default function Pricing() {
                 className="w-full"
                 onClick={(e) => { e.stopPropagation(); setSelectedPlan('starter'); }}
               >
-                {selectedPlan === 'starter' ? '✓ Selected' : 'Select Starter'}
+                {selectedPlan === 'starter' ? '✓ Selected' : 'Get Started'}
               </Button>
             </CardContent>
           </Card>
@@ -209,10 +209,10 @@ export default function Pricing() {
           {/* Pro */}
           <Card
             className={cn(
-              "relative flex flex-col cursor-pointer transition-all",
+              "relative flex flex-col cursor-pointer transition-all border-2",
               selectedPlan === 'pro'
                 ? "border-primary shadow-lg ring-2 ring-primary/20"
-                : "hover:border-primary/40"
+                : "border-primary/30 hover:border-primary/60"
             )}
             onClick={() => setSelectedPlan('pro')}
           >
@@ -221,7 +221,7 @@ export default function Pricing() {
                 "px-3 py-1 text-xs gap-1",
                 selectedPlan === 'pro'
                   ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
+                  : "bg-primary/90 text-primary-foreground"
               )}>
                 {selectedPlan === 'pro' ? <><Check className="h-3 w-3" /> Selected</> : <><Star className="h-3 w-3" /> Most Popular</>}
               </Badge>
@@ -246,6 +246,7 @@ export default function Pricing() {
                     {formatINR(proTotal)}/month
                   </span>
                 </p>
+                <p className="text-xs text-primary font-medium mt-1">30-day free trial included</p>
               </div>
 
               <ul className="space-y-2.5 flex-1 mb-6">
@@ -262,7 +263,7 @@ export default function Pricing() {
                 className="w-full"
                 onClick={(e) => { e.stopPropagation(); setSelectedPlan('pro'); }}
               >
-                {selectedPlan === 'pro' ? '✓ Selected' : 'Select Pro'}
+                {selectedPlan === 'pro' ? '✓ Selected' : 'Try Pro Free for 30 Days'}
               </Button>
             </CardContent>
           </Card>
@@ -272,13 +273,13 @@ export default function Pricing() {
         <div className="text-center mb-12 space-y-4">
           <Button size="lg" className="px-10 text-base" asChild>
             <Link to={`/signup?plan=${selectedPlan}`}>
-              Continue with {selectedPlan === 'pro' ? 'Pro' : 'Starter'} →
+              {selectedPlan === 'pro' ? 'Try Pro Free for 30 Days →' : 'Continue with Starter →'}
             </Link>
           </Button>
           {selectedPlan === 'starter' && (
             <p className="inline-flex items-center gap-2 bg-accent/10 text-accent-foreground border border-accent/20 rounded-full px-5 py-2 text-sm font-medium">
               <Star className="h-4 w-4 text-accent" />
-              Only {formatINR(diff)} more per student for AI-powered automation
+              Only {formatINR(diff)} more per student for AI-powered automation + free 30-day trial
             </p>
           )}
         </div>
@@ -302,7 +303,7 @@ export default function Pricing() {
             Built for modern Indian schools
           </h2>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            NEP 2020 aligned • Works for CBSE, ICSE & State Boards • 30-day free trial on all plans
+            NEP 2020 aligned • Works for CBSE, ICSE & State Boards • 30-day free trial on Pro plan
           </p>
         </div>
       </main>
