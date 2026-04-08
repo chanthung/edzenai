@@ -28,7 +28,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAssessments, useCreateAssessment, useDeleteAssessment, type AssessmentDomain, type AssessmentCategory } from "@/hooks/progress/useAssessments";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
-import { useStudents } from "@/hooks/useStudents";
+import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
+import { useUserRole } from "@/hooks/useUserRole";
 import { ClipboardList, Plus, Trash2, Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -67,8 +68,9 @@ export default function Assessments() {
   const createAssessment = useCreateAssessment();
   const deleteAssessment = useDeleteAssessment();
   const { toast } = useToast();
+  const { isTeacher } = useUserRole();
 
-  const { data: students = [] } = useStudents();
+  const { data: students = [] } = useResolvedStudents();
   const uniqueClasses = sortClassNames([...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -149,13 +151,14 @@ export default function Assessments() {
             </SelectContent>
           </Select>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={!effectiveYearId}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Assessment
-              </Button>
-            </DialogTrigger>
+          {!isTeacher && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={!effectiveYearId}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Assessment
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
@@ -255,6 +258,7 @@ export default function Assessments() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         <Card className="rounded-xl border-border/50 shadow-sm">
@@ -290,7 +294,7 @@ export default function Assessments() {
                     <TableHead>Category</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    {!isTeacher && <TableHead className="w-[100px]">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -321,16 +325,18 @@ export default function Assessments() {
                           "-"
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(assessment.id)}
-                          disabled={deleteAssessment.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
+                      {!isTeacher && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(assessment.id)}
+                            disabled={deleteAssessment.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
