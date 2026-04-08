@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,8 @@ import { useProgressAnalytics, type ProgressStatus } from "@/hooks/progress/useP
 import { useAIAnalysis, type StudentAnalysisData } from "@/hooks/progress/useAIAnalysis";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useMyClassAssignments } from "@/hooks/useTeacherClasses";
 import { BarChart3, Users, TrendingUp, AlertTriangle, Search, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { sortClassNames } from "@/lib/class-sort";
@@ -23,13 +25,26 @@ import { BirthdayReminder } from "@/components/admin/BirthdayReminder";
 export default function ProgressDashboard() {
   const { data: academicYears = [] } = useResolvedAcademicYears();
   const activeYear = useResolvedActiveAcademicYear();
+  const { isTeacher } = useUserRole();
+  const { data: myClasses = [] } = useMyClassAssignments();
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<ProgressStatus | "all" | "at_risk">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: students = [] } = useResolvedStudents();
-  const uniqueClasses = sortClassNames([...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[]);
+
+  // For teachers: only show assigned classes; for admins: show all classes from students
+  const teacherClassNames = sortClassNames(myClasses.map(c => c.class_name));
+  const allClassNames = sortClassNames([...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[]);
+  const availableClasses = isTeacher ? teacherClassNames : allClassNames;
+
+  // Auto-select first assigned class for teachers
+  useEffect(() => {
+    if (isTeacher && availableClasses.length > 0 && !selectedClass) {
+      setSelectedClass(availableClasses[0]);
+    }
+  }, [isTeacher, availableClasses, selectedClass]);
 
   const effectiveYearId = selectedYearId || activeYear?.id || "";
   
@@ -136,13 +151,13 @@ export default function ProgressDashboard() {
           </SelectContent>
         </Select>
 
-        <Select value={selectedClass || "all"} onValueChange={(v) => setSelectedClass(v === "all" ? "" : v)}>
+        <Select value={selectedClass || (isTeacher ? "" : "all")} onValueChange={(v) => setSelectedClass(v === "all" ? "" : v)}>
           <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="All Classes" />
+            <SelectValue placeholder={isTeacher ? "Select Class" : "All Classes"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Classes</SelectItem>
-            {uniqueClasses.map((cls) => (
+            {!isTeacher && <SelectItem value="all">All Classes</SelectItem>}
+            {availableClasses.map((cls) => (
               <SelectItem key={cls} value={cls}>
                 {cls}
               </SelectItem>
@@ -235,7 +250,7 @@ export default function ProgressDashboard() {
 
       {/* Birthday Reminder */}
       <div className="mt-6">
-        <BirthdayReminder students={students} />
+        <BirthdayReminder students={isTeacher ? students.filter(s => teacherClassNames.includes(s.class_name || '')) : students} />
       </div>
 
       {/* Charts Section */}
