@@ -1,88 +1,50 @@
 
 
-## Plan: EdZen AI Explainer — Full-Length Training Video Series
+## Plan: Set Up Transactional Emails for EdZen AI
 
-### Scope change
+### What We're Building
 
-Each of the 6 major sections becomes its own 3-4 minute video (total ~20-24 minutes). Due to sandbox render limits (600s timeout), we render each section as a separate MP4, then concatenate into a final full video with ffmpeg.
+Four branded email templates that send automatically when specific events happen in your app:
 
-### Output
+1. **Welcome Email** — Sent to the school admin when a new school is onboarded (via the `onboard-school` function)
+2. **Payment Receipt Email** — Sent alongside the existing WhatsApp confirmation when a payment is recorded
+3. **Order/Subscription Confirmation Email** — Sent when a school's subscription is activated or plan is changed
+4. **Security Alert Email** — Sent on password changes, new device logins, or admin role changes
 
-6 individual chapter videos + 1 combined full video, all at `/mnt/documents/`:
+### How It Works
 
-| # | File | Duration | Content |
-|---|------|----------|---------|
-| 1 | `ch1-students.mp4` | ~3.5 min | 1.1 Add Manually, 1.2 Excel Import (AI), 1.3 Managing Students |
-| 2 | `ch2-academic-years.mp4` | ~3 min | 2.1 Create Academic Year, 2.2 Promotions |
-| 3 | `ch3-fee-setup.mp4` | ~3.5 min | 3.1 Fee Categories, 3.2 Fee Structures, 3.3 Installments, 3.4 Class Assignment |
-| 4 | `ch4-teachers.mp4` | ~3 min | 4.1 Add Teacher, 4.2 Assign Subjects & Classes |
-| 5 | `ch5-settings.mp4` | ~3 min | 5.1 School Profile, 5.2 Payment QR, 5.3 Password, 5.4 Assessment Templates |
-| 6 | `ch6-progress.mp4` | ~4 min | 6.1 Dashboard, 6.2 Subjects, 6.3 Assessments, 6.4 Marks Entry, 6.5 Attendance, 6.6 Report Cards |
-| — | `edzen-full-training.mp4` | ~20 min | All chapters concatenated with title cards between |
+- All emails will come from `support@edzenai.com` (your verified domain)
+- Each email will be branded with EdZen AI's indigo/purple theme and logo
+- Emails are queued with automatic retries — no emails get lost
+- An unsubscribe page will be added for compliance
 
-### Visual approach
+### Implementation Steps
 
-- **Screen-recorded style**: Simulated UI mockups (not actual screenshots) built with styled divs matching EdZen's Indigo/Purple design system
-- **Animated pointer cursor** simulating clicks on buttons, menu items, form fields
-- **Step-by-step captions** at the bottom third explaining each action
-- **Chapter title cards** between sections with section name + brief description
-- **Consistent persistent elements**: subtle gradient background, EdZen branding watermark
+**Step 1 — Scaffold email infrastructure**
+Set up the transactional email Edge Functions (`send-transactional-email`, `handle-email-unsubscribe`, `handle-email-suppression`) and the template registry.
 
-### Per-chapter structure
+**Step 2 — Create 4 email templates**
+Each as a branded React Email component matching EdZen AI's design:
+- `welcome-school.tsx` — school name, admin name, getting-started link
+- `payment-receipt.tsx` — student name, amount, date, school name
+- `subscription-confirmation.tsx` — plan name, billing period, amount
+- `security-alert.tsx` — alert type, timestamp, action description
 
-Each chapter follows this pattern:
-1. **Chapter title card** (3-4s) — section name + icon
-2. **Subsection segments** — each subsection gets 45-90s with:
-   - Simulated sidebar/nav highlighting the current page
-   - Mockup UI appearing (forms, tables, cards)
-   - Animated cursor clicking through the workflow step-by-step
-   - Bottom caption text explaining what's happening
-3. **Chapter summary** (2-3s) — quick recap card
+**Step 3 — Wire up triggers**
+- **Welcome**: Add `supabase.functions.invoke('send-transactional-email')` call inside the `onboard-school` Edge Function after school creation succeeds
+- **Payment receipt**: Add email send call in `PaymentRecorder.tsx` and `PaymentProofVerifier.tsx` alongside the existing WhatsApp notification
+- **Subscription confirmation**: Add email send in the platform admin flow when activating a school subscription
+- **Security alert**: Add email send in the `ResetPassword` page and relevant auth state changes
 
-### Technical approach
+**Step 4 — Create unsubscribe page**
+A branded `/unsubscribe` page matching EdZen AI's design for email compliance.
 
-1. **Remotion project** under `remotion/` with shared components (MockSidebar, MockTable, MockForm, AnimatedPointer, StepCaption, ChapterTitle)
-2. **6 separate compositions** — one per chapter, each registered in Root.tsx
-3. **Render each chapter individually** via the programmatic render script (stays within 600s timeout per render)
-4. **Concatenate** all chapters using ffmpeg into the final combined video
-5. **No changes** to the existing application codebase
+**Step 5 — Deploy all Edge Functions**
 
-### File structure
+### Technical Details
 
-```text
-remotion/
-  src/
-    index.ts
-    Root.tsx
-    components/
-      MockSidebar.tsx
-      MockCard.tsx
-      MockTable.tsx
-      MockForm.tsx
-      AnimatedPointer.tsx
-      StepCaption.tsx
-      ChapterTitle.tsx
-      Background.tsx
-    chapters/
-      Ch1Students.tsx
-      Ch2AcademicYears.tsx
-      Ch3FeeSetup.tsx
-      Ch4Teachers.tsx
-      Ch5Settings.tsx
-      Ch6Progress.tsx
-  scripts/
-    render-chapter.mjs    (renders one chapter by composition ID)
-    render-all.sh         (loops all 6 + concatenates)
-  public/
-```
-
-### Rendering strategy
-
-Each chapter renders separately to stay within the 600s timeout:
-```bash
-node scripts/render-chapter.mjs ch1-students /mnt/documents/ch1-students.mp4
-node scripts/render-chapter.mjs ch2-academic-years /mnt/documents/ch2-academic-years.mp4
-# ... etc
-ffmpeg -f concat -i chapters.txt -c copy /mnt/documents/edzen-full-training.mp4
-```
+- Templates use React Email components with EdZen AI's indigo primary (`hsl(245, 58%, 51%)`), white body background, and Inter font stack
+- All sends include idempotency keys derived from event IDs to prevent duplicates
+- Emails go through the pgmq queue with automatic retry (up to 5 attempts)
+- Suppression list is checked automatically — bounced/complained addresses are blocked
 
