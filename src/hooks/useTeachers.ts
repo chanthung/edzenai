@@ -9,6 +9,7 @@ export interface Teacher {
   school_id: string;
   name: string;
   email: string;
+  role: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -30,18 +31,17 @@ export function useTeachers() {
         .order('name');
 
       if (error) throw error;
-      return data as Teacher[];
+      return (data as any[]).map(d => ({ ...d, role: d.role ?? 'teacher' })) as Teacher[];
     },
     enabled: !!school?.id,
   });
 
   const createTeacher = useMutation({
-    mutationFn: async ({ name, email, password }: { name: string; email: string; password: string }) => {
+    mutationFn: async ({ name, email, password, role = 'teacher' }: { name: string; email: string; password: string; role?: string }) => {
       if (!school?.id) throw new Error('No school found');
 
-      // Create auth user first
       const { data: authData, error: authError } = await supabase.functions.invoke('create-teacher', {
-        body: { name, email, password, schoolId: school.id },
+        body: { name, email, password, schoolId: school.id, role },
       });
 
       if (authError) throw authError;
@@ -49,12 +49,13 @@ export function useTeachers() {
 
       return authData;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['teachers', school?.id] });
-      toast.success('Teacher created successfully');
+      const label = variables.role === 'accountant' ? 'Accountant' : 'Teacher';
+      toast.success(`${label} created successfully`);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create teacher');
+      toast.error(error.message || 'Failed to create user');
     },
   });
 
@@ -69,10 +70,10 @@ export function useTeachers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers', school?.id] });
-      toast.success('Teacher updated successfully');
+      toast.success('User updated successfully');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update teacher');
+      toast.error(error.message || 'Failed to update user');
     },
   });
 
@@ -87,10 +88,10 @@ export function useTeachers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers', school?.id] });
-      toast.success('Teacher deleted successfully');
+      toast.success('User deleted successfully');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete teacher');
+      toast.error(error.message || 'Failed to delete user');
     },
   });
 

@@ -6,7 +6,6 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -14,11 +13,8 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Create admin client for user creation
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get the authorization header to verify the caller
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -27,7 +23,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create client with user's token to verify they're a school admin
     const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } }
     });
@@ -40,7 +35,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify caller is a school admin
     const { data: schoolAdmin } = await supabaseAdmin
       .from('school_admins')
       .select('school_id')
@@ -49,14 +43,13 @@ Deno.serve(async (req) => {
 
     if (!schoolAdmin) {
       return new Response(
-        JSON.stringify({ error: 'Only school admins can create teachers' }),
+        JSON.stringify({ error: 'Only school admins can create users' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { name, email, password, schoolId } = await req.json();
+    const { name, email, password, schoolId, role = 'teacher' } = await req.json();
 
-    // Validate input
     if (!name || !email || !password || !schoolId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
@@ -64,19 +57,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify the school ID matches the admin's school
+    if (!['teacher', 'accountant'].includes(role)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid role. Must be "teacher" or "accountant"' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (schoolId !== schoolAdmin.school_id) {
       return new Response(
-        JSON.stringify({ error: 'Cannot create teacher for another school' }),
+        JSON.stringify({ error: 'Cannot create user for another school' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create the auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm teacher emails
+      email_confirm: true,
     });
 
     if (authError) {
@@ -87,25 +85,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Add user to user_roles table
+    // Add to user_roles with the appropriate role
+    const appRole = role === 'accountant' ? 'accountant' : 'teacher';
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .insert({
         user_id: authData.user.id,
-        role: 'teacher',
+        role: appRole,
       });
 
     if (roleError) {
       console.error('Role error:', roleError);
-      // Cleanup: delete the auth user if role insert fails
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       return new Response(
-        JSON.stringify({ error: 'Failed to assign teacher role' }),
+        JSON.stringify({ error: 'Failed to assign role' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Add to school_teachers table
     const { data: teacherRecord, error: teacherError } = await supabaseAdmin
       .from('school_teachers')
       .insert({
@@ -113,21 +110,21 @@ Deno.serve(async (req) => {
         school_id: schoolId,
         name,
         email,
+        role,
       })
       .select('id')
       .single();
 
     if (teacherError) {
-      console.error('Teacher table error:', teacherError);
-      // Cleanup
+      console.error('User record error:', teacherError);
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       return new Response(
-        JSON.stringify({ error: 'Failed to create teacher record' }),
+        JSON.stringify({ error: 'Failed to create user record' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Teacher created successfully:', email);
+    console.log(`${role} created successfully:`, email);
 
     return new Response(
       JSON.stringify({ success: true, userId: authData.user.id, teacherId: teacherRecord.id }),
