@@ -55,7 +55,7 @@ export default function Onboard() {
         return;
       }
 
-      toast.success("Welcome! Your 30-day free trial has started 🎉");
+      toast.success(selectedPlan === 'pro' ? "Welcome! Your 30-day Pro trial has started 🚀" : "Welcome! Your Starter plan is active 🎉");
       navigate("/admin/getting-started", { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
