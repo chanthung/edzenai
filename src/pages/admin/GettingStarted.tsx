@@ -11,6 +11,7 @@ import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { BulkStudentUpload } from "@/components/admin/BulkStudentUpload";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import edzenIcon from "@/assets/edzen-icon.png";
 import {
   GraduationCap,
   ArrowRight,
@@ -124,7 +125,7 @@ export default function GettingStarted() {
           <Card className="border-border/50 shadow-card animate-fade-in">
             <CardContent className="pt-10 pb-10 text-center space-y-6">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mx-auto">
-                <GraduationCap className="h-10 w-10 text-primary" />
+                <img src={edzenIcon} alt="EdZen AI" className="h-11 w-11 object-contain" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold">Welcome to EdZen AI</h1>

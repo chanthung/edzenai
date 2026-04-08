@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, ArrowLeft } from "lucide-react";
+import edzenIcon from "@/assets/edzen-icon.png";
 
 export default function TermsOfService() {
   return (
@@ -8,8 +9,8 @@ export default function TermsOfService() {
       <nav className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <img src={edzenIcon} alt="EdZen AI" className="h-6 w-6 object-contain" />
             </div>
             <span className="font-bold text-lg">EdZen AI</span>
           </Link>

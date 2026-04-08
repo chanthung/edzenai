@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import edzenIcon from "@/assets/edzen-icon.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,8 +48,8 @@ export default function Index() {
       <nav className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <img src={edzenIcon} alt="EdZen AI" className="h-6 w-6 object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="font-bold text-lg leading-tight">EdZen AI</span>
@@ -476,7 +477,7 @@ export default function Index() {
           <div className="grid sm:grid-cols-3 gap-8 mb-10">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <GraduationCap className="h-5 w-5 text-primary" />
+                <img src={edzenIcon} alt="EdZen AI" className="h-5 w-5 object-contain" />
                 <span className="font-bold text-lg">EdZen AI</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">

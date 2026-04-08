@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import edzenIcon from "@/assets/edzen-icon.png";
 import { Navigate, Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,7 +77,7 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-primary" />
+              <img src={edzenIcon} alt="EdZen AI" className="h-6 w-6 object-contain" />
             </div>
             <div>
               <h1 className="font-semibold text-sm">EdZen AI</h1>
@@ -134,7 +135,7 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
             <div className="p-6 border-b border-border/50">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <GraduationCap className="h-6 w-6 text-primary" />
+                  <img src={edzenIcon} alt="EdZen AI" className="h-7 w-7 object-contain" />
                 </div>
                 <div>
                   <h1 className="font-bold text-foreground">EdZen AI</h1>
