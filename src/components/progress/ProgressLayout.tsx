@@ -41,7 +41,7 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
   const { data: school, isLoading: schoolLoading } = useSchool();
   const { effectiveState, daysRemaining, canAccessFeature, currentPlan } = useSubscriptionStatus();
-  const { isTeacher, isSchoolAdmin, isLoading: roleLoading } = useUserRole();
+  const { isTeacher, isSchoolAdmin, isAccountant, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -60,9 +60,14 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check if user has access (either teacher or school admin)
+  // Check if user has access (either teacher or school admin, NOT accountant)
   if (!isTeacher && !isSchoolAdmin) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Accountants cannot access progress module
+  if (isAccountant) {
+    return <Navigate to="/admin" replace />;
   }
 
   // Gate progress module for non-Pro schools (admin-only check; teachers always get access via their school)
