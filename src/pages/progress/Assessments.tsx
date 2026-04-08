@@ -258,6 +258,7 @@ export default function Assessments() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         <Card className="rounded-xl border-border/50 shadow-sm">
@@ -293,7 +294,7 @@ export default function Assessments() {
                     <TableHead>Category</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    {!isTeacher && <TableHead className="w-[100px]">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -324,16 +325,18 @@ export default function Assessments() {
                           "-"
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(assessment.id)}
-                          disabled={deleteAssessment.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
+                      {!isTeacher && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(assessment.id)}
+                            disabled={deleteAssessment.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
