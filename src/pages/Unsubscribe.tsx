@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Loader2, CheckCircle, XCircle, MailX } from "lucide-react";
+import edzenIcon from "@/assets/edzen-icon.png";
 import { supabase } from "@/integrations/supabase/client";
 
 type Status = "loading" | "valid" | "already_unsubscribed" | "invalid" | "success" | "error";
@@ -63,7 +64,7 @@ export default function Unsubscribe() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <GraduationCap className="h-6 w-6 text-primary" />
+            <img src={edzenIcon} alt="EdZen AI" className="h-7 w-7 object-contain" />
           </div>
           <CardTitle className="text-xl">EdZen AI</CardTitle>
         </CardHeader>
