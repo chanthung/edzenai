@@ -416,122 +416,128 @@ export default function MarksEntry() {
               <EmptyState icon={PenLine} title="Select a class" description="Choose a class to start entering marks." />
             ) : !selectedSection ? (
               <EmptyState icon={PenLine} title="Select a section" description="Choose a section to view students." />
-            ) : subjects.length === 0 && selectedClass ? (
-              <EmptyState icon={BookOpen} title="No subjects configured for this class" description="Go to Progress → Subjects to add subjects for this class." />
-            ) : !selectedAssessmentId || !selectedSubjectId ? (
-              <EmptyState icon={PenLine} title="Select assessment and subject" description="Choose an assessment and subject to enter marks for students." />
             ) : filteredStudents.length === 0 ? (
               <EmptyState icon={PenLine} title="No students found" description="No students match the selected class and section." />
-            ) : hasTemplate ? (
-              /* ── Template Mode ── */
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="sticky left-0 bg-background z-10">Roll No</TableHead>
-                      <TableHead className="sticky left-[60px] bg-background z-10">Student Name</TableHead>
-                      {templateComponents.map(c => (
-                        <TableHead key={c.id} className="text-center min-w-[100px]">
-                          {c.name}
-                          <div className="text-xs font-normal text-muted-foreground">Max: {c.max_marks}</div>
-                        </TableHead>
-                      ))}
-                      <TableHead className="text-center bg-muted/50">Total</TableHead>
-                      <TableHead className="text-center bg-muted/50">%</TableHead>
-                      <TableHead className="text-center bg-muted/50">Grade</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStudents.map(student => {
-                      const result = computedResults[student.id];
-                      return (
-                        <TableRow key={student.id}>
-                          <TableCell className="text-muted-foreground sticky left-0 bg-background">{student.roll_number || "-"}</TableCell>
-                          <TableCell className="font-medium sticky left-[60px] bg-background">{student.name}</TableCell>
-                          {templateComponents.map(c => {
-                            const errorMsg = validationErrors[student.id]?.[c.id];
-                            return (
-                              <TableCell key={c.id}>
-                                <div>
+            ) : (() => {
+              const readyForMarks = !!(selectedAssessmentId && selectedSubjectId);
+              const showTemplateColumns = readyForMarks && hasTemplate && templateComponents.length > 0;
+              const showLegacyColumns = readyForMarks && !hasTemplate;
+
+              return (
+                <div className="overflow-x-auto">
+                  {!readyForMarks && (
+                    <div className="mb-3">
+                      <Badge variant="outline" className="text-xs">
+                        Select an assessment and subject above to enter marks
+                      </Badge>
+                    </div>
+                  )}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="sticky left-0 bg-background z-10">Roll No</TableHead>
+                        <TableHead className="sticky left-[60px] bg-background z-10">Student Name</TableHead>
+                        {showTemplateColumns && (
+                          <>
+                            {templateComponents.map(c => (
+                              <TableHead key={c.id} className="text-center min-w-[100px]">
+                                {c.name}
+                                <div className="text-xs font-normal text-muted-foreground">Max: {c.max_marks}</div>
+                              </TableHead>
+                            ))}
+                            <TableHead className="text-center bg-muted/50">Total</TableHead>
+                            <TableHead className="text-center bg-muted/50">%</TableHead>
+                            <TableHead className="text-center bg-muted/50">Grade</TableHead>
+                          </>
+                        )}
+                        {showLegacyColumns && (
+                          <>
+                            <TableHead className="w-[120px]">Marks Obtained</TableHead>
+                            <TableHead className="w-[100px]">Max Marks</TableHead>
+                          </>
+                        )}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.map(student => {
+                        const result = computedResults[student.id];
+                        return (
+                          <TableRow key={student.id}>
+                            <TableCell className="text-muted-foreground sticky left-0 bg-background">{student.roll_number || "-"}</TableCell>
+                            <TableCell className="font-medium sticky left-[60px] bg-background">{student.name}</TableCell>
+                            {showTemplateColumns && (
+                              <>
+                                {templateComponents.map(c => {
+                                  const errorMsg = validationErrors[student.id]?.[c.id];
+                                  return (
+                                    <TableCell key={c.id}>
+                                      <div>
+                                        <Input
+                                          type="number"
+                                          value={componentMarksInput[student.id]?.[c.id] ?? ""}
+                                          onChange={(e) => handleComponentChange(student.id, c.id, e.target.value, Number(c.max_marks))}
+                                          placeholder="0"
+                                          min="0"
+                                          max={Number(c.max_marks)}
+                                          className={`w-full text-center ${errorMsg ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                                        />
+                                        {errorMsg && (
+                                          <p className="text-xs text-destructive mt-1">{errorMsg}</p>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                  );
+                                })}
+                                <TableCell className="text-center font-semibold bg-muted/30">
+                                  {result ? result.total : "–"}
+                                </TableCell>
+                                <TableCell className="text-center bg-muted/30">
+                                  {result ? `${result.percentage}%` : "–"}
+                                </TableCell>
+                                <TableCell className="text-center bg-muted/30">
+                                  {result?.grade ? (
+                                    <Badge variant="secondary">{result.grade}</Badge>
+                                  ) : "–"}
+                                </TableCell>
+                              </>
+                            )}
+                            {showLegacyColumns && (
+                              <>
+                                <TableCell>
+                                  <div>
+                                    <Input
+                                      type="number"
+                                      value={legacyMarks[student.id]?.marksObtained || ""}
+                                      onChange={(e) => handleLegacyChange(student.id, "marksObtained", e.target.value)}
+                                      placeholder="0"
+                                      min="0"
+                                      max={parseFloat(legacyMarks[student.id]?.maxMarks || defaultMaxMarks)}
+                                      className={`w-full ${validationErrors[student.id]?.["legacy"] ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                                    />
+                                    {validationErrors[student.id]?.["legacy"] && (
+                                      <p className="text-xs text-destructive mt-1">{validationErrors[student.id]["legacy"]}</p>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
                                   <Input
                                     type="number"
-                                    value={componentMarksInput[student.id]?.[c.id] ?? ""}
-                                    onChange={(e) => handleComponentChange(student.id, c.id, e.target.value, Number(c.max_marks))}
-                                    placeholder="0"
-                                    min="0"
-                                    max={Number(c.max_marks)}
-                                    className={`w-full text-center ${errorMsg ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                                    value={legacyMarks[student.id]?.maxMarks || defaultMaxMarks}
+                                    onChange={(e) => handleLegacyChange(student.id, "maxMarks", e.target.value)}
+                                    min="1"
+                                    className="w-full"
                                   />
-                                  {errorMsg && (
-                                    <p className="text-xs text-destructive mt-1">{errorMsg}</p>
-                                  )}
-                                </div>
-                              </TableCell>
-                            );
-                          })}
-                          <TableCell className="text-center font-semibold bg-muted/30">
-                            {result ? result.total : "–"}
-                          </TableCell>
-                          <TableCell className="text-center bg-muted/30">
-                            {result ? `${result.percentage}%` : "–"}
-                          </TableCell>
-                          <TableCell className="text-center bg-muted/30">
-                            {result?.grade ? (
-                              <Badge variant="secondary">{result.grade}</Badge>
-                            ) : "–"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              /* ── Legacy Mode ── */
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Roll No</TableHead>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead className="w-[120px]">Marks Obtained</TableHead>
-                    <TableHead className="w-[100px]">Max Marks</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.map(student => (
-                    <TableRow key={student.id}>
-                      <TableCell className="text-muted-foreground">{student.roll_number || "-"}</TableCell>
-                      <TableCell className="font-medium">{student.name}</TableCell>
-                      <TableCell>
-                        <div>
-                          <Input
-                            type="number"
-                            value={legacyMarks[student.id]?.marksObtained || ""}
-                            onChange={(e) => handleLegacyChange(student.id, "marksObtained", e.target.value)}
-                            placeholder="0"
-                            min="0"
-                            max={parseFloat(legacyMarks[student.id]?.maxMarks || defaultMaxMarks)}
-                            className={`w-full ${validationErrors[student.id]?.["legacy"] ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                          />
-                          {validationErrors[student.id]?.["legacy"] && (
-                            <p className="text-xs text-destructive mt-1">{validationErrors[student.id]["legacy"]}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={legacyMarks[student.id]?.maxMarks || defaultMaxMarks}
-                          onChange={(e) => handleLegacyChange(student.id, "maxMarks", e.target.value)}
-                          min="1"
-                          className="w-full"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                                </TableCell>
+                              </>
+                            )}
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 
