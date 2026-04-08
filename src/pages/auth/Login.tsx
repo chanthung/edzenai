@@ -54,15 +54,20 @@ export default function Login() {
         return;
       }
 
-      const { data: teacher } = await supabase
+      const { data: staffMember } = await supabase
         .from('school_teachers')
-        .select('school_id')
+        .select('school_id, role')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
-      if (teacher) {
-        navigate("/progress", { replace: true });
+      if (staffMember) {
+        const staffRole = (staffMember as any).role || 'teacher';
+        if (staffRole === 'accountant') {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate("/progress", { replace: true });
+        }
         return;
       }
 
