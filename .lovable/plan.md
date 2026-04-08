@@ -1,50 +1,26 @@
+## Plan: Multi-Role User Management (Teacher + Accountant)
 
+### Database Changes
+1. **Add `accountant` to `app_role` enum** — so both teacher and accountant are recognized system-wide
+2. **Add `role` column to `school_teachers` table** — defaults to `'teacher'`, values: `'teacher'` or `'accountant'`
+3. **Update RLS policies** — accountants get access to fee-related tables (fee_structures, payments, students read-only)
 
-## Plan: Set Up Transactional Emails for EdZen AI
+### Backend Changes
+4. **Update `create-teacher` Edge Function** — accept a `role` parameter, insert correct role into `user_roles` and `school_teachers`
+5. **Update `useUserRole` hook** — detect accountant role and expose `isAccountant` flag
 
-### What We're Building
+### Frontend Changes
+6. **Rename "Teachers" → "Users"** in sidebar nav and page title
+7. **Add role selector** in the create/edit user dialogs (Teacher / Accountant dropdown)
+8. **Update users table** to show Role column
+9. **Role-based navigation:**
+   - **Teacher layout**: Student Progress, Attendance only (unchanged)
+   - **Accountant layout**: New layout showing Dashboard, Students, Fee Setup, Settings
+   - **Admin layout**: Full access (unchanged)
+10. **Create `AccountantLayout`** — similar to TeacherLayout but with fee-focused nav items
 
-Four branded email templates that send automatically when specific events happen in your app:
-
-1. **Welcome Email** — Sent to the school admin when a new school is onboarded (via the `onboard-school` function)
-2. **Payment Receipt Email** — Sent alongside the existing WhatsApp confirmation when a payment is recorded
-3. **Order/Subscription Confirmation Email** — Sent when a school's subscription is activated or plan is changed
-4. **Security Alert Email** — Sent on password changes, new device logins, or admin role changes
-
-### How It Works
-
-- All emails will come from `support@edzenai.com` (your verified domain)
-- Each email will be branded with EdZen AI's indigo/purple theme and logo
-- Emails are queued with automatic retries — no emails get lost
-- An unsubscribe page will be added for compliance
-
-### Implementation Steps
-
-**Step 1 — Scaffold email infrastructure**
-Set up the transactional email Edge Functions (`send-transactional-email`, `handle-email-unsubscribe`, `handle-email-suppression`) and the template registry.
-
-**Step 2 — Create 4 email templates**
-Each as a branded React Email component matching EdZen AI's design:
-- `welcome-school.tsx` — school name, admin name, getting-started link
-- `payment-receipt.tsx` — student name, amount, date, school name
-- `subscription-confirmation.tsx` — plan name, billing period, amount
-- `security-alert.tsx` — alert type, timestamp, action description
-
-**Step 3 — Wire up triggers**
-- **Welcome**: Add `supabase.functions.invoke('send-transactional-email')` call inside the `onboard-school` Edge Function after school creation succeeds
-- **Payment receipt**: Add email send call in `PaymentRecorder.tsx` and `PaymentProofVerifier.tsx` alongside the existing WhatsApp notification
-- **Subscription confirmation**: Add email send in the platform admin flow when activating a school subscription
-- **Security alert**: Add email send in the `ResetPassword` page and relevant auth state changes
-
-**Step 4 — Create unsubscribe page**
-A branded `/unsubscribe` page matching EdZen AI's design for email compliance.
-
-**Step 5 — Deploy all Edge Functions**
-
-### Technical Details
-
-- Templates use React Email components with EdZen AI's indigo primary (`hsl(245, 58%, 51%)`), white body background, and Inter font stack
-- All sends include idempotency keys derived from event IDs to prevent duplicates
-- Emails go through the pgmq queue with automatic retry (up to 5 attempts)
-- Suppression list is checked automatically — bounced/complained addresses are blocked
-
+### Access Control Logic
+- `useUserRole` returns `role: 'teacher' | 'accountant' | 'school_admin' | 'platform_admin'`
+- `App.tsx` routes accountants to their permitted pages
+- Accountants see: Dashboard, Students (read-only list), Fee Setup, Payments
+- Teachers see: Student Progress module only (unchanged)
