@@ -144,9 +144,9 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
                   {isTeacher ? "Teacher Portal" : school?.name}
                 </p>
               )}
-              {user?.user_metadata?.name && (
+              {displayName && (
                 <p className="text-xs font-medium text-foreground/80 truncate max-w-[150px]">
-                  {user.user_metadata.name}
+                  {displayName}
                 </p>
               )}
             </div>
@@ -228,9 +228,9 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
                       {isTeacher ? "Teacher Portal" : school?.name}
                     </p>
                   )}
-                  {user?.user_metadata?.name && (
+                  {displayName && (
                     <p className="text-xs font-medium text-foreground/80 truncate max-w-[140px] mt-0.5">
-                      {user.user_metadata.name}
+                      {displayName}
                     </p>
                   )}
                 </div>
