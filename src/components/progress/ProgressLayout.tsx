@@ -125,6 +125,11 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
                   {isTeacher ? "Teacher Portal" : school?.name}
                 </p>
               )}
+              {user?.user_metadata?.name && (
+                <p className="text-xs font-medium text-foreground/80 truncate max-w-[150px]">
+                  {user.user_metadata.name}
+                </p>
+              )}
             </div>
           </div>
           <Button
