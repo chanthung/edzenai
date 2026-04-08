@@ -68,8 +68,9 @@ export default function Assessments() {
   const createAssessment = useCreateAssessment();
   const deleteAssessment = useDeleteAssessment();
   const { toast } = useToast();
+  const { isTeacher } = useUserRole();
 
-  const { data: students = [] } = useStudents();
+  const { data: students = [] } = useResolvedStudents();
   const uniqueClasses = sortClassNames([...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -150,13 +151,14 @@ export default function Assessments() {
             </SelectContent>
           </Select>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={!effectiveYearId}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Assessment
-              </Button>
-            </DialogTrigger>
+          {!isTeacher && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={!effectiveYearId}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Assessment
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
