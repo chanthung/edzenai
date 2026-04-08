@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSchool } from '@/hooks/useSchool';
+import { useResolvedSchoolId } from './useResolvedSchoolId';
 
 export type ProgressStatus = 'improving' | 'stable' | 'declining' | 'new';
 
@@ -24,8 +24,7 @@ export interface StudentProgress {
 }
 
 export function useProgressAnalytics(academicYearId?: string, className?: string) {
-  const { data: school } = useSchool();
-  const schoolId = school?.id;
+  const { data: schoolId } = useResolvedSchoolId();
 
   const { data: classProgress = [], isLoading: isLoadingClassProgress } = useQuery({
     queryKey: ['class-progress', schoolId, academicYearId, className],

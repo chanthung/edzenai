@@ -28,7 +28,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAssessments, useCreateAssessment, useDeleteAssessment, type AssessmentDomain, type AssessmentCategory } from "@/hooks/progress/useAssessments";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
-import { useStudents } from "@/hooks/useStudents";
+import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
+import { useUserRole } from "@/hooks/useUserRole";
 import { ClipboardList, Plus, Trash2, Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";

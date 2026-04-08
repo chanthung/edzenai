@@ -204,6 +204,11 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
                       {isTeacher ? "Teacher Portal" : school?.name}
                     </p>
                   )}
+                  {user?.user_metadata?.name && (
+                    <p className="text-xs font-medium text-foreground/80 truncate max-w-[140px] mt-0.5">
+                      {user.user_metadata.name}
+                    </p>
+                  )}
                 </div>
               </div>
               {/* School Status Badge - only for admins */}
