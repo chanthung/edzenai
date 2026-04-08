@@ -11,9 +11,9 @@ import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { BulkStudentUpload } from "@/components/admin/BulkStudentUpload";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import edzenIcon from "@/assets/edzen-icon.png";
 import {
   GraduationCap,
-import edzenIcon from "@/assets/edzen-icon.png";
   ArrowRight,
   ArrowLeft,
   Upload,
