@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { sortClassNames } from "@/lib/class-sort";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -101,12 +102,7 @@ export function PromoteStudentsTab({ academicYears, schoolId }: PromoteStudentsT
   const availableClasses = useMemo(() => {
     if (!enrollments) return [];
     const classes = new Set(enrollments.map((e) => e.class_name).filter(Boolean) as string[]);
-    return Array.from(classes).sort((a, b) => {
-      const numA = parseInt((a.match(/(\d+)/) ?? [])[1] ?? "0", 10);
-      const numB = parseInt((b.match(/(\d+)/) ?? [])[1] ?? "0", 10);
-      if (numA !== numB) return numA - numB;
-      return a.localeCompare(b);
-    });
+    return sortClassNames(Array.from(classes));
   }, [enrollments]);
 
   // Filter enrollments by selected class
