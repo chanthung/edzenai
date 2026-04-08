@@ -109,7 +109,7 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
   };
 
   // Get unique class names from students
-  const classNames = [...new Set(students?.map(s => s.class_name).filter(Boolean) as string[])].sort();
+  const classNames = sortClassNames([...new Set(students?.map(s => s.class_name).filter(Boolean) as string[])]);
 
   const handleAssign = async () => {
     if ((!selectedClass && !allClasses) || !selectedTemplate || !activeYear || !school) return;

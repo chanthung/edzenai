@@ -27,7 +27,7 @@ export default function ProgressDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: students = [] } = useResolvedStudents();
-  const uniqueClasses = [...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[];
+  const uniqueClasses = sortClassNames([...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[]);
 
   const effectiveYearId = selectedYearId || activeYear?.id || "";
   

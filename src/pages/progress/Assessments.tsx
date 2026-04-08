@@ -68,7 +68,7 @@ export default function Assessments() {
   const { toast } = useToast();
 
   const { data: students = [] } = useStudents();
-  const uniqueClasses = [...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[];
+  const uniqueClasses = sortClassNames([...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [name, setName] = useState("");

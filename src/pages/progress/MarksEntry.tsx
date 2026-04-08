@@ -30,6 +30,7 @@ import { computeStudentResult } from "@/lib/marks-engine";
 import { PenLine, Save, Loader2, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CompetencyScoring } from "@/components/progress/CompetencyScoring";
+import { sortClassNames } from "@/lib/class-sort";
 
 // Per-student, per-component raw mark input
 type ComponentMarksMap = Record<string, Record<string, string>>; // studentId → componentId → value
@@ -91,7 +92,7 @@ export default function MarksEntry() {
 
   // Unique classes / sections
   const uniqueClasses = useMemo(() => {
-    return [...new Set(students.map(s => s.class_name).filter(Boolean))] as string[];
+    return sortClassNames([...new Set(students.map(s => s.class_name).filter(Boolean))] as string[]);
   }, [students]);
 
   const uniqueSections = useMemo(() => {

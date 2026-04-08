@@ -25,7 +25,7 @@ export default function ReportCards() {
   const [viewMode, setViewMode] = useState<"individual" | "class">("individual");
 
   const effectiveYearId = selectedYearId || activeYear?.id || "";
-  const classNames = [...new Set(students.map(s => s.class_name).filter(Boolean) as string[])].sort();
+  const classNames = sortClassNames([...new Set(students.map(s => s.class_name).filter(Boolean) as string[])]);
   const filteredStudents = selectedClass && selectedClass !== "__all__"
     ? students.filter(s => s.class_name === selectedClass)
     : students;

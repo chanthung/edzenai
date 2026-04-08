@@ -70,7 +70,7 @@ function useUniqueClasses() {
       const classes = [
         ...new Set((data || []).map((s) => s.class_name).filter(Boolean)),
       ] as string[];
-      return classes.sort();
+      return sortClassNames(classes);
     },
   });
 }

@@ -32,7 +32,7 @@ export function StudentPendingReport({ data, isLoading }: StudentPendingReportPr
 
   const classes = useMemo(() => {
     const uniqueClasses = new Set(data.map(s => s.className || 'Unassigned'));
-    return Array.from(uniqueClasses).sort();
+    return sortClassNames(Array.from(uniqueClasses));
   }, [data]);
 
   const filteredData = useMemo(() => {

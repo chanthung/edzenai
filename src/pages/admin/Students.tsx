@@ -158,7 +158,7 @@ export default function Students() {
   const uniqueClasses = useMemo(() => {
     if (!students) return [];
     const classes = new Set(students.map(s => s.class_name).filter(Boolean));
-    return Array.from(classes).sort();
+    return sortClassNames(Array.from(classes) as string[]);
   }, [students]);
 
   const filteredStudents = useMemo(() => {
