@@ -33,6 +33,23 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Fetch display name for accountant
+  const { data: displayName } = useQuery({
+    queryKey: ['accountant-display-name', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('school_teachers')
+        .select('name')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      return data?.name || user.email?.split('@')[0] || null;
+    },
+    enabled: !!user?.id,
+    staleTime: 10 * 60 * 1000,
+  });
+
   if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
