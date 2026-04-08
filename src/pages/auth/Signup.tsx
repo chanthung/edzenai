@@ -111,8 +111,8 @@ export default function Signup() {
       <div className="w-full max-w-2xl animate-fade-in">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
-            <GraduationCap className="h-8 w-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+            <img src={edzenIcon} alt="EdZen AI" className="h-9 w-9 object-contain" />
           </div>
           <h1 className="text-2xl font-bold">
             {step === 3 ? "Check your email" : isProTrial ? "Start your Pro free trial" : "Get started with Starter"}

@@ -35,8 +35,8 @@ export default function ForgotPassword() {
     <div className="min-h-[100dvh] flex items-start pt-8 sm:items-center sm:pt-0 justify-center bg-background px-4 overflow-y-auto">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
-            <GraduationCap className="h-8 w-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+            <img src={edzenIcon} alt="EdZen AI" className="h-9 w-9 object-contain" />
           </div>
           <h1 className="text-2xl font-bold">EdZen AI</h1>
         </div>
