@@ -81,6 +81,11 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
             <div>
               <h1 className="font-semibold text-sm">EdZen AI</h1>
               <p className="text-xs text-muted-foreground">Accountant Portal</p>
+              {displayName && (
+                <p className="text-xs font-medium text-foreground/80 truncate max-w-[150px]">
+                  {displayName}
+                </p>
+              )}
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -134,6 +139,11 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
                 <div>
                   <h1 className="font-bold text-foreground">EdZen AI</h1>
                   <p className="text-xs text-muted-foreground">Accountant Portal</p>
+                  {displayName && (
+                    <p className="text-xs font-medium text-foreground/80 truncate max-w-[140px] mt-0.5">
+                      {displayName}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
