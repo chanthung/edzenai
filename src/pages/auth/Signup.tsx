@@ -27,10 +27,14 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   // Step 2
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("starter");
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("plan") === "starter" ? "starter" : "pro";
+  });
   const { data: pricing } = useSubscriptionPricing();
   const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
   const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
+  const isProTrial = selectedPlan === 'pro';
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,12 +115,14 @@ export default function Signup() {
             <GraduationCap className="h-8 w-8 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold">
-            {step === 3 ? "Check your email" : "Start your free trial"}
+            {step === 3 ? "Check your email" : isProTrial ? "Start your Pro free trial" : "Get started with Starter"}
           </h1>
           <p className="text-muted-foreground mt-1">
             {step === 3
               ? "We've sent a verification link to your inbox"
-              : "No credit card required · Free for 30 days"}
+              : isProTrial
+                ? "No credit card required · Full Pro access for 30 days"
+                : "No credit card required · Core features for your school"}
           </p>
         </div>
 
@@ -209,11 +215,14 @@ export default function Signup() {
                     )}
                     onClick={() => setSelectedPlan(plan)}
                   >
-                    {isPro && (
+                     {isPro && (
                       <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground">
                         <Sparkles className="h-3 w-3 mr-1" />
-                        Recommended
+                        Most Popular
                       </Badge>
+                    )}
+                    {isPro && (
+                      <p className="text-xs text-primary font-medium mt-1">30-day free trial</p>
                     )}
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
@@ -253,13 +262,13 @@ export default function Signup() {
               </Button>
               <Button onClick={handleSignup} disabled={loading} className="flex-1">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Account
+                {isProTrial ? 'Start Pro Trial' : 'Create Account'}
               </Button>
             </div>
 
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <Shield className="h-3.5 w-3.5" />
-              No credit card required · Cancel anytime · 30-day free trial
+              {isProTrial ? 'No credit card required · Cancel anytime · 30-day Pro trial' : 'No credit card required · Cancel anytime'}
             </div>
           </div>
         )}
