@@ -89,11 +89,13 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Calculate trial dates
+    // Calculate trial dates — only Pro gets a trial
     const today = new Date()
-    const trialEndDate = new Date(today)
-    trialEndDate.setDate(trialEndDate.getDate() + 30)
     const formatDate = (d: Date) => d.toISOString().split('T')[0]
+    
+    const isPro = plan === 'pro'
+    const trialEndDate = isPro ? new Date(today) : null
+    if (trialEndDate) trialEndDate.setDate(trialEndDate.getDate() + 30)
 
     // Get user email for school record
     const { data: userDataForEmail } = await supabaseAdmin.auth.admin.getUserById(userId)
@@ -107,11 +109,11 @@ Deno.serve(async (req) => {
         phone: phone || null,
         email: userEmail,
         subscription_plan: plan,
-        subscription_status: 'trial',
-        trial_start_date: formatDate(today),
-        trial_end_date: formatDate(trialEndDate),
-        system_state: 'trial_active',
-        payment_verified: false,
+        subscription_status: isPro ? 'trial' : 'active',
+        trial_start_date: isPro ? formatDate(today) : null,
+        trial_end_date: isPro && trialEndDate ? formatDate(trialEndDate) : null,
+        system_state: isPro ? 'trial_active' : 'subscription_active',
+        payment_verified: !isPro,
       })
       .select()
       .single()

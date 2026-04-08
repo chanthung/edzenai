@@ -32,21 +32,26 @@ export function TrialBanner() {
             <div>
               {isExpired ? (
                 <>
-                  <p className="font-medium text-destructive">Your trial has ended</p>
+                  <p className="font-medium text-destructive">
+                    {currentPlan === 'pro' ? 'Your Pro trial has ended' : 'Upgrade to Pro for advanced features'}
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    Upgrade to continue using the system. Data is safe.
+                    {currentPlan === 'pro'
+                      ? 'You\'ve been downgraded to Starter. Upgrade to continue using Pro features.'
+                      : 'Unlock AI insights, report cards, and more with Pro.'}
                   </p>
                 </>
               ) : (
                 <>
                   <p className="font-medium">
-                    🎉 Your 30-day free trial is active
+                    🚀 You are on Pro Trial
+                    {daysRemaining !== null && daysRemaining > 0
+                      ? ` (${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left)`
+                      : " (Expires today)"}
                   </p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
-                    {daysRemaining !== null && daysRemaining > 0
-                      ? `${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} remaining`
-                      : "Expires today"}
+                    Full Pro access included
                     <Badge variant="outline" className="text-xs capitalize">
                       {currentPlan} plan
                     </Badge>
