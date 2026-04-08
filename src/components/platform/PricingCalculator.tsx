@@ -21,7 +21,9 @@ export function PricingCalculator() {
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
 
-  const rate = pricing?.find((p) => p.plan === plan)?.per_student_fee ?? (plan === "starter" ? 5 : 8);
+  const starterRate = pricing?.find((p) => p.plan === "starter")?.per_student_fee ?? 7;
+  const proRate = pricing?.find((p) => p.plan === "pro")?.per_student_fee ?? 10;
+  const rate = plan === "starter" ? starterRate : proRate;
   const baseFee = pricing?.find((p) => p.plan === plan)?.base_monthly_fee ?? 0;
   const discountPct = getApplicableDiscount(students, tiers);
 
@@ -58,7 +60,7 @@ export function PricingCalculator() {
                 )}
               >
                 {p.charAt(0).toUpperCase() + p.slice(1)}
-                <span className="block text-xs font-normal mt-0.5">{formatINR(rate)}/student</span>
+                <span className="block text-xs font-normal mt-0.5">{formatINR(p === "starter" ? starterRate : proRate)}/student</span>
               </button>
             ))}
           </div>
@@ -75,7 +77,7 @@ export function PricingCalculator() {
               value={[students]}
               onValueChange={([v]) => setStudents(v)}
               min={10}
-              max={2000}
+              max={7000}
               step={10}
               className="flex-1"
             />
@@ -84,11 +86,11 @@ export function PricingCalculator() {
               value={students}
               onChange={(e) => {
                 const v = parseInt(e.target.value);
-                if (!isNaN(v) && v >= 1 && v <= 5000) setStudents(v);
+                if (!isNaN(v) && v >= 1 && v <= 7000) setStudents(v);
                 if (e.target.value === "") setStudents(1);
               }}
               min={1}
-              max={5000}
+              max={7000}
               className="w-24 text-center tabular-nums font-semibold"
             />
           </div>

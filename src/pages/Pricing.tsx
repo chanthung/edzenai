@@ -46,14 +46,14 @@ export default function Pricing() {
   const { user } = useAuth();
   const { effectiveState } = useSubscriptionStatus();
 
-  const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
+  const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 7;
   const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
   const discountPct = getApplicableDiscount(students, tiers);
 
   const handleSlider = (v: number[]) => setStudents(v[0]);
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = parseInt(e.target.value, 10);
-    if (!isNaN(v) && v >= 1 && v <= 5000) setStudents(v);
+    if (!isNaN(v) && v >= 1 && v <= 7000) setStudents(v);
     if (e.target.value === "") setStudents(1);
   };
 
@@ -111,7 +111,7 @@ export default function Pricing() {
               value={[students]}
               onValueChange={handleSlider}
               min={10}
-              max={2000}
+              max={7000}
               step={10}
               className="flex-1"
             />
@@ -120,7 +120,7 @@ export default function Pricing() {
               value={students}
               onChange={handleInput}
               min={1}
-              max={5000}
+              max={7000}
               className="w-24 text-center tabular-nums font-semibold"
             />
           </div>
@@ -135,12 +135,12 @@ export default function Pricing() {
               </Badge>
             </p>
           )}
-          {discountPct === 0 && tiers.length > 0 && (
+          {tiers.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2 mt-2">
               {tiers.map((t) => (
-                <span key={t.id} className="text-xs text-muted-foreground">
-                  {t.min_students}+ students → {t.discount_percent}% off
-                </span>
+                <Badge key={t.id} variant="outline" className={cn("text-xs", students >= t.min_students && (t.max_students === null || students <= t.max_students) ? "border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20" : "")}>
+                  {t.max_students != null ? `${t.min_students}–${t.max_students}` : `${t.min_students}+`} students → {t.discount_percent}% off
+                </Badge>
               ))}
             </div>
           )}
