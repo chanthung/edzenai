@@ -971,6 +971,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          role: string
           school_id: string
           updated_at: string
           user_id: string
@@ -981,6 +982,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          role?: string
           school_id: string
           updated_at?: string
           user_id: string
@@ -991,6 +993,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          role?: string
           school_id?: string
           updated_at?: string
           user_id?: string
@@ -1783,6 +1786,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_accountant_school_ids: { Args: never; Returns: string[] }
       get_nep_stage: {
         Args: { class_name: string }
         Returns: Database["public"]["Enums"]["nep_learning_stage"]
@@ -1860,7 +1864,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "platform_admin" | "school_admin" | "teacher"
+      app_role: "platform_admin" | "school_admin" | "teacher" | "accountant"
       assessment_category: "formative" | "summative"
       assessment_domain: "cognitive" | "affective" | "psychomotor"
       attendance_status: "present" | "absent" | "late" | "leave"
@@ -2015,7 +2019,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["platform_admin", "school_admin", "teacher"],
+      app_role: ["platform_admin", "school_admin", "teacher", "accountant"],
       assessment_category: ["formative", "summative"],
       assessment_domain: ["cognitive", "affective", "psychomotor"],
       attendance_status: ["present", "absent", "late", "leave"],
