@@ -250,7 +250,7 @@ export default function ProgressDashboard() {
 
       {/* Birthday Reminder */}
       <div className="mt-6">
-        <BirthdayReminder students={students} />
+        <BirthdayReminder students={isTeacher ? students.filter(s => teacherClassNames.includes(s.class_name || '')) : students} />
       </div>
 
       {/* Charts Section */}
