@@ -11,6 +11,7 @@ import { GraduationCap, Loader2, ArrowLeft, ArrowRight, Check, Shield, Sparkles,
 import { PasswordInput } from "@/components/ui/password-input";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
+import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
 
 export default function Signup() {
   const [step, setStep] = useState(1);
@@ -27,6 +28,9 @@ export default function Signup() {
 
   // Step 2
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("starter");
+  const { data: pricing } = useSubscriptionPricing();
+  const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
+  const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,7 +226,7 @@ export default function Signup() {
                         </div>
                       </div>
                       <div className="flex items-baseline gap-1 mt-1">
-                        <span className="text-2xl font-bold">₹{isPro ? 8 : 5}</span>
+                        <span className="text-2xl font-bold">₹{isPro ? proRate : starterRate}</span>
                         <span className="text-muted-foreground text-sm">/ student / month</span>
                       </div>
                       <CardDescription className="text-xs">{info.description}</CardDescription>
