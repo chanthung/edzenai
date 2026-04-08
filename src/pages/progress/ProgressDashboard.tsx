@@ -18,6 +18,7 @@ import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { BarChart3, Users, TrendingUp, AlertTriangle, Search, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { sortClassNames } from "@/lib/class-sort";
+import { BirthdayReminder } from "@/components/admin/BirthdayReminder";
 
 export default function ProgressDashboard() {
   const { data: academicYears = [] } = useResolvedAcademicYears();
