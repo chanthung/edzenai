@@ -22,7 +22,7 @@ export default function Onboard() {
   const [schoolName, setSchoolName] = useState("");
   const [adminName, setAdminName] = useState("");
   const [phone, setPhone] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("starter");
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("pro");
 
   useEffect(() => {
     if (!user) {
@@ -156,7 +156,7 @@ export default function Onboard() {
                     {isPro && (
                       <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground">
                         <Sparkles className="h-3 w-3 mr-1" />
-                        Recommended
+                        Most Popular — 30 days free
                       </Badge>
                     )}
                     <CardHeader className="pb-3">
@@ -171,6 +171,8 @@ export default function Onboard() {
                       </div>
                       <div className="flex items-baseline gap-1 mt-1">
                         <span className="text-2xl font-bold">₹{isPro ? 8 : 5}</span>
+                      </div>
+                      {isPro && <p className="text-xs text-primary font-medium">30-day free trial</p>}
                         <span className="text-muted-foreground text-sm">/ student / month</span>
                       </div>
                       <CardDescription className="text-xs">{info.description}</CardDescription>
@@ -197,13 +199,13 @@ export default function Onboard() {
               </Button>
               <Button onClick={handleOnboard} disabled={loading} className="flex-1">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Start Free Trial
+                Start {selectedPlan === 'pro' ? 'Pro Trial' : 'with Starter'}
               </Button>
             </div>
 
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <Shield className="h-3.5 w-3.5" />
-              No credit card required · Cancel anytime · 30-day free trial
+              {selectedPlan === 'pro' ? 'No credit card required · Cancel anytime · 30-day Pro trial' : 'No credit card required · Cancel anytime'}
             </div>
           </div>
         )}
