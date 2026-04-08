@@ -53,7 +53,7 @@ export default function Index() {
             <div className="flex flex-col">
               <span className="font-bold text-lg leading-tight">EdZen AI</span>
               <span className="text-[10px] text-muted-foreground leading-tight hidden sm:block">
-                AI-Powered School Management
+                A clarity layer for school operations — starting with fees.
               </span>
             </div>
           </div>
