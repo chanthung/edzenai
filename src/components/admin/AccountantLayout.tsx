@@ -1,5 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Navigate, Link, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
@@ -30,6 +32,23 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
   const { isAccountant, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fetch display name for accountant
+  const { data: displayName } = useQuery({
+    queryKey: ['accountant-display-name', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('school_teachers')
+        .select('name')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      return data?.name || user.email?.split('@')[0] || null;
+    },
+    enabled: !!user?.id,
+    staleTime: 10 * 60 * 1000,
+  });
 
   if (authLoading || roleLoading) {
     return (
@@ -62,6 +81,11 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
             <div>
               <h1 className="font-semibold text-sm">EdZen AI</h1>
               <p className="text-xs text-muted-foreground">Accountant Portal</p>
+              {displayName && (
+                <p className="text-xs font-medium text-foreground/80 truncate max-w-[150px]">
+                  {displayName}
+                </p>
+              )}
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -115,6 +139,11 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
                 <div>
                   <h1 className="font-bold text-foreground">EdZen AI</h1>
                   <p className="text-xs text-muted-foreground">Accountant Portal</p>
+                  {displayName && (
+                    <p className="text-xs font-medium text-foreground/80 truncate max-w-[140px] mt-0.5">
+                      {displayName}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

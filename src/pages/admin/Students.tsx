@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { sortClassNames } from "@/lib/class-sort";
+import { useUserRole } from "@/hooks/useUserRole";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { BulkStudentUpload } from "@/components/admin/BulkStudentUpload";
 import { PageHeader } from "@/components/ui/page-header";
@@ -63,6 +64,7 @@ export default function Students() {
   const { data: academicYears } = useAcademicYears();
   const activeAcademicYear = useActiveAcademicYear();
   const queryClient = useQueryClient();
+  const { isAccountant } = useUserRole();
 
   // Fetch all student fees to show assignment indicators
   const { data: allStudentFees } = useQuery({
@@ -841,7 +843,7 @@ export default function Students() {
                   <TableHead>Fees</TableHead>
                   <TableHead>Actions</TableHead>
                   <TableHead>Parent Link</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                  {!isAccountant && <TableHead className="w-[50px]"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1005,6 +1007,7 @@ export default function Students() {
                         </Button>
                       </div>
                     </TableCell>
+                    {!isAccountant && (
                     <TableCell>
                       <RestrictedButton isRestricted={isRestricted}>
                         <Button
@@ -1018,6 +1021,7 @@ export default function Students() {
                         </Button>
                       </RestrictedButton>
                     </TableCell>
+                    )}
                   </TableRow>
                   );
                 })}
