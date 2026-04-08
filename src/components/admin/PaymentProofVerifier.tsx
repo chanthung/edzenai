@@ -127,11 +127,11 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
       }).catch(console.warn);
 
       // Fire-and-forget payment receipt email
-      if (proof.students.parent_email) {
+      if ((proof.students as any).parent_email) {
         supabase.functions.invoke('send-transactional-email', {
           body: {
             templateName: 'payment-receipt',
-            recipientEmail: proof.students.parent_email,
+            recipientEmail: (proof.students as any).parent_email,
             idempotencyKey: `payment-receipt-proof-${proof.id}`,
             templateData: {
               studentName: proof.students.name,
