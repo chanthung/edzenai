@@ -171,10 +171,9 @@ export default function Onboard() {
                       </div>
                       <div className="flex items-baseline gap-1 mt-1">
                         <span className="text-2xl font-bold">₹{isPro ? 8 : 5}</span>
-                      </div>
-                      {isPro && <p className="text-xs text-primary font-medium">30-day free trial</p>}
                         <span className="text-muted-foreground text-sm">/ student / month</span>
                       </div>
+                      {isPro && <p className="text-xs text-primary font-medium">30-day free trial</p>}
                       <CardDescription className="text-xs">{info.description}</CardDescription>
                     </CardHeader>
                     <CardContent>
