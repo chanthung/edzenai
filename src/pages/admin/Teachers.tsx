@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTeachers } from "@/hooks/useTeachers";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useTeacherClasses, type TeacherClassAssignment } from "@/hooks/useTeacherClasses";
@@ -33,6 +34,7 @@ export default function Teachers() {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "teacher" as "teacher" | "accountant",
   });
   const [addSelectedSubjects, setAddSelectedSubjects] = useState<string[]>([]);
   const [addSelectedClassSections, setAddSelectedClassSections] = useState<Set<string>>(new Set());
@@ -90,11 +92,12 @@ export default function Teachers() {
       name: formData.name,
       email: formData.email,
       password: formData.password,
+      role: formData.role,
     });
 
-    // After creation, assign subjects and classes if any selected
+    // After creation, assign subjects and classes if role is teacher
     const newTeacherId = result?.teacherId;
-    if (newTeacherId) {
+    if (newTeacherId && formData.role === 'teacher') {
       if (addSelectedSubjects.length > 0) {
         await updateAssignments.mutateAsync({ teacherId: newTeacherId, subjectIds: addSelectedSubjects });
       }
@@ -107,7 +110,7 @@ export default function Teachers() {
       }
     }
 
-    setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+    setFormData({ name: "", email: "", password: "", confirmPassword: "", role: "teacher" });
     setAddSelectedSubjects([]);
     setAddSelectedClassSections(new Set());
     setDialogOpen(false);
@@ -134,29 +137,53 @@ export default function Teachers() {
     });
   };
 
+  const roleLabel = (role: string) => {
+    if (role === 'accountant') return 'Accountant';
+    return 'Teacher';
+  };
+
   return (
     <AdminLayout>
-      <PageHeader title="Teachers" description="Manage teacher accounts for Student Progress module">
+      <PageHeader title="Users" description="Manage teacher and accountant accounts for your school">
         <RestrictedButton isRestricted={isRestricted}>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button disabled={isRestricted}><Plus className="h-4 w-4 mr-2" />Add Teacher</Button>
+              <Button disabled={isRestricted}><Plus className="h-4 w-4 mr-2" />Add User</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col overflow-hidden">
-              <DialogHeader><DialogTitle>Add New Teacher</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>Add New User</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-4 py-2">
+                {/* Role Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v as "teacher" | "accountant" })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="teacher">Teacher</SelectItem>
+                      <SelectItem value="accountant">Accountant</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.role === 'teacher' 
+                      ? "Teachers can access Student Progress, marks entry, and attendance."
+                      : "Accountants can access fee management, payments, and student records."}
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="name" placeholder="Enter teacher's name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="pl-10" required />
+                    <Input id="name" placeholder="Enter name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="pl-10" required />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="email" type="email" placeholder="teacher@school.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="pl-10" required />
+                    <Input id="email" type="email" placeholder="user@school.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="pl-10" required />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -172,52 +199,57 @@ export default function Teachers() {
                   {formData.confirmPassword && formData.password === formData.confirmPassword && (
                     <p className="text-xs text-emerald-600">Passwords match</p>
                   )}
-                  <p className="text-xs text-muted-foreground">Minimum 6 characters. Share this password with the teacher securely.</p>
+                  <p className="text-xs text-muted-foreground">Minimum 6 characters. Share this password securely.</p>
                 </div>
 
-                {/* Class/Section Assignments */}
-                <div className="space-y-2">
-                  <Label><School className="h-4 w-4 inline mr-1" />Assign Classes & Sections</Label>
-                  {classSectionOptions.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No classes found.</p>
-                  ) : (
-                    <div className="border rounded-md p-3 max-h-36 overflow-y-auto space-y-2">
-                      {classSectionOptions.map(opt => (
-                        <label key={opt.key} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1">
-                          <Checkbox checked={addSelectedClassSections.has(opt.key)} onCheckedChange={() => toggleAddClassSection(opt.key)} />
-                          <span className="text-sm">Class {opt.class_name}{opt.section ? ` - Sec ${opt.section}` : ''}</span>
-                        </label>
-                      ))}
+                {/* Only show class/subject assignments for teachers */}
+                {formData.role === 'teacher' && (
+                  <>
+                    {/* Class/Section Assignments */}
+                    <div className="space-y-2">
+                      <Label><School className="h-4 w-4 inline mr-1" />Assign Classes & Sections</Label>
+                      {classSectionOptions.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No classes found.</p>
+                      ) : (
+                        <div className="border rounded-md p-3 max-h-36 overflow-y-auto space-y-2">
+                          {classSectionOptions.map(opt => (
+                            <label key={opt.key} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1">
+                              <Checkbox checked={addSelectedClassSections.has(opt.key)} onCheckedChange={() => toggleAddClassSection(opt.key)} />
+                              <span className="text-sm">Class {opt.class_name}{opt.section ? ` - Sec ${opt.section}` : ''}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Subject Assignments */}
-                <div className="space-y-2">
-                  <Label><BookOpen className="h-4 w-4 inline mr-1" />Assign Subjects</Label>
-                  {loadingSubjects ? (
-                    <Skeleton className="h-16 w-full" />
-                  ) : subjects.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No subjects created yet.</p>
-                  ) : (
-                    <div className="border rounded-md p-3 max-h-36 overflow-y-auto space-y-2">
-                      {subjects.map(subject => (
-                        <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1">
-                          <Checkbox checked={addSelectedSubjects.includes(subject.id)} onCheckedChange={() => toggleAddSubject(subject.id)} />
-                          <span className="text-sm">{subject.name}</span>
-                          {subject.assigned_classes.length > 0 && (
-                            <span className="text-xs text-muted-foreground ml-auto">{subject.assigned_classes.join(", ")}</span>
-                          )}
-                        </label>
-                      ))}
+                    {/* Subject Assignments */}
+                    <div className="space-y-2">
+                      <Label><BookOpen className="h-4 w-4 inline mr-1" />Assign Subjects</Label>
+                      {loadingSubjects ? (
+                        <Skeleton className="h-16 w-full" />
+                      ) : subjects.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No subjects created yet.</p>
+                      ) : (
+                        <div className="border rounded-md p-3 max-h-36 overflow-y-auto space-y-2">
+                          {subjects.map(subject => (
+                            <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1">
+                              <Checkbox checked={addSelectedSubjects.includes(subject.id)} onCheckedChange={() => toggleAddSubject(subject.id)} />
+                              <span className="text-sm">{subject.name}</span>
+                              {subject.assigned_classes.length > 0 && (
+                                <span className="text-xs text-muted-foreground ml-auto">{subject.assigned_classes.join(", ")}</span>
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
                   <Button type="submit" disabled={createTeacher.isPending}>
-                    {createTeacher.isPending ? "Creating..." : "Create Teacher"}
+                    {createTeacher.isPending ? "Creating..." : `Create ${roleLabel(formData.role)}`}
                   </Button>
                 </div>
               </form>
@@ -227,7 +259,7 @@ export default function Teachers() {
       </PageHeader>
 
       <Card>
-        <CardHeader><CardTitle>Teacher Accounts</CardTitle></CardHeader>
+        <CardHeader><CardTitle>User Accounts</CardTitle></CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
@@ -236,13 +268,14 @@ export default function Teachers() {
               <Skeleton className="h-12 w-full" />
             </div>
           ) : teachers.length === 0 ? (
-            <EmptyState icon={UserPlus} title="No teachers yet" description="Add teachers to allow them to manage student progress and marks." />
+            <EmptyState icon={UserPlus} title="No users yet" description="Add teachers or accountants to help manage your school." />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -253,6 +286,11 @@ export default function Teachers() {
                   <TableRow key={teacher.id}>
                     <TableCell className="font-medium">{teacher.name}</TableCell>
                     <TableCell>{teacher.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={teacher.role === 'accountant' ? 'border-amber-500 text-amber-700' : 'border-blue-500 text-blue-700'}>
+                        {roleLabel(teacher.role)}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={teacher.is_active ? "default" : "secondary"}>
                         {teacher.is_active ? "Active" : "Inactive"}
@@ -282,17 +320,26 @@ export default function Teachers() {
       />
 
       <Card className="mt-6">
-        <CardHeader><CardTitle>About Teacher Accounts</CardTitle></CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>Teachers have restricted access to only the <strong>Student Progress</strong> module.</p>
-          <ul className="list-disc list-inside space-y-1 ml-2">
-            <li>Can view and manage subjects</li>
-            <li>Can create and manage assessments</li>
-            <li>Can enter and update student marks</li>
-            <li>Can view student progress reports</li>
-            <li>Can mark daily attendance for assigned classes</li>
-          </ul>
-          <p className="pt-2">Teachers <strong>cannot</strong> access fee management, student records, or school settings.</p>
+        <CardHeader><CardTitle>About User Roles</CardTitle></CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-4">
+          <div>
+            <p className="font-medium text-foreground mb-1">Teacher</p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>Access Student Progress module only</li>
+              <li>Can view and manage subjects, assessments, and marks</li>
+              <li>Can mark daily attendance for assigned classes</li>
+            </ul>
+            <p className="mt-1">Teachers <strong>cannot</strong> access fee management, student records, or school settings.</p>
+          </div>
+          <div>
+            <p className="font-medium text-foreground mb-1">Accountant</p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>Access fee management, student list, and payments</li>
+              <li>Can create/update fee structures and mark payments</li>
+              <li>Can send WhatsApp reminders and view fee reports</li>
+            </ul>
+            <p className="mt-1">Accountants <strong>cannot</strong> access the Student Progress module.</p>
+          </div>
         </CardContent>
       </Card>
     </AdminLayout>
