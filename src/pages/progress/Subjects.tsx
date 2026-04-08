@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { sortClassNames } from "@/lib/class-sort";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +71,7 @@ function useUniqueClasses() {
       const classes = [
         ...new Set((data || []).map((s) => s.class_name).filter(Boolean)),
       ] as string[];
-      return classes.sort();
+      return sortClassNames(classes);
     },
   });
 }

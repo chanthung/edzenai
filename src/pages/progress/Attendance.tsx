@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { sortClassNames } from "@/lib/class-sort";
 import { format, addDays, subDays } from "date-fns";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { useAttendanceByDate, useSaveAttendance, AttendanceStatus } from "@/hooks/useAttendance";
@@ -44,11 +45,7 @@ export default function Attendance() {
     (allStudents ?? []).forEach(s => {
       if (s.class_name) classSet.add(s.class_name);
     });
-    let allClasses = Array.from(classSet).sort((a, b) => {
-      const numA = parseInt(a.replace(/\D/g, '')) || 0;
-      const numB = parseInt(b.replace(/\D/g, '')) || 0;
-      return numA - numB || a.localeCompare(b);
-    });
+    let allClasses = sortClassNames(Array.from(classSet));
 
     // If teacher with assigned classes, filter to only those
     if (isTeacher && myClassAssignments.length > 0) {

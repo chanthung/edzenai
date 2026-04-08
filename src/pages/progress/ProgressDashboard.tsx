@@ -17,6 +17,7 @@ import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { BarChart3, Users, TrendingUp, AlertTriangle, Search, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import { sortClassNames } from "@/lib/class-sort";
 
 export default function ProgressDashboard() {
   const { data: academicYears = [] } = useResolvedAcademicYears();
@@ -27,7 +28,7 @@ export default function ProgressDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: students = [] } = useResolvedStudents();
-  const uniqueClasses = [...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[];
+  const uniqueClasses = sortClassNames([...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[]);
 
   const effectiveYearId = selectedYearId || activeYear?.id || "";
   

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { sortClassNames } from "@/lib/class-sort";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,7 @@ export function StudentPendingReport({ data, isLoading }: StudentPendingReportPr
 
   const classes = useMemo(() => {
     const uniqueClasses = new Set(data.map(s => s.className || 'Unassigned'));
-    return Array.from(uniqueClasses).sort();
+    return sortClassNames(Array.from(uniqueClasses));
   }, [data]);
 
   const filteredData = useMemo(() => {

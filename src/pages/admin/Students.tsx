@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { sortClassNames } from "@/lib/class-sort";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { BulkStudentUpload } from "@/components/admin/BulkStudentUpload";
 import { PageHeader } from "@/components/ui/page-header";
@@ -158,7 +159,7 @@ export default function Students() {
   const uniqueClasses = useMemo(() => {
     if (!students) return [];
     const classes = new Set(students.map(s => s.class_name).filter(Boolean));
-    return Array.from(classes).sort();
+    return sortClassNames(Array.from(classes) as string[]);
   }, [students]);
 
   const filteredStudents = useMemo(() => {

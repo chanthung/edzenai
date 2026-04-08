@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { sortClassNames } from "@/lib/class-sort";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -109,7 +110,7 @@ export function ClassAssignment({ isRestricted }: ClassAssignmentProps) {
   };
 
   // Get unique class names from students
-  const classNames = [...new Set(students?.map(s => s.class_name).filter(Boolean) as string[])].sort();
+  const classNames = sortClassNames([...new Set(students?.map(s => s.class_name).filter(Boolean) as string[])]);
 
   const handleAssign = async () => {
     if ((!selectedClass && !allClasses) || !selectedTemplate || !activeYear || !school) return;
