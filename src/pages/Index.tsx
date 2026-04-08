@@ -136,7 +136,7 @@ export default function Index() {
                 </div>
                 <div className="px-6 pb-6 flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
                   <span>Due Date</span>
-                  <span className="font-medium text-foreground">April 9, 2026</span>
+                  <span className="font-medium text-foreground">April 10, 2026</span>
                 </div>
               </CardContent>
             </Card>
