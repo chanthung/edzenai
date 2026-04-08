@@ -70,7 +70,7 @@ export default function Index() {
               <Link to="/login">Login</Link>
             </Button>
             <Button asChild size="sm">
-              <Link to="/signup">Get Started</Link>
+              <Link to="/signup?plan=pro">Start Free Trial</Link>
             </Button>
           </div>
         </div>
@@ -92,8 +92,8 @@ export default function Index() {
             </p>
             <div className="flex flex-col sm:flex-row items-center lg:items-start gap-3">
               <Button size="lg" asChild className="min-w-[180px] h-12 text-base shadow-md shadow-primary/20">
-                <Link to="/signup">
-                  Get Started
+                <Link to="/signup?plan=pro">
+                  Start Free Trial
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -242,7 +242,7 @@ export default function Index() {
             <Card className="rounded-3xl border-border/60 shadow-md hover:shadow-lg transition-shadow">
               <CardContent className="p-8">
                 <h3 className="text-xl font-bold mb-1">Starter</h3>
-                <p className="text-muted-foreground text-sm mb-5">For core school operations</p>
+                <p className="text-muted-foreground text-sm mb-5">Basic features for small schools</p>
                 <div className="flex items-baseline gap-1 mb-8">
                   <span className="text-4xl font-extrabold">₹{starterRate}</span>
                   <span className="text-muted-foreground text-sm">/student/month</span>
@@ -259,7 +259,7 @@ export default function Index() {
                   <PricingFeature>At-Risk detection</PricingFeature>
                 </div>
                 <Button asChild variant="outline" className="w-full h-11 rounded-xl">
-                  <Link to="/signup">Start Free Trial</Link>
+                  <Link to="/signup?plan=starter">Get Started</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -267,18 +267,19 @@ export default function Index() {
             {/* Pro */}
             <Card className="rounded-3xl border-primary/40 shadow-lg shadow-primary/8 relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-accent" />
-              <div className="absolute -top-0 right-6 top-0">
+              <div className="absolute right-6 top-0">
                 <Badge className="bg-primary text-primary-foreground rounded-b-xl rounded-t-none px-4 py-1.5 text-xs">
-                  Recommended
+                  ⭐ Most Popular
                 </Badge>
               </div>
               <CardContent className="p-8 pt-10">
                 <h3 className="text-xl font-bold mb-1">Pro</h3>
-                <p className="text-muted-foreground text-sm mb-5">For AI insights and automation</p>
-                <div className="flex items-baseline gap-1 mb-8">
+                <p className="text-muted-foreground text-sm mb-5">Full AI-powered intelligence suite</p>
+                <div className="flex items-baseline gap-1 mb-2">
                   <span className="text-4xl font-extrabold">₹{proRate}</span>
                   <span className="text-muted-foreground text-sm">/student/month</span>
                 </div>
+                <p className="text-xs text-primary font-medium mb-6">30-day free trial included</p>
                 <div className="space-y-3 mb-8">
                   <PricingFeature included>Everything in Starter</PricingFeature>
                   <PricingFeature included>Unlimited AI Insights</PricingFeature>
@@ -292,8 +293,8 @@ export default function Index() {
                   <PricingFeature included>AI Help Assistant (Chatbot)</PricingFeature>
                 </div>
                 <Button asChild className="w-full h-11 rounded-xl shadow-sm">
-                  <Link to="/signup">
-                    Get Started Pro
+                  <Link to="/signup?plan=pro">
+                    Try Pro Free for 30 Days
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -451,7 +452,7 @@ export default function Index() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button size="lg" variant="secondary" asChild className="h-12 text-base min-w-[160px]">
-              <Link to="/signup">Get Started</Link>
+              <Link to="/signup?plan=pro">Start Free Trial</Link>
             </Button>
             <a
               href="https://calendly.com/edzenai-admin/30min"
@@ -464,7 +465,7 @@ export default function Index() {
             </a>
           </div>
           <p className="text-sm text-primary-foreground/60 mt-5">
-            No credit card required · Free for 30 days · Cancel anytime
+            No credit card required · 30-day Pro trial · Cancel anytime
           </p>
         </div>
       </section>
