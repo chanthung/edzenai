@@ -2,12 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type UserRole = 'platform_admin' | 'school_admin' | 'teacher' | null;
+export type UserRole = 'platform_admin' | 'school_admin' | 'teacher' | 'accountant' | null;
 
 export interface UserRoleInfo {
   role: UserRole;
   schoolId: string | null;
   isTeacher: boolean;
+  isAccountant: boolean;
   isSchoolAdmin: boolean;
   isPlatformAdmin: boolean;
 }
@@ -19,7 +20,7 @@ export function useUserRole() {
     queryKey: ['user-role', user?.id],
     queryFn: async (): Promise<UserRoleInfo> => {
       if (!user?.id) {
-        return { role: null, schoolId: null, isTeacher: false, isSchoolAdmin: false, isPlatformAdmin: false };
+        return { role: null, schoolId: null, isTeacher: false, isAccountant: false, isSchoolAdmin: false, isPlatformAdmin: false };
       }
 
       // Check if platform admin
@@ -31,13 +32,7 @@ export function useUserRole() {
         .maybeSingle();
 
       if (platformRole) {
-        return { 
-          role: 'platform_admin', 
-          schoolId: null, 
-          isTeacher: false, 
-          isSchoolAdmin: false, 
-          isPlatformAdmin: true 
-        };
+        return { role: 'platform_admin', schoolId: null, isTeacher: false, isAccountant: false, isSchoolAdmin: false, isPlatformAdmin: true };
       }
 
       // Check if school admin
@@ -48,34 +43,26 @@ export function useUserRole() {
         .maybeSingle();
 
       if (schoolAdmin) {
-        return { 
-          role: 'school_admin', 
-          schoolId: schoolAdmin.school_id, 
-          isTeacher: false, 
-          isSchoolAdmin: true, 
-          isPlatformAdmin: false 
-        };
+        return { role: 'school_admin', schoolId: schoolAdmin.school_id, isTeacher: false, isAccountant: false, isSchoolAdmin: true, isPlatformAdmin: false };
       }
 
-      // Check if teacher
-      const { data: teacher } = await supabase
+      // Check school_teachers for role
+      const { data: staffMember } = await supabase
         .from('school_teachers')
-        .select('school_id')
+        .select('school_id, role')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
-      if (teacher) {
-        return { 
-          role: 'teacher', 
-          schoolId: teacher.school_id, 
-          isTeacher: true, 
-          isSchoolAdmin: false, 
-          isPlatformAdmin: false 
-        };
+      if (staffMember) {
+        const staffRole = (staffMember as any).role || 'teacher';
+        if (staffRole === 'accountant') {
+          return { role: 'accountant', schoolId: staffMember.school_id, isTeacher: false, isAccountant: true, isSchoolAdmin: false, isPlatformAdmin: false };
+        }
+        return { role: 'teacher', schoolId: staffMember.school_id, isTeacher: true, isAccountant: false, isSchoolAdmin: false, isPlatformAdmin: false };
       }
 
-      return { role: null, schoolId: null, isTeacher: false, isSchoolAdmin: false, isPlatformAdmin: false };
+      return { role: null, schoolId: null, isTeacher: false, isAccountant: false, isSchoolAdmin: false, isPlatformAdmin: false };
     },
     enabled: !!user?.id,
   });
@@ -87,6 +74,7 @@ export function useUserRole() {
     role: data?.role ?? null,
     schoolId: data?.schoolId ?? null,
     isTeacher: data?.isTeacher ?? false,
+    isAccountant: data?.isAccountant ?? false,
     isSchoolAdmin: data?.isSchoolAdmin ?? false,
     isPlatformAdmin: data?.isPlatformAdmin ?? false,
   };
