@@ -233,6 +233,11 @@ export default function ProgressDashboard() {
         </Card>
       </div>
 
+      {/* Birthday Reminder */}
+      <div className="mt-6">
+        <BirthdayReminder students={students} />
+      </div>
+
       {/* Charts Section */}
       {classProgress.length > 0 && (
         <div className="grid md:grid-cols-2 gap-4 mt-6">
