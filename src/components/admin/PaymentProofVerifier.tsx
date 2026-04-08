@@ -126,6 +126,22 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
         if (error) console.warn('WhatsApp confirmation failed:', error);
       }).catch(console.warn);
 
+      // Fire-and-forget payment receipt email
+      if ((proof.students as any).parent_email) {
+        supabase.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'payment-receipt',
+            recipientEmail: (proof.students as any).parent_email,
+            idempotencyKey: `payment-receipt-proof-${proof.id}`,
+            templateData: {
+              studentName: proof.students.name,
+              amount: proof.installments.amount.toLocaleString('en-IN'),
+              paymentDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            },
+          },
+        }).catch(err => console.warn('Payment email failed:', err));
+      }
+
       toast.success('Payment verified and recorded successfully');
       handleClose();
     } catch (error: any) {

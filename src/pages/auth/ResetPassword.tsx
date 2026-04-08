@@ -77,6 +77,25 @@ export default function ResetPassword() {
       return;
     }
 
+    // Send security alert email (fire-and-forget)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email) {
+      supabase.functions.invoke('send-transactional-email', {
+        body: {
+          templateName: 'security-alert',
+          recipientEmail: user.email,
+          idempotencyKey: `password-changed-${user.id}-${Date.now()}`,
+          templateData: {
+            alertType: 'Password Changed',
+            description: 'Your account password was successfully changed. If you did not make this change, please contact support immediately.',
+            timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+            actionUrl: 'https://edzenai.com/admin',
+            actionLabel: 'Go to Dashboard',
+          },
+        },
+      }).catch(err => console.warn('Security alert email failed:', err));
+    }
+
     setSuccess(true);
     setTimeout(() => navigate("/login", { replace: true }), 2000);
   };

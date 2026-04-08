@@ -82,6 +82,24 @@ export function ActivateSchoolDialog({ school, open, onOpenChange, onSuccess }: 
 
       if (error) throw error;
 
+      // Send subscription confirmation email (fire-and-forget)
+      if (school.email) {
+        supabase.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'subscription-confirmation',
+            recipientEmail: school.email,
+            idempotencyKey: `subscription-activate-${school.id}-${Date.now()}`,
+            templateData: {
+              schoolName: school.name,
+              planName: PLAN_DISPLAY[selectedPlan].badge,
+              subscriptionType: subscriptionType === 'monthly' ? 'Monthly' : 'Annual',
+              startDate: format(new Date(subscriptionStartDate), 'dd MMM yyyy'),
+              renewalDate: format(new Date(renewalDate), 'dd MMM yyyy'),
+            },
+          },
+        }).catch(err => console.warn('Subscription email failed:', err));
+      }
+
       toast.success("School activated successfully", {
         description: `${school.name} is now active on the ${PLAN_DISPLAY[selectedPlan].badge} plan with a ${subscriptionType} subscription.`,
       });
