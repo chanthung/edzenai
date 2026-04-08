@@ -63,7 +63,7 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-primary" />
+              <img src={edzenIcon} alt="EdZen AI" className="h-6 w-6 object-contain" />
             </div>
             <div>
               <h1 className="font-semibold text-sm">Student Progress</h1>
@@ -122,7 +122,7 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
             <div className="p-6 border-b border-border/50">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <GraduationCap className="h-6 w-6 text-primary" />
+                  <img src={edzenIcon} alt="EdZen AI" className="h-7 w-7 object-contain" />
                 </div>
                 <div>
                   <h1 className="font-bold text-foreground">Student Progress</h1>
