@@ -96,8 +96,8 @@ Deno.serve(async (req) => {
     const formatDate = (d: Date) => d.toISOString().split('T')[0]
 
     // Get user email for school record
-    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId)
-    const userEmail = userData?.user?.email || ''
+    const { data: userDataForEmail } = await supabaseAdmin.auth.admin.getUserById(userId)
+    const userEmail = userDataForEmail?.user?.email || ''
 
     // Create the school
     const { data: school, error: schoolError } = await supabaseAdmin
@@ -149,6 +149,23 @@ Deno.serve(async (req) => {
         { school_id: school.id, name: 'Transport Fee', description: 'School bus/transport charges', is_mandatory: false, display_order: 2 },
         { school_id: school.id, name: 'Activities Fee', description: 'Sports, arts, and extracurricular activities', is_mandatory: false, display_order: 3 },
       ])
+
+    // Send welcome email (fire-and-forget)
+    if (userEmail) {
+      try {
+        const { error: emailError } = await supabaseAdmin.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'welcome-school',
+            recipientEmail: userEmail,
+            idempotencyKey: `welcome-school-${school.id}`,
+            templateData: { schoolName, adminName: adminName || '' },
+          },
+        })
+        if (emailError) console.warn('Welcome email failed:', emailError)
+      } catch (emailErr) {
+        console.warn('Welcome email error (non-blocking):', emailErr)
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, school: { id: school.id, name: school.name } }),

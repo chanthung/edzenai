@@ -256,6 +256,23 @@ export function PaymentRecorder({ student, open, onOpenChange }: PaymentRecorder
         console.warn("WhatsApp confirmation failed (non-blocking):", waErr);
       }
 
+      // Send payment receipt email (fire-and-forget)
+      if (student.parent_email) {
+        supabase.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'payment-receipt',
+            recipientEmail: student.parent_email,
+            idempotencyKey: `payment-receipt-${student.id}-${Date.now()}`,
+            templateData: {
+              studentName: student.name,
+              amount: selectedTotal.toLocaleString('en-IN'),
+              paymentDate: format(new Date(paymentDate), 'dd MMM yyyy'),
+              referenceNumber: referenceNumber || undefined,
+            },
+          },
+        }).catch(err => console.warn('Payment email failed:', err));
+      }
+
       setSelectedInstallments([]);
       setReferenceNumber("");
     } catch (error: any) {
