@@ -4,6 +4,8 @@ import { Navigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSchool } from "@/hooks/useSchool";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useUserRole } from "@/hooks/useUserRole";
+import { AccountantLayout } from "@/components/admin/AccountantLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -42,9 +44,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
   const { data: school, isLoading: schoolLoading } = useSchool();
   const { effectiveState, daysRemaining, isRestricted, currentPlan, canAccessFeature } = useSubscriptionStatus();
+  const { isAccountant, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+
+  // If user is an accountant, use AccountantLayout instead
+  if (!authLoading && !roleLoading && isAccountant) {
+    return <AccountantLayout>{children}</AccountantLayout>;
+  }
 
   if (authLoading) {
     return (
