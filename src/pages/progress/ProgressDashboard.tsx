@@ -151,13 +151,13 @@ export default function ProgressDashboard() {
           </SelectContent>
         </Select>
 
-        <Select value={selectedClass || "all"} onValueChange={(v) => setSelectedClass(v === "all" ? "" : v)}>
+        <Select value={selectedClass || (isTeacher ? "" : "all")} onValueChange={(v) => setSelectedClass(v === "all" ? "" : v)}>
           <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="All Classes" />
+            <SelectValue placeholder={isTeacher ? "Select Class" : "All Classes"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Classes</SelectItem>
-            {uniqueClasses.map((cls) => (
+            {!isTeacher && <SelectItem value="all">All Classes</SelectItem>}
+            {availableClasses.map((cls) => (
               <SelectItem key={cls} value={cls}>
                 {cls}
               </SelectItem>
