@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,43 +21,12 @@ interface EditTeacherDialogProps {
 export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDialogProps) {
   const { updateTeacher } = useTeachers();
   const { assignedSubjectIds, isLoading: loadingSubjectAssignments, updateAssignments } = useTeacherSubjects(teacher?.id);
-  const { assignedClasses, isLoading: loadingClassAssignments, updateAssignments: updateClassAssignments } = useTeacherClasses(teacher?.id);
   const { data: subjects = [], isLoading: loadingSubjects } = useSubjectsWithClasses();
-  const { data: allStudents = [] } = useResolvedStudents();
 
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const [selectedClassSections, setSelectedClassSections] = useState<Set<string>>(new Set());
   const [sendingReset, setSendingReset] = useState(false);
-
-  // Derive available class-section combos
-  const classSectionOptions = useMemo(() => {
-    const map = new Map<string, Set<string>>();
-    allStudents.forEach(s => {
-      if (s.class_name) {
-        if (!map.has(s.class_name)) map.set(s.class_name, new Set());
-        if (s.section) map.get(s.class_name)!.add(s.section);
-      }
-    });
-    const result: { class_name: string; section: string | null; key: string }[] = [];
-    const sortedClasses = Array.from(map.keys()).sort((a, b) => {
-      const numA = parseInt(a.replace(/\D/g, '')) || 0;
-      const numB = parseInt(b.replace(/\D/g, '')) || 0;
-      return numA - numB || a.localeCompare(b);
-    });
-    for (const cls of sortedClasses) {
-      const sections = Array.from(map.get(cls)!).sort();
-      if (sections.length === 0) {
-        result.push({ class_name: cls, section: null, key: `${cls}::` });
-      } else {
-        for (const sec of sections) {
-          result.push({ class_name: cls, section: sec, key: `${cls}::${sec}` });
-        }
-      }
-    }
-    return result;
-  }, [allStudents]);
 
   useEffect(() => {
     if (teacher) {
@@ -69,12 +38,6 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
   useEffect(() => {
     setSelectedSubjects(assignedSubjectIds);
   }, [assignedSubjectIds]);
-
-  useEffect(() => {
-    const set = new Set<string>();
-    assignedClasses.forEach(a => set.add(`${a.class_name}::${a.section || ''}`));
-    setSelectedClassSections(set);
-  }, [assignedClasses]);
 
   const handleSave = async () => {
     if (!teacher || !editName.trim() || !editEmail.trim()) return;
@@ -96,15 +59,6 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
     await updateAssignments.mutateAsync({
       teacherId: teacher.id,
       subjectIds: selectedSubjects,
-    });
-
-    const classAssignments: TeacherClassAssignment[] = Array.from(selectedClassSections).map(key => {
-      const [cls, sec] = key.split('::');
-      return { class_name: cls, section: sec || null };
-    });
-    await updateClassAssignments.mutateAsync({
-      teacherId: teacher.id,
-      assignments: classAssignments,
     });
 
     onOpenChange(false);
@@ -132,16 +86,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
     );
   };
 
-  const toggleClassSection = (key: string) => {
-    setSelectedClassSections(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const isLoading = loadingSubjectAssignments || loadingSubjects || loadingClassAssignments;
+  const isLoading = loadingSubjectAssignments || loadingSubjects;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -158,28 +103,6 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
           <div className="space-y-2">
             <Label><Mail className="h-4 w-4 inline mr-1" />Email Address</Label>
             <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="teacher@school.com" />
-          </div>
-
-          {/* Class/Section Assignments */}
-          <div className="space-y-2">
-            <Label><School className="h-4 w-4 inline mr-1" />Assigned Classes & Sections</Label>
-            {isLoading ? (
-              <div className="space-y-2"><Skeleton className="h-6 w-full" /><Skeleton className="h-6 w-full" /></div>
-            ) : classSectionOptions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No classes found. Add students first.</p>
-            ) : (
-              <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
-                {classSectionOptions.map(opt => (
-                  <label key={opt.key} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1">
-                    <Checkbox
-                      checked={selectedClassSections.has(opt.key)}
-                      onCheckedChange={() => toggleClassSection(opt.key)}
-                    />
-                    <span className="text-sm">Class {opt.class_name}{opt.section ? ` - Section ${opt.section}` : ''}</span>
-                  </label>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Subject Assignments */}
