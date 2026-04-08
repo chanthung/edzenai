@@ -843,7 +843,7 @@ export default function Students() {
                   <TableHead>Fees</TableHead>
                   <TableHead>Actions</TableHead>
                   <TableHead>Parent Link</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                  {!isAccountant && <TableHead className="w-[50px]"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1007,6 +1007,7 @@ export default function Students() {
                         </Button>
                       </div>
                     </TableCell>
+                    {!isAccountant && (
                     <TableCell>
                       <RestrictedButton isRestricted={isRestricted}>
                         <Button
@@ -1020,6 +1021,7 @@ export default function Students() {
                         </Button>
                       </RestrictedButton>
                     </TableCell>
+                    )}
                   </TableRow>
                   );
                 })}
