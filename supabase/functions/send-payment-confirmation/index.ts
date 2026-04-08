@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         api_key: waApiKey,
-        sender: '919436078446',
+        sender: '919366084335',
         number,
         message,
         footer: `Sent via ${schoolName}`,

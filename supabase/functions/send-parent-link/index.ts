@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
     const payload = {
       api_key: waApiKey,
-      sender: '919436078446',
+      sender: '919366084335',
       number: (() => {
         const digits = student.parent_phone.replace(/\D/g, '');
         // If 10 digits (Indian local number), prepend 91
