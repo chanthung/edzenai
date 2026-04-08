@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { GraduationCap, Loader2, ArrowLeft, ArrowRight, Check, Shield, Sparkles } from "lucide-react";
+import edzenIcon from "@/assets/edzen-icon.png";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
 

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { GraduationCap, Loader2, ArrowLeft, Mail } from "lucide-react";
+import edzenIcon from "@/assets/edzen-icon.png";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
