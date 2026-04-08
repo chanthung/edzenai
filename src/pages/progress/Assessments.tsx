@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sortClassNames } from "@/lib/class-sort";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { sortClassNames } from "@/lib/class-sort";
 import { format, addDays, subDays } from "date-fns";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { useAttendanceByDate, useSaveAttendance, AttendanceStatus } from "@/hooks/useAttendance";
