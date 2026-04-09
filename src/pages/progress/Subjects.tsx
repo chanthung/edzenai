@@ -341,7 +341,7 @@ export default function Subjects() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
+        </div>}
 
         <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader>
@@ -410,27 +410,31 @@ export default function Subjects() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                       <TableCell>
                         <div className="flex items-center gap-1">
                           <CompetencyManager
                             subjectId={subject.id}
                             subjectName={subject.name}
                           />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(subject)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(subject.id)}
-                            disabled={deleteSubject.isPending}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {!isTeacher && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenDialog(subject)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(subject.id)}
+                                disabled={deleteSubject.isPending}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
