@@ -22,11 +22,11 @@ export interface SubjectWithClasses extends Subject {
 /**
  * Fetch subjects. When className is provided, filters via subject_class_assignments junction table.
  */
-export function useSubjects(className?: string) {
+export function useSubjects(className?: string, teacherSubjectIds?: string[] | null) {
   const { data: schoolId } = useResolvedSchoolId();
 
   return useQuery({
-    queryKey: ['subjects', schoolId, className],
+    queryKey: ['subjects', schoolId, className, teacherSubjectIds],
     queryFn: async () => {
       if (!schoolId) return [];
 
@@ -38,8 +38,15 @@ export function useSubjects(className?: string) {
           .eq('school_id', schoolId)
           .eq('class_name', className);
         if (aErr) throw aErr;
-        const subjectIds = (assignments || []).map(a => a.subject_id);
+        let subjectIds = (assignments || []).map(a => a.subject_id);
         if (subjectIds.length === 0) return [];
+
+        // If teacher filter provided, intersect with teacher's assigned subjects
+        if (teacherSubjectIds && teacherSubjectIds.length > 0) {
+          const teacherSet = new Set(teacherSubjectIds);
+          subjectIds = subjectIds.filter(id => teacherSet.has(id));
+          if (subjectIds.length === 0) return [];
+        }
 
         const { data, error } = await supabase
           .from('subjects')
@@ -52,10 +59,17 @@ export function useSubjects(className?: string) {
         return data as Subject[];
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('subjects')
         .select('*')
-        .eq('school_id', schoolId)
+        .eq('school_id', schoolId);
+
+      // If teacher filter provided, only fetch their assigned subjects
+      if (teacherSubjectIds && teacherSubjectIds.length > 0) {
+        query = query.in('id', teacherSubjectIds);
+      }
+
+      const { data, error } = await query
         .order('display_order', { ascending: true })
         .order('name', { ascending: true });
       if (error) throw error;
@@ -68,11 +82,11 @@ export function useSubjects(className?: string) {
 /**
  * Fetch subjects with their assigned classes for the subjects list page.
  */
-export function useSubjectsWithClasses() {
+export function useSubjectsWithClasses(teacherSubjectIds?: string[] | null) {
   const { data: schoolId } = useResolvedSchoolId();
 
   return useQuery({
-    queryKey: ['subjects-with-classes', schoolId],
+    queryKey: ['subjects-with-classes', schoolId, teacherSubjectIds],
     queryFn: async () => {
       if (!schoolId) return [];
 
