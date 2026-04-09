@@ -1,59 +1,54 @@
 
 
-# Plan: Filter Subjects by Teacher Assignment + Add Time to Attendance
+# Assessment: Timetable-Based Teacher System
 
-## Problem
-Teacher George is assigned only English and EVS, but sees all 4 subjects (Math, Science included) in the Subjects list, Marks Entry, and Attendance pages. The root cause: `useSubjects()` and `useSubjectsWithClasses()` fetch ALL school subjects without filtering by teacher's `teacher_subject_assignments`.
+## Current State (Already Working)
 
-Additionally, attendance needs a time input field.
+The recent changes have **already fixed** the core subject visibility problem:
 
-## Changes
+1. **`useMySubjectIds`** — fetches only the logged-in teacher's assigned subjects from `teacher_subject_assignments`
+2. **`useSubjects` / `useSubjectsWithClasses`** — now accept `teacherSubjectIds` filter and apply `.in('id', teacherSubjectIds)`
+3. **`useMyClassAssignments`** — derives classes from `teacher_subject_assignments → subject_class_assignments` (no manual class assignment)
+4. **Subjects page** — hides Add/Edit/Delete for teachers, shows only assigned subjects
+5. **Marks Entry** — filters subjects by teacher assignment
+6. **Attendance** — filters classes by derived class assignments, includes time field
 
-### 1. Create a hook to get the current teacher's assigned subject IDs
-**New file**: `src/hooks/progress/useMySubjectIds.ts`
-- For teachers: query `teacher_subject_assignments` using the logged-in user's teacher ID
-- For admins: return `null` (meaning "show all")
-- Reuse the pattern from `useMyClassAssignments`
+The relationship chain `Teacher → teacher_subject_assignments → subjects → subject_class_assignments → classes` is **already enforced**.
 
-### 2. Update `useSubjects` hook to filter by teacher assignments
-**Edit**: `src/hooks/progress/useSubjects.ts`
-- Accept an optional `teacherSubjectIds` parameter
-- When provided, add `.in('id', teacherSubjectIds)` filter
-- This affects Marks Entry subject dropdown
+## Timetable Proposal: Risk Assessment
 
-### 3. Update `useSubjectsWithClasses` to filter for teachers
-**Edit**: `src/hooks/progress/useSubjects.ts`
-- Accept optional `teacherSubjectIds`
-- When provided, filter subjects to only those IDs
-- This affects the Subjects list page
+| Aspect | Risk Level | Reason |
+|--------|-----------|--------|
+| New `timetable` table | Medium | Large schema addition, new RLS policies, new admin UI |
+| Linking attendance to `timetable_id` | **High** | Breaks existing attendance flow; attendance is currently class-level, not period-level |
+| Replacing subject/class dropdowns with timetable-driven UI | **High** | Removes flexibility; many schools don't follow rigid timetables |
+| Timetable Builder admin UI | Medium | Significant new feature (day/period grid, conflict detection, teacher filtering) |
+| "Today's Schedule" dashboard | Low | Additive feature, no existing code affected |
 
-### 4. Update Subjects page for teachers
-**Edit**: `src/pages/progress/Subjects.tsx`
-- Import the new hook, pass IDs to `useSubjectsWithClasses`
-- Teachers should only see their assigned subjects in the list
-- Hide Add/Edit/Delete buttons for teachers (they shouldn't manage subjects they aren't assigned to)
+## Recommendation: Do NOT Integrate As Proposed
 
-### 5. Update Marks Entry page
-**Edit**: `src/pages/progress/MarksEntry.tsx`
-- Import the new hook, filter subjects by teacher's assigned subject IDs
-- Subject dropdown only shows assigned subjects
+The timetable system as described would:
 
-### 6. Add time field to Attendance
-**Edit**: `src/pages/progress/Attendance.tsx`
-- Add a time input (`<Input type="time" />`) next to the date picker
-- Store time alongside date when saving attendance
-- This requires a DB migration to add a `time` column to the `attendance` table
+1. **Break existing attendance** — Current attendance is one record per student per day. Switching to period-wise attendance is a fundamental model change that affects parent views, report cards, and attendance summaries.
 
-### 7. Database migration for attendance time
-- Add `marked_time` column (type `time`, nullable) to `attendance` table
+2. **Over-constrain marks entry** — Many schools enter marks for subjects that don't follow a strict daily schedule (exams, projects). Removing the dropdown forces a rigid model.
 
-## Technical Details
-- The key query pattern:
-  ```sql
-  SELECT subject_id FROM teacher_subject_assignments 
-  WHERE teacher_id = (SELECT id FROM school_teachers WHERE user_id = auth.uid())
-  ```
-- The `useMySubjectIds` hook will first resolve the teacher record, then fetch assigned subject IDs
-- All filtering is done at the query level for efficiency
-- Admin users bypass filtering entirely (they see everything)
+3. **Duplicate solved problems** — Subject visibility and class derivation are already fixed. The timetable adds complexity to solve an already-solved problem.
+
+4. **Require massive UI work** — Timetable builder, schedule view, period-wise attendance, conflict detection — this is essentially a new module.
+
+## What Could Be Added Safely (Phase 2, Optional)
+
+If a timetable feature is desired later, it should be **additive** — not replacing existing flows:
+
+- **New `timetable` table** as a standalone feature
+- **"Today's Schedule" card** on teacher dashboard (read-only, informational)
+- **Timetable Builder** in admin panel as a separate page
+- Attendance and Marks Entry remain unchanged (current dropdown approach works)
+
+This would be a separate feature request, not a fix — since the underlying subject/class filtering is already working correctly.
+
+## Summary
+
+The proposed timetable system solves problems that are **already fixed** and introduces **high-risk breaking changes** to attendance and marks entry. The current subject-assignment-based architecture is simpler, working, and sufficient. A timetable can be added as an optional scheduling tool later without replacing core workflows.
 
