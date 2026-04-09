@@ -44,7 +44,6 @@ export default function Attendance() {
   const { mySubjectIds, getSubjectIdsForClass } = useMySubjectIds();
   const { data: allSubjects = [] } = useSubjects();
   const { data: allStudents, isLoading: studentsLoading } = useResolvedStudents();
-  const { data: allStudents, isLoading: studentsLoading } = useResolvedStudents();
 
   // Derive unique classes — filter by teacher's assigned classes if teacher
   const classes = useMemo(() => {
