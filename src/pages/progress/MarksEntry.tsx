@@ -43,6 +43,8 @@ type ValidationErrorsMap = Record<string, Record<string, string>>;
 export default function MarksEntry() {
   const { data: academicYears = [] } = useResolvedAcademicYears();
   const activeYear = useResolvedActiveAcademicYear();
+  const { isTeacher } = useUserRole();
+  const { data: myClassAssignments = [] } = useMyClassAssignments();
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const effectiveYearId = selectedYearId || activeYear?.id || "";
 
