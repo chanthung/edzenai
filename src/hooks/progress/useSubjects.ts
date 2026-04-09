@@ -90,11 +90,18 @@ export function useSubjectsWithClasses(teacherSubjectIds?: string[] | null) {
     queryFn: async () => {
       if (!schoolId) return [];
 
-      const [subjectsRes, assignmentsRes] = await Promise.all([
-        supabase
+      let subjectsQuery = supabase
           .from('subjects')
           .select('*')
-          .eq('school_id', schoolId)
+          .eq('school_id', schoolId);
+
+      // Filter by teacher's assigned subjects if provided
+      if (teacherSubjectIds && teacherSubjectIds.length > 0) {
+        subjectsQuery = subjectsQuery.in('id', teacherSubjectIds);
+      }
+
+      const [subjectsRes, assignmentsRes] = await Promise.all([
+        subjectsQuery
           .order('display_order', { ascending: true })
           .order('name', { ascending: true }),
         supabase
