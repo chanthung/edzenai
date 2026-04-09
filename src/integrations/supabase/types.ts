@@ -187,6 +187,7 @@ export type Database = {
           school_id: string
           status: Database["public"]["Enums"]["attendance_status"]
           student_id: string
+          subject_id: string | null
           updated_at: string
         }
         Insert: {
@@ -199,6 +200,7 @@ export type Database = {
           school_id: string
           status?: Database["public"]["Enums"]["attendance_status"]
           student_id: string
+          subject_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -211,6 +213,7 @@ export type Database = {
           school_id?: string
           status?: Database["public"]["Enums"]["attendance_status"]
           student_id?: string
+          subject_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -226,6 +229,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]

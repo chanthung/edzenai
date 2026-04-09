@@ -6,6 +6,8 @@ import { useAttendanceByDate, useSaveAttendance, AttendanceStatus } from "@/hook
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useMyClassAssignments } from "@/hooks/useTeacherClasses";
+import { useMySubjectIds } from "@/hooks/progress/useMySubjectIds";
+import { useSubjects } from "@/hooks/progress/useSubjects";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,11 +35,14 @@ export default function Attendance() {
   const [selectedTime, setSelectedTime] = useState(format(new Date(), 'HH:mm'));
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [localEntries, setLocalEntries] = useState<Map<string, AttendanceStatus>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { isTeacher } = useUserRole();
   const { data: myClassAssignments = [] } = useMyClassAssignments();
+  const { mySubjectIds, getSubjectIdsForClass } = useMySubjectIds();
+  const { data: allSubjects = [] } = useSubjects();
   const { data: allStudents, isLoading: studentsLoading } = useResolvedStudents();
 
   // Derive unique classes — filter by teacher's assigned classes if teacher
@@ -78,7 +83,28 @@ export default function Attendance() {
 
     return allSections;
   }, [allStudents, selectedClass, isTeacher, myClassAssignments]);
-  
+
+  // Derive subjects for selected class (teacher-filtered)
+  const subjectsForClass = useMemo(() => {
+    if (!selectedClass) return [];
+    if (isTeacher) {
+      const ids = getSubjectIdsForClass(selectedClass);
+      if (ids && ids.length > 0) {
+        return allSubjects.filter(s => ids.includes(s.id));
+      }
+      return [];
+    }
+    return allSubjects;
+  }, [selectedClass, isTeacher, getSubjectIdsForClass, allSubjects]);
+
+  // Auto-select first subject when class changes
+  useEffect(() => {
+    if (subjectsForClass.length > 0) {
+      setSelectedSubject(subjectsForClass[0].id);
+    } else {
+      setSelectedSubject('');
+    }
+  }, [subjectsForClass]);
 
   // Auto-select first class
   useEffect(() => {
@@ -145,7 +171,7 @@ export default function Attendance() {
     const markedTime = selectedTime || null;
 
     try {
-      await saveAttendance.mutateAsync({ date: selectedDate, entries, markedTime });
+      await saveAttendance.mutateAsync({ date: selectedDate, entries, markedTime, subjectId: selectedSubject || null });
       toast({ title: "Attendance saved", description: `Saved for ${entries.length} students` });
       setHasUnsavedChanges(false);
     } catch (err: any) {
@@ -273,6 +299,20 @@ export default function Attendance() {
                   <SelectContent>
                     {sections.map(s => (
                       <SelectItem key={s} value={s}>Sec {s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Subject selector */}
+              {subjectsForClass.length > 0 && (
+                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                  <SelectTrigger className="w-full sm:w-[160px]">
+                    <SelectValue placeholder="Subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjectsForClass.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
