@@ -1,16 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useTeachers, type Teacher } from "@/hooks/useTeachers";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectsWithClasses } from "@/hooks/progress/useSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mail, User, BookOpen } from "lucide-react";
+import { Loader2, Mail, User, BookOpen, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { sortClassNames } from "@/lib/class-sort";
 
 interface EditTeacherDialogProps {
   teacher: Teacher | null;
@@ -20,12 +23,14 @@ interface EditTeacherDialogProps {
 
 export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDialogProps) {
   const { updateTeacher } = useTeachers();
-  const { assignedSubjectIds, isLoading: loadingSubjectAssignments, updateAssignments } = useTeacherSubjects(teacher?.id);
+  const { assignments, isLoading: loadingSubjectAssignments, updateAssignments } = useTeacherSubjects(teacher?.id);
   const { data: subjects = [], isLoading: loadingSubjects } = useSubjectsWithClasses();
 
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  // Set of "subjectId::className" keys
+  const [selectedPairs, setSelectedPairs] = useState<Set<string>>(new Set());
+  const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
   const [sendingReset, setSendingReset] = useState(false);
 
   useEffect(() => {
@@ -36,8 +41,12 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
   }, [teacher]);
 
   useEffect(() => {
-    setSelectedSubjects(assignedSubjectIds);
-  }, [assignedSubjectIds]);
+    const pairs = new Set(assignments.map(a => `${a.subject_id}::${a.class_name}`));
+    setSelectedPairs(pairs);
+    // Auto-expand subjects that have assignments
+    const subjectIds = new Set(assignments.map(a => a.subject_id));
+    setExpandedSubjects(subjectIds);
+  }, [assignments]);
 
   const handleSave = async () => {
     if (!teacher || !editName.trim() || !editEmail.trim()) return;
@@ -56,8 +65,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
       if (error) toast.error("Failed to update email");
     }
 
-    // Convert selectedSubjectClasses to assignment pairs
-    const assignmentPairs = selectedSubjectClasses.map(key => {
+    const assignmentPairs = Array.from(selectedPairs).map(key => {
       const [subject_id, class_name] = key.split('::');
       return { subject_id, class_name };
     });
@@ -85,10 +93,42 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
     }
   };
 
-  const toggleSubject = (subjectId: string) => {
-    setSelectedSubjects(prev =>
-      prev.includes(subjectId) ? prev.filter(id => id !== subjectId) : [...prev, subjectId]
-    );
+  const toggleSubjectClass = (subjectId: string, className: string) => {
+    const key = `${subjectId}::${className}`;
+    setSelectedPairs(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleAllClassesForSubject = (subjectId: string, classes: string[]) => {
+    setSelectedPairs(prev => {
+      const next = new Set(prev);
+      const allSelected = classes.every(cn => next.has(`${subjectId}::${cn}`));
+      classes.forEach(cn => {
+        const key = `${subjectId}::${cn}`;
+        if (allSelected) next.delete(key);
+        else next.add(key);
+      });
+      return next;
+    });
+    // Auto-expand
+    setExpandedSubjects(prev => new Set(prev).add(subjectId));
+  };
+
+  const toggleExpanded = (subjectId: string) => {
+    setExpandedSubjects(prev => {
+      const next = new Set(prev);
+      if (next.has(subjectId)) next.delete(subjectId);
+      else next.add(subjectId);
+      return next;
+    });
+  };
+
+  const getSubjectClassCount = (subjectId: string, classes: string[]) => {
+    return classes.filter(cn => selectedPairs.has(`${subjectId}::${cn}`)).length;
   };
 
   const isLoading = loadingSubjectAssignments || loadingSubjects;
@@ -110,27 +150,62 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
             <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="teacher@school.com" />
           </div>
 
-          {/* Subject Assignments */}
+          {/* Subject-Class Assignments */}
           <div className="space-y-2">
-            <Label><BookOpen className="h-4 w-4 inline mr-1" />Assigned Subjects</Label>
+            <Label><BookOpen className="h-4 w-4 inline mr-1" />Assigned Subjects &amp; Classes</Label>
             {isLoading ? (
               <div className="space-y-2"><Skeleton className="h-6 w-full" /><Skeleton className="h-6 w-full" /></div>
             ) : subjects.length === 0 ? (
               <p className="text-sm text-muted-foreground">No subjects created yet.</p>
             ) : (
-              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-                {subjects.map((subject) => (
-                  <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1">
-                    <Checkbox
-                      checked={selectedSubjects.includes(subject.id)}
-                      onCheckedChange={() => toggleSubject(subject.id)}
-                    />
-                    <span className="text-sm">{subject.name}</span>
-                    {subject.assigned_classes.length > 0 && (
-                      <span className="text-xs text-muted-foreground ml-auto">{subject.assigned_classes.join(", ")}</span>
-                    )}
-                  </label>
-                ))}
+              <div className="border rounded-md p-2 max-h-64 overflow-y-auto space-y-1">
+                {subjects.map((subject) => {
+                  const sortedClasses = sortClassNames(subject.assigned_classes);
+                  const selectedCount = getSubjectClassCount(subject.id, sortedClasses);
+                  const allSelected = sortedClasses.length > 0 && selectedCount === sortedClasses.length;
+                  const isExpanded = expandedSubjects.has(subject.id);
+
+                  return (
+                    <div key={subject.id} className="rounded-md border bg-card">
+                      <div className="flex items-center gap-2 px-3 py-2">
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={() => toggleAllClassesForSubject(subject.id, sortedClasses)}
+                          disabled={sortedClasses.length === 0}
+                        />
+                        <button
+                          type="button"
+                          className="flex-1 flex items-center gap-2 text-left"
+                          onClick={() => toggleExpanded(subject.id)}
+                        >
+                          <ChevronRight className={cn("h-4 w-4 transition-transform text-muted-foreground", isExpanded && "rotate-90")} />
+                          <span className="text-sm font-medium">{subject.name}</span>
+                          {selectedCount > 0 && (
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {selectedCount}/{sortedClasses.length} classes
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                      {isExpanded && sortedClasses.length > 0 && (
+                        <div className="pl-10 pr-3 pb-2 space-y-1">
+                          {sortedClasses.map(cn => (
+                            <label key={cn} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-0.5">
+                              <Checkbox
+                                checked={selectedPairs.has(`${subject.id}::${cn}`)}
+                                onCheckedChange={() => toggleSubjectClass(subject.id, cn)}
+                              />
+                              <span className="text-sm text-muted-foreground">{cn}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      {isExpanded && sortedClasses.length === 0 && (
+                        <p className="pl-10 pr-3 pb-2 text-xs text-muted-foreground">No classes assigned to this subject.</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
