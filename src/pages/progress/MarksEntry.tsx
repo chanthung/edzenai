@@ -100,8 +100,14 @@ export default function MarksEntry() {
 
   // Unique classes / sections
   const uniqueClasses = useMemo(() => {
-    return sortClassNames([...new Set(students.map(s => s.class_name).filter(Boolean))] as string[]);
-  }, [students]);
+    const allClasses = sortClassNames([...new Set(students.map(s => s.class_name).filter(Boolean))] as string[]);
+    // For teachers: only show classes from their assignments
+    if (isTeacher && myClassAssignments.length > 0) {
+      const assignedClassNames = new Set(myClassAssignments.map(a => a.class_name));
+      return allClasses.filter(c => assignedClassNames.has(c));
+    }
+    return allClasses;
+  }, [students, isTeacher, myClassAssignments]);
 
   const uniqueSections = useMemo(() => {
     if (!selectedClass) return [];
