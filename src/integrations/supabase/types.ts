@@ -1550,6 +1550,7 @@ export type Database = {
       }
       teacher_subject_assignments: {
         Row: {
+          class_name: string
           created_at: string
           id: string
           school_id: string
@@ -1557,6 +1558,7 @@ export type Database = {
           teacher_id: string
         }
         Insert: {
+          class_name: string
           created_at?: string
           id?: string
           school_id: string
@@ -1564,6 +1566,7 @@ export type Database = {
           teacher_id: string
         }
         Update: {
+          class_name?: string
           created_at?: string
           id?: string
           school_id?: string
