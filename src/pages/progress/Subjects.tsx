@@ -212,7 +212,7 @@ export default function Subjects() {
       />
 
       <div className="mt-6">
-        <div className="flex justify-end mb-4">
+        {!isTeacher && <div className="flex justify-end mb-4">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => handleOpenDialog()}>
