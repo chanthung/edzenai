@@ -83,7 +83,28 @@ export default function Attendance() {
 
     return allSections;
   }, [allStudents, selectedClass, isTeacher, myClassAssignments]);
-  
+
+  // Derive subjects for selected class (teacher-filtered)
+  const subjectsForClass = useMemo(() => {
+    if (!selectedClass) return [];
+    if (isTeacher) {
+      const ids = getSubjectIdsForClass(selectedClass);
+      if (ids && ids.length > 0) {
+        return allSubjects.filter(s => ids.includes(s.id));
+      }
+      return [];
+    }
+    return allSubjects;
+  }, [selectedClass, isTeacher, getSubjectIdsForClass, allSubjects]);
+
+  // Auto-select first subject when class changes
+  useEffect(() => {
+    if (subjectsForClass.length > 0) {
+      setSelectedSubject(subjectsForClass[0].id);
+    } else {
+      setSelectedSubject('');
+    }
+  }, [subjectsForClass]);
 
   // Auto-select first class
   useEffect(() => {
@@ -150,7 +171,7 @@ export default function Attendance() {
     const markedTime = selectedTime || null;
 
     try {
-      await saveAttendance.mutateAsync({ date: selectedDate, entries, markedTime });
+      await saveAttendance.mutateAsync({ date: selectedDate, entries, markedTime, subjectId: selectedSubject || null });
       toast({ title: "Attendance saved", description: `Saved for ${entries.length} students` });
       setHasUnsavedChanges(false);
     } catch (err: any) {
@@ -278,6 +299,20 @@ export default function Attendance() {
                   <SelectContent>
                     {sections.map(s => (
                       <SelectItem key={s} value={s}>Sec {s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Subject selector */}
+              {subjectsForClass.length > 0 && (
+                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                  <SelectTrigger className="w-full sm:w-[160px]">
+                    <SelectValue placeholder="Subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjectsForClass.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
