@@ -103,7 +103,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-medium text-sm">Phone</p>
-                  <p className="text-muted-foreground text-sm">+91 98765 43210</p>
+                  <p className="text-muted-foreground text-sm">+91 93660 84335</p>
                 </div>
               </CardContent>
             </Card>
