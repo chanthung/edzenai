@@ -30,6 +30,7 @@ import { exportToXLSX } from "@/lib/export-utils";
 
 export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedTime, setSelectedTime] = useState(format(new Date(), 'HH:mm'));
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
   const [localEntries, setLocalEntries] = useState<Map<string, AttendanceStatus>>(new Map());
@@ -141,8 +142,10 @@ export default function Attendance() {
       status,
     }));
 
+    const markedTime = selectedTime || null;
+
     try {
-      await saveAttendance.mutateAsync({ date: selectedDate, entries });
+      await saveAttendance.mutateAsync({ date: selectedDate, entries, markedTime });
       toast({ title: "Attendance saved", description: `Saved for ${entries.length} students` });
       setHasUnsavedChanges(false);
     } catch (err: any) {
