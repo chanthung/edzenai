@@ -56,9 +56,14 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
       if (error) toast.error("Failed to update email");
     }
 
+    // Convert selectedSubjectClasses to assignment pairs
+    const assignmentPairs = selectedSubjectClasses.map(key => {
+      const [subject_id, class_name] = key.split('::');
+      return { subject_id, class_name };
+    });
     await updateAssignments.mutateAsync({
       teacherId: teacher.id,
-      subjectIds: selectedSubjects,
+      assignments: assignmentPairs,
     });
 
     onOpenChange(false);

@@ -80,9 +80,9 @@ function useUniqueClasses() {
 
 export default function Subjects() {
   const { isTeacher } = useUserRole();
-  const { data: mySubjectIds } = useMySubjectIds();
+  const { mySubjectIds } = useMySubjectIds();
   const { data: subjects = [], isLoading } = useSubjectsWithClasses(
-    isTeacher ? mySubjectIds : undefined
+    isTeacher ? (mySubjectIds ?? undefined) : undefined
   );
   const { data: uniqueClasses = [] } = useUniqueClasses();
   const createSubject = useCreateSubject();
