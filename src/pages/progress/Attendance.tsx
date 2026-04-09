@@ -6,6 +6,8 @@ import { useAttendanceByDate, useSaveAttendance, AttendanceStatus } from "@/hook
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useMyClassAssignments } from "@/hooks/useTeacherClasses";
+import { useMySubjectIds } from "@/hooks/progress/useMySubjectIds";
+import { useSubjects } from "@/hooks/progress/useSubjects";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
