@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useMyClassAssignments } from "@/hooks/useTeacherClasses";
 import { ProgressLayout } from "@/components/progress/ProgressLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

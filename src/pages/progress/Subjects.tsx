@@ -80,11 +80,25 @@ function useUniqueClasses() {
 
 export default function Subjects() {
   const { isTeacher } = useUserRole();
-  const { mySubjectIds } = useMySubjectIds();
-  const { data: subjects = [], isLoading } = useSubjectsWithClasses(
+  const { mySubjectIds, data: myAssignments } = useMySubjectIds();
+  const { data: rawSubjects = [], isLoading } = useSubjectsWithClasses(
     isTeacher ? (mySubjectIds ?? undefined) : undefined
   );
   const { data: uniqueClasses = [] } = useUniqueClasses();
+
+  // For teachers: filter assigned_classes to only the classes they're assigned to per subject
+  const subjects = useMemo(() => {
+    if (!isTeacher || !myAssignments) return rawSubjects;
+    return rawSubjects.map(subject => {
+      const teacherClasses = myAssignments
+        .filter(a => a.subjectId === subject.id)
+        .map(a => a.className);
+      return {
+        ...subject,
+        assigned_classes: subject.assigned_classes.filter(c => teacherClasses.includes(c)),
+      };
+    });
+  }, [rawSubjects, isTeacher, myAssignments]);
   const createSubject = useCreateSubject();
   const updateSubject = useUpdateSubject();
   const deleteSubject = useDeleteSubject();
