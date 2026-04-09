@@ -85,7 +85,7 @@ export function useSaveAttendance() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ date, entries }: { date: string; entries: AttendanceBulkEntry[] }) => {
+    mutationFn: async ({ date, entries, markedTime }: { date: string; entries: AttendanceBulkEntry[]; markedTime?: string | null }) => {
       if (!schoolId || !user) throw new Error('Not authenticated');
 
       const records = entries.map(e => ({
@@ -95,6 +95,7 @@ export function useSaveAttendance() {
         status: e.status as 'present' | 'absent' | 'late' | 'leave',
         marked_by: user.id,
         remarks: e.remarks || null,
+        marked_time: markedTime || null,
       }));
 
       // Upsert: insert or update on conflict (student_id, date)

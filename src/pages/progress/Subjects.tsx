@@ -40,6 +40,8 @@ import {
   useDeleteSubject,
   type SubjectType,
 } from "@/hooks/progress/useSubjects";
+import { useMySubjectIds } from "@/hooks/progress/useMySubjectIds";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Plus, Edit, Trash2, Loader2, Info } from "lucide-react";
@@ -77,7 +79,11 @@ function useUniqueClasses() {
 }
 
 export default function Subjects() {
-  const { data: subjects = [], isLoading } = useSubjectsWithClasses();
+  const { isTeacher } = useUserRole();
+  const { data: mySubjectIds } = useMySubjectIds();
+  const { data: subjects = [], isLoading } = useSubjectsWithClasses(
+    isTeacher ? mySubjectIds : undefined
+  );
   const { data: uniqueClasses = [] } = useUniqueClasses();
   const createSubject = useCreateSubject();
   const updateSubject = useUpdateSubject();
@@ -206,7 +212,7 @@ export default function Subjects() {
       />
 
       <div className="mt-6">
-        <div className="flex justify-end mb-4">
+        {!isTeacher && <div className="flex justify-end mb-4">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => handleOpenDialog()}>
@@ -335,7 +341,7 @@ export default function Subjects() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
+        </div>}
 
         <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader>
@@ -404,27 +410,31 @@ export default function Subjects() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                       <TableCell>
                         <div className="flex items-center gap-1">
                           <CompetencyManager
                             subjectId={subject.id}
                             subjectName={subject.name}
                           />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(subject)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(subject.id)}
-                            disabled={deleteSubject.isPending}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {!isTeacher && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenDialog(subject)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(subject.id)}
+                                disabled={deleteSubject.isPending}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

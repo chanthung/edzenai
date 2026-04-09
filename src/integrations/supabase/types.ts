@@ -182,6 +182,7 @@ export type Database = {
           date: string
           id: string
           marked_by: string | null
+          marked_time: string | null
           remarks: string | null
           school_id: string
           status: Database["public"]["Enums"]["attendance_status"]
@@ -193,6 +194,7 @@ export type Database = {
           date: string
           id?: string
           marked_by?: string | null
+          marked_time?: string | null
           remarks?: string | null
           school_id: string
           status?: Database["public"]["Enums"]["attendance_status"]
@@ -204,6 +206,7 @@ export type Database = {
           date?: string
           id?: string
           marked_by?: string | null
+          marked_time?: string | null
           remarks?: string | null
           school_id?: string
           status?: Database["public"]["Enums"]["attendance_status"]

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { useAssessments } from "@/hooks/progress/useAssessments";
 import { useSubjects } from "@/hooks/progress/useSubjects";
+import { useMySubjectIds } from "@/hooks/progress/useMySubjectIds";
 import { useSaveMarks, useStudentMarks } from "@/hooks/progress/useStudentMarks";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
@@ -77,7 +78,8 @@ export default function MarksEntry() {
 
   // Fetch data
   const { data: assessments = [] } = useAssessments(effectiveYearId, selectedClass || undefined);
-  const { data: subjects = [], isLoading: isLoadingSubjects } = useSubjects(selectedClass || undefined);
+  const { data: mySubjectIds } = useMySubjectIds();
+  const { data: subjects = [], isLoading: isLoadingSubjects } = useSubjects(selectedClass || undefined, mySubjectIds);
   const { data: existingMarks = [] } = useStudentMarks(selectedAssessmentId || undefined);
 
   // Fetch existing component marks

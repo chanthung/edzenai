@@ -30,6 +30,7 @@ import { exportToXLSX } from "@/lib/export-utils";
 
 export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedTime, setSelectedTime] = useState(format(new Date(), 'HH:mm'));
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
   const [localEntries, setLocalEntries] = useState<Map<string, AttendanceStatus>>(new Map());
@@ -141,8 +142,10 @@ export default function Attendance() {
       status,
     }));
 
+    const markedTime = selectedTime || null;
+
     try {
-      await saveAttendance.mutateAsync({ date: selectedDate, entries });
+      await saveAttendance.mutateAsync({ date: selectedDate, entries, markedTime });
       toast({ title: "Attendance saved", description: `Saved for ${entries.length} students` });
       setHasUnsavedChanges(false);
     } catch (err: any) {
@@ -233,6 +236,20 @@ export default function Attendance() {
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
+              </div>
+
+              {/* Time input */}
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                <input
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => {
+                    setSelectedTime(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
+                  className="bg-background border border-input rounded-md px-3 py-2 text-sm w-full sm:w-[120px]"
+                />
               </div>
 
               {/* Class selector */}

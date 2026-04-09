@@ -1,0 +1,1 @@
+ALTER TABLE public.attendance ADD COLUMN marked_time time WITHOUT TIME ZONE DEFAULT NULL;
