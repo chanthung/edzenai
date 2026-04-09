@@ -35,11 +35,15 @@ export default function Attendance() {
   const [selectedTime, setSelectedTime] = useState(format(new Date(), 'HH:mm'));
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [localEntries, setLocalEntries] = useState<Map<string, AttendanceStatus>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { isTeacher } = useUserRole();
   const { data: myClassAssignments = [] } = useMyClassAssignments();
+  const { mySubjectIds, getSubjectIdsForClass } = useMySubjectIds();
+  const { data: allSubjects = [] } = useSubjects();
+  const { data: allStudents, isLoading: studentsLoading } = useResolvedStudents();
   const { data: allStudents, isLoading: studentsLoading } = useResolvedStudents();
 
   // Derive unique classes — filter by teacher's assigned classes if teacher
