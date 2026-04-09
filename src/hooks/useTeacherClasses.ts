@@ -65,7 +65,7 @@ export function useTeacherClasses(teacherId?: string) {
 
 /**
  * For the current logged-in teacher, derive assigned classes
- * from their subject assignments → subject_class_assignments.
+ * directly from teacher_subject_assignments.class_name (three-way mapping).
  */
 export function useMyClassAssignments() {
   return useQuery({
@@ -76,34 +76,22 @@ export function useMyClassAssignments() {
 
       const { data: teacher } = await supabase
         .from('school_teachers')
-        .select('id, school_id')
+        .select('id')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
       if (!teacher) return [];
 
-      // Get teacher's assigned subject IDs
-      const { data: subjectAssignments, error: saErr } = await supabase
+      // Get distinct class names from teacher_subject_assignments
+      const { data: assignments, error } = await supabase
         .from('teacher_subject_assignments')
-        .select('subject_id')
+        .select('class_name')
         .eq('teacher_id', teacher.id);
 
-      if (saErr) throw saErr;
-      const subjectIds = (subjectAssignments || []).map(a => a.subject_id);
-      if (subjectIds.length === 0) return [];
+      if (error) throw error;
 
-      // Get classes mapped to those subjects
-      const { data: classAssignments, error: caErr } = await supabase
-        .from('subject_class_assignments')
-        .select('class_name')
-        .eq('school_id', teacher.school_id)
-        .in('subject_id', subjectIds);
-
-      if (caErr) throw caErr;
-
-      // Deduplicate
-      const uniqueClasses = [...new Set((classAssignments || []).map(a => a.class_name))];
+      const uniqueClasses = [...new Set((assignments || []).map(a => a.class_name))];
       return uniqueClasses.map(cn => ({ class_name: cn, section: null as string | null })) as TeacherClassAssignment[];
     },
   });
