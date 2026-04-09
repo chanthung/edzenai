@@ -238,6 +238,20 @@ export default function Attendance() {
                 </Button>
               </div>
 
+              {/* Time input */}
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                <input
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => {
+                    setSelectedTime(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
+                  className="bg-background border border-input rounded-md px-3 py-2 text-sm w-full sm:w-[120px]"
+                />
+              </div>
+
               {/* Class selector */}
               <Select value={selectedClass} onValueChange={(v) => setSelectedClass(v)}>
                 <SelectTrigger className="w-full sm:w-[140px]">
