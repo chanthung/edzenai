@@ -43,9 +43,9 @@ export function useMySubjectIds() {
   });
 
   // Convenience: deduplicated subject IDs (for hooks that just need subject filtering)
-  const mySubjectIds = query.data
+  const mySubjectIds: string[] | null | undefined = query.data
     ? [...new Set(query.data.map(a => a.subjectId))]
-    : query.data; // null for admins, undefined while loading
+    : (query.data as null | undefined);
 
   // Get subject IDs for a specific class
   const getSubjectIdsForClass = (className: string): string[] | null => {
