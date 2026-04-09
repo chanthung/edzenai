@@ -78,8 +78,10 @@ export default function MarksEntry() {
 
   // Fetch data
   const { data: assessments = [] } = useAssessments(effectiveYearId, selectedClass || undefined);
-  const { data: mySubjectIds } = useMySubjectIds();
-  const { data: subjects = [], isLoading: isLoadingSubjects } = useSubjects(selectedClass || undefined, mySubjectIds);
+  const { getSubjectIdsForClass, mySubjectIds } = useMySubjectIds();
+  // For teachers: filter subjects to only those assigned for the selected class
+  const teacherSubjectIdsForClass = selectedClass ? getSubjectIdsForClass(selectedClass) : mySubjectIds ?? undefined;
+  const { data: subjects = [], isLoading: isLoadingSubjects } = useSubjects(selectedClass || undefined, teacherSubjectIdsForClass ?? undefined);
   const { data: existingMarks = [] } = useStudentMarks(selectedAssessmentId || undefined);
 
   // Fetch existing component marks

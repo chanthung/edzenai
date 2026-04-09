@@ -99,7 +99,13 @@ export default function Teachers() {
     const newTeacherId = result?.teacherId;
     if (newTeacherId && formData.role === 'teacher') {
       if (addSelectedSubjects.length > 0) {
-        await updateAssignments.mutateAsync({ teacherId: newTeacherId, subjectIds: addSelectedSubjects });
+        // Convert flat subject IDs to subject-class assignments using subject_class_assignments
+        const subjectClassAssignments = subjects
+          .filter(s => addSelectedSubjects.includes(s.id))
+          .flatMap(s => s.assigned_classes.map(cn => ({ subject_id: s.id, class_name: cn })));
+        if (subjectClassAssignments.length > 0) {
+          await updateAssignments.mutateAsync({ teacherId: newTeacherId, assignments: subjectClassAssignments });
+        }
       }
       if (addSelectedClassSections.size > 0) {
         const assignments: TeacherClassAssignment[] = Array.from(addSelectedClassSections).map(key => {
