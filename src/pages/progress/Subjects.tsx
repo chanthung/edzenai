@@ -40,6 +40,8 @@ import {
   useDeleteSubject,
   type SubjectType,
 } from "@/hooks/progress/useSubjects";
+import { useMySubjectIds } from "@/hooks/progress/useMySubjectIds";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Plus, Edit, Trash2, Loader2, Info } from "lucide-react";
@@ -77,7 +79,11 @@ function useUniqueClasses() {
 }
 
 export default function Subjects() {
-  const { data: subjects = [], isLoading } = useSubjectsWithClasses();
+  const { isTeacher } = useUserRole();
+  const { data: mySubjectIds } = useMySubjectIds();
+  const { data: subjects = [], isLoading } = useSubjectsWithClasses(
+    isTeacher ? mySubjectIds : undefined
+  );
   const { data: uniqueClasses = [] } = useUniqueClasses();
   const createSubject = useCreateSubject();
   const updateSubject = useUpdateSubject();
