@@ -1,51 +1,59 @@
 
 
-# Plan: Update Existing PDF Manual with New User & Subject Assignment Guide
+# Plan: Filter Subjects by Teacher Assignment + Add Time to Attendance
 
-## What Changed Since the Manual Was Written
+## Problem
+Teacher George is assigned only English and EVS, but sees all 4 subjects (Math, Science included) in the Subjects list, Marks Entry, and Attendance pages. The root cause: `useSubjects()` and `useSubjectsWithClasses()` fetch ALL school subjects without filtering by teacher's `teacher_subject_assignments`.
 
-1. **"Teachers" renamed to "Users"** — now supports Teacher and Accountant roles
-2. **Class assignment removed from teacher edit** — teacher access to classes is now derived from their assigned subjects' class mappings
-3. **New flow**: Create Subject → Assign Classes to Subject → Assign Subject to Teacher → Teacher automatically gets access to those classes
+Additionally, attendance needs a time input field.
 
-## Changes to the PDF Manual
+## Changes
 
-### Section 4: Rename "Teachers" → "Users"
+### 1. Create a hook to get the current teacher's assigned subject IDs
+**New file**: `src/hooks/progress/useMySubjectIds.ts`
+- For teachers: query `teacher_subject_assignments` using the logged-in user's teacher ID
+- For admins: return `null` (meaning "show all")
+- Reuse the pattern from `useMyClassAssignments`
 
-**4.1 Add a User (Teacher or Accountant)**
-- Updated steps: Select Role (Teacher / Accountant) first
-- For Teachers: assign Subjects (classes are derived automatically)
-- For Accountants: no subject/class assignment needed
-- Updated field table with Role field
+### 2. Update `useSubjects` hook to filter by teacher assignments
+**Edit**: `src/hooks/progress/useSubjects.ts`
+- Accept an optional `teacherSubjectIds` parameter
+- When provided, add `.in('id', teacherSubjectIds)` filter
+- This affects Marks Entry subject dropdown
 
-**4.2 Assign Subjects to a Teacher**
-- Step-by-step for editing a teacher and checking/unchecking subjects
-- Explain that class access is automatically derived from subject-class mappings
-- Remove all references to manual "Assign Classes" checkboxes
+### 3. Update `useSubjectsWithClasses` to filter for teachers
+**Edit**: `src/hooks/progress/useSubjects.ts`
+- Accept optional `teacherSubjectIds`
+- When provided, filter subjects to only those IDs
+- This affects the Subjects list page
 
-**4.3 NEW: How Subject-Class Mapping Works**
-- Explain the relationship: Subject → assigned Classes → Teacher sees those classes
-- Example: Teacher George assigned EVS → EVS mapped to Class 2, 3, 6 → George sees Class 2, 3, 6 in dashboard
-- Reference to Section 6.2 (Subjects) for creating subjects and assigning classes
+### 4. Update Subjects page for teachers
+**Edit**: `src/pages/progress/Subjects.tsx`
+- Import the new hook, pass IDs to `useSubjectsWithClasses`
+- Teachers should only see their assigned subjects in the list
+- Hide Add/Edit/Delete buttons for teachers (they shouldn't manage subjects they aren't assigned to)
 
-**4.4 About User Roles**
-- Teacher: Access Student Progress module only (subjects, assessments, marks, attendance)
-- Accountant: Access fee management, student list, payments
-- Owner/Admin: Full access including settings and user management
+### 5. Update Marks Entry page
+**Edit**: `src/pages/progress/MarksEntry.tsx`
+- Import the new hook, filter subjects by teacher's assigned subject IDs
+- Subject dropdown only shows assigned subjects
 
-### Section 6.2: Update Subjects Section
-- Add note that assigning classes to a subject determines which teachers can see those classes
-- Cross-reference back to Section 4
+### 6. Add time field to Attendance
+**Edit**: `src/pages/progress/Attendance.tsx`
+- Add a time input (`<Input type="time" />`) next to the date picker
+- Store time alongside date when saving attendance
+- This requires a DB migration to add a `time` column to the `attendance` table
 
-## Technical Approach
+### 7. Database migration for attendance time
+- Add `marked_time` column (type `time`, nullable) to `attendance` table
 
-1. Use the same Python ReportLab script pattern as the original manual
-2. Regenerate the full PDF with all existing content preserved and Section 4 updated
-3. Add the new sections seamlessly
-4. Version the output as `EdZen_AI_User_Manual_v2.pdf`
-5. QA: Convert to images and inspect every page
-
-## Estimated Output
-- ~14-15 pages (was 13)
-- Same styling and formatting as existing manual
+## Technical Details
+- The key query pattern:
+  ```sql
+  SELECT subject_id FROM teacher_subject_assignments 
+  WHERE teacher_id = (SELECT id FROM school_teachers WHERE user_id = auth.uid())
+  ```
+- The `useMySubjectIds` hook will first resolve the teacher record, then fetch assigned subject IDs
+- All filtering is done at the query level for efficiency
+- Admin users bypass filtering entirely (they see everything)
 
