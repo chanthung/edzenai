@@ -507,6 +507,9 @@ export default function Index() {
                 <Link to="/terms" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Terms of Service
                 </Link>
+                <Link to="/refund-policy" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Refund &amp; Cancellation
+                </Link>
                 <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Contact Support
                 </Link>

@@ -28,6 +28,7 @@ import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Unsubscribe from "./pages/Unsubscribe";
+import RefundPolicy from "./pages/RefundPolicy";
 
 // Progress Module Pages
 import ProgressDashboard from "./pages/progress/ProgressDashboard";
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/onboard" element={<Onboard />} />
