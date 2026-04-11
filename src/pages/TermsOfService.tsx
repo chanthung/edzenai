@@ -2,8 +2,10 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, ArrowLeft } from "lucide-react";
 import edzenIcon from "@/assets/edzen-icon.png";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function TermsOfService() {
+  usePageMeta({ title: "Terms of Service – EdZen AI", description: "Read the EdZen AI terms of service governing platform usage for schools, teachers, and parents.", canonical: "/terms" });
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">
