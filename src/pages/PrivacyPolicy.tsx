@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, ArrowLeft } from "lucide-react";
 import edzenIcon from "@/assets/edzen-icon.png";
 
 export default function PrivacyPolicy() {
+  usePageMeta({ title: "Privacy Policy – EdZen AI", description: "Learn how EdZen AI protects school, student, and parent data. Compliant with India's DPDP Act 2023.", canonical: "/privacy" });
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ const contactSchema = z.object({
 type ContactForm = z.infer<typeof contactSchema>;
 
 export default function Contact() {
+  usePageMeta({ title: "Contact Us – EdZen AI", description: "Get in touch with the EdZen AI team. We respond within 24 hours. Email support@edzenai.com or call +91 93660 84335.", canonical: "/contact" });
   const [form, setForm] = useState<ContactForm>({ name: "", email: "", phone: "", subject: "", message: "" });
   const [errors, setErrors] = useState<Partial<Record<keyof ContactForm, string>>>({});
   const [sending, setSending] = useState(false);

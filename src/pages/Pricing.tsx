@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link } from "react-router-dom";
 import { Check, Star, Users, ShieldCheck, Clock, BadgePercent } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +40,7 @@ function formatINR(n: number) {
 }
 
 export default function Pricing() {
+  usePageMeta({ title: "Pricing – EdZen AI", description: "Simple per-student pricing for EdZen AI school management. Starter from ₹7/student/month. 14-day free trial, no credit card required.", canonical: "/pricing" });
   const [students, setStudents] = useState(100);
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('pro');
   const { data: pricing } = useSubscriptionPricing();

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import edzenIcon from "@/assets/edzen-icon.png";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,11 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function Index() {
+  usePageMeta({
+    title: "EdZen AI – School Fee Management & AI Student Progress Platform",
+    description: "School management platform with fee transparency for parents and AI-powered student progress analysis for teachers. Track payments, attendance, NEP 2020 report cards.",
+    canonical: "/",
+  });
   const { data: pricing } = useSubscriptionPricing();
   const { data: discountTiers = [] } = useVolumeDiscounts();
   const starterRate = pricing?.find((p) => p.plan === "starter")?.per_student_fee ?? 8;
