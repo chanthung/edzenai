@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, ArrowLeft } from "lucide-react";
 import edzenIcon from "@/assets/edzen-icon.png";
