@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import edzenIcon from "@/assets/edzen-icon.png";
 
 export default function RefundPolicy() {
+  usePageMeta({ title: "Refund & Cancellation Policy – EdZen AI", description: "Refund and cancellation policy for EdZen AI. Schools are the final authority on fee refunds. Platform fees are non-refundable.", canonical: "/refund-policy" });
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">
