@@ -2,11 +2,12 @@ import { Link } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import Autoplay from "embla-carousel-autoplay";
 import edzenIcon from "@/assets/edzen-icon.png";
-import dashboardOverview from "@/assets/dashboard-overview.png";
-import dashboardFee1 from "@/assets/dashboard-fee1.png";
-import dashboardFee2 from "@/assets/dashboard-fee2.png";
-import dashboardAiAssist from "@/assets/dashboard-ai-assist.png";
-import dashboardPaymentProofs from "@/assets/dashboard-payment-proofs.png";
+import slideStudents from "@/assets/slide-students.png";
+import slideExcelAi1 from "@/assets/slide-excel-ai1.png";
+import slideExcelAi2 from "@/assets/slide-excel-ai2.png";
+import slideWhatsapp1 from "@/assets/slide-whatsapp1.png";
+import slideWhatsapp2 from "@/assets/slide-whatsapp2.png";
+import slideParentLink from "@/assets/slide-parent-link.png";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -166,19 +167,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ═══ TRUST BAR ═══ */}
-      <section className="py-8 px-4 border-y border-border/30 bg-muted/20">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-xs text-center text-muted-foreground uppercase tracking-widest mb-5"></p>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 text-muted-foreground/60">
-            {["", "", "", "", ""].map((name) => (
-              <span key={name} className="font-bold text-sm tracking-wide">
-                {name}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ═══ PROBLEM SECTION — "Why Fee Confusion Happens" ═══ */}
       <section className="py-20 md:py-28 px-4 sm:px-6">
@@ -252,14 +240,17 @@ export default function Index() {
 
       {/* ═══ DASHBOARD SHOWCASE ═══ */}
       <section className="py-20 md:py-28 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left — Text */}
-          <div className="text-center lg:text-left">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Powerful Admin Dashboard for Schools</h2>
-            <p className="text-muted-foreground mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
+        <div className="max-w-6xl mx-auto">
+          {/* Carousel — full width above text */}
+          <DashboardCarousel />
+
+          {/* Text content below */}
+          <div className="text-center mt-12 max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">Powerful Admin Dashboard for Schools</h2>
+            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
               Manage students, track fees, and monitor school performance — all in one place.
             </p>
-            <div className="space-y-4 mb-8">
+            <div className="flex flex-wrap justify-center gap-6 mb-8">
               <SolutionBullet text="Real-time fee tracking" />
               <SolutionBullet text="Easy student management" />
               <SolutionBullet text="Instant reports & insights" />
@@ -271,9 +262,6 @@ export default function Index() {
               </Link>
             </Button>
           </div>
-
-          {/* Right — Dashboard Carousel */}
-          <DashboardCarousel />
         </div>
       </section>
 
@@ -474,10 +462,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ═══ TESTIMONIALS ═══ */}
-      <section className="py-20 md:py-28 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8"></div>
-      </section>
 
       {/* ═══ FINAL CTA ═══ */}
       <section className="py-24 px-4 sm:px-6 bg-gradient-to-br from-primary via-primary/95 to-accent text-primary-foreground">
@@ -588,11 +572,12 @@ function ProblemCard({
 }
 
 const dashboardSlides = [
-  { image: dashboardOverview, label: "Overview" },
-  { image: dashboardFee1, label: "Fee Tracking" },
-  { image: dashboardFee2, label: "Fee Details" },
-  { image: dashboardAiAssist, label: "AI Insights" },
-  { image: dashboardPaymentProofs, label: "Payment Proofs" },
+  { image: slideStudents, label: "Student Management" },
+  { image: slideExcelAi1, label: "AI Excel Import" },
+  { image: slideExcelAi2, label: "Smart Data Mapping" },
+  { image: slideWhatsapp1, label: "WhatsApp Integration" },
+  { image: slideWhatsapp2, label: "Send Parent Link" },
+  { image: slideParentLink, label: "Parent Portal" },
 ];
 
 function DashboardCarousel() {
@@ -615,7 +600,7 @@ function DashboardCarousel() {
   }, [api, onSelect]);
 
   return (
-    <div className="flex flex-col items-center lg:items-end gap-4 w-full max-w-xl mx-auto lg:mx-0 lg:ml-auto">
+    <div className="flex flex-col items-center gap-5 w-full">
       <Carousel
         setApi={setApi}
         opts={{ loop: true }}
@@ -627,7 +612,7 @@ function DashboardCarousel() {
             <CarouselItem key={slide.label}>
               <img
                 src={slide.image}
-                alt={`EdZen AI dashboard — ${slide.label}`}
+                alt={`EdZen AI — ${slide.label}`}
                 loading="lazy"
                 className="w-full rounded-2xl shadow-2xl shadow-primary/10 border border-border/40"
               />
@@ -640,11 +625,11 @@ function DashboardCarousel() {
           <button
             key={slide.label}
             onClick={() => api?.scrollTo(i)}
-            className={`h-2 rounded-full transition-all duration-300 ${i === current ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30"}`}
+            className={`h-2.5 rounded-full transition-all duration-300 ${i === current ? "w-8 bg-primary" : "w-2.5 bg-muted-foreground/30"}`}
             aria-label={`Go to ${slide.label}`}
           />
         ))}
-        <span className="text-xs text-muted-foreground ml-2">{dashboardSlides[current]?.label}</span>
+        <span className="text-sm font-medium text-muted-foreground ml-3">{dashboardSlides[current]?.label}</span>
       </div>
     </div>
   );
