@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import edzenIcon from "@/assets/edzen-icon.png";
+import dashboardShowcase from "@/assets/dashboard-showcase.png";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -240,6 +241,42 @@ export default function Index() {
               <SolutionBullet text="Automated breakdown of every payment" />
               <SolutionBullet text="Transparent installment tracking" />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ DASHBOARD SHOWCASE ═══ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left — Text */}
+          <div className="text-center lg:text-left">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Powerful Admin Dashboard for Schools
+            </h2>
+            <p className="text-muted-foreground mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
+              Manage students, track fees, and monitor school performance — all in one place.
+            </p>
+            <div className="space-y-4 mb-8">
+              <SolutionBullet text="Real-time fee tracking" />
+              <SolutionBullet text="Easy student management" />
+              <SolutionBullet text="Instant reports & insights" />
+            </div>
+            <Button size="lg" asChild className="min-w-[180px] h-12 text-base shadow-md shadow-primary/20">
+              <Link to="/signup?plan=pro">
+                Start Free Trial
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          {/* Right — Dashboard Screenshot */}
+          <div className="flex justify-center lg:justify-end">
+            <img
+              src={dashboardShowcase}
+              alt="EdZen AI admin dashboard showing student management, fee tracking, and school performance overview"
+              loading="lazy"
+              className="w-full max-w-xl rounded-2xl shadow-2xl shadow-primary/10 border border-border/40"
+            />
           </div>
         </div>
       </section>
