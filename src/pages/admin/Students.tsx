@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { sortClassNames } from "@/lib/class-sort";
+import { getParentPortalUrl } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { BulkStudentUpload } from "@/components/admin/BulkStudentUpload";
@@ -340,8 +341,7 @@ export default function Students() {
 
 
   const copyParentLink = (student: Student) => {
-    const firstName = student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-    const link = `${window.location.origin}/view/${firstName}/${student.access_token}`;
+    const link = getParentPortalUrl(student.name, student.access_token);
     navigator.clipboard.writeText(link);
     toast.success("Parent link copied!", { description: "Share this link with the parent" });
   };
@@ -1001,9 +1001,9 @@ export default function Students() {
                           asChild
                           title="Open parent view"
                         >
-                          <Link to={`/view/${student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '')}/${student.access_token}`} target="_blank">
+                          <a href={getParentPortalUrl(student.name, student.access_token)} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="h-4 w-4" />
-                          </Link>
+                          </a>
                         </Button>
                       </div>
                     </TableCell>
