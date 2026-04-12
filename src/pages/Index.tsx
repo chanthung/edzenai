@@ -169,11 +169,9 @@ export default function Index() {
       {/* ═══ TRUST BAR ═══ */}
       <section className="py-8 px-4 border-y border-border/30 bg-muted/20">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs text-center text-muted-foreground uppercase tracking-widest mb-5">
-            Trusted by 100+ forward-thinking schools
-          </p>
+          <p className="text-xs text-center text-muted-foreground uppercase tracking-widest mb-5"></p>
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 text-muted-foreground/60">
-            {["ACADEMY", "Lumine", "Edvence", "GLOBAL-X", "Summit Prep"].map((name) => (
+            {["", "", "", "", ""].map((name) => (
               <span key={name} className="font-bold text-sm tracking-wide">
                 {name}
               </span>
@@ -257,9 +255,7 @@ export default function Index() {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left — Text */}
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Powerful Admin Dashboard for Schools
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Powerful Admin Dashboard for Schools</h2>
             <p className="text-muted-foreground mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
               Manage students, track fees, and monitor school performance — all in one place.
             </p>
@@ -624,7 +620,9 @@ function DashboardCarousel() {
     onSelect();
     api.on("select", onSelect);
     api.on("reInit", onSelect);
-    return () => { api.off("select", onSelect); };
+    return () => {
+      api.off("select", onSelect);
+    };
   }, [api, onSelect]);
 
   return (
