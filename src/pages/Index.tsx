@@ -1,9 +1,16 @@
 import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import Autoplay from "embla-carousel-autoplay";
 import edzenIcon from "@/assets/edzen-icon.png";
-import dashboardShowcase from "@/assets/dashboard-showcase.png";
+import dashboardOverview from "@/assets/dashboard-overview.png";
+import dashboardFee1 from "@/assets/dashboard-fee1.png";
+import dashboardFee2 from "@/assets/dashboard-fee2.png";
+import dashboardAiAssist from "@/assets/dashboard-ai-assist.png";
+import dashboardPaymentProofs from "@/assets/dashboard-payment-proofs.png";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts } from "@/hooks/useVolumeDiscounts";
@@ -269,15 +276,8 @@ export default function Index() {
             </Button>
           </div>
 
-          {/* Right — Dashboard Screenshot */}
-          <div className="flex justify-center lg:justify-end">
-            <img
-              src={dashboardShowcase}
-              alt="EdZen AI admin dashboard showing student management, fee tracking, and school performance overview"
-              loading="lazy"
-              className="w-full max-w-xl rounded-2xl shadow-2xl shadow-primary/10 border border-border/40"
-            />
-          </div>
+          {/* Right — Dashboard Carousel */}
+          <DashboardCarousel />
         </div>
       </section>
 
@@ -599,6 +599,67 @@ function ProblemCard({
         <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
       </CardContent>
     </Card>
+  );
+}
+
+const dashboardSlides = [
+  { image: dashboardOverview, label: "Overview" },
+  { image: dashboardFee1, label: "Fee Tracking" },
+  { image: dashboardFee2, label: "Fee Details" },
+  { image: dashboardAiAssist, label: "AI Insights" },
+  { image: dashboardPaymentProofs, label: "Payment Proofs" },
+];
+
+function DashboardCarousel() {
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!api) return;
+    setCurrent(api.selectedScrollSnap());
+  }, [api]);
+
+  useEffect(() => {
+    if (!api) return;
+    onSelect();
+    api.on("select", onSelect);
+    api.on("reInit", onSelect);
+    return () => { api.off("select", onSelect); };
+  }, [api, onSelect]);
+
+  return (
+    <div className="flex flex-col items-center lg:items-end gap-4 w-full max-w-xl mx-auto lg:mx-0 lg:ml-auto">
+      <Carousel
+        setApi={setApi}
+        opts={{ loop: true }}
+        plugins={[Autoplay({ delay: 3000, stopOnInteraction: false, stopOnMouseEnter: true })]}
+        className="w-full"
+      >
+        <CarouselContent>
+          {dashboardSlides.map((slide) => (
+            <CarouselItem key={slide.label}>
+              <img
+                src={slide.image}
+                alt={`EdZen AI dashboard — ${slide.label}`}
+                loading="lazy"
+                className="w-full rounded-2xl shadow-2xl shadow-primary/10 border border-border/40"
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
+      <div className="flex items-center gap-3">
+        {dashboardSlides.map((slide, i) => (
+          <button
+            key={slide.label}
+            onClick={() => api?.scrollTo(i)}
+            className={`h-2 rounded-full transition-all duration-300 ${i === current ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30"}`}
+            aria-label={`Go to ${slide.label}`}
+          />
+        ))}
+        <span className="text-xs text-muted-foreground ml-2">{dashboardSlides[current]?.label}</span>
+      </div>
+    </div>
   );
 }
 
