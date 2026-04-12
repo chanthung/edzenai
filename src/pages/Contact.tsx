@@ -10,6 +10,7 @@ import { GraduationCap, Mail, Phone, MapPin, Send, ArrowLeft } from "lucide-reac
 import edzenIcon from "@/assets/edzen-icon.png";
 import { toast } from "sonner";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
@@ -49,11 +50,30 @@ export default function Contact() {
       return;
     }
     setSending(true);
-    // Simulate send — replace with edge function call if needed
-    await new Promise((r) => setTimeout(r, 1200));
-    setSending(false);
-    toast.success("Message sent! We'll get back to you within 24 hours.");
-    setForm({ name: "", email: "", phone: "", subject: "", message: "" });
+    try {
+      const submissionId = crypto.randomUUID();
+      const { error } = await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "contact-notification",
+          idempotencyKey: `contact-${submissionId}`,
+          templateData: {
+            name: result.data.name,
+            email: result.data.email,
+            phone: result.data.phone || undefined,
+            subject: result.data.subject,
+            message: result.data.message,
+          },
+        },
+      });
+      if (error) throw error;
+      toast.success("Message sent! We'll get back to you within 24 hours.");
+      setForm({ name: "", email: "", phone: "", subject: "", message: "" });
+    } catch (err) {
+      console.error("Contact form error:", err);
+      toast.error("Failed to send message. Please try again or email us directly.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
