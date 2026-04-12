@@ -610,12 +610,14 @@ function DashboardCarousel() {
         <CarouselContent>
           {dashboardSlides.map((slide) => (
             <CarouselItem key={slide.label}>
-              <img
-                src={slide.image}
-                alt={`EdZen AI — ${slide.label}`}
-                loading="lazy"
-                className="w-full rounded-2xl shadow-2xl shadow-primary/10 border border-border/40"
-              />
+              <div className="w-full h-[580px] md:h-[640px] lg:h-[680px] rounded-2xl shadow-2xl shadow-primary/10 border border-border/40 overflow-hidden">
+                <img
+                  src={slide.image}
+                  alt={`EdZen AI — ${slide.label}`}
+                  loading="lazy"
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
             </CarouselItem>
           ))}
         </CarouselContent>
