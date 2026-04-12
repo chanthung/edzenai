@@ -297,6 +297,12 @@ Deno.serve(async (req) => {
       ? template.subject(templateData)
       : template.subject
 
+  // Resolve reply-to — supports static string or dynamic function
+  const resolvedReplyTo =
+    typeof template.replyTo === 'function'
+      ? template.replyTo(templateData)
+      : template.replyTo
+
   // 5. Enqueue the pre-rendered email for async processing by the dispatcher.
   // The dispatcher (process-email-queue) handles sending, retries, and rate-limit backoff.
 
@@ -308,22 +314,28 @@ Deno.serve(async (req) => {
     status: 'pending',
   })
 
+  const emailPayload: Record<string, any> = {
+    message_id: messageId,
+    to: effectiveRecipient,
+    from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+    sender_domain: SENDER_DOMAIN,
+    subject: resolvedSubject,
+    html,
+    text: plainText,
+    purpose: 'transactional',
+    label: templateName,
+    idempotency_key: idempotencyKey,
+    unsubscribe_token: unsubscribeToken,
+    queued_at: new Date().toISOString(),
+  }
+
+  if (resolvedReplyTo) {
+    emailPayload.reply_to = resolvedReplyTo
+  }
+
   const { error: enqueueError } = await supabase.rpc('enqueue_email', {
     queue_name: 'transactional_emails',
-    payload: {
-      message_id: messageId,
-      to: effectiveRecipient,
-      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-      sender_domain: SENDER_DOMAIN,
-      subject: resolvedSubject,
-      html,
-      text: plainText,
-      purpose: 'transactional',
-      label: templateName,
-      idempotency_key: idempotencyKey,
-      unsubscribe_token: unsubscribeToken,
-      queued_at: new Date().toISOString(),
-    },
+    payload: emailPayload,
   })
 
   if (enqueueError) {
