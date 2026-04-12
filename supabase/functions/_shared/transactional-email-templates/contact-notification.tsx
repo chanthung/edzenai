@@ -58,9 +58,10 @@ const ContactNotificationEmail = ({ name, email, phone, subject, message }: Cont
 
 export const template = {
   component: ContactNotificationEmail,
-  subject: (data: Record<string, any>) => `Contact: ${data.subject || 'New message from website'}`,
+  subject: (data: Record<string, any>) => `[EdZen AI] New inquiry from ${data.name || 'Website visitor'}: ${data.subject || 'General'}`,
   displayName: 'Contact form notification',
   to: 'support@edzenai.com',
+  replyTo: (data: Record<string, any>) => data.email || undefined,
   previewData: {
     name: 'Rajesh Kumar',
     email: 'rajesh@school.edu',
