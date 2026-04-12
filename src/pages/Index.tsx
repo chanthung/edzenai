@@ -40,7 +40,8 @@ import { cn } from "@/lib/utils";
 export default function Index() {
   usePageMeta({
     title: "EdZen AI – School Fee Management & AI Student Progress Platform",
-    description: "School management platform with fee transparency for parents and AI-powered student progress analysis for teachers. Track payments, attendance, NEP 2020 report cards.",
+    description:
+      "School management platform with fee transparency for parents and AI-powered student progress analysis for teachers. Track payments, attendance, NEP 2020 report cards.",
     canonical: "/",
   });
   const { data: pricing } = useSubscriptionPricing();
@@ -143,7 +144,13 @@ export default function Index() {
                 </div>
                 <div className="px-6 pb-6 flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
                   <span>Due Date</span>
-                  <span className="font-medium text-foreground">April 10, 2026</span>
+                  <span className="font-medium text-foreground">
+                    {new Intl.DateTimeFormat("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    }).format(new Date(Date.now() + 20 * 86400000))}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -513,7 +520,10 @@ export default function Index() {
                 <Link to="/terms" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Terms of Service
                 </Link>
-                <Link to="/refund-policy" className="block text-muted-foreground hover:text-foreground transition-colors">
+                <Link
+                  to="/refund-policy"
+                  className="block text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Refund &amp; Cancellation
                 </Link>
                 <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">
