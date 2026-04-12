@@ -1,9 +1,16 @@
 import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import Autoplay from "embla-carousel-autoplay";
 import edzenIcon from "@/assets/edzen-icon.png";
-import dashboardShowcase from "@/assets/dashboard-showcase.png";
+import dashboardOverview from "@/assets/dashboard-overview.png";
+import dashboardFee1 from "@/assets/dashboard-fee1.png";
+import dashboardFee2 from "@/assets/dashboard-fee2.png";
+import dashboardAiAssist from "@/assets/dashboard-ai-assist.png";
+import dashboardPaymentProofs from "@/assets/dashboard-payment-proofs.png";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts } from "@/hooks/useVolumeDiscounts";
@@ -269,15 +276,8 @@ export default function Index() {
             </Button>
           </div>
 
-          {/* Right — Dashboard Screenshot */}
-          <div className="flex justify-center lg:justify-end">
-            <img
-              src={dashboardShowcase}
-              alt="EdZen AI admin dashboard showing student management, fee tracking, and school performance overview"
-              loading="lazy"
-              className="w-full max-w-xl rounded-2xl shadow-2xl shadow-primary/10 border border-border/40"
-            />
-          </div>
+          {/* Right — Dashboard Carousel */}
+          <DashboardCarousel />
         </div>
       </section>
 
