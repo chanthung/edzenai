@@ -111,18 +111,31 @@ Deno.serve(async (req) => {
 
     console.log('Sending WhatsApp message to:', student.parent_phone);
 
-    const waResponse = await fetch('https://wp.mayaviinfotech.in/send-message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    // Retry up to 2 times on transient failures
+    let waResult: any = null;
+    let waOk = false;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const waResponse = await fetch('https://wp.mayaviinfotech.in/send-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        waResult = await waResponse.json();
+        if (waResponse.ok && waResult.status) {
+          waOk = true;
+          break;
+        }
+        console.error(`WhatsApp attempt ${attempt} failed:`, waResponse.status, JSON.stringify(waResult));
+      } catch (fetchErr) {
+        console.error(`WhatsApp attempt ${attempt} network error:`, fetchErr);
+      }
+      if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
+    }
 
-    const waResult = await waResponse.json();
-
-    if (!waResponse.ok || !waResult.status) {
-      console.error('WhatsApp API failed:', waResponse.status, JSON.stringify(waResult));
+    if (!waOk) {
       return new Response(
-        JSON.stringify({ error: 'Failed to send WhatsApp message' }),
+        JSON.stringify({ error: 'WhatsApp delivery failed. The service may be temporarily unavailable — please try again in a moment.' }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
