@@ -476,18 +476,7 @@ export default function Index() {
 
       {/* ═══ TESTIMONIALS ═══ */}
       <section className="py-20 md:py-28 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
-          <TestimonialCard
-            quote="For the first time in three years, I didn't have to call the accounts office every month to check my balance. The transparency Ledger provides is a game-changer for our family budget!"
-            name="Sarah Jenkins"
-            title="Parent at Westview Academy"
-          />
-          <TestimonialCard
-            quote="Ledger has reduced our daily aide-in fee queries by almost 80%. Our administrative team is now focused on helping students rather than digging through payment logs."
-            name="Dr. David Chow"
-            title="Administrator, Oasis Prep Schools"
-          />
-        </div>
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8"></div>
       </section>
 
       {/* ═══ FINAL CTA ═══ */}
