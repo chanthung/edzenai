@@ -52,7 +52,19 @@ export default function Contact() {
     setSending(true);
     try {
       const submissionId = crypto.randomUUID();
-      const { error } = await supabase.functions.invoke("send-transactional-email", {
+      // Save to database first for durability
+      const { error: dbError } = await supabase.from("contact_submissions").insert({
+        id: submissionId,
+        name: result.data.name,
+        email: result.data.email,
+        phone: result.data.phone || null,
+        subject: result.data.subject,
+        message: result.data.message,
+      });
+      if (dbError) throw dbError;
+
+      // Send notification email (best-effort — submission is already saved)
+      await supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "contact-notification",
           idempotencyKey: `contact-${submissionId}`,
@@ -65,8 +77,8 @@ export default function Contact() {
           },
         },
       });
-      if (error) throw error;
-      toast.success("Message sent! We'll get back to you within 24 hours.");
+
+      toast.success("We've received your message! We'll get back to you within 24 hours.");
       setForm({ name: "", email: "", phone: "", subject: "", message: "" });
     } catch (err) {
       console.error("Contact form error:", err);
