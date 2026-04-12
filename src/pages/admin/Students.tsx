@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { sortClassNames } from "@/lib/class-sort";
+import { getParentPortalUrl } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { BulkStudentUpload } from "@/components/admin/BulkStudentUpload";
