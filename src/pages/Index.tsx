@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import edzenIcon from "@/assets/edzen-icon.png";
+import dashboardShowcase from "@/assets/dashboard-showcase.png";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
