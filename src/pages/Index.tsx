@@ -602,6 +602,67 @@ function ProblemCard({
   );
 }
 
+const dashboardSlides = [
+  { image: dashboardOverview, label: "Overview" },
+  { image: dashboardFee1, label: "Fee Tracking" },
+  { image: dashboardFee2, label: "Fee Details" },
+  { image: dashboardAiAssist, label: "AI Insights" },
+  { image: dashboardPaymentProofs, label: "Payment Proofs" },
+];
+
+function DashboardCarousel() {
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!api) return;
+    setCurrent(api.selectedScrollSnap());
+  }, [api]);
+
+  useEffect(() => {
+    if (!api) return;
+    onSelect();
+    api.on("select", onSelect);
+    api.on("reInit", onSelect);
+    return () => { api.off("select", onSelect); };
+  }, [api, onSelect]);
+
+  return (
+    <div className="flex flex-col items-center lg:items-end gap-4 w-full max-w-xl mx-auto lg:mx-0 lg:ml-auto">
+      <Carousel
+        setApi={setApi}
+        opts={{ loop: true }}
+        plugins={[Autoplay({ delay: 3000, stopOnInteraction: false, stopOnMouseEnter: true })]}
+        className="w-full"
+      >
+        <CarouselContent>
+          {dashboardSlides.map((slide) => (
+            <CarouselItem key={slide.label}>
+              <img
+                src={slide.image}
+                alt={`EdZen AI dashboard — ${slide.label}`}
+                loading="lazy"
+                className="w-full rounded-2xl shadow-2xl shadow-primary/10 border border-border/40"
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
+      <div className="flex items-center gap-3">
+        {dashboardSlides.map((slide, i) => (
+          <button
+            key={slide.label}
+            onClick={() => api?.scrollTo(i)}
+            className={`h-2 rounded-full transition-all duration-300 ${i === current ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30"}`}
+            aria-label={`Go to ${slide.label}`}
+          />
+        ))}
+        <span className="text-xs text-muted-foreground ml-2">{dashboardSlides[current]?.label}</span>
+      </div>
+    </div>
+  );
+}
+
 function SolutionBullet({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-3">
