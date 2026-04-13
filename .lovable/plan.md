@@ -1,24 +1,27 @@
 
 
-## Plan: Remove all current carousel slides
+## Bug: Razorpay checkout uses wrong student count
 
-**What changes:**
+### Root Cause
+The pricing page has two different student counts:
+- `students` (line 55) — the slider value the user sees (420 in the screenshot)
+- `studentsList?.length` (line 110) — the actual number of students in the database (likely 37, producing ₹370)
 
-1. **Delete all 6 slide image imports** from the top of `src/pages/Index.tsx` (lines 6-11: `slideStudents`, `slideExcelAi1`, `slideExcelAi2`, `slideWhatsapp1`, `slideWhatsapp2`, `slideParentLink`)
+Both `handlePayViaUPI` and `handlePayViaCard` use `Math.max(studentsList?.length || 10, 10)` instead of the `students` slider value. The amount shown on the pricing cards (₹3,780) doesn't match what's sent to Razorpay (₹370).
 
-2. **Empty the `dashboardSlides` array** (lines 564-571) — set it to `[]` or comment it out temporarily
+### Fix
+In `src/pages/Pricing.tsx`, change both checkout handlers (lines 110 and 134) to use the slider value:
 
-3. **Delete the 6 image files** from `src/assets/`:
-   - `slide-students.png`
-   - `slide-excel-ai1.png`
-   - `slide-excel-ai2.png`
-   - `slide-whatsapp1.png`
-   - `slide-whatsapp2.png`
-   - `slide-parent-link.png`
+```typescript
+// Before (both handlers):
+const studentCount = Math.max(studentsList?.length || 10, 10);
 
-After this, the carousel section will be empty and ready for you to upload new screenshots to replace them.
+// After (both handlers):
+const studentCount = Math.max(students, 10);
+```
 
-**Files affected:**
-- `src/pages/Index.tsx` — remove imports + empty the slides array
-- `src/assets/slide-*.png` — delete all 6 files
+This ensures the Razorpay order and Paddle checkout use the same student count shown in the pricing calculator UI.
+
+### Files to change
+- `src/pages/Pricing.tsx` — two lines (110 and 134)
 
