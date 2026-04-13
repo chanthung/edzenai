@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, LogOut, ArrowLeft, Save, IndianRupee, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { useSubscriptionPricing, useUpdateSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, useUpdateSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
-import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts } from "@/hooks/useVolumeDiscounts";
 import {
   GraduationCap,

@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { IndianRupee, Users, Calendar, Crown } from "lucide-react";
 import { useSchool } from "@/hooks/useSchool";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
-import { useSubscriptionPricing, calculateMonthlyFee } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, calculateMonthlyFee, getDefaultRate } from "@/hooks/useSubscriptionPricing";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";

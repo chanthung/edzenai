@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calculator, Users, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
 import type { SubscriptionPlan } from "@/config/plan-features";
 

@@ -12,6 +12,7 @@ import { GraduationCap, Loader2, ArrowLeft, ArrowRight, Check, Shield, Sparkles 
 import edzenIcon from "@/assets/edzen-icon.png";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
+import { DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 
 export default function Onboard() {
   const [step, setStep] = useState(1);

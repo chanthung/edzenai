@@ -16,7 +16,7 @@ import { InvoiceModal } from "@/components/platform/InvoiceModal";
 import { RecordPaymentDialog } from "@/components/platform/RecordPaymentDialog";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
 import { format, differenceInDays } from "date-fns";
-import { useSubscriptionPricing, calculateMonthlyFee } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, calculateMonthlyFee, getDefaultRate } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
 import type { Tables } from "@/integrations/supabase/types";
 

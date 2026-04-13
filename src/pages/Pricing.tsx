@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
 import { useSchool } from "@/hooks/useSchool";
 import { useStudents } from "@/hooks/useStudents";

@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
-import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, getDefaultRate } from "@/hooks/useSubscriptionPricing";
 import { BillingBreakdown } from "@/components/platform/BillingBreakdown";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";

@@ -12,7 +12,7 @@ import edzenIcon from "@/assets/edzen-icon.png";
 import { PasswordInput } from "@/components/ui/password-input";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
-import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 
 export default function Signup() {
   const [step, setStep] = useState(1);
