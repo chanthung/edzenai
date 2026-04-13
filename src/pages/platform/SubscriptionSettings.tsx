@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, LogOut, ArrowLeft, Save, IndianRupee } from "lucide-react";
+import { Loader2, Shield, LogOut, ArrowLeft, Save, IndianRupee, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscriptionPricing, useUpdateSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
 import { VolumeDiscountEditor } from "@/components/platform/VolumeDiscountEditor";
@@ -57,6 +58,21 @@ export default function SubscriptionSettings() {
     setLoading(false);
   };
 
+  const [syncing, setSyncing] = useState(false);
+
+  const syncPaddlePrices = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-paddle-prices");
+      if (error) throw error;
+      toast.success("Payment product prices synced successfully");
+    } catch (error: any) {
+      toast.error("Failed to sync prices", { description: error.message });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleSave = async (plan: string) => {
     const values = formData[plan];
     if (!values) return;
@@ -80,6 +96,8 @@ export default function SubscriptionSettings() {
         base_monthly_fee: baseFee,
       });
       toast.success(`${plan.charAt(0).toUpperCase() + plan.slice(1)} pricing updated`);
+      // Auto-sync prices to payment products
+      await syncPaddlePrices();
     } catch (error: any) {
       toast.error("Failed to update pricing", { description: error.message });
     }
@@ -110,6 +128,7 @@ export default function SubscriptionSettings() {
 
   return (
     <div className="min-h-screen bg-background">
+      <PaymentTestModeBanner />
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -121,10 +140,16 @@ export default function SubscriptionSettings() {
               <p className="text-sm text-muted-foreground">Manage plan pricing for all schools</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={() => { signOut(); navigate("/login"); }}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={syncPaddlePrices} disabled={syncing}>
+              {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Sync Prices
+            </Button>
+            <Button variant="ghost" onClick={() => { signOut(); navigate("/login"); }}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 
