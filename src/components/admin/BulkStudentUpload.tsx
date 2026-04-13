@@ -26,6 +26,11 @@ interface ParsedStudent {
   parent_email: string;
   guardian: string;
   address: string;
+  gender: string;
+  date_of_birth: string;
+  social_category: string;
+  aadhaar_number: string;
+  religion: string;
 }
 
 interface ProcessedRow extends ParsedStudent {
@@ -269,7 +274,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     };
   }, [rows]);
 
-  // Bulk import
+  // Bulk import — per-row error isolation
   const handleImport = async () => {
     if (!school?.id) return;
 
@@ -297,67 +302,81 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
 
     let imported = 0;
     let errors = 0;
-    const chunkSize = 50;
+    const importErrors: string[] = [];
 
-    for (let i = 0; i < toImport.length; i += chunkSize) {
-      const chunk = toImport.slice(i, i + chunkSize);
+    // Insert students one-by-one for error isolation
+    for (let i = 0; i < toImport.length; i++) {
+      const r = toImport[i];
+      try {
+        const studentData = {
+          school_id: school.id,
+          name: r.name.trim(),
+          roll_number: r.roll_number?.trim() || null,
+          class_name: r.class_name?.trim() || null,
+          section: r.section?.trim() || "A",
+          parent_name: r.parent_name?.trim() || null,
+          parent_phone: r.parent_phone?.trim() || null,
+          parent_email: r.parent_email?.trim() || null,
+          guardian: r.guardian?.trim() || null,
+          address: r.address?.trim() || null,
+          gender: r.gender?.trim() || null,
+          date_of_birth: r.date_of_birth?.trim() || null,
+          social_category: r.social_category?.trim() || null,
+          aadhaar_number: r.aadhaar_number?.trim() || null,
+          religion: r.religion?.trim() || null,
+        };
 
-      const studentInserts = chunk.map((r) => ({
-        school_id: school.id,
-        name: r.name.trim(),
-        roll_number: r.roll_number?.trim() || null,
-        class_name: r.class_name?.trim() || null,
-        section: r.section?.trim() || null,
-        parent_name: r.parent_name?.trim() || null,
-        parent_phone: r.parent_phone?.trim() || null,
-        parent_email: r.parent_email?.trim() || null,
-        guardian: r.guardian?.trim() || null,
-        address: r.address?.trim() || null,
-      }));
+        const { data: insertedStudent, error } = await supabase
+          .from("students")
+          .insert(studentData)
+          .select("id, class_name, section")
+          .single();
 
-      const { data: insertedStudents, error } = await supabase
-        .from("students")
-        .insert(studentInserts)
-        .select("id, class_name, section");
+        if (error) {
+          console.error(`Row ${i + 1} insert error:`, error);
+          errors++;
+          importErrors.push(`Row ${i + 1} (${r.name}): ${error.message}`);
+          continue;
+        }
 
-      if (error) {
-        console.error("Insert error:", error);
-        errors += chunk.length;
-      } else {
-        imported += insertedStudents.length;
+        imported++;
 
-        // Create enrollments
-        if (resolvedYearId && insertedStudents.length > 0) {
-          const enrollments = insertedStudents.map((s) => ({
-            student_id: s.id,
-            academic_year_id: resolvedYearId,
-            class_name: s.class_name,
-            section: s.section,
-          }));
-
+        // Create enrollment
+        if (resolvedYearId && insertedStudent) {
           const { error: enrollError } = await supabase
             .from("student_enrollments")
-            .insert(enrollments);
+            .insert({
+              student_id: insertedStudent.id,
+              academic_year_id: resolvedYearId,
+              class_name: insertedStudent.class_name,
+              section: insertedStudent.section,
+            });
 
           if (enrollError) {
-            console.error("Enrollment error:", enrollError);
+            console.error(`Enrollment error for ${r.name}:`, enrollError);
           }
 
-          // Auto-assign fees for each imported student
-          for (const s of insertedStudents) {
-            try {
-              await supabase.rpc("auto_assign_fees_for_student", {
-                _student_id: s.id,
-                _academic_year_id: resolvedYearId,
-              });
-            } catch (feeError) {
-              console.error("Fee auto-assign error for student:", s.id, feeError);
-            }
+          // Auto-assign fees
+          try {
+            await supabase.rpc("auto_assign_fees_for_student", {
+              _student_id: insertedStudent.id,
+              _academic_year_id: resolvedYearId,
+            });
+          } catch (feeError) {
+            console.error("Fee auto-assign error:", insertedStudent.id, feeError);
           }
         }
+      } catch (rowErr: any) {
+        console.error(`Row ${i + 1} unexpected error:`, rowErr);
+        errors++;
+        importErrors.push(`Row ${i + 1} (${r.name}): ${rowErr.message}`);
       }
 
-      setImportProgress(Math.round(((i + chunk.length) / toImport.length) * 100));
+      setImportProgress(Math.round(((i + 1) / toImport.length) * 100));
+    }
+
+    if (importErrors.length > 0) {
+      console.warn("Import errors:", importErrors);
     }
 
     const skipped = rows.length - toImport.length;
