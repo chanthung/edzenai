@@ -65,7 +65,7 @@ export default function Index() {
       <nav className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={edzenLogoFull} alt="EdZen AI" className="h-14 sm:h-16 object-contain" />
+            <img src={edzenLogoFull} alt="EdZen AI" className="h-18 sm:h-20 object-contain" />
           </div>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">
@@ -159,7 +159,6 @@ export default function Index() {
           </div>
         </div>
       </section>
-
 
       {/* ═══ PROBLEM SECTION — "Why Fee Confusion Happens" ═══ */}
       <section className="py-20 md:py-28 px-4 sm:px-6">
@@ -454,7 +453,6 @@ export default function Index() {
           </Card>
         </div>
       </section>
-
 
       {/* ═══ FINAL CTA ═══ */}
       <section className="py-24 px-4 sm:px-6 bg-gradient-to-br from-primary via-primary/95 to-accent text-primary-foreground">
