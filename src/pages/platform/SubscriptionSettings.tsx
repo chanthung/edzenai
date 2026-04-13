@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, LogOut, ArrowLeft, Save, IndianRupee } from "lucide-react";
+import { Loader2, Shield, LogOut, ArrowLeft, Save, IndianRupee, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useSubscriptionPricing, useUpdateSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
 import { VolumeDiscountEditor } from "@/components/platform/VolumeDiscountEditor";
