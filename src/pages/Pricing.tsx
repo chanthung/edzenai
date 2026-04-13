@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
 import { useSchool } from "@/hooks/useSchool";
 import { useStudents } from "@/hooks/useStudents";
@@ -74,8 +74,8 @@ export default function Pricing() {
     effectiveState === 'subscription_active'
   );
 
-  const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 7;
-  const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
+  const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? DEFAULT_STARTER_RATE;
+  const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? DEFAULT_PRO_RATE;
   const discountPct = getApplicableDiscount(students, tiers);
 
   const handleSlider = (v: number[]) => setStudents(v[0]);

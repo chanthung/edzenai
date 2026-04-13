@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, LogOut, ArrowLeft, Save, IndianRupee, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { useSubscriptionPricing, useUpdateSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, useUpdateSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
@@ -25,8 +25,8 @@ export default function SubscriptionSettings() {
   const updatePricing = useUpdateSubscriptionPricing();
 
   const [formData, setFormData] = useState<Record<string, { per_student_fee: string; base_monthly_fee: string }>>({
-    starter: { per_student_fee: "5", base_monthly_fee: "0" },
-    pro: { per_student_fee: "8", base_monthly_fee: "0" },
+    starter: { per_student_fee: String(DEFAULT_STARTER_RATE), base_monthly_fee: "0" },
+    pro: { per_student_fee: String(DEFAULT_PRO_RATE), base_monthly_fee: "0" },
   });
 
   useEffect(() => {

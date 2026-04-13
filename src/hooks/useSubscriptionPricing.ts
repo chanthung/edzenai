@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export const DEFAULT_STARTER_RATE = 7;
+export const DEFAULT_PRO_RATE = 10;
+
+export function getDefaultRate(plan: string) {
+  return plan === 'pro' ? DEFAULT_PRO_RATE : DEFAULT_STARTER_RATE;
+}
+
 export interface SubscriptionPricing {
   id: string;
   plan: string;

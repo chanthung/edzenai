@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
-import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts } from "@/hooks/useVolumeDiscounts";
 import {
   GraduationCap,
@@ -50,8 +50,8 @@ export default function Index() {
   });
   const { data: pricing } = useSubscriptionPricing();
   const { data: discountTiers = [] } = useVolumeDiscounts();
-  const starterRate = pricing?.find((p) => p.plan === "starter")?.per_student_fee ?? 8;
-  const proRate = pricing?.find((p) => p.plan === "pro")?.per_student_fee ?? 10;
+  const starterRate = pricing?.find((p) => p.plan === "starter")?.per_student_fee ?? DEFAULT_STARTER_RATE;
+  const proRate = pricing?.find((p) => p.plan === "pro")?.per_student_fee ?? DEFAULT_PRO_RATE;
 
   return (
     <div className="min-h-screen bg-background">

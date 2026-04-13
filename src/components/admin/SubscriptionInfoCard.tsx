@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { IndianRupee, Users, Calendar, Crown } from "lucide-react";
 import { useSchool } from "@/hooks/useSchool";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
-import { useSubscriptionPricing, calculateMonthlyFee } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, calculateMonthlyFee, getDefaultRate } from "@/hooks/useSubscriptionPricing";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -48,7 +48,7 @@ export function SubscriptionInfoCard() {
   const plan = (school.subscription_plan as SubscriptionPlan) || 'starter';
   const planInfo = PLAN_DISPLAY[plan];
   const planPricing = pricing?.find((p) => p.plan === plan);
-  const perStudentFee = planPricing?.per_student_fee ?? (plan === 'pro' ? 8 : 5);
+  const perStudentFee = planPricing?.per_student_fee ?? getDefaultRate(plan);
   const baseFee = planPricing?.base_monthly_fee ?? 0;
   const customFee = (school as any).custom_per_student_fee;
   const discount = (school as any).discount_percent || 0;

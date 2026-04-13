@@ -12,6 +12,7 @@ import { GraduationCap, Loader2, ArrowLeft, ArrowRight, Check, Shield, Sparkles 
 import edzenIcon from "@/assets/edzen-icon.png";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
+import { DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 
 export default function Onboard() {
   const [step, setStep] = useState(1);
@@ -171,7 +172,7 @@ export default function Onboard() {
                         </div>
                       </div>
                       <div className="flex items-baseline gap-1 mt-1">
-                        <span className="text-2xl font-bold">₹{isPro ? 8 : 5}</span>
+                        <span className="text-2xl font-bold">₹{isPro ? DEFAULT_PRO_RATE : DEFAULT_STARTER_RATE}</span>
                         <span className="text-muted-foreground text-sm">/ student / month</span>
                       </div>
                       {isPro && <p className="text-xs text-primary font-medium">30-day free trial</p>}

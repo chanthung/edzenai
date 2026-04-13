@@ -12,7 +12,7 @@ import edzenIcon from "@/assets/edzen-icon.png";
 import { PasswordInput } from "@/components/ui/password-input";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
-import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
+import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
 
 export default function Signup() {
   const [step, setStep] = useState(1);
@@ -33,8 +33,8 @@ export default function Signup() {
     return params.get("plan") === "starter" ? "starter" : "pro";
   });
   const { data: pricing } = useSubscriptionPricing();
-  const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
-  const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
+  const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? DEFAULT_STARTER_RATE;
+  const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? DEFAULT_PRO_RATE;
   const isProTrial = selectedPlan === 'pro';
 
   const handleStep1 = (e: React.FormEvent) => {
