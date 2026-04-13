@@ -46,7 +46,13 @@ export default function Pricing() {
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
   const { user } = useAuth();
-  const { effectiveState } = useSubscriptionStatus();
+  const { effectiveState, subscriptionInfo, currentPlan } = useSubscriptionStatus();
+
+  // Hide trial CTA if user is logged in and already on trial or has active subscription
+  const isOnTrialOrSubscribed = !!user && (
+    effectiveState === 'trial_active' ||
+    effectiveState === 'subscription_active'
+  );
 
   const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 7;
   const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
@@ -273,12 +279,18 @@ export default function Pricing() {
 
         {/* CTA + Value message */}
         <div className="text-center mb-12 space-y-4">
-          <Button size="lg" className="px-10 text-base" asChild>
-            <Link to={`/signup?plan=${selectedPlan}`}>
-              {selectedPlan === 'pro' ? 'Try Pro Free for 30 Days →' : 'Continue with Starter →'}
-            </Link>
-          </Button>
-          {selectedPlan === 'starter' && (
+          {isOnTrialOrSubscribed ? (
+            <Button size="lg" className="px-10 text-base" asChild>
+              <Link to="/admin">Go to Dashboard</Link>
+            </Button>
+          ) : (
+            <Button size="lg" className="px-10 text-base" asChild>
+              <Link to={`/signup?plan=${selectedPlan}`}>
+                {selectedPlan === 'pro' ? 'Try Pro Free for 30 Days →' : 'Continue with Starter →'}
+              </Link>
+            </Button>
+          )}
+          {!isOnTrialOrSubscribed && selectedPlan === 'starter' && (
             <p className="inline-flex items-center gap-2 bg-accent/10 text-accent-foreground border border-accent/20 rounded-full px-5 py-2 text-sm font-medium">
               <Star className="h-4 w-4 text-accent" />
               Only {formatINR(diff)} more per student for AI-powered automation + free 30-day trial

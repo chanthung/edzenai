@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
         subscription_status: isPro ? 'trial' : 'active',
         trial_start_date: isPro ? formatDate(today) : null,
         trial_end_date: isPro && trialEndDate ? formatDate(trialEndDate) : null,
+        next_billing_date: isPro && trialEndDate ? formatDate(trialEndDate) : null,
         system_state: isPro ? 'trial_active' : 'subscription_active',
         payment_verified: !isPro,
       })
