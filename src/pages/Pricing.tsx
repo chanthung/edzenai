@@ -93,18 +93,47 @@ export default function Pricing() {
 
   const signupUrl = (plan: 'starter' | 'pro') => `/signup?plan=${plan}&billing=${billingCycle}`;
 
-  // For logged-in users: open Paddle checkout directly
-  const handleCheckout = async (plan: 'starter' | 'pro') => {
+  // For logged-in users: show payment method dialog
+  const handleCheckout = (plan: 'starter' | 'pro') => {
     if (!user || !school) {
       toast.error("Please log in and set up your school first");
       return;
     }
+    setSelectedPlan(plan);
+    setPaymentDialogOpen(true);
+  };
 
-    const studentCount = Math.max(studentsList?.length || 10, 10);
-    const priceId = getPriceId(plan, billingCycle);
-
+  const handlePayViaUPI = async () => {
+    if (!user || !school) return;
+    setPaymentLoadingMethod('upi');
     try {
-      await openCheckout({
+      const studentCount = Math.max(studentsList?.length || 10, 10);
+      await openRazorpayCheckout({
+        schoolId: school.id,
+        userId: user.id,
+        plan: selectedPlan,
+        billingCycle,
+        studentCount,
+        customerEmail: user.email || undefined,
+        onSuccess: () => {
+          setPaymentDialogOpen(false);
+          navigate('/admin?checkout=success');
+        },
+      });
+    } catch {
+      // error handled in hook
+    } finally {
+      setPaymentLoadingMethod(null);
+    }
+  };
+
+  const handlePayViaCard = async () => {
+    if (!user || !school) return;
+    setPaymentLoadingMethod('card');
+    try {
+      const studentCount = Math.max(studentsList?.length || 10, 10);
+      const priceId = getPriceId(selectedPlan, billingCycle);
+      await openPaddleCheckout({
         priceId,
         quantity: studentCount,
         customerEmail: user.email || undefined,
@@ -114,9 +143,11 @@ export default function Pricing() {
         },
         successUrl: `${window.location.origin}/admin?checkout=success`,
       });
-    } catch (err: any) {
-      toast.error("Failed to open checkout. Please try again.");
-      console.error("Checkout error:", err);
+      setPaymentDialogOpen(false);
+    } catch {
+      // error handled in hook
+    } finally {
+      setPaymentLoadingMethod(null);
     }
   };
 
