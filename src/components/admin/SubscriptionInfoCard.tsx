@@ -48,7 +48,7 @@ export function SubscriptionInfoCard() {
   const plan = (school.subscription_plan as SubscriptionPlan) || 'starter';
   const planInfo = PLAN_DISPLAY[plan];
   const planPricing = pricing?.find((p) => p.plan === plan);
-  const perStudentFee = planPricing?.per_student_fee ?? (plan === 'pro' ? 8 : 5);
+  const perStudentFee = planPricing?.per_student_fee ?? getDefaultRate(plan);
   const baseFee = planPricing?.base_monthly_fee ?? 0;
   const customFee = (school as any).custom_per_student_fee;
   const discount = (school as any).discount_percent || 0;

@@ -117,7 +117,7 @@ export default function PlatformDashboard() {
 
   const getPricingForPlan = (plan: string) => {
     const p = pricing?.find((pr) => pr.plan === plan);
-    return { perStudentFee: p?.per_student_fee ?? (plan === 'pro' ? 8 : 5), baseFee: p?.base_monthly_fee ?? 0 };
+    return { perStudentFee: p?.per_student_fee ?? getDefaultRate(plan), baseFee: p?.base_monthly_fee ?? 0 };
   };
 
   const computeInvoiceData = (school: School): InvoiceData => {

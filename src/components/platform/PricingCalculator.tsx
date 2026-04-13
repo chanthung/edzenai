@@ -21,8 +21,8 @@ export function PricingCalculator() {
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
 
-  const starterRate = pricing?.find((p) => p.plan === "starter")?.per_student_fee ?? 7;
-  const proRate = pricing?.find((p) => p.plan === "pro")?.per_student_fee ?? 10;
+  const starterRate = pricing?.find((p) => p.plan === "starter")?.per_student_fee ?? DEFAULT_STARTER_RATE;
+  const proRate = pricing?.find((p) => p.plan === "pro")?.per_student_fee ?? DEFAULT_PRO_RATE;
   const rate = plan === "starter" ? starterRate : proRate;
   const baseFee = pricing?.find((p) => p.plan === plan)?.base_monthly_fee ?? 0;
   const discountPct = getApplicableDiscount(students, tiers);

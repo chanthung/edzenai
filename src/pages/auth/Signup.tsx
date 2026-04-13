@@ -33,8 +33,8 @@ export default function Signup() {
     return params.get("plan") === "starter" ? "starter" : "pro";
   });
   const { data: pricing } = useSubscriptionPricing();
-  const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 8;
-  const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
+  const starterRate = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? DEFAULT_STARTER_RATE;
+  const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? DEFAULT_PRO_RATE;
   const isProTrial = selectedPlan === 'pro';
 
   const handleStep1 = (e: React.FormEvent) => {
