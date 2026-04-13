@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         amount: amountInPaise,
         currency: 'INR',
-        receipt: `sub_${schoolId}_${Date.now()}`,
+        receipt: `s_${Date.now()}`,
         notes: {
           schoolId,
           userId,
