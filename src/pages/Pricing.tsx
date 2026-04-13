@@ -55,13 +55,19 @@ export default function Pricing() {
   const [students, setStudents] = useState(100);
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('pro');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentLoadingMethod, setPaymentLoadingMethod] = useState<'upi' | 'card' | null>(null);
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
   const { user } = useAuth();
   const { effectiveState } = useSubscriptionStatus();
   const { data: school } = useSchool();
   const { data: studentsList } = useStudents();
-  const { openCheckout, loading: checkoutLoading } = usePaddleCheckout();
+  const { openCheckout: openPaddleCheckout, loading: paddleLoading } = usePaddleCheckout();
+  const { openCheckout: openRazorpayCheckout, loading: razorpayLoading } = useRazorpayCheckout();
+  const navigate = useNavigate();
+
+  const checkoutLoading = paddleLoading || razorpayLoading;
 
   const isOnTrialOrSubscribed = !!user && (
     effectiveState === 'trial_active' ||
