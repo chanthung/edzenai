@@ -1532,9 +1532,13 @@ export type Database = {
           id: string
           paddle_customer_id: string
           paddle_subscription_id: string
+          payment_provider: string
           price_id: string
           product_id: string
           quantity: number
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          razorpay_subscription_id: string | null
           school_id: string | null
           status: string
           updated_at: string | null
@@ -1549,9 +1553,13 @@ export type Database = {
           id?: string
           paddle_customer_id: string
           paddle_subscription_id: string
+          payment_provider?: string
           price_id: string
           product_id: string
           quantity?: number
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_subscription_id?: string | null
           school_id?: string | null
           status?: string
           updated_at?: string | null
@@ -1566,9 +1574,13 @@ export type Database = {
           id?: string
           paddle_customer_id?: string
           paddle_subscription_id?: string
+          payment_provider?: string
           price_id?: string
           product_id?: string
           quantity?: number
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_subscription_id?: string | null
           school_id?: string | null
           status?: string
           updated_at?: string | null
