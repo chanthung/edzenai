@@ -65,7 +65,7 @@ export default function Index() {
       <nav className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={edzenLogoFull} alt="EdZen AI" className="h-10 sm:h-12 object-contain" />
+            <img src={edzenLogoFull} alt="EdZen AI" className="h-14 sm:h-16 object-contain" />
           </div>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">
