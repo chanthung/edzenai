@@ -46,7 +46,13 @@ export default function Pricing() {
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
   const { user } = useAuth();
-  const { effectiveState } = useSubscriptionStatus();
+  const { effectiveState, subscriptionInfo, currentPlan } = useSubscriptionStatus();
+
+  // Hide trial CTA if user is logged in and already on trial or has active subscription
+  const isOnTrialOrSubscribed = !!user && (
+    effectiveState === 'trial_active' ||
+    effectiveState === 'subscription_active'
+  );
 
   const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? 7;
   const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? 10;
