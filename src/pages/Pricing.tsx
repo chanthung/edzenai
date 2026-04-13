@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link } from "react-router-dom";
-import { Check, Star, Users, ShieldCheck, Clock, BadgePercent } from "lucide-react";
+import { Check, Star, Users, ShieldCheck, Clock, BadgePercent, CalendarDays } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +43,7 @@ export default function Pricing() {
   usePageMeta({ title: "Pricing – EdZen AI", description: "Simple per-student pricing for EdZen AI school management. Starter from ₹7/student/month. 14-day free trial, no credit card required.", canonical: "/pricing" });
   const [students, setStudents] = useState(100);
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('pro');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
   const { user } = useAuth();
@@ -66,9 +67,12 @@ export default function Pricing() {
   };
 
   const applyDiscount = (total: number) => Math.max(0, total - total * (discountPct / 100));
-  const starterTotal = applyDiscount(students * STARTER_RATE);
-  const proTotal = applyDiscount(students * PRO_RATE);
+  const annualMultiplier = billingCycle === 'annual' ? 0.9 : 1; // 10% annual discount
+  const starterTotal = applyDiscount(students * STARTER_RATE) * annualMultiplier;
+  const proTotal = applyDiscount(students * PRO_RATE) * annualMultiplier;
   const diff = PRO_RATE - STARTER_RATE;
+
+  const signupUrl = (plan: 'starter' | 'pro') => `/signup?plan=${plan}&billing=${billingCycle}`;
 
   return (
     <div className="min-h-[100dvh] bg-background">
@@ -154,6 +158,36 @@ export default function Pricing() {
           )}
         </div>
 
+        {/* Billing cycle toggle */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={cn(
+              "px-5 py-2 rounded-full text-sm font-medium transition-all",
+              billingCycle === 'monthly'
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            )}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBillingCycle('annual')}
+            className={cn(
+              "px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5",
+              billingCycle === 'annual'
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            )}
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            Annual
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20">
+              Save 10%
+            </Badge>
+          </button>
+        </div>
+
         {/* Pricing cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Starter */}
@@ -190,9 +224,14 @@ export default function Pricing() {
                 <p className="text-sm text-muted-foreground mt-1 tabular-nums">
                   For {students} students:{" "}
                   <span className="font-semibold text-foreground">
-                    {formatINR(starterTotal)}/month
+                    {formatINR(starterTotal)}/{billingCycle === 'annual' ? 'month (billed annually)' : 'month'}
                   </span>
                 </p>
+                {billingCycle === 'annual' && (
+                  <p className="text-xs text-green-600 font-medium mt-1">
+                    You save {formatINR(applyDiscount(students * STARTER_RATE) * 12 * 0.1)}/year
+                  </p>
+                )}
               </div>
 
               <ul className="space-y-2.5 flex-1 mb-6">
@@ -207,9 +246,14 @@ export default function Pricing() {
               <Button
                 variant={selectedPlan === 'starter' ? 'default' : 'outline'}
                 className="w-full"
+                asChild={selectedPlan === 'starter' && !isOnTrialOrSubscribed}
                 onClick={(e) => { e.stopPropagation(); setSelectedPlan('starter'); }}
               >
-                {selectedPlan === 'starter' ? '✓ Selected' : 'Get Started'}
+                {selectedPlan === 'starter' && !isOnTrialOrSubscribed ? (
+                  <Link to={signupUrl('starter')}>Continue with Starter →</Link>
+                ) : (
+                  selectedPlan === 'starter' ? '✓ Selected' : 'Get Started'
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -251,9 +295,14 @@ export default function Pricing() {
                 <p className="text-sm text-muted-foreground mt-1 tabular-nums">
                   For {students} students:{" "}
                   <span className="font-semibold text-foreground">
-                    {formatINR(proTotal)}/month
+                    {formatINR(proTotal)}/{billingCycle === 'annual' ? 'month (billed annually)' : 'month'}
                   </span>
                 </p>
+                {billingCycle === 'annual' && (
+                  <p className="text-xs text-green-600 font-medium mt-1">
+                    You save {formatINR(applyDiscount(students * PRO_RATE) * 12 * 0.1)}/year
+                  </p>
+                )}
                 <p className="text-xs text-primary font-medium mt-1">30-day free trial included</p>
               </div>
 
@@ -269,9 +318,16 @@ export default function Pricing() {
               <Button
                 variant={selectedPlan === 'pro' ? 'default' : 'outline'}
                 className="w-full"
+                asChild={selectedPlan === 'pro' && !isOnTrialOrSubscribed}
                 onClick={(e) => { e.stopPropagation(); setSelectedPlan('pro'); }}
               >
-                {selectedPlan === 'pro' ? '✓ Selected' : 'Try Pro Free for 30 Days'}
+                {selectedPlan === 'pro' && !isOnTrialOrSubscribed ? (
+                  <Link to={signupUrl('pro')}>Try Pro Free for 30 Days →</Link>
+                ) : selectedPlan === 'pro' ? (
+                  '✓ Selected'
+                ) : (
+                  'Try Pro Free for 30 Days'
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -285,7 +341,7 @@ export default function Pricing() {
             </Button>
           ) : (
             <Button size="lg" className="px-10 text-base" asChild>
-              <Link to={`/signup?plan=${selectedPlan}`}>
+              <Link to={signupUrl(selectedPlan)}>
                 {selectedPlan === 'pro' ? 'Try Pro Free for 30 Days →' : 'Continue with Starter →'}
               </Link>
             </Button>
