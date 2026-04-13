@@ -224,9 +224,14 @@ export default function Pricing() {
                 <p className="text-sm text-muted-foreground mt-1 tabular-nums">
                   For {students} students:{" "}
                   <span className="font-semibold text-foreground">
-                    {formatINR(starterTotal)}/month
+                    {formatINR(starterTotal)}/{billingCycle === 'annual' ? 'month (billed annually)' : 'month'}
                   </span>
                 </p>
+                {billingCycle === 'annual' && (
+                  <p className="text-xs text-green-600 font-medium mt-1">
+                    You save {formatINR(applyDiscount(students * STARTER_RATE) * 12 * 0.1)}/year
+                  </p>
+                )}
               </div>
 
               <ul className="space-y-2.5 flex-1 mb-6">
@@ -241,9 +246,14 @@ export default function Pricing() {
               <Button
                 variant={selectedPlan === 'starter' ? 'default' : 'outline'}
                 className="w-full"
+                asChild={selectedPlan === 'starter' && !isOnTrialOrSubscribed}
                 onClick={(e) => { e.stopPropagation(); setSelectedPlan('starter'); }}
               >
-                {selectedPlan === 'starter' ? '✓ Selected' : 'Get Started'}
+                {selectedPlan === 'starter' && !isOnTrialOrSubscribed ? (
+                  <Link to={signupUrl('starter')}>Continue with Starter →</Link>
+                ) : (
+                  selectedPlan === 'starter' ? '✓ Selected' : 'Get Started'
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -285,9 +295,14 @@ export default function Pricing() {
                 <p className="text-sm text-muted-foreground mt-1 tabular-nums">
                   For {students} students:{" "}
                   <span className="font-semibold text-foreground">
-                    {formatINR(proTotal)}/month
+                    {formatINR(proTotal)}/{billingCycle === 'annual' ? 'month (billed annually)' : 'month'}
                   </span>
                 </p>
+                {billingCycle === 'annual' && (
+                  <p className="text-xs text-green-600 font-medium mt-1">
+                    You save {formatINR(applyDiscount(students * PRO_RATE) * 12 * 0.1)}/year
+                  </p>
+                )}
                 <p className="text-xs text-primary font-medium mt-1">30-day free trial included</p>
               </div>
 
@@ -303,9 +318,16 @@ export default function Pricing() {
               <Button
                 variant={selectedPlan === 'pro' ? 'default' : 'outline'}
                 className="w-full"
+                asChild={selectedPlan === 'pro' && !isOnTrialOrSubscribed}
                 onClick={(e) => { e.stopPropagation(); setSelectedPlan('pro'); }}
               >
-                {selectedPlan === 'pro' ? '✓ Selected' : 'Try Pro Free for 30 Days'}
+                {selectedPlan === 'pro' && !isOnTrialOrSubscribed ? (
+                  <Link to={signupUrl('pro')}>Try Pro Free for 30 Days →</Link>
+                ) : selectedPlan === 'pro' ? (
+                  '✓ Selected'
+                ) : (
+                  'Try Pro Free for 30 Days'
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -319,7 +341,7 @@ export default function Pricing() {
             </Button>
           ) : (
             <Button size="lg" className="px-10 text-base" asChild>
-              <Link to={`/signup?plan=${selectedPlan}`}>
+              <Link to={signupUrl(selectedPlan)}>
                 {selectedPlan === 'pro' ? 'Try Pro Free for 30 Days →' : 'Continue with Starter →'}
               </Link>
             </Button>
