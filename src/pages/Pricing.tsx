@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link } from "react-router-dom";
-import { Check, Star, Users, ShieldCheck, Clock, BadgePercent } from "lucide-react";
+import { Check, Star, Users, ShieldCheck, Clock, BadgePercent, CalendarDays } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
