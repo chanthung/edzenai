@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link } from "react-router-dom";
-import { Check, Star, Users, ShieldCheck, Clock, BadgePercent, CalendarDays } from "lucide-react";
+import { Check, Star, Users, ShieldCheck, Clock, BadgePercent, CalendarDays, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,11 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useSubscriptionPricing } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
+import { useSchool } from "@/hooks/useSchool";
+import { useStudents } from "@/hooks/useStudents";
+import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { toast } from "sonner";
 
 const starterFeatures = [
   "Student management & bulk upload",
@@ -39,6 +44,10 @@ function formatINR(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
+function getPriceId(plan: 'starter' | 'pro', billing: 'monthly' | 'annual') {
+  return `${plan}_${billing}`;
+}
+
 export default function Pricing() {
   usePageMeta({ title: "Pricing – EdZen AI", description: "Simple per-student pricing for EdZen AI school management. Starter from ₹7/student/month. 14-day free trial, no credit card required.", canonical: "/pricing" });
   const [students, setStudents] = useState(100);
@@ -47,9 +56,11 @@ export default function Pricing() {
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
   const { user } = useAuth();
-  const { effectiveState, subscriptionInfo, currentPlan } = useSubscriptionStatus();
+  const { effectiveState } = useSubscriptionStatus();
+  const { data: school } = useSchool();
+  const { data: studentsList } = useStudents();
+  const { openCheckout, loading: checkoutLoading } = usePaddleCheckout();
 
-  // Hide trial CTA if user is logged in and already on trial or has active subscription
   const isOnTrialOrSubscribed = !!user && (
     effectiveState === 'trial_active' ||
     effectiveState === 'subscription_active'
@@ -67,15 +78,47 @@ export default function Pricing() {
   };
 
   const applyDiscount = (total: number) => Math.max(0, total - total * (discountPct / 100));
-  const annualMultiplier = billingCycle === 'annual' ? 0.9 : 1; // 10% annual discount
+  const annualMultiplier = billingCycle === 'annual' ? 0.9 : 1;
   const starterTotal = applyDiscount(students * STARTER_RATE) * annualMultiplier;
   const proTotal = applyDiscount(students * PRO_RATE) * annualMultiplier;
   const diff = PRO_RATE - STARTER_RATE;
 
   const signupUrl = (plan: 'starter' | 'pro') => `/signup?plan=${plan}&billing=${billingCycle}`;
 
+  // For logged-in users: open Paddle checkout directly
+  const handleCheckout = async (plan: 'starter' | 'pro') => {
+    if (!user || !school) {
+      toast.error("Please log in and set up your school first");
+      return;
+    }
+
+    const studentCount = Math.max(studentsList?.length || 10, 10);
+    const priceId = getPriceId(plan, billingCycle);
+
+    try {
+      await openCheckout({
+        priceId,
+        quantity: studentCount,
+        customerEmail: user.email || undefined,
+        customData: {
+          userId: user.id,
+          schoolId: school.id,
+        },
+        successUrl: `${window.location.origin}/admin?checkout=success`,
+      });
+    } catch (err: any) {
+      toast.error("Failed to open checkout. Please try again.");
+      console.error("Checkout error:", err);
+    }
+  };
+
+  // Determine if the logged-in user can directly checkout (has school, not already subscribed)
+  const canDirectCheckout = !!user && !!school && effectiveState !== 'subscription_active';
+
   return (
     <div className="min-h-[100dvh] bg-background">
+      <PaymentTestModeBanner />
+
       {/* Header */}
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
@@ -243,18 +286,16 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <Button
-                variant={selectedPlan === 'starter' ? 'default' : 'outline'}
-                className="w-full"
-                asChild={selectedPlan === 'starter' && !isOnTrialOrSubscribed}
-                onClick={(e) => { e.stopPropagation(); setSelectedPlan('starter'); }}
-              >
-                {selectedPlan === 'starter' && !isOnTrialOrSubscribed ? (
-                  <Link to={signupUrl('starter')}>Continue with Starter →</Link>
-                ) : (
-                  selectedPlan === 'starter' ? '✓ Selected' : 'Get Started'
-                )}
-              </Button>
+              <PlanButton
+                plan="starter"
+                isSelected={selectedPlan === 'starter'}
+                canDirectCheckout={canDirectCheckout}
+                isOnTrialOrSubscribed={isOnTrialOrSubscribed}
+                checkoutLoading={checkoutLoading}
+                onCheckout={() => handleCheckout('starter')}
+                onSelect={() => setSelectedPlan('starter')}
+                signupUrl={signupUrl('starter')}
+              />
             </CardContent>
           </Card>
 
@@ -315,29 +356,36 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <Button
-                variant={selectedPlan === 'pro' ? 'default' : 'outline'}
-                className="w-full"
-                asChild={selectedPlan === 'pro' && !isOnTrialOrSubscribed}
-                onClick={(e) => { e.stopPropagation(); setSelectedPlan('pro'); }}
-              >
-                {selectedPlan === 'pro' && !isOnTrialOrSubscribed ? (
-                  <Link to={signupUrl('pro')}>Try Pro Free for 30 Days →</Link>
-                ) : selectedPlan === 'pro' ? (
-                  '✓ Selected'
-                ) : (
-                  'Try Pro Free for 30 Days'
-                )}
-              </Button>
+              <PlanButton
+                plan="pro"
+                isSelected={selectedPlan === 'pro'}
+                canDirectCheckout={canDirectCheckout}
+                isOnTrialOrSubscribed={isOnTrialOrSubscribed && effectiveState !== 'trial_active'}
+                checkoutLoading={checkoutLoading}
+                onCheckout={() => handleCheckout('pro')}
+                onSelect={() => setSelectedPlan('pro')}
+                signupUrl={signupUrl('pro')}
+                isPro
+              />
             </CardContent>
           </Card>
         </div>
 
         {/* CTA + Value message */}
         <div className="text-center mb-12 space-y-4">
-          {isOnTrialOrSubscribed ? (
+          {effectiveState === 'subscription_active' ? (
             <Button size="lg" className="px-10 text-base" asChild>
               <Link to="/admin">Go to Dashboard</Link>
+            </Button>
+          ) : canDirectCheckout ? (
+            <Button
+              size="lg"
+              className="px-10 text-base"
+              onClick={() => handleCheckout(selectedPlan)}
+              disabled={checkoutLoading}
+            >
+              {checkoutLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {selectedPlan === 'pro' ? 'Subscribe to Pro →' : 'Subscribe to Starter →'}
             </Button>
           ) : (
             <Button size="lg" className="px-10 text-base" asChild>
@@ -378,5 +426,64 @@ export default function Pricing() {
         </div>
       </main>
     </div>
+  );
+}
+
+// Extracted button component for plan cards
+function PlanButton({
+  plan,
+  isSelected,
+  canDirectCheckout,
+  isOnTrialOrSubscribed,
+  checkoutLoading,
+  onCheckout,
+  onSelect,
+  signupUrl,
+  isPro = false,
+}: {
+  plan: 'starter' | 'pro';
+  isSelected: boolean;
+  canDirectCheckout: boolean;
+  isOnTrialOrSubscribed: boolean;
+  checkoutLoading: boolean;
+  onCheckout: () => void;
+  onSelect: () => void;
+  signupUrl: string;
+  isPro?: boolean;
+}) {
+  const label = isPro ? 'Subscribe to Pro' : 'Subscribe to Starter';
+  const trialLabel = isPro ? 'Try Pro Free for 30 Days' : 'Get Started';
+
+  if (isSelected && canDirectCheckout) {
+    return (
+      <Button
+        className="w-full"
+        onClick={(e) => { e.stopPropagation(); onCheckout(); }}
+        disabled={checkoutLoading}
+      >
+        {checkoutLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {label} →
+      </Button>
+    );
+  }
+
+  if (isSelected && !isOnTrialOrSubscribed) {
+    return (
+      <Button className="w-full" asChild>
+        <Link to={signupUrl} onClick={(e) => e.stopPropagation()}>
+          {isPro ? 'Try Pro Free for 30 Days →' : 'Continue with Starter →'}
+        </Link>
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      variant={isSelected ? 'default' : 'outline'}
+      className="w-full"
+      onClick={(e) => { e.stopPropagation(); onSelect(); }}
+    >
+      {isSelected ? '✓ Selected' : trialLabel}
+    </Button>
   );
 }
