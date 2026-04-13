@@ -555,7 +555,29 @@ function ProblemCard({
   );
 }
 
-const dashboardSlides: { image: string; label: string }[] = [];
+import slide1 from "@/assets/slide-1.png";
+import slide2 from "@/assets/slide-2.png";
+import slide3 from "@/assets/slide-3.png";
+import slide4 from "@/assets/slide-4.png";
+import slide5 from "@/assets/slide-5.png";
+import slide6 from "@/assets/slide-6.png";
+import slide7 from "@/assets/slide-7.png";
+import slide8 from "@/assets/slide-8.png";
+import slide9 from "@/assets/slide-9.png";
+import slide10 from "@/assets/slide-10.png";
+
+const dashboardSlides: { image: string; label: string }[] = [
+  { image: slide1, label: "Online Payment Proof Verification" },
+  { image: slide2, label: "Instant Payment Proof Updates" },
+  { image: slide3, label: "Monthly Fee Collection Report" },
+  { image: slide4, label: "Bulk WhatsApp Fee Reminders" },
+  { image: slide5, label: "Student Fees with AI Chatbot" },
+  { image: slide6, label: "Student List & WhatsApp Messaging" },
+  { image: slide7, label: "Send Parent Link via WhatsApp" },
+  { image: slide8, label: "WhatsApp Notification to Parents" },
+  { image: slide9, label: "Parent Portal — Fees, Progress & Attendance" },
+  { image: slide10, label: "AI Analysis for Students" },
+];
 
 function DashboardCarousel() {
   const [api, setApi] = useState<CarouselApi>();
