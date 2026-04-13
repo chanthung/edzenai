@@ -158,6 +158,36 @@ export default function Pricing() {
           )}
         </div>
 
+        {/* Billing cycle toggle */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={cn(
+              "px-5 py-2 rounded-full text-sm font-medium transition-all",
+              billingCycle === 'monthly'
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            )}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBillingCycle('annual')}
+            className={cn(
+              "px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5",
+              billingCycle === 'annual'
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            )}
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            Annual
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20">
+              Save 10%
+            </Badge>
+          </button>
+        </div>
+
         {/* Pricing cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Starter */}
