@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import Autoplay from "embla-carousel-autoplay";
 import edzenIcon from "@/assets/edzen-icon.png";
+import edzenLogoFull from "@/assets/edzen-logo-full.png";
 import slideStudents from "@/assets/slide-students.png";
 import slideExcelAi1 from "@/assets/slide-excel-ai1.png";
 import slideExcelAi2 from "@/assets/slide-excel-ai2.png";
@@ -63,16 +64,8 @@ export default function Index() {
       {/* Navigation */}
       <nav className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <img src={edzenIcon} alt="EdZen AI" className="h-6 w-6 object-contain" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-lg leading-tight">EdZen AI</span>
-              <span className="text-[10px] text-muted-foreground leading-tight hidden sm:block">
-                A clarity layer for school operations — starting with fees.
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <img src={edzenLogoFull} alt="EdZen AI" className="h-10 sm:h-12 object-contain" />
           </div>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">
@@ -496,8 +489,7 @@ export default function Index() {
           <div className="grid sm:grid-cols-3 gap-8 mb-10">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <img src={edzenIcon} alt="EdZen AI" className="h-5 w-5 object-contain" />
-                <span className="font-bold text-lg">EdZen AI</span>
+                <img src={edzenLogoFull} alt="EdZen AI" className="h-10 object-contain" />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Affordably. Transparently. Educational finance through clarity.
