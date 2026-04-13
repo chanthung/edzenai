@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Check, Star, Users, ShieldCheck, Clock, BadgePercent, CalendarDays, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
@@ -15,7 +15,9 @@ import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDisc
 import { useSchool } from "@/hooks/useSchool";
 import { useStudents } from "@/hooks/useStudents";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { PaymentMethodDialog } from "@/components/PaymentMethodDialog";
 import { toast } from "sonner";
 
 const starterFeatures = [
