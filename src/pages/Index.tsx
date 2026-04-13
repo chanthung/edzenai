@@ -3,12 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import Autoplay from "embla-carousel-autoplay";
 import edzenIcon from "@/assets/edzen-icon.png";
 import edzenLogoFull from "@/assets/edzen-logo-full.png";
-import slideStudents from "@/assets/slide-students.png";
-import slideExcelAi1 from "@/assets/slide-excel-ai1.png";
-import slideExcelAi2 from "@/assets/slide-excel-ai2.png";
-import slideWhatsapp1 from "@/assets/slide-whatsapp1.png";
-import slideWhatsapp2 from "@/assets/slide-whatsapp2.png";
-import slideParentLink from "@/assets/slide-parent-link.png";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -561,14 +555,7 @@ function ProblemCard({
   );
 }
 
-const dashboardSlides = [
-  { image: slideStudents, label: "Student Management" },
-  { image: slideExcelAi1, label: "AI Excel Import" },
-  { image: slideExcelAi2, label: "Smart Data Mapping" },
-  { image: slideWhatsapp1, label: "WhatsApp Integration" },
-  { image: slideWhatsapp2, label: "Send Parent Link" },
-  { image: slideParentLink, label: "Parent Portal" },
-];
+const dashboardSlides: { image: string; label: string }[] = [];
 
 function DashboardCarousel() {
   const [api, setApi] = useState<CarouselApi>();
