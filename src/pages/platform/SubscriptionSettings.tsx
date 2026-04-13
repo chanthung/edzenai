@@ -140,10 +140,16 @@ export default function SubscriptionSettings() {
               <p className="text-sm text-muted-foreground">Manage plan pricing for all schools</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={() => { signOut(); navigate("/login"); }}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={syncPaddlePrices} disabled={syncing}>
+              {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Sync Prices
+            </Button>
+            <Button variant="ghost" onClick={() => { signOut(); navigate("/login"); }}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 
