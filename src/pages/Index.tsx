@@ -555,14 +555,7 @@ function ProblemCard({
   );
 }
 
-const dashboardSlides = [
-  { image: slideStudents, label: "Student Management" },
-  { image: slideExcelAi1, label: "AI Excel Import" },
-  { image: slideExcelAi2, label: "Smart Data Mapping" },
-  { image: slideWhatsapp1, label: "WhatsApp Integration" },
-  { image: slideWhatsapp2, label: "Send Parent Link" },
-  { image: slideParentLink, label: "Parent Portal" },
-];
+const dashboardSlides: { image: string; label: string }[] = [];
 
 function DashboardCarousel() {
   const [api, setApi] = useState<CarouselApi>();
