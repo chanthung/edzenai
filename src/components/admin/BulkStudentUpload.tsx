@@ -5,15 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Upload, Loader2, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet } from "lucide-react";
+import { Upload, Loader2, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
-import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
+import { useAcademicYears, useActiveAcademicYear, useCreateAcademicYear } from "@/hooks/useAcademicYears";
 import { useStudents } from "@/hooks/useStudents";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -56,27 +55,46 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
   const { data: academicYears } = useAcademicYears();
   const activeAcademicYear = useActiveAcademicYear();
   const { data: existingStudents } = useStudents();
+  const createYear = useCreateAcademicYear();
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<File | null>(null);
-  const [academicYearId, setAcademicYearId] = useState(activeAcademicYear?.id || "");
+  const [academicYearId, setAcademicYearId] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [rows, setRows] = useState<ProcessedRow[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [showInlineCreate, setShowInlineCreate] = useState(false);
+  const [newYearName, setNewYearName] = useState("");
+  const [newYearStart, setNewYearStart] = useState("");
+  const [newYearEnd, setNewYearEnd] = useState("");
+  const [isCreatingYear, setIsCreatingYear] = useState(false);
+
+  // Auto-select active year or single year
+  const effectiveYearId = useMemo(() => {
+    if (academicYearId) return academicYearId;
+    if (activeAcademicYear?.id) return activeAcademicYear.id;
+    if (academicYears?.length === 1) return academicYears[0].id;
+    return "";
+  }, [academicYearId, activeAcademicYear, academicYears]);
 
   // Reset state when dialog closes
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setStep("upload");
       setFile(null);
+      setAcademicYearId("");
       setRows([]);
       setWarnings([]);
       setImportProgress(0);
       setSummary(null);
       setIsProcessing(false);
+      setShowInlineCreate(false);
+      setNewYearName("");
+      setNewYearStart("");
+      setNewYearEnd("");
     }
     onOpenChange(open);
   };
@@ -117,6 +135,55 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
         return;
       }
       setFile(selected);
+    }
+  };
+
+  // Auto-create academic year for the current period
+  const autoCreateAcademicYear = async (): Promise<string> => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const nextYear = currentYear + 1;
+    const yearName = `${currentYear}-${String(nextYear).slice(2)}`;
+    const startDate = now.toISOString().split("T")[0];
+    const endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString().split("T")[0];
+
+    const result = await createYear.mutateAsync({
+      name: yearName,
+      start_date: startDate,
+      end_date: endDate,
+      is_active: true,
+    });
+
+    await queryClient.invalidateQueries({ queryKey: ["academic-years"] });
+    toast.success(`Academic year "${yearName}" created automatically`);
+    return result.id;
+  };
+
+  // Inline create academic year
+  const handleInlineCreate = async () => {
+    if (!newYearName.trim() || !newYearStart || !newYearEnd) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    setIsCreatingYear(true);
+    try {
+      const result = await createYear.mutateAsync({
+        name: newYearName.trim(),
+        start_date: newYearStart,
+        end_date: newYearEnd,
+        is_active: true,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["academic-years"] });
+      setAcademicYearId(result.id);
+      setShowInlineCreate(false);
+      setNewYearName("");
+      setNewYearStart("");
+      setNewYearEnd("");
+      toast.success("Academic year created");
+    } catch (err: any) {
+      toast.error("Failed to create academic year", { description: err.message });
+    } finally {
+      setIsCreatingYear(false);
     }
   };
 
@@ -215,6 +282,19 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     setStep("importing");
     setImportProgress(0);
 
+    // Resolve academic year: use selected, or auto-create if none exists
+    let resolvedYearId = effectiveYearId;
+    if (!resolvedYearId) {
+      try {
+        resolvedYearId = await autoCreateAcademicYear();
+      } catch (err: any) {
+        console.error("Auto-create year error:", err);
+        toast.error("Failed to auto-create academic year", { description: err.message });
+        setStep("upload");
+        return;
+      }
+    }
+
     let imported = 0;
     let errors = 0;
     const chunkSize = 50;
@@ -246,11 +326,11 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
       } else {
         imported += insertedStudents.length;
 
-        // Create enrollments if academic year selected
-        if (academicYearId && insertedStudents.length > 0) {
+        // Create enrollments
+        if (resolvedYearId && insertedStudents.length > 0) {
           const enrollments = insertedStudents.map((s) => ({
             student_id: s.id,
-            academic_year_id: academicYearId,
+            academic_year_id: resolvedYearId,
             class_name: s.class_name,
             section: s.section,
           }));
@@ -268,7 +348,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
             try {
               await supabase.rpc("auto_assign_fees_for_student", {
                 _student_id: s.id,
-                _academic_year_id: academicYearId,
+                _academic_year_id: resolvedYearId,
               });
             } catch (feeError) {
               console.error("Fee auto-assign error for student:", s.id, feeError);
@@ -288,6 +368,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     queryClient.invalidateQueries({ queryKey: ["students"] });
     queryClient.invalidateQueries({ queryKey: ["student-enrollments"] });
     queryClient.invalidateQueries({ queryKey: ["student-fees"] });
+    queryClient.invalidateQueries({ queryKey: ["academic-years"] });
   };
 
   return (
@@ -310,10 +391,10 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
         {step === "upload" && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Academic Year</Label>
-              <Select value={academicYearId} onValueChange={setAcademicYearId}>
+              <Label>Academic Year <span className="text-muted-foreground text-xs font-normal">(optional — auto-assigned if not selected)</span></Label>
+              <Select value={effectiveYearId} onValueChange={setAcademicYearId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select academic year" />
+                  <SelectValue placeholder="Auto-assign active year" />
                 </SelectTrigger>
                 <SelectContent>
                   {academicYears?.map((year) => (
@@ -321,8 +402,53 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                       {year.name} {year.is_active && "(Active)"}
                     </SelectItem>
                   ))}
+                  <div
+                    className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground text-primary font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowInlineCreate(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Academic Year
+                  </div>
                 </SelectContent>
               </Select>
+
+              {/* Inline year creation form */}
+              {showInlineCreate && (
+                <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
+                  <p className="text-sm font-medium">New Academic Year</p>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="e.g. 2025-26"
+                      value={newYearName}
+                      onChange={(e) => setNewYearName(e.target.value)}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="date"
+                        placeholder="Start date"
+                        value={newYearStart}
+                        onChange={(e) => setNewYearStart(e.target.value)}
+                      />
+                      <Input
+                        type="date"
+                        placeholder="End date"
+                        value={newYearEnd}
+                        onChange={(e) => setNewYearEnd(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => setShowInlineCreate(false)}>Cancel</Button>
+                    <Button size="sm" onClick={handleInlineCreate} disabled={isCreatingYear}>
+                      {isCreatingYear && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                      Create
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
