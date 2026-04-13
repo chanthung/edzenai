@@ -67,9 +67,12 @@ export default function Pricing() {
   };
 
   const applyDiscount = (total: number) => Math.max(0, total - total * (discountPct / 100));
-  const starterTotal = applyDiscount(students * STARTER_RATE);
-  const proTotal = applyDiscount(students * PRO_RATE);
+  const annualMultiplier = billingCycle === 'annual' ? 0.9 : 1; // 10% annual discount
+  const starterTotal = applyDiscount(students * STARTER_RATE) * annualMultiplier;
+  const proTotal = applyDiscount(students * PRO_RATE) * annualMultiplier;
   const diff = PRO_RATE - STARTER_RATE;
+
+  const signupUrl = (plan: 'starter' | 'pro') => `/signup?plan=${plan}&billing=${billingCycle}`;
 
   return (
     <div className="min-h-[100dvh] bg-background">
