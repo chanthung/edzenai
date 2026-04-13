@@ -464,6 +464,16 @@ export default function Pricing() {
           </p>
         </div>
       </main>
+
+      <PaymentMethodDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        onSelectUPI={handlePayViaUPI}
+        onSelectCard={handlePayViaCard}
+        loading={paymentLoadingMethod !== null}
+        loadingMethod={paymentLoadingMethod}
+        planLabel={`${selectedPlan === 'pro' ? 'Pro' : 'Starter'} (${billingCycle})`}
+      />
     </div>
   );
 }
