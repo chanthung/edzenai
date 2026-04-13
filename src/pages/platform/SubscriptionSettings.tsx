@@ -58,6 +58,21 @@ export default function SubscriptionSettings() {
     setLoading(false);
   };
 
+  const [syncing, setSyncing] = useState(false);
+
+  const syncPaddlePrices = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-paddle-prices");
+      if (error) throw error;
+      toast.success("Payment product prices synced successfully");
+    } catch (error: any) {
+      toast.error("Failed to sync prices", { description: error.message });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleSave = async (plan: string) => {
     const values = formData[plan];
     if (!values) return;
@@ -81,6 +96,8 @@ export default function SubscriptionSettings() {
         base_monthly_fee: baseFee,
       });
       toast.success(`${plan.charAt(0).toUpperCase() + plan.slice(1)} pricing updated`);
+      // Auto-sync prices to payment products
+      await syncPaddlePrices();
     } catch (error: any) {
       toast.error("Failed to update pricing", { description: error.message });
     }
