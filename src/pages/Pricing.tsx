@@ -107,7 +107,7 @@ export default function Pricing() {
     if (!user || !school) return;
     setPaymentLoadingMethod('upi');
     try {
-      const studentCount = Math.max(studentsList?.length || 10, 10);
+      const studentCount = Math.max(students, 10);
       await openRazorpayCheckout({
         schoolId: school.id,
         userId: user.id,
@@ -131,7 +131,7 @@ export default function Pricing() {
     if (!user || !school) return;
     setPaymentLoadingMethod('card');
     try {
-      const studentCount = Math.max(studentsList?.length || 10, 10);
+      const studentCount = Math.max(students, 10);
       const priceId = getPriceId(selectedPlan, billingCycle);
       await openPaddleCheckout({
         priceId,
