@@ -212,7 +212,18 @@ Return the mapping as a JSON object where keys are source column names and value
       mapping = parsed.mapping || parsed;
     } catch {
       console.error("Failed to parse AI response as JSON:", content);
-      throw new Error("AI returned invalid JSON");
+      // Attempt to extract JSON from markdown code blocks
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        try {
+          const extracted = JSON.parse(jsonMatch[1].trim());
+          mapping = extracted.mapping || extracted;
+        } catch {
+          throw new Error("AI returned invalid JSON");
+        }
+      } else {
+        throw new Error("AI returned invalid JSON");
+      }
     }
     console.log("Column mapping:", mapping);
 
