@@ -24,6 +24,7 @@ import { StudentPendingReport } from "@/components/admin/reports/StudentPendingR
 import { MonthWiseCollectionReport } from "@/components/admin/reports/MonthWiseCollectionReport";
 import { PendingProofsPanel } from "@/components/admin/PendingProofsPanel";
 import { TrialBanner } from "@/components/admin/TrialBanner";
+import { ImportHistoryCard } from "@/components/admin/ImportHistoryCard";
 import { Badge } from "@/components/ui/badge";
 import { exportMultiSheetXLSX } from "@/lib/export-utils";
 
@@ -229,6 +230,9 @@ export default function Dashboard() {
           {students && students.length > 0 && (
             <BirthdayReminder students={students} />
           )}
+
+          {/* Import History */}
+          <ImportHistoryCard />
 
           {/* Quick actions */}
           <div className="grid gap-4 md:grid-cols-2">

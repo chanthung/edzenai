@@ -10,12 +10,13 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { Upload, Loader2, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet, Plus, Info } from "lucide-react";
+import { Upload, Loader2, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet, Plus, Info, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
 import { useAcademicYears, useActiveAcademicYear, useCreateAcademicYear } from "@/hooks/useAcademicYears";
 import { useStudents } from "@/hooks/useStudents";
 import { useQueryClient } from "@tanstack/react-query";
+import { generateImportReport, type IssueRow } from "@/lib/import-report";
 
 interface ParsedStudent {
   name: string;
@@ -52,6 +53,7 @@ interface ImportSummary {
   errors: number;
   errorDetails: string[];
   ignoredColumns: string[];
+  issueRows: IssueRow[];
 }
 
 type Step = "upload" | "preview" | "importing" | "done";
@@ -279,6 +281,28 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     let imported = 0;
     let errors = 0;
     const importErrors: string[] = [];
+    const collectedIssueRows: IssueRow[] = [];
+
+    // Collect skipped/deselected rows as issues first
+    const skippedRows = rows.filter((r) => !r._selected || r._issues.length > 0);
+    for (const r of skippedRows) {
+      const issueType = r._issues.length > 0 ? "Missing Field" : r._isDuplicate ? "Skipped" : "Skipped";
+      const issueDetails = r._issues.length > 0
+        ? `Missing: ${r._issues.join(", ")}`
+        : r._duplicateReason || "Deselected by admin";
+      collectedIssueRows.push({
+        rowNumber: r._rowIndex + 1,
+        studentName: r.name || "Unknown",
+        className: r.class_name || "",
+        section: r.section || "",
+        rollNo: r.roll_number || "",
+        parentName: r.parent_name || "",
+        phone: r.parent_phone || "",
+        issueType,
+        issueDetails,
+        actionRequired: r._issues.length > 0 ? "Fix data and add manually" : "Review and add manually if needed",
+      });
+    }
 
     for (let i = 0; i < toImport.length; i++) {
       const r = toImport[i];
@@ -310,6 +334,18 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
         if (error) {
           errors++;
           importErrors.push(`Row ${r._rowIndex + 1} (${r.name}): ${error.message}`);
+          collectedIssueRows.push({
+            rowNumber: r._rowIndex + 1,
+            studentName: r.name || "Unknown",
+            className: r.class_name || "",
+            section: r.section || "",
+            rollNo: r.roll_number || "",
+            parentName: r.parent_name || "",
+            phone: r.parent_phone || "",
+            issueType: "Failed to Insert",
+            issueDetails: error.message,
+            actionRequired: "Check data and add manually",
+          });
           continue;
         }
 
@@ -335,14 +371,42 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
       } catch (rowErr: any) {
         errors++;
         importErrors.push(`Row ${r._rowIndex + 1} (${r.name}): ${rowErr.message}`);
+        collectedIssueRows.push({
+          rowNumber: r._rowIndex + 1,
+          studentName: r.name || "Unknown",
+          className: r.class_name || "",
+          section: r.section || "",
+          rollNo: r.roll_number || "",
+          parentName: r.parent_name || "",
+          phone: r.parent_phone || "",
+          issueType: "Failed to Insert",
+          issueDetails: rowErr.message,
+          actionRequired: "Check data and add manually",
+        });
       }
 
       setImportProgress(Math.round(((i + 1) / toImport.length) * 100));
     }
 
     const skipped = rows.length - toImport.length;
-    setSummary({ total: rows.length, imported, skipped, errors, errorDetails: importErrors, ignoredColumns });
+    setSummary({ total: rows.length, imported, skipped, errors, errorDetails: importErrors, ignoredColumns, issueRows: collectedIssueRows });
     setStep("done");
+
+    // Save import log to database
+    try {
+      await supabase.from('import_logs' as any).insert({
+        school_id: school.id,
+        file_name: file?.name || 'unknown',
+        total_rows: rows.length,
+        imported_count: imported,
+        failed_count: errors + skipped,
+        ignored_columns: ignoredColumns,
+        issue_rows: collectedIssueRows,
+      });
+      queryClient.invalidateQueries({ queryKey: ["import-logs"] });
+    } catch (logErr) {
+      console.error("Failed to save import log:", logErr);
+    }
 
     queryClient.invalidateQueries({ queryKey: ["students"] });
     queryClient.invalidateQueries({ queryKey: ["student-enrollments"] });
@@ -618,7 +682,17 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
               )}
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-3">
+              {(summary.issueRows.length > 0 || summary.ignoredColumns.length > 0) && (
+                <Button
+                  variant="outline"
+                  onClick={() => generateImportReport(summary.issueRows, summary.ignoredColumns)}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Issues Report
+                </Button>
+              )}
               <Button onClick={() => handleOpenChange(false)}>Done</Button>
             </div>
           </div>

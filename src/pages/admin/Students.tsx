@@ -38,7 +38,7 @@ import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { SiblingIndicator } from "@/components/admin/SiblingIndicator";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, FileSpreadsheet, Download } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, FileSpreadsheet, Download, AlertTriangle } from "lucide-react";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
@@ -46,6 +46,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { exportToXLSX } from "@/lib/export-utils";
+import { useLatestImportLog } from "@/hooks/useImportLogs";
+import { generateImportReport, type IssueRow } from "@/lib/import-report";
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
@@ -66,6 +68,7 @@ export default function Students() {
   const activeAcademicYear = useActiveAcademicYear();
   const queryClient = useQueryClient();
   const { isAccountant } = useUserRole();
+  const { data: latestImportLog } = useLatestImportLog();
 
   // Fetch all student fees to show assignment indicators
   const { data: allStudentFees } = useQuery({
@@ -458,6 +461,22 @@ export default function Students() {
   return (
     <AdminLayout>
       <PageHeader title="Students" description="Manage student records and parent access links">
+        {latestImportLog && latestImportLog.failed_count > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 border-yellow-500/30 text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+            onClick={() => {
+              const issueRows = (latestImportLog.issue_rows || []) as IssueRow[];
+              const ignoredCols = (latestImportLog.ignored_columns || []) as string[];
+              generateImportReport(issueRows, ignoredCols);
+            }}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" />
+            ⚠️ {latestImportLog.failed_count} student{latestImportLog.failed_count !== 1 ? 's' : ''} need attention
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
