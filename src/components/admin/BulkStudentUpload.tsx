@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Upload, Loader2, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet, Plus } from "lucide-react";
+import { Upload, Loader2, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet, Plus, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
 import { useAcademicYears, useActiveAcademicYear, useCreateAcademicYear } from "@/hooks/useAcademicYears";
@@ -46,6 +46,8 @@ interface ImportSummary {
   imported: number;
   skipped: number;
   errors: number;
+  errorDetails: string[];
+  ignoredColumns: string[];
 }
 
 type Step = "upload" | "preview" | "importing" | "done";
@@ -69,6 +71,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
   const [isProcessing, setIsProcessing] = useState(false);
   const [rows, setRows] = useState<ProcessedRow[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [ignoredColumns, setIgnoredColumns] = useState<string[]>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [showInlineCreate, setShowInlineCreate] = useState(false);
@@ -77,7 +80,6 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
   const [newYearEnd, setNewYearEnd] = useState("");
   const [isCreatingYear, setIsCreatingYear] = useState(false);
 
-  // Auto-select active year or single year
   const effectiveYearId = useMemo(() => {
     if (academicYearId) return academicYearId;
     if (activeAcademicYear?.id) return activeAcademicYear.id;
@@ -85,7 +87,6 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     return "";
   }, [academicYearId, activeAcademicYear, academicYears]);
 
-  // Reset state when dialog closes
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setStep("upload");
@@ -93,6 +94,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
       setAcademicYearId("");
       setRows([]);
       setWarnings([]);
+      setIgnoredColumns([]);
       setImportProgress(0);
       setSummary(null);
       setIsProcessing(false);
@@ -104,7 +106,6 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     onOpenChange(open);
   };
 
-  // Validate a row and return issues
   const validateRow = useCallback((row: ParsedStudent): string[] => {
     const issues: string[] = [];
     if (!row.name?.trim()) issues.push("Missing name");
@@ -112,7 +113,6 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     return issues;
   }, []);
 
-  // Check for duplicates against existing students
   const checkDuplicate = useCallback(
     (row: ParsedStudent): { isDuplicate: boolean; reason?: string } => {
       if (!existingStudents) return { isDuplicate: false };
@@ -122,15 +122,12 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
           s.parent_phone === row.parent_phone &&
           s.class_name === row.class_name
       );
-      if (match) {
-        return { isDuplicate: true, reason: `Matches existing: ${match.name} (${match.class_name})` };
-      }
+      if (match) return { isDuplicate: true, reason: `Matches existing: ${match.name} (${match.class_name})` };
       return { isDuplicate: false };
     },
     [existingStudents]
   );
 
-  // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
@@ -143,7 +140,6 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     }
   };
 
-  // Auto-create academic year for the current period
   const autoCreateAcademicYear = async (): Promise<string> => {
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -151,20 +147,12 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     const yearName = `${currentYear}-${String(nextYear).slice(2)}`;
     const startDate = now.toISOString().split("T")[0];
     const endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString().split("T")[0];
-
-    const result = await createYear.mutateAsync({
-      name: yearName,
-      start_date: startDate,
-      end_date: endDate,
-      is_active: true,
-    });
-
+    const result = await createYear.mutateAsync({ name: yearName, start_date: startDate, end_date: endDate, is_active: true });
     await queryClient.invalidateQueries({ queryKey: ["academic-years"] });
     toast.success(`Academic year "${yearName}" created automatically`);
     return result.id;
   };
 
-  // Inline create academic year
   const handleInlineCreate = async () => {
     if (!newYearName.trim() || !newYearStart || !newYearEnd) {
       toast.error("Please fill in all fields");
@@ -172,12 +160,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     }
     setIsCreatingYear(true);
     try {
-      const result = await createYear.mutateAsync({
-        name: newYearName.trim(),
-        start_date: newYearStart,
-        end_date: newYearEnd,
-        is_active: true,
-      });
+      const result = await createYear.mutateAsync({ name: newYearName.trim(), start_date: newYearStart, end_date: newYearEnd, is_active: true });
       await queryClient.invalidateQueries({ queryKey: ["academic-years"] });
       setAcademicYearId(result.id);
       setShowInlineCreate(false);
@@ -192,19 +175,14 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     }
   };
 
-  // Send file to edge function for AI processing
   const handleProcess = async () => {
     if (!file) return;
-
     setIsProcessing(true);
     try {
-      // Convert file to base64
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
       let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
       const fileBase64 = btoa(binary);
 
       const { data, error } = await supabase.functions.invoke("process-student-excel", {
@@ -212,27 +190,17 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
       });
 
       if (error) throw new Error(error.message);
+      if (!data?.students || !Array.isArray(data.students)) throw new Error("Invalid response from AI processing");
 
-      if (!data?.students || !Array.isArray(data.students)) {
-        throw new Error("Invalid response from AI processing");
-      }
-
-      // Process rows with validation
       const processed: ProcessedRow[] = data.students.map((s: ParsedStudent, i: number) => {
         const issues = validateRow(s);
         const { isDuplicate, reason } = checkDuplicate(s);
-        return {
-          ...s,
-          _rowIndex: i,
-          _selected: issues.length === 0 && !isDuplicate,
-          _issues: issues,
-          _isDuplicate: isDuplicate,
-          _duplicateReason: reason,
-        };
+        return { ...s, _rowIndex: i, _selected: issues.length === 0 && !isDuplicate, _issues: issues, _isDuplicate: isDuplicate, _duplicateReason: reason };
       });
 
       setRows(processed);
       setWarnings(data.warnings || []);
+      setIgnoredColumns(data.ignoredColumns || []);
       setStep("preview");
     } catch (err: any) {
       console.error("Processing error:", err);
@@ -242,14 +210,10 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     }
   };
 
-  // Toggle row selection
   const toggleRow = (index: number) => {
-    setRows((prev) =>
-      prev.map((r) => (r._rowIndex === index ? { ...r, _selected: !r._selected } : r))
-    );
+    setRows((prev) => prev.map((r) => (r._rowIndex === index ? { ...r, _selected: !r._selected } : r)));
   };
 
-  // Inline edit a field
   const editField = (index: number, field: keyof ParsedStudent, value: string) => {
     setRows((prev) =>
       prev.map((r) => {
@@ -261,33 +225,21 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     );
   };
 
-  // Stats
   const stats = useMemo(() => {
     const selected = rows.filter((r) => r._selected);
     const withIssues = rows.filter((r) => r._issues.length > 0);
     const duplicates = rows.filter((r) => r._isDuplicate);
-    return {
-      total: rows.length,
-      selected: selected.length,
-      issues: withIssues.length,
-      duplicates: duplicates.length,
-    };
+    return { total: rows.length, selected: selected.length, issues: withIssues.length, duplicates: duplicates.length };
   }, [rows]);
 
-  // Bulk import — per-row error isolation
   const handleImport = async () => {
     if (!school?.id) return;
-
     const toImport = rows.filter((r) => r._selected && r._issues.length === 0);
-    if (toImport.length === 0) {
-      toast.error("No valid rows to import");
-      return;
-    }
+    if (toImport.length === 0) { toast.error("No valid rows to import"); return; }
 
     setStep("importing");
     setImportProgress(0);
 
-    // Resolve academic year: use selected, or auto-create if none exists
     let resolvedYearId = effectiveYearId;
     if (!resolvedYearId) {
       try {
@@ -304,7 +256,6 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
     let errors = 0;
     const importErrors: string[] = [];
 
-    // Insert students one-by-one for error isolation
     for (let i = 0; i < toImport.length; i++) {
       const r = toImport[i];
       try {
@@ -333,30 +284,21 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
           .single();
 
         if (error) {
-          console.error(`Row ${i + 1} insert error:`, error);
           errors++;
-          importErrors.push(`Row ${i + 1} (${r.name}): ${error.message}`);
+          importErrors.push(`Row ${r._rowIndex + 1} (${r.name}): ${error.message}`);
           continue;
         }
 
         imported++;
 
-        // Create enrollment
         if (resolvedYearId && insertedStudent) {
-          const { error: enrollError } = await supabase
-            .from("student_enrollments")
-            .insert({
-              student_id: insertedStudent.id,
-              academic_year_id: resolvedYearId,
-              class_name: insertedStudent.class_name,
-              section: insertedStudent.section,
-            });
+          await supabase.from("student_enrollments").insert({
+            student_id: insertedStudent.id,
+            academic_year_id: resolvedYearId,
+            class_name: insertedStudent.class_name,
+            section: insertedStudent.section,
+          });
 
-          if (enrollError) {
-            console.error(`Enrollment error for ${r.name}:`, enrollError);
-          }
-
-          // Auto-assign fees
           try {
             await supabase.rpc("auto_assign_fees_for_student", {
               _student_id: insertedStudent.id,
@@ -367,23 +309,17 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
           }
         }
       } catch (rowErr: any) {
-        console.error(`Row ${i + 1} unexpected error:`, rowErr);
         errors++;
-        importErrors.push(`Row ${i + 1} (${r.name}): ${rowErr.message}`);
+        importErrors.push(`Row ${r._rowIndex + 1} (${r.name}): ${rowErr.message}`);
       }
 
       setImportProgress(Math.round(((i + 1) / toImport.length) * 100));
     }
 
-    if (importErrors.length > 0) {
-      console.warn("Import errors:", importErrors);
-    }
-
     const skipped = rows.length - toImport.length;
-    setSummary({ total: rows.length, imported, skipped, errors });
+    setSummary({ total: rows.length, imported, skipped, errors, errorDetails: importErrors, ignoredColumns });
     setStep("done");
 
-    // Invalidate queries
     queryClient.invalidateQueries({ queryKey: ["students"] });
     queryClient.invalidateQueries({ queryKey: ["student-enrollments"] });
     queryClient.invalidateQueries({ queryKey: ["student-fees"] });
@@ -399,7 +335,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
             Import Students via Excel (AI)
           </DialogTitle>
           <DialogDescription>
-            {step === "upload" && "Upload an Excel or CSV file. AI will automatically map and clean your data."}
+            {step === "upload" && "Upload any Excel or CSV file. AI will automatically map columns — no reformatting needed."}
             {step === "preview" && "Review the parsed data. Fix issues or deselect rows before importing."}
             {step === "importing" && "Importing students..."}
             {step === "done" && "Import complete!"}
@@ -423,10 +359,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                   ))}
                   <div
                     className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground text-primary font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowInlineCreate(true);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setShowInlineCreate(true); }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create New Academic Year
@@ -434,29 +367,14 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                 </SelectContent>
               </Select>
 
-              {/* Inline year creation form */}
               {showInlineCreate && (
                 <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
                   <p className="text-sm font-medium">New Academic Year</p>
                   <div className="space-y-2">
-                    <Input
-                      placeholder="e.g. 2025-26"
-                      value={newYearName}
-                      onChange={(e) => setNewYearName(e.target.value)}
-                    />
+                    <Input placeholder="e.g. 2025-26" value={newYearName} onChange={(e) => setNewYearName(e.target.value)} />
                     <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="date"
-                        placeholder="Start date"
-                        value={newYearStart}
-                        onChange={(e) => setNewYearStart(e.target.value)}
-                      />
-                      <Input
-                        type="date"
-                        placeholder="End date"
-                        value={newYearEnd}
-                        onChange={(e) => setNewYearEnd(e.target.value)}
-                      />
+                      <Input type="date" value={newYearStart} onChange={(e) => setNewYearStart(e.target.value)} />
+                      <Input type="date" value={newYearEnd} onChange={(e) => setNewYearEnd(e.target.value)} />
                     </div>
                   </div>
                   <div className="flex gap-2 justify-end">
@@ -477,21 +395,13 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                 <p className="text-sm text-muted-foreground mb-2">
                   {file ? file.name : "Drag & drop or click to select a file"}
                 </p>
-                <Input
-                  type="file"
-                  accept=".xlsx,.csv"
-                  onChange={handleFileChange}
-                  className="max-w-xs mx-auto"
-                />
+                <Input type="file" accept=".xlsx,.csv" onChange={handleFileChange} className="max-w-xs mx-auto" />
               </div>
             </div>
 
             <Button onClick={handleProcess} disabled={!file || isProcessing} className="w-full">
               {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  AI is processing your file...
-                </>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />AI is processing your file...</>
               ) : (
                 "Process with AI"
               )}
@@ -502,19 +412,23 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
         {/* STEP 2: Preview */}
         {step === "preview" && (
           <div className="flex flex-col gap-3 flex-1 min-h-0">
-            {/* Stats banner */}
             <div className="flex gap-2 flex-wrap">
               <Badge variant="outline">{stats.total} total rows</Badge>
               <Badge variant="default">{stats.selected} selected</Badge>
-              {stats.issues > 0 && (
-                <Badge variant="destructive">{stats.issues} with issues</Badge>
-              )}
+              {stats.issues > 0 && <Badge variant="destructive">{stats.issues} with issues</Badge>}
               {stats.duplicates > 0 && (
-                <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">
-                  {stats.duplicates} duplicates
-                </Badge>
+                <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">{stats.duplicates} duplicates</Badge>
               )}
             </div>
+
+            {ignoredColumns.length > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-2 text-sm">
+                <div className="flex items-center gap-1 font-medium text-blue-800 dark:text-blue-200 mb-1">
+                  <Info className="h-3.5 w-3.5" /> {ignoredColumns.length} column{ignoredColumns.length > 1 ? "s" : ""} ignored
+                </div>
+                <p className="text-blue-700 dark:text-blue-300 text-xs">{ignoredColumns.join(", ")}</p>
+              </div>
+            )}
 
             {warnings.length > 0 && (
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-2 text-sm">
@@ -524,6 +438,9 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                 {warnings.slice(0, 5).map((w, i) => (
                   <p key={i} className="text-yellow-700 dark:text-yellow-300 text-xs">{w}</p>
                 ))}
+                {warnings.length > 5 && (
+                  <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">...and {warnings.length - 5} more</p>
+                )}
               </div>
             )}
 
@@ -545,79 +462,37 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                   <TableBody>
                     {rows.map((row) => {
                       const hasIssues = row._issues.length > 0;
-                      const rowClass = hasIssues
-                        ? "bg-destructive/5"
-                        : row._isDuplicate
-                        ? "bg-yellow-50 dark:bg-yellow-900/10"
-                        : "";
-
+                      const rowClass = hasIssues ? "bg-destructive/5" : row._isDuplicate ? "bg-yellow-50 dark:bg-yellow-900/10" : "";
                       return (
                         <TableRow key={row._rowIndex} className={rowClass}>
                           <TableCell>
-                            <Checkbox
-                              checked={row._selected}
-                              onCheckedChange={() => toggleRow(row._rowIndex)}
-                              disabled={hasIssues}
-                            />
+                            <Checkbox checked={row._selected} onCheckedChange={() => toggleRow(row._rowIndex)} disabled={hasIssues} />
                           </TableCell>
                           <TableCell>
-                            <Input
-                              value={row.name}
-                              onChange={(e) => editField(row._rowIndex, "name", e.target.value)}
-                              className="h-7 text-xs min-w-[120px]"
-                            />
+                            <Input value={row.name} onChange={(e) => editField(row._rowIndex, "name", e.target.value)} className="h-7 text-xs min-w-[120px]" />
                           </TableCell>
                           <TableCell>
-                            <Input
-                              value={row.class_name}
-                              onChange={(e) => editField(row._rowIndex, "class_name", e.target.value)}
-                              className="h-7 text-xs w-16"
-                            />
+                            <Input value={row.class_name} onChange={(e) => editField(row._rowIndex, "class_name", e.target.value)} className="h-7 text-xs w-16" />
                           </TableCell>
                           <TableCell>
-                            <Input
-                              value={row.section}
-                              onChange={(e) => editField(row._rowIndex, "section", e.target.value)}
-                              className="h-7 text-xs w-12"
-                            />
+                            <Input value={row.section} onChange={(e) => editField(row._rowIndex, "section", e.target.value)} className="h-7 text-xs w-12" />
                           </TableCell>
                           <TableCell>
-                            <Input
-                              value={row.roll_number}
-                              onChange={(e) => editField(row._rowIndex, "roll_number", e.target.value)}
-                              className="h-7 text-xs w-20"
-                            />
+                            <Input value={row.roll_number} onChange={(e) => editField(row._rowIndex, "roll_number", e.target.value)} className="h-7 text-xs w-20" />
                           </TableCell>
                           <TableCell>
-                            <Input
-                              value={row.parent_name}
-                              onChange={(e) => editField(row._rowIndex, "parent_name", e.target.value)}
-                              className="h-7 text-xs min-w-[100px]"
-                            />
+                            <Input value={row.parent_name} onChange={(e) => editField(row._rowIndex, "parent_name", e.target.value)} className="h-7 text-xs min-w-[100px]" />
                           </TableCell>
                           <TableCell>
-                            <Input
-                              value={row.parent_phone}
-                              onChange={(e) => editField(row._rowIndex, "parent_phone", e.target.value)}
-                              className="h-7 text-xs w-28"
-                            />
+                            <Input value={row.parent_phone} onChange={(e) => editField(row._rowIndex, "parent_phone", e.target.value)} className="h-7 text-xs w-28" />
                           </TableCell>
                           <TableCell>
                             {hasIssues ? (
-                              <span className="text-xs text-destructive flex items-center gap-1">
-                                <XCircle className="h-3 w-3" />
-                                {row._issues[0]}
-                              </span>
+                              <span className="text-xs text-destructive flex items-center gap-1"><XCircle className="h-3 w-3" />{row._issues[0]}</span>
                             ) : row._isDuplicate ? (
-                              <span className="text-xs text-yellow-600 flex items-center gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                Duplicate
-                              </span>
+                              <span className="text-xs text-yellow-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Duplicate</span>
                             ) : (
-                              <span className="text-xs text-green-600 flex items-center gap-1">
-                                <CheckCircle2 className="h-3 w-3" />
-                                Valid
-                              </span>
+                              <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Valid</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -629,12 +504,8 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
             </div>
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep("upload")}>
-                Back
-              </Button>
-              <Button onClick={handleImport} disabled={stats.selected === 0}>
-                Import {stats.selected} Students
-              </Button>
+              <Button variant="outline" onClick={() => setStep("upload")}>Back</Button>
+              <Button onClick={handleImport} disabled={stats.selected === 0}>Import {stats.selected} Students</Button>
             </div>
           </div>
         )}
@@ -653,25 +524,47 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
 
         {/* STEP 4: Done */}
         {step === "done" && summary && (
-          <div className="py-8 space-y-4">
+          <div className="py-6 space-y-4">
             <div className="text-center">
               <CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-green-600" />
               <p className="font-semibold text-lg">Import Complete</p>
             </div>
-            <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto text-sm">
-              <div className="text-muted-foreground">Total rows:</div>
-              <div className="font-medium">{summary.total}</div>
-              <div className="text-muted-foreground">Imported:</div>
-              <div className="font-medium text-green-600">{summary.imported}</div>
-              <div className="text-muted-foreground">Skipped:</div>
-              <div className="font-medium text-yellow-600">{summary.skipped}</div>
+
+            <div className="space-y-2 max-w-sm mx-auto text-sm">
+              {summary.imported > 0 && (
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>✅ {summary.imported} student{summary.imported !== 1 ? "s" : ""} imported successfully</span>
+                </div>
+              )}
+              {summary.skipped > 0 && (
+                <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>⚠️ {summary.skipped} row{summary.skipped !== 1 ? "s" : ""} skipped (deselected or invalid)</span>
+                </div>
+              )}
               {summary.errors > 0 && (
-                <>
-                  <div className="text-muted-foreground">Errors:</div>
-                  <div className="font-medium text-destructive">{summary.errors}</div>
-                </>
+                <div className="flex items-start gap-2 text-destructive">
+                  <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <div>
+                    <span>❌ {summary.errors} row{summary.errors !== 1 ? "s" : ""} failed</span>
+                    {summary.errorDetails.length > 0 && (
+                      <ul className="text-xs mt-1 space-y-0.5 list-disc list-inside">
+                        {summary.errorDetails.slice(0, 5).map((e, i) => <li key={i}>{e}</li>)}
+                        {summary.errorDetails.length > 5 && <li>...and {summary.errorDetails.length - 5} more</li>}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+              {summary.ignoredColumns.length > 0 && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Info className="h-4 w-4 shrink-0" />
+                  <span>ℹ️ {summary.ignoredColumns.length} column{summary.ignoredColumns.length !== 1 ? "s" : ""} ignored: {summary.ignoredColumns.join(", ")}</span>
+                </div>
               )}
             </div>
+
             <div className="flex justify-center">
               <Button onClick={() => handleOpenChange(false)}>Done</Button>
             </div>
