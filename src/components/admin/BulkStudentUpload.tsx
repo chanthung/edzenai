@@ -489,7 +489,13 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                   <TableBody>
                     {rows.map((row) => {
                       const hasIssues = row._issues.length > 0;
-                      const rowClass = hasIssues ? "bg-destructive/5" : row._isDuplicate ? "bg-yellow-50 dark:bg-yellow-900/10" : "";
+                      const rowClass = hasIssues
+                        ? "bg-destructive/5"
+                        : row._duplicateType === 'strong'
+                        ? "bg-destructive/5"
+                        : row._duplicateType === 'soft'
+                        ? "bg-yellow-50 dark:bg-yellow-900/10"
+                        : "";
                       return (
                         <TableRow key={row._rowIndex} className={rowClass}>
                           <TableCell>
@@ -516,8 +522,28 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                           <TableCell>
                             {hasIssues ? (
                               <span className="text-xs text-destructive flex items-center gap-1"><XCircle className="h-3 w-3" />{row._issues[0]}</span>
-                            ) : row._isDuplicate ? (
-                              <span className="text-xs text-yellow-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Duplicate</span>
+                            ) : row._duplicateType === 'strong' ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-xs text-destructive flex items-center gap-1 cursor-help"><XCircle className="h-3 w-3" />Duplicate</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="max-w-[250px]">
+                                    <p className="text-xs">{row._duplicateReason}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : row._duplicateType === 'soft' ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-xs text-yellow-600 flex items-center gap-1 cursor-help"><AlertTriangle className="h-3 w-3" />Possible Duplicate</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="max-w-[250px]">
+                                    <p className="text-xs">{row._duplicateReason}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ) : (
                               <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Valid</span>
                             )}
