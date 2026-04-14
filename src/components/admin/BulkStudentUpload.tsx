@@ -682,7 +682,17 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
               )}
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-3">
+              {(summary.issueRows.length > 0 || summary.ignoredColumns.length > 0) && (
+                <Button
+                  variant="outline"
+                  onClick={() => generateImportReport(summary.issueRows, summary.ignoredColumns)}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Issues Report
+                </Button>
+              )}
               <Button onClick={() => handleOpenChange(false)}>Done</Button>
             </div>
           </div>
