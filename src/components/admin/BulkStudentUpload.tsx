@@ -34,11 +34,14 @@ interface ParsedStudent {
   religion: string;
 }
 
+type DuplicateType = 'strong' | 'soft' | null;
+
 interface ProcessedRow extends ParsedStudent {
   _rowIndex: number;
   _selected: boolean;
   _issues: string[];
   _isDuplicate: boolean;
+  _duplicateType: DuplicateType;
   _duplicateReason?: string;
 }
 
