@@ -231,6 +231,9 @@ export default function Dashboard() {
             <BirthdayReminder students={students} />
           )}
 
+          {/* Import History */}
+          <ImportHistoryCard />
+
           {/* Quick actions */}
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="card-elevated">
