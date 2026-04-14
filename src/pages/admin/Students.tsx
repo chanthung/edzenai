@@ -461,6 +461,22 @@ export default function Students() {
   return (
     <AdminLayout>
       <PageHeader title="Students" description="Manage student records and parent access links">
+        {latestImportLog && latestImportLog.failed_count > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 border-yellow-500/30 text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+            onClick={() => {
+              const issueRows = (latestImportLog.issue_rows || []) as IssueRow[];
+              const ignoredCols = (latestImportLog.ignored_columns || []) as string[];
+              generateImportReport(issueRows, ignoredCols);
+            }}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" />
+            ⚠️ {latestImportLog.failed_count} student{latestImportLog.failed_count !== 1 ? 's' : ''} need attention
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
