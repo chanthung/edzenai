@@ -251,8 +251,9 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
   const stats = useMemo(() => {
     const selected = rows.filter((r) => r._selected);
     const withIssues = rows.filter((r) => r._issues.length > 0);
-    const duplicates = rows.filter((r) => r._isDuplicate);
-    return { total: rows.length, selected: selected.length, issues: withIssues.length, duplicates: duplicates.length };
+    const strongDupes = rows.filter((r) => r._duplicateType === 'strong');
+    const softDupes = rows.filter((r) => r._duplicateType === 'soft');
+    return { total: rows.length, selected: selected.length, issues: withIssues.length, strongDupes: strongDupes.length, softDupes: softDupes.length, duplicates: strongDupes.length + softDupes.length };
   }, [rows]);
 
   const handleImport = async () => {
