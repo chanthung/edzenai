@@ -68,6 +68,7 @@ export default function Students() {
   const activeAcademicYear = useActiveAcademicYear();
   const queryClient = useQueryClient();
   const { isAccountant } = useUserRole();
+  const { data: latestImportLog } = useLatestImportLog();
 
   // Fetch all student fees to show assignment indicators
   const { data: allStudentFees } = useQuery({
