@@ -440,8 +440,11 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
               <Badge variant="outline">{stats.total} total rows</Badge>
               <Badge variant="default">{stats.selected} selected</Badge>
               {stats.issues > 0 && <Badge variant="destructive">{stats.issues} with issues</Badge>}
-              {stats.duplicates > 0 && (
-                <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">{stats.duplicates} duplicates</Badge>
+              {stats.strongDupes > 0 && (
+                <Badge className="bg-destructive/10 text-destructive border-destructive/30">🔴 {stats.strongDupes} duplicate{stats.strongDupes !== 1 ? "s" : ""} blocked</Badge>
+              )}
+              {stats.softDupes > 0 && (
+                <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">🟡 {stats.softDupes} possible duplicate{stats.softDupes !== 1 ? "s" : ""}</Badge>
               )}
             </div>
 
