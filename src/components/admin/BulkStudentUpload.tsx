@@ -53,6 +53,7 @@ interface ImportSummary {
   errors: number;
   errorDetails: string[];
   ignoredColumns: string[];
+  issueRows: IssueRow[];
 }
 
 type Step = "upload" | "preview" | "importing" | "done";
