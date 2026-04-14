@@ -16,6 +16,7 @@ import { useSchool } from "@/hooks/useSchool";
 import { useAcademicYears, useActiveAcademicYear, useCreateAcademicYear } from "@/hooks/useAcademicYears";
 import { useStudents } from "@/hooks/useStudents";
 import { useQueryClient } from "@tanstack/react-query";
+import { generateImportReport, type IssueRow } from "@/lib/import-report";
 
 interface ParsedStudent {
   name: string;
