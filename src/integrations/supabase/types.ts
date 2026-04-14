@@ -660,6 +660,53 @@ export type Database = {
           },
         ]
       }
+      import_logs: {
+        Row: {
+          created_at: string
+          failed_count: number
+          file_name: string
+          id: string
+          ignored_columns: Json | null
+          imported_at: string
+          imported_count: number
+          issue_rows: Json | null
+          school_id: string
+          total_rows: number
+        }
+        Insert: {
+          created_at?: string
+          failed_count?: number
+          file_name: string
+          id?: string
+          ignored_columns?: Json | null
+          imported_at?: string
+          imported_count?: number
+          issue_rows?: Json | null
+          school_id: string
+          total_rows?: number
+        }
+        Update: {
+          created_at?: string
+          failed_count?: number
+          file_name?: string
+          id?: string
+          ignored_columns?: Json | null
+          imported_at?: string
+          imported_count?: number
+          issue_rows?: Json | null
+          school_id?: string
+          total_rows?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_logs_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installments: {
         Row: {
           amount: number
