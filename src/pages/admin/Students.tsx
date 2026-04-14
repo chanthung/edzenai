@@ -46,6 +46,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { exportToXLSX } from "@/lib/export-utils";
+import { useLatestImportLog } from "@/hooks/useImportLogs";
+import { generateImportReport, type IssueRow } from "@/lib/import-report";
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
