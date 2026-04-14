@@ -216,8 +216,9 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
 
       const processed: ProcessedRow[] = data.students.map((s: ParsedStudent, i: number) => {
         const issues = validateRow(s);
-        const { isDuplicate, reason } = checkDuplicate(s);
-        return { ...s, _rowIndex: i, _selected: issues.length === 0 && !isDuplicate, _issues: issues, _isDuplicate: isDuplicate, _duplicateReason: reason };
+        const { isDuplicate, duplicateType, reason } = checkDuplicate(s);
+        const autoDeselect = issues.length > 0 || duplicateType === 'strong';
+        return { ...s, _rowIndex: i, _selected: !autoDeselect, _issues: issues, _isDuplicate: isDuplicate, _duplicateType: duplicateType, _duplicateReason: reason };
       });
 
       setRows(processed);
