@@ -118,16 +118,34 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
   }, []);
 
   const checkDuplicate = useCallback(
-    (row: ParsedStudent): { isDuplicate: boolean; reason?: string } => {
-      if (!existingStudents) return { isDuplicate: false };
-      const match = existingStudents.find(
-        (s) =>
-          s.name?.toLowerCase() === row.name?.toLowerCase() &&
-          s.parent_phone === row.parent_phone &&
-          s.class_name === row.class_name
+    (row: ParsedStudent): { isDuplicate: boolean; duplicateType: DuplicateType; reason?: string } => {
+      if (!existingStudents) return { isDuplicate: false, duplicateType: null };
+
+      // Strong matches — auto-deselect
+      const aadhaarMatch = row.aadhaar_number?.trim() &&
+        existingStudents.find((s) => s.aadhaar_number && s.aadhaar_number === row.aadhaar_number.trim());
+      if (aadhaarMatch) return { isDuplicate: true, duplicateType: 'strong', reason: `Aadhaar match: ${aadhaarMatch.name}, ${aadhaarMatch.class_name || 'N/A'}` };
+
+      const rollClassMatch = row.roll_number?.trim() && row.class_name?.trim() &&
+        existingStudents.find((s) => s.roll_number === row.roll_number.trim() && s.class_name === row.class_name.trim());
+      if (rollClassMatch) return { isDuplicate: true, duplicateType: 'strong', reason: `Roll+Class match: ${rollClassMatch.name}, Roll ${rollClassMatch.roll_number}, ${rollClassMatch.class_name}` };
+
+      const nameClassMatch = existingStudents.find(
+        (s) => s.name?.toLowerCase().trim() === row.name?.toLowerCase().trim() && s.class_name === row.class_name?.trim()
       );
-      if (match) return { isDuplicate: true, reason: `Matches existing: ${match.name} (${match.class_name})` };
-      return { isDuplicate: false };
+      if (nameClassMatch) return { isDuplicate: true, duplicateType: 'strong', reason: `Name+Class match: ${nameClassMatch.name}, ${nameClassMatch.class_name}` };
+
+      // Soft matches — warn but keep selected
+      const phoneMatch = row.parent_phone?.trim() &&
+        existingStudents.find((s) => s.parent_phone && s.parent_phone === row.parent_phone.trim());
+      if (phoneMatch) return { isDuplicate: true, duplicateType: 'soft', reason: `Same phone as: ${phoneMatch.name}, ${phoneMatch.class_name || 'N/A'}` };
+
+      const nameSectionMatch = existingStudents.find(
+        (s) => s.name?.toLowerCase().trim() === row.name?.toLowerCase().trim() && s.section === row.section?.trim() && s.class_name !== row.class_name?.trim()
+      );
+      if (nameSectionMatch) return { isDuplicate: true, duplicateType: 'soft', reason: `Same name+section (diff class): ${nameSectionMatch.name}, ${nameSectionMatch.class_name}` };
+
+      return { isDuplicate: false, duplicateType: null };
     },
     [existingStudents]
   );
