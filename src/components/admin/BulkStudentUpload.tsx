@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { Upload, Loader2, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet, Plus, Info } from "lucide-react";
+import { Upload, Loader2, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet, Plus, Info, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
 import { useAcademicYears, useActiveAcademicYear, useCreateAcademicYear } from "@/hooks/useAcademicYears";
