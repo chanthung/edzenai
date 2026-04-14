@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { Upload, Loader2, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet, Plus, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,11 +34,14 @@ interface ParsedStudent {
   religion: string;
 }
 
+type DuplicateType = 'strong' | 'soft' | null;
+
 interface ProcessedRow extends ParsedStudent {
   _rowIndex: number;
   _selected: boolean;
   _issues: string[];
   _isDuplicate: boolean;
+  _duplicateType: DuplicateType;
   _duplicateReason?: string;
 }
 
@@ -114,16 +118,34 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
   }, []);
 
   const checkDuplicate = useCallback(
-    (row: ParsedStudent): { isDuplicate: boolean; reason?: string } => {
-      if (!existingStudents) return { isDuplicate: false };
-      const match = existingStudents.find(
-        (s) =>
-          s.name?.toLowerCase() === row.name?.toLowerCase() &&
-          s.parent_phone === row.parent_phone &&
-          s.class_name === row.class_name
+    (row: ParsedStudent): { isDuplicate: boolean; duplicateType: DuplicateType; reason?: string } => {
+      if (!existingStudents) return { isDuplicate: false, duplicateType: null };
+
+      // Strong matches — auto-deselect
+      const aadhaarMatch = row.aadhaar_number?.trim() &&
+        existingStudents.find((s) => s.aadhaar_number && s.aadhaar_number === row.aadhaar_number.trim());
+      if (aadhaarMatch) return { isDuplicate: true, duplicateType: 'strong', reason: `Aadhaar match: ${aadhaarMatch.name}, ${aadhaarMatch.class_name || 'N/A'}` };
+
+      const rollClassMatch = row.roll_number?.trim() && row.class_name?.trim() &&
+        existingStudents.find((s) => s.roll_number === row.roll_number.trim() && s.class_name === row.class_name.trim());
+      if (rollClassMatch) return { isDuplicate: true, duplicateType: 'strong', reason: `Roll+Class match: ${rollClassMatch.name}, Roll ${rollClassMatch.roll_number}, ${rollClassMatch.class_name}` };
+
+      const nameClassMatch = existingStudents.find(
+        (s) => s.name?.toLowerCase().trim() === row.name?.toLowerCase().trim() && s.class_name === row.class_name?.trim()
       );
-      if (match) return { isDuplicate: true, reason: `Matches existing: ${match.name} (${match.class_name})` };
-      return { isDuplicate: false };
+      if (nameClassMatch) return { isDuplicate: true, duplicateType: 'strong', reason: `Name+Class match: ${nameClassMatch.name}, ${nameClassMatch.class_name}` };
+
+      // Soft matches — warn but keep selected
+      const phoneMatch = row.parent_phone?.trim() &&
+        existingStudents.find((s) => s.parent_phone && s.parent_phone === row.parent_phone.trim());
+      if (phoneMatch) return { isDuplicate: true, duplicateType: 'soft', reason: `Same phone as: ${phoneMatch.name}, ${phoneMatch.class_name || 'N/A'}` };
+
+      const nameSectionMatch = existingStudents.find(
+        (s) => s.name?.toLowerCase().trim() === row.name?.toLowerCase().trim() && s.section === row.section?.trim() && s.class_name !== row.class_name?.trim()
+      );
+      if (nameSectionMatch) return { isDuplicate: true, duplicateType: 'soft', reason: `Same name+section (diff class): ${nameSectionMatch.name}, ${nameSectionMatch.class_name}` };
+
+      return { isDuplicate: false, duplicateType: null };
     },
     [existingStudents]
   );
@@ -194,8 +216,9 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
 
       const processed: ProcessedRow[] = data.students.map((s: ParsedStudent, i: number) => {
         const issues = validateRow(s);
-        const { isDuplicate, reason } = checkDuplicate(s);
-        return { ...s, _rowIndex: i, _selected: issues.length === 0 && !isDuplicate, _issues: issues, _isDuplicate: isDuplicate, _duplicateReason: reason };
+        const { isDuplicate, duplicateType, reason } = checkDuplicate(s);
+        const autoDeselect = issues.length > 0 || duplicateType === 'strong';
+        return { ...s, _rowIndex: i, _selected: !autoDeselect, _issues: issues, _isDuplicate: isDuplicate, _duplicateType: duplicateType, _duplicateReason: reason };
       });
 
       setRows(processed);
@@ -228,8 +251,9 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
   const stats = useMemo(() => {
     const selected = rows.filter((r) => r._selected);
     const withIssues = rows.filter((r) => r._issues.length > 0);
-    const duplicates = rows.filter((r) => r._isDuplicate);
-    return { total: rows.length, selected: selected.length, issues: withIssues.length, duplicates: duplicates.length };
+    const strongDupes = rows.filter((r) => r._duplicateType === 'strong');
+    const softDupes = rows.filter((r) => r._duplicateType === 'soft');
+    return { total: rows.length, selected: selected.length, issues: withIssues.length, strongDupes: strongDupes.length, softDupes: softDupes.length, duplicates: strongDupes.length + softDupes.length };
   }, [rows]);
 
   const handleImport = async () => {
@@ -416,8 +440,11 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
               <Badge variant="outline">{stats.total} total rows</Badge>
               <Badge variant="default">{stats.selected} selected</Badge>
               {stats.issues > 0 && <Badge variant="destructive">{stats.issues} with issues</Badge>}
-              {stats.duplicates > 0 && (
-                <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">{stats.duplicates} duplicates</Badge>
+              {stats.strongDupes > 0 && (
+                <Badge className="bg-destructive/10 text-destructive border-destructive/30">🔴 {stats.strongDupes} duplicate{stats.strongDupes !== 1 ? "s" : ""} blocked</Badge>
+              )}
+              {stats.softDupes > 0 && (
+                <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">🟡 {stats.softDupes} possible duplicate{stats.softDupes !== 1 ? "s" : ""}</Badge>
               )}
             </div>
 
@@ -462,7 +489,13 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                   <TableBody>
                     {rows.map((row) => {
                       const hasIssues = row._issues.length > 0;
-                      const rowClass = hasIssues ? "bg-destructive/5" : row._isDuplicate ? "bg-yellow-50 dark:bg-yellow-900/10" : "";
+                      const rowClass = hasIssues
+                        ? "bg-destructive/5"
+                        : row._duplicateType === 'strong'
+                        ? "bg-destructive/5"
+                        : row._duplicateType === 'soft'
+                        ? "bg-yellow-50 dark:bg-yellow-900/10"
+                        : "";
                       return (
                         <TableRow key={row._rowIndex} className={rowClass}>
                           <TableCell>
@@ -489,8 +522,28 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                           <TableCell>
                             {hasIssues ? (
                               <span className="text-xs text-destructive flex items-center gap-1"><XCircle className="h-3 w-3" />{row._issues[0]}</span>
-                            ) : row._isDuplicate ? (
-                              <span className="text-xs text-yellow-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Duplicate</span>
+                            ) : row._duplicateType === 'strong' ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-xs text-destructive flex items-center gap-1 cursor-help"><XCircle className="h-3 w-3" />Duplicate</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="max-w-[250px]">
+                                    <p className="text-xs">{row._duplicateReason}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : row._duplicateType === 'soft' ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-xs text-yellow-600 flex items-center gap-1 cursor-help"><AlertTriangle className="h-3 w-3" />Possible Duplicate</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="max-w-[250px]">
+                                    <p className="text-xs">{row._duplicateReason}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ) : (
                               <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Valid</span>
                             )}
