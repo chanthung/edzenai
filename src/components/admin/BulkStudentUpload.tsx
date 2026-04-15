@@ -214,6 +214,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
       });
 
       if (error) throw new Error(error.message);
+      if (data?.success === false) throw new Error(data.error || "Processing failed");
       if (!data?.students || !Array.isArray(data.students)) throw new Error("Invalid response from AI processing");
 
       const processed: ProcessedRow[] = data.students.map((s: ParsedStudent, i: number) => {
