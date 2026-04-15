@@ -426,15 +426,20 @@ serve(async (req) => {
     try {
       const parsed = parseSpreadsheet(fileBase64, fileName);
       headers = parsed.headers;
-      rows = parsed.rows;
+      const parsedRows = parsed.rows;
+      headers = parsed.headers;
+      // Filter out completely empty rows
+      rows = parsedRows.filter(row =>
+        Object.values(row).some(value => value !== null && value !== undefined && String(value).trim() !== "")
+      );
     } catch (parseErr: any) {
       return ok({ success: false, error: parseErr.message || "Failed to parse file", students: [], warnings: [], ignoredColumns: [] });
     }
 
-    console.log(`Parsed ${rows.length} rows with headers:`, headers);
+    console.log(`Total parsed rows: ${rows.length} (after filtering empty rows). Headers:`, headers);
 
     if (rows.length === 0) return ok({ success: false, error: "File has no data rows", students: [], warnings: [], ignoredColumns: [] });
-    if (rows.length > 500) return ok({ success: false, error: "File contains too many rows (max 500). Please split into smaller files.", students: [], warnings: [], ignoredColumns: [] });
+    if (rows.length > 2000) return ok({ success: false, error: "File contains too many rows (max 2000). Please split into smaller files.", students: [], warnings: [], ignoredColumns: [] });
 
     // STEP 1: Rule-based mapping
     const { ruleMapping, unmatchedHeaders } = applyRuleMapping(headers);
