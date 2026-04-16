@@ -800,6 +800,16 @@ export default function Students() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); localStorage.setItem('students_page_size', v); }}>
+          <SelectTrigger className="w-full sm:w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="25">25 / page</SelectItem>
+            <SelectItem value="50">50 / page</SelectItem>
+            <SelectItem value="100">100 / page</SelectItem>
+            <SelectItem value="200">200 / page</SelectItem>
+          </SelectContent>
         
         {/* Bulk Share Button */}
         {selectedStudents.size > 0 && (
