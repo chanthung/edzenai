@@ -810,7 +810,7 @@ export default function Students() {
             <SelectItem value="100">100 / page</SelectItem>
             <SelectItem value="200">200 / page</SelectItem>
           </SelectContent>
-        
+        </Select>
         {/* Bulk Share Button */}
         {selectedStudents.size > 0 && (
           <Button
