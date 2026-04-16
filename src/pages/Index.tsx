@@ -600,27 +600,29 @@ function DashboardCarousel() {
 
   return (
     <div className="flex flex-col items-center gap-5 w-full">
-      <Carousel
-        setApi={setApi}
-        opts={{ loop: true }}
-        plugins={[Autoplay({ delay: 3000, stopOnInteraction: false, stopOnMouseEnter: true })]}
-        className="w-full"
-      >
-        <CarouselContent>
-          {dashboardSlides.map((slide) => (
-            <CarouselItem key={slide.label}>
-              <div className="w-full h-[580px] md:h-[640px] lg:h-[680px] rounded-2xl shadow-2xl shadow-primary/10 border border-border/40 overflow-hidden">
-                <img
-                  src={slide.image}
-                  alt={`EdZen AI — ${slide.label}`}
-                  loading="lazy"
-                  className="w-full h-full object-cover object-top"
-                />
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-      </Carousel>
+      <div className="gradient-border-wrapper w-full">
+        <Carousel
+          setApi={setApi}
+          opts={{ loop: true }}
+          plugins={[Autoplay({ delay: 3000, stopOnInteraction: false, stopOnMouseEnter: true })]}
+          className="w-full bg-background rounded-xl"
+        >
+          <CarouselContent>
+            {dashboardSlides.map((slide) => (
+              <CarouselItem key={slide.label}>
+                <div className="w-full h-[580px] md:h-[640px] lg:h-[680px] overflow-hidden">
+                  <img
+                    src={slide.image}
+                    alt={`EdZen AI — ${slide.label}`}
+                    loading="lazy"
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+      </div>
       <div className="flex items-center gap-3">
         {dashboardSlides.map((slide, i) => (
           <button
