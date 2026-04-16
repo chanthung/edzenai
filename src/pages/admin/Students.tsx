@@ -139,6 +139,12 @@ export default function Students() {
   const [bulkSendProgress, setBulkSendProgress] = useState({ current: 0, total: 0 });
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   
+  // Bulk delete state
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleteConfirmText, setBulkDeleteConfirmText] = useState("");
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkDeleteProgress, setBulkDeleteProgress] = useState({ current: 0, total: 0 });
+  
   
   const [newStudent, setNewStudent] = useState({
     name: "",
