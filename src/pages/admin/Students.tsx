@@ -484,7 +484,51 @@ export default function Students() {
     }
   };
 
-  return (
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (bulkDeleteConfirmText !== "DELETE") return;
+    
+    const idsToDelete = Array.from(selectedStudents);
+    setIsBulkDeleting(true);
+    setBulkDeleteProgress({ current: 0, total: idsToDelete.length });
+    setBulkDeleteDialogOpen(false);
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < idsToDelete.length; i++) {
+      setBulkDeleteProgress({ current: i + 1, total: idsToDelete.length });
+      try {
+        const { error } = await supabase
+          .from('students')
+          .delete()
+          .eq('id', idsToDelete[i]);
+        if (error) throw error;
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+    
+    // Refresh data
+    queryClient.invalidateQueries({ queryKey: ['students'] });
+    queryClient.invalidateQueries({ queryKey: ['student-enrollments'] });
+    queryClient.invalidateQueries({ queryKey: ['all-student-fees'] });
+    
+    setSelectedStudents(new Set());
+    setIsBulkDeleting(false);
+    setBulkDeleteProgress({ current: 0, total: 0 });
+    setBulkDeleteConfirmText("");
+    
+    if (failCount === 0) {
+      toast.success(`${successCount} student${successCount !== 1 ? 's' : ''} deleted successfully`);
+    } else if (successCount === 0) {
+      toast.error(`Failed to delete all ${failCount} students`);
+    } else {
+      toast.info(`Deleted ${successCount}, failed ${failCount}`);
+    }
+  };
+
     <AdminLayout>
       <PageHeader title="Students" description="Manage student records and parent access links">
         {latestImportLog && latestImportLog.failed_count > 0 && (
