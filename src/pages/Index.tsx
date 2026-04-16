@@ -236,6 +236,16 @@ export default function Index() {
             <p className="text-sm text-muted-foreground mt-2">
               Fee collection · AI insights · Parent updates · Bulk import
             </p>
+            <div className="flex flex-wrap justify-center gap-2 mt-3">
+              {["WhatsApp Reminders", "AI Chatbot", "Parent Portal", "Fee Reports", "Bulk Import", "AI Analysis"].map((tag) => (
+                <span
+                  key={tag}
+                  className="text-xs px-3.5 py-1 rounded-full bg-[hsl(245_100%_97%)] text-primary border border-[hsl(262_52%_79%)]"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Carousel — full width above text */}
