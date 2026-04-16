@@ -1,48 +1,42 @@
 
 
-## Plan: Add "Rows Per Page" Selector to Students Table
+## Plan: Bulk Delete Students
 
 ### Current State
-The Students page fetches all students at once and renders them in a single table with no pagination. For schools with hundreds or thousands of students, this causes performance issues.
+The Students page already has checkbox-based multi-selection (`selectedStudents` Set) used for bulk WhatsApp link sharing. No database schema changes needed — we'll use hard delete via the existing `useDeleteStudent` pattern.
 
 ### Approach
-Add **client-side pagination** (no query changes needed since related features like fee counts, sibling grouping, and bulk selection depend on the full student list being available). The page size preference will persist via localStorage.
+Add a "Delete Selected" button to the existing selection toolbar, with a confirmation dialog requiring the user to type "DELETE". No soft-delete column needed (no `is_deleted` column exists, and adding one would require migration + RLS changes across many tables). Hard delete is consistent with the existing single-delete behavior.
 
 ### Changes (single file: `src/pages/admin/Students.tsx`)
 
-**1. Add pagination state**
-- `pageSize` (default 50, restored from localStorage)
-- `currentPage` (starts at 1, resets on filter/search/pageSize changes)
+**1. Add bulk delete state**
+- `bulkDeleteDialogOpen` boolean
+- `bulkDeleteConfirmText` string (must match "DELETE")
+- `isBulkDeleting` boolean + progress tracking
 
-**2. Add page size dropdown**
-- Place next to the existing class filter dropdown in the toolbar row
-- Options: 25, 50, 100, 200
-- Styled consistently with existing Select components
+**2. Add "Delete Selected" button**
+- Appears in the existing selection action bar (where "Share via WhatsApp" already shows)
+- Red/destructive styling, only visible when `selectedStudents.size > 0`
+- Gated behind `!isAccountant` (admin-only, matching existing delete permissions)
+- Wrapped in `RestrictedButton` for subscription check
 
-**3. Slice filtered students for display**
-- Compute `paginatedStudents` from `filteredStudents` using `slice((page-1)*size, page*size)`
-- Only the table body rendering changes to use `paginatedStudents`
-- All other logic (fee counts, sibling grouping, bulk select-all) continues using full `filteredStudents`
+**3. Add confirmation dialog**
+- AlertDialog with warning message showing count
+- Text input: "Type DELETE to confirm"
+- Action button disabled until input === "DELETE"
 
-**4. Add pagination controls below the table**
-- Previous / Next buttons
-- Page indicator: "Page X of Y"
-- Total count display: "Showing 1-50 of 342 students"
-- Uses existing Pagination UI components from `src/components/ui/pagination.tsx`
+**4. Bulk delete logic**
+- Loop through selected IDs, call `supabase.from('students').delete().eq('id', id)` individually (respects RLS)
+- Track success/fail counts
+- On complete: clear selection, invalidate queries, show toast with counts
 
-**5. Persist preference**
-- Save to `localStorage` key `students_page_size`
-- Load on mount
+**5. Permission check**
+- Hide bulk delete button for accountants (`isAccountant` flag already available)
+- Subscription restriction check via existing `isRestricted` / `canPerform('delete_student')`
 
 ### What stays unchanged
-- Data fetching (all students loaded at once — needed for fee map, sibling detection, export)
-- Sorting, filtering, search logic
-- Bulk selection behavior (select-all applies to current filtered set)
-- All dialogs and actions
-
-### Impact Assessment
-- **Single file edit** — only `Students.tsx`
-- No database changes
-- No API changes
-- No breaking changes to other components
+- Existing selection logic, checkboxes, bulk share
+- No database migrations
+- No new hooks
 
