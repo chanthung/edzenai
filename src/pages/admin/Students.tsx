@@ -116,6 +116,13 @@ export default function Students() {
     return set;
   }, [sentDispatches]);
   
+  // Pagination state
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('students_page_size');
+    return saved ? Number(saved) : 50;
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
