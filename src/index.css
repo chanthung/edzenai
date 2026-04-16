@@ -231,3 +231,27 @@
   .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
   .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
 }
+
+/* Animated gradient border for slideshow */
+@property --gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes gradient-rotate {
+  to {
+    --gradient-angle: 360deg;
+  }
+}
+
+.gradient-border-wrapper {
+  padding: 2px;
+  border-radius: 14px;
+  background: linear-gradient(var(--gradient-angle), #6C63FF, #a78bfa, #06b6d4, #6C63FF);
+  animation: gradient-rotate 4s linear infinite;
+}
+
+.gradient-border-wrapper > * {
+  border-radius: 12px;
+}
