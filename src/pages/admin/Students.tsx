@@ -896,7 +896,7 @@ export default function Students() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents?.map((student) => {
+                {paginatedStudents.map((student) => {
                   const hasFamilyColor = familyRowColors.has(student.id);
                   const familyColorAlt = familyRowColors.get(student.id);
                   return (
