@@ -38,7 +38,7 @@ import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { SiblingIndicator } from "@/components/admin/SiblingIndicator";
 import { toast } from "sonner";
-import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, FileSpreadsheet, Download, AlertTriangle } from "lucide-react";
+import { Plus, Users, Copy, ExternalLink, Trash2, Search, Loader2, IndianRupee, CreditCard, CheckCircle2, Pencil, Share2, FileSpreadsheet, Download, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
@@ -116,6 +116,13 @@ export default function Students() {
     return set;
   }, [sentDispatches]);
   
+  // Pagination state
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('students_page_size');
+    return saved ? Number(saved) : 50;
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -182,23 +189,36 @@ export default function Students() {
       return matchesSearch && matchesClass;
     });
 
-    // Sort by class (numeric extraction), then section, then name
     return filtered?.sort((a, b) => {
       const classA = a.class_name || '';
       const classB = b.class_name || '';
       const numA = parseInt((classA.match(/(\d+)/) || ['0', '0'])[1], 10);
       const numB = parseInt((classB.match(/(\d+)/) || ['0', '0'])[1], 10);
       if (numA !== numB) return numA - numB;
-      // Same numeric class — compare full class string for non-numeric classes
       if (classA.localeCompare(classB) !== 0) return classA.localeCompare(classB);
-      // Then section
       const secA = (a.section || '').toLowerCase();
       const secB = (b.section || '').toLowerCase();
       if (secA !== secB) return secA.localeCompare(secB);
-      // Then name alphabetically
       return a.name.localeCompare(b.name);
     });
   }, [students, searchQuery, classFilter]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, classFilter, pageSize]);
+
+  // Pagination computed values
+  const totalFiltered = filteredStudents?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedStudents = useMemo(() => {
+    if (!filteredStudents) return [];
+    const start = (safeCurrentPage - 1) * pageSize;
+    return filteredStudents.slice(start, start + pageSize);
+  }, [filteredStudents, safeCurrentPage, pageSize]);
+  const showingFrom = totalFiltered === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1;
+  const showingTo = Math.min(safeCurrentPage * pageSize, totalFiltered);
 
   // Family row grouping: assign alternating colors based on parent_phone groups
   const familyRowColors = useMemo(() => {
@@ -780,7 +800,17 @@ export default function Students() {
             ))}
           </SelectContent>
         </Select>
-        
+        <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); localStorage.setItem('students_page_size', v); }}>
+          <SelectTrigger className="w-full sm:w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="25">25 / page</SelectItem>
+            <SelectItem value="50">50 / page</SelectItem>
+            <SelectItem value="100">100 / page</SelectItem>
+            <SelectItem value="200">200 / page</SelectItem>
+          </SelectContent>
+        </Select>
         {/* Bulk Share Button */}
         {selectedStudents.size > 0 && (
           <Button
@@ -866,7 +896,7 @@ export default function Students() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents?.map((student) => {
+                {paginatedStudents.map((student) => {
                   const hasFamilyColor = familyRowColors.has(student.id);
                   const familyColorAlt = familyRowColors.get(student.id);
                   return (
@@ -1049,6 +1079,38 @@ export default function Students() {
           </div>
         )}
       </Card>
+
+      {/* Pagination Controls */}
+      {totalFiltered > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+          <p className="text-sm text-muted-foreground">
+            Showing {showingFrom}–{showingTo} of {totalFiltered} students
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safeCurrentPage <= 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground px-2">
+              Page {safeCurrentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safeCurrentPage >= totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Fee Manager Dialog */}
       {feeManagerStudent && (
