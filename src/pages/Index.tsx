@@ -227,6 +227,17 @@ export default function Index() {
       {/* ═══ DASHBOARD SHOWCASE ═══ */}
       <section className="py-20 md:py-28 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
+          {/* Hero text above carousel */}
+          <div className="text-center pb-5">
+            <h2 className="text-[28px] font-bold text-foreground leading-tight">
+              AI-Powered School Management with{" "}
+              <span className="text-primary">WhatsApp Integration</span>
+            </h2>
+            <p className="text-sm text-muted-foreground mt-2">
+              Fee collection · AI insights · Parent updates · Bulk import
+            </p>
+          </div>
+
           {/* Carousel — full width above text */}
           <DashboardCarousel />
 
