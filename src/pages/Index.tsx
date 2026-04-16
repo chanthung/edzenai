@@ -573,7 +573,7 @@ const dashboardSlides: { image: string; label: string }[] = [
   { image: slide4, label: "Bulk WhatsApp Fee Reminders" },
   { image: slide5, label: "Student Fees with AI Chatbot" },
   { image: slide6, label: "Student List & WhatsApp Messaging" },
-  { image: slide7, label: "Send Parent Link via WhatsApp" },
+  { image: slide7, label: "Daily Attendance" },
   { image: slide8, label: "WhatsApp Notification to Parents" },
   { image: slide9, label: "Parent Portal — Fees, Progress & Attendance" },
   { image: slide10, label: "AI Analysis for Students" },
