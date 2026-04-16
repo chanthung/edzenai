@@ -882,7 +882,40 @@ export default function Students() {
             )}
           </Button>
         )}
+        {/* Bulk Delete Button (admin only) */}
+        {selectedStudents.size > 0 && !isAccountant && (
+          <RestrictedButton isRestricted={isRestricted && !canPerform('delete_student')}>
+            <Button
+              variant="destructive"
+              onClick={() => { setBulkDeleteConfirmText(""); setBulkDeleteDialogOpen(true); }}
+              disabled={isBulkDeleting || isRestricted}
+              className="gap-2"
+            >
+              {isBulkDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting {bulkDeleteProgress.current}/{bulkDeleteProgress.total}...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Delete Selected ({selectedStudents.size})
+                </>
+              )}
+            </Button>
+          </RestrictedButton>
+        )}
       </div>
+
+      {/* Bulk Delete Progress */}
+      {isBulkDeleting && (
+        <div className="mt-4">
+          <Progress value={(bulkDeleteProgress.current / bulkDeleteProgress.total) * 100} className="h-2" />
+          <p className="text-sm text-muted-foreground mt-1">
+            Deleting student {bulkDeleteProgress.current} of {bulkDeleteProgress.total}...
+          </p>
+        </div>
+      )}
 
       {/* Bulk Send Progress */}
       {isBulkSending && (
