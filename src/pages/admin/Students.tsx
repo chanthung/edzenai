@@ -529,6 +529,7 @@ export default function Students() {
     }
   };
 
+  return (
     <AdminLayout>
       <PageHeader title="Students" description="Manage student records and parent access links">
         {latestImportLog && latestImportLog.failed_count > 0 && (
