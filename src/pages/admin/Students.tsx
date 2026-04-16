@@ -189,23 +189,36 @@ export default function Students() {
       return matchesSearch && matchesClass;
     });
 
-    // Sort by class (numeric extraction), then section, then name
     return filtered?.sort((a, b) => {
       const classA = a.class_name || '';
       const classB = b.class_name || '';
       const numA = parseInt((classA.match(/(\d+)/) || ['0', '0'])[1], 10);
       const numB = parseInt((classB.match(/(\d+)/) || ['0', '0'])[1], 10);
       if (numA !== numB) return numA - numB;
-      // Same numeric class — compare full class string for non-numeric classes
       if (classA.localeCompare(classB) !== 0) return classA.localeCompare(classB);
-      // Then section
       const secA = (a.section || '').toLowerCase();
       const secB = (b.section || '').toLowerCase();
       if (secA !== secB) return secA.localeCompare(secB);
-      // Then name alphabetically
       return a.name.localeCompare(b.name);
     });
   }, [students, searchQuery, classFilter]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, classFilter, pageSize]);
+
+  // Pagination computed values
+  const totalFiltered = filteredStudents?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedStudents = useMemo(() => {
+    if (!filteredStudents) return [];
+    const start = (safeCurrentPage - 1) * pageSize;
+    return filteredStudents.slice(start, start + pageSize);
+  }, [filteredStudents, safeCurrentPage, pageSize]);
+  const showingFrom = totalFiltered === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1;
+  const showingTo = Math.min(safeCurrentPage * pageSize, totalFiltered);
 
   // Family row grouping: assign alternating colors based on parent_phone groups
   const familyRowColors = useMemo(() => {
