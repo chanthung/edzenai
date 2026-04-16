@@ -624,7 +624,7 @@ function DashboardCarousel() {
   }, [api, onSelect]);
 
   return (
-    <div className="flex flex-col items-center gap-5 w-full">
+    <div className="flex flex-col items-center gap-5 w-full max-w-[900px] mx-auto">
       <div className="gradient-border-wrapper w-full">
         <Carousel
           setApi={setApi}
@@ -635,7 +635,7 @@ function DashboardCarousel() {
           <CarouselContent>
             {dashboardSlides.map((slide) => (
               <CarouselItem key={slide.label}>
-                <div className="w-full h-[580px] md:h-[640px] lg:h-[680px] overflow-hidden">
+                <div className="w-full max-h-[520px] overflow-hidden">
                   <img
                     src={slide.image}
                     alt={`EdZen AI — ${slide.label}`}
