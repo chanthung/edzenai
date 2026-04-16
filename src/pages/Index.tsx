@@ -230,28 +230,29 @@ export default function Index() {
           {/* Hero text above carousel */}
           <div className="text-center pb-5">
             <h2 className="text-[28px] font-bold text-foreground leading-tight">
-              AI-Powered School Management with{" "}
-              <span className="text-primary">WhatsApp Integration</span>
+              AI-Powered School Management with <span className="text-primary">WhatsApp Integration</span>
             </h2>
             <p className="text-sm text-muted-foreground mt-2">
               Fee collection · AI insights · Parent updates · Bulk import
             </p>
             <div className="flex flex-wrap justify-center gap-2 mt-3">
-              {["WhatsApp Reminders", "AI Chatbot", "Parent Portal", "Fee Reports", "Bulk Import", "AI Analysis"].map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-3.5 py-1 rounded-full bg-[hsl(245_100%_97%)] text-primary border border-[hsl(262_52%_79%)]"
-                >
-                  {tag}
-                </span>
-              ))}
+              {["WhatsApp Reminders", "AI Chatbot", "Parent Portal", "Fee Reports", "Bulk Import", "AI Analysis"].map(
+                (tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs px-3.5 py-1 rounded-full bg-[hsl(245_100%_97%)] text-primary border border-[hsl(262_52%_79%)]"
+                  >
+                    {tag}
+                  </span>
+                ),
+              )}
             </div>
           </div>
 
           {/* Carousel — full width above text */}
           <DashboardCarousel />
           <p className="text-xs text-muted-foreground text-center mt-3">
-            Trusted by schools across Northeast India · Zero setup fees · Import in minutes
+            Trusted by schools across India · Zero setup fees · Import in minutes
           </p>
 
           {/* Text content below */}
