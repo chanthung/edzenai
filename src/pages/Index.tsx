@@ -250,6 +250,9 @@ export default function Index() {
 
           {/* Carousel — full width above text */}
           <DashboardCarousel />
+          <p className="text-xs text-muted-foreground text-center mt-3">
+            Trusted by schools across Northeast India · Zero setup fees · Import in minutes
+          </p>
 
           {/* Text content below */}
           <div className="text-center mt-12 max-w-3xl mx-auto">
