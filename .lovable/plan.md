@@ -1,40 +1,48 @@
 
 
-## Problem
-Pricing fallback values are inconsistent across 7+ files. When the database query fails or returns empty (e.g., due to RLS differences between anonymous and authenticated users), different pages show different prices. The Pricing page shows ₹7/₹10, the landing page shows ₹8/₹10, and internal admin pages show ₹5/₹8.
+## Plan: Add "Rows Per Page" Selector to Students Table
 
-## Root Cause
-Each file has its own hardcoded fallback (`?? 7`, `?? 5`, `?? 8`) instead of using a single source of truth.
+### Current State
+The Students page fetches all students at once and renders them in a single table with no pagination. For schools with hundreds or thousands of students, this causes performance issues.
 
-## Fix
+### Approach
+Add **client-side pagination** (no query changes needed since related features like fee counts, sibling grouping, and bulk selection depend on the full student list being available). The page size preference will persist via localStorage.
 
-### 1. Create centralized pricing constants
-Add default pricing constants to `src/hooks/useSubscriptionPricing.ts`:
+### Changes (single file: `src/pages/admin/Students.tsx`)
 
-```typescript
-export const DEFAULT_STARTER_RATE = 7;
-export const DEFAULT_PRO_RATE = 10;
+**1. Add pagination state**
+- `pageSize` (default 50, restored from localStorage)
+- `currentPage` (starts at 1, resets on filter/search/pageSize changes)
 
-export function getDefaultRate(plan: string) {
-  return plan === 'pro' ? DEFAULT_PRO_RATE : DEFAULT_STARTER_RATE;
-}
-```
+**2. Add page size dropdown**
+- Place next to the existing class filter dropdown in the toolbar row
+- Options: 25, 50, 100, 200
+- Styled consistently with existing Select components
 
-### 2. Update all 7 files to use the centralized defaults
-Replace every scattered fallback with the shared constants:
+**3. Slice filtered students for display**
+- Compute `paginatedStudents` from `filteredStudents` using `slice((page-1)*size, page*size)`
+- Only the table body rendering changes to use `paginatedStudents`
+- All other logic (fee counts, sibling grouping, bulk select-all) continues using full `filteredStudents`
 
-- `src/pages/Pricing.tsx` — already ₹7/₹10, just import constants
-- `src/pages/Index.tsx` — change ₹8 → `DEFAULT_STARTER_RATE`
-- `src/pages/auth/Signup.tsx` — change ₹8 → `DEFAULT_STARTER_RATE`
-- `src/components/platform/PricingCalculator.tsx` — already ₹7/₹10, import constants
-- `src/pages/platform/PlatformDashboard.tsx` — change ₹5/₹8 → constants
-- `src/components/platform/EditSchoolDialog.tsx` — change ₹5/₹8 → constants
-- `src/components/admin/SubscriptionInfoCard.tsx` — change ₹5/₹8 → constants
-- `src/pages/platform/SubscriptionSettings.tsx` — change form defaults ₹5/₹8 → constants
+**4. Add pagination controls below the table**
+- Previous / Next buttons
+- Page indicator: "Page X of Y"
+- Total count display: "Showing 1-50 of 342 students"
+- Uses existing Pagination UI components from `src/components/ui/pagination.tsx`
 
-### 3. Ensure `subscription_pricing` table has public read access
-Verify the RLS policy allows anonymous reads so unauthenticated visitors on the pricing page get DB values, not fallbacks. If missing, add a SELECT policy for `anon` role.
+**5. Persist preference**
+- Save to `localStorage` key `students_page_size`
+- Load on mount
 
-### Result
-All pricing displays will be consistent — either from the database or from a single set of fallback values (₹7 Starter, ₹10 Pro).
+### What stays unchanged
+- Data fetching (all students loaded at once — needed for fee map, sibling detection, export)
+- Sorting, filtering, search logic
+- Bulk selection behavior (select-all applies to current filtered set)
+- All dialogs and actions
+
+### Impact Assessment
+- **Single file edit** — only `Students.tsx`
+- No database changes
+- No API changes
+- No breaking changes to other components
 
