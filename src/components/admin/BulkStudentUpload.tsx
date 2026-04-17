@@ -1001,6 +1001,16 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
       .eq("academic_year_id", resolvedYearId);
     const existingStructureCats = new Set((existingStructures || []).map((s: any) => s.fee_category_id));
 
+    // Preload distinct classes that have students — used for auto-assign on import
+    const { data: studentClassRows } = await supabase
+      .from("students")
+      .select("class_name")
+      .eq("school_id", school.id)
+      .not("class_name", "is", null);
+    const schoolClasses = Array.from(
+      new Set((studentClassRows || []).map((r: any) => r.class_name).filter(Boolean))
+    ) as string[];
+
     for (let i = 0; i < toImport.length; i++) {
       const s = toImport[i];
       try {
