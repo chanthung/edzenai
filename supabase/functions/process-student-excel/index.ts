@@ -587,9 +587,46 @@ serve(async (req) => {
       return student;
     });
 
-    console.log(`Processed ${students.length} students, ${warnings.length} warnings, ${ignoredColumns.length} ignored columns`);
+    // STEP 5: Deduplicate students across sheets (merging missing fields)
+    const getStudentKey = (s: Record<string, string>): string => {
+      if (s.roll_number && s.class_name) {
+        return `roll:${s.class_name.toLowerCase()}-${s.roll_number.toLowerCase()}`;
+      }
+      if (s.parent_phone) {
+        return `phone:${s.parent_phone}`;
+      }
+      return `name:${(s.name || "").toLowerCase()}-${(s.parent_name || "").toLowerCase()}`;
+    };
 
-    return ok({ success: true, students, warnings, ignoredColumns, sheetSummary: sheetSummary || null, ignoredSheets: ignoredSheets || [] });
+    const uniqueMap = new Map<string, Record<string, string>>();
+    let mergedCount = 0;
+    for (const student of students) {
+      if (!student.name) continue; // skip totally empty rows
+      const key = getStudentKey(student);
+      const existing = uniqueMap.get(key);
+      if (!existing) {
+        uniqueMap.set(key, student);
+      } else {
+        // Merge: existing wins for non-empty fields, fill in blanks from new
+        const merged: Record<string, string> = { ...existing };
+        for (const [k, v] of Object.entries(student)) {
+          if ((!merged[k] || merged[k].trim() === "") && v && v.trim() !== "") {
+            merged[k] = v;
+          }
+        }
+        uniqueMap.set(key, merged);
+        mergedCount++;
+      }
+    }
+
+    const dedupedStudents = Array.from(uniqueMap.values());
+    if (mergedCount > 0) {
+      warnings.push(`Merged ${mergedCount} duplicate row${mergedCount === 1 ? "" : "s"} across sheets`);
+    }
+
+    console.log(`Processed ${students.length} rows → ${dedupedStudents.length} unique students (${mergedCount} merged), ${warnings.length} warnings, ${ignoredColumns.length} ignored columns`);
+
+    return ok({ success: true, students: dedupedStudents, warnings, ignoredColumns, sheetSummary: sheetSummary || null, ignoredSheets: ignoredSheets || [] });
   } catch (error: any) {
     console.error("process-student-excel error:", error);
     // NEVER crash — always return 200 with error info
