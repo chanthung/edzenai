@@ -1400,7 +1400,82 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
           </div>
         )}
 
-        {step === "preview" && mode === "fees" && (
+        {step === "preview" && mode === "fees" && feeFormat === "fee_structure" && (
+          <div className="flex flex-col gap-3 flex-1 min-h-0">
+            <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-sm">
+              <div className="flex items-center gap-2 font-medium text-primary mb-2">
+                <Info className="h-4 w-4" />
+                <span>📊 Detected Fee Structures</span>
+              </div>
+              <div className="grid gap-2 md:grid-cols-3 text-xs">
+                <div><span className="text-muted-foreground">Categories:</span> <span className="font-semibold">{structureStats.total}</span></div>
+                <div><span className="text-muted-foreground">Selected:</span> <span className="font-semibold">{structureStats.selected}</span></div>
+                <div><span className="text-muted-foreground">Installments:</span> <span className="font-semibold">{structureStats.installments}</span></div>
+              </div>
+              {structureStats.duplicates > 0 && (
+                <p className="text-xs text-amber-700 mt-2">⚠️ {structureStats.duplicates} categor{structureStats.duplicates === 1 ? "y" : "ies"} already exist and will be skipped.</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Default Due Date <span className="text-muted-foreground text-xs font-normal">(used when Excel doesn't specify a date)</span></Label>
+              <Input type="date" value={defaultDueDate} onChange={(e) => setDefaultDueDate(e.target.value)} />
+            </div>
+
+            {ignoredColumns.length > 0 && (
+              <div className="bg-primary/5 border border-primary/20 rounded-md p-2 text-sm">
+                <div className="flex items-center gap-1 font-medium text-primary mb-1">
+                  <Info className="h-3.5 w-3.5" /> {ignoredColumns.length} column{ignoredColumns.length > 1 ? "s" : ""} ignored
+                </div>
+                <p className="text-xs text-muted-foreground">{ignoredColumns.join(", ")}</p>
+              </div>
+            )}
+
+            {warnings.length > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-2 text-sm">
+                <div className="flex items-center gap-1 font-medium text-amber-700 mb-1">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Warnings
+                </div>
+                {warnings.map((w, i) => <p key={i} className="text-amber-700 text-xs">{w}</p>)}
+              </div>
+            )}
+
+            <div className="flex-1 min-h-0 max-h-[45vh] overflow-auto rounded-md border p-2 space-y-2">
+              {feeStructures.map((s) => (
+                <div key={s._index} className={`rounded-md border p-3 ${s._exists ? "bg-muted/40" : ""}`}>
+                  <div className="flex items-start gap-3">
+                    <Checkbox checked={s._selected} onCheckedChange={() => toggleStructure(s._index)} disabled={s._exists} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-sm">{s.category_name}</p>
+                        {s.is_mandatory && <Badge variant="secondary" className="text-xs">Mandatory</Badge>}
+                        {s._exists && <Badge variant="outline" className="text-xs text-amber-700 border-amber-500/30">Already exists</Badge>}
+                        <Badge variant="outline" className="text-xs">Total: {formatCurrencyValue(s.total_amount)}</Badge>
+                      </div>
+                      <div className="mt-2 grid gap-1">
+                        {s.installments.map((inst, idx) => (
+                          <div key={idx} className="text-xs flex items-center justify-between rounded bg-muted/50 px-2 py-1">
+                            <span>{inst.name}</span>
+                            <span className="text-muted-foreground">{formatCurrencyValue(inst.amount)}{inst.due_date ? ` · ${inst.due_date}` : ""}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep("upload")}>Back</Button>
+              <Button onClick={handleImport} disabled={structureStats.selected === 0}>
+                Import {structureStats.selected} Structure{structureStats.selected !== 1 ? "s" : ""}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === "preview" && mode === "fees" && feeFormat !== "fee_structure" && (
           <div className="flex flex-col gap-3 flex-1 min-h-0">
             <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
               <div className="flex items-center gap-2 font-medium text-primary mb-3">
