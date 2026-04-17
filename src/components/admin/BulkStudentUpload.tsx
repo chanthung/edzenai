@@ -940,9 +940,215 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
     onComplete?.({ mode: "fees", imported, createdCategories, createdStructures });
   };
 
+  const toggleStructure = (idx: number) => {
+    setFeeStructures((prev) => prev.map((s) => (s._index === idx ? { ...s, _selected: !s._selected } : s)));
+  };
+
+  const structureStats = useMemo(() => {
+    const selected = feeStructures.filter((s) => s._selected && !s._exists);
+    const installments = selected.reduce((sum, s) => sum + s.installments.length, 0);
+    return {
+      total: feeStructures.length,
+      selected: selected.length,
+      duplicates: feeStructures.filter((s) => s._exists).length,
+      installments,
+    };
+  }, [feeStructures]);
+
+  const handleFeeStructureImport = async () => {
+    if (!school?.id) return;
+
+    const toImport = feeStructures.filter((s) => s._selected && !s._exists);
+    if (toImport.length === 0) {
+      toast.error("No fee structures selected to import");
+      return;
+    }
+
+    setStep("importing");
+    setImportProgress(0);
+
+    let resolvedYearId = effectiveYearId;
+    if (!resolvedYearId) {
+      try {
+        resolvedYearId = await autoCreateAcademicYear();
+      } catch (err: any) {
+        toast.error("Failed to auto-create academic year", { description: err.message });
+        setStep("preview");
+        return;
+      }
+    }
+
+    let createdCategories = 0;
+    let createdStructures = 0;
+    let createdInstallments = 0;
+    let errors = 0;
+    const importErrors: string[] = [];
+    const collectedIssueRows: IssueRow[] = [];
+    const total = toImport.length;
+
+    // Preload existing categories + structures to avoid duplicates
+    const { data: existingCats } = await supabase
+      .from("fee_categories")
+      .select("id, name")
+      .eq("school_id", school.id);
+    const catByName = new Map<string, string>();
+    (existingCats || []).forEach((c: any) => catByName.set(normalizeText(c.name), c.id));
+
+    const { data: existingStructures } = await supabase
+      .from("fee_structures")
+      .select("id, fee_category_id")
+      .eq("school_id", school.id)
+      .eq("academic_year_id", resolvedYearId);
+    const existingStructureCats = new Set((existingStructures || []).map((s: any) => s.fee_category_id));
+
+    for (let i = 0; i < toImport.length; i++) {
+      const s = toImport[i];
+      try {
+        let categoryId = catByName.get(normalizeText(s.category_name));
+        if (!categoryId) {
+          const { data: newCat, error: catErr } = await supabase
+            .from("fee_categories")
+            .insert({
+              school_id: school.id,
+              name: s.category_name.trim(),
+              description: "Imported from Excel",
+              is_mandatory: s.is_mandatory,
+            })
+            .select("id")
+            .single();
+          if (catErr) throw catErr;
+          categoryId = newCat.id;
+          catByName.set(normalizeText(s.category_name), categoryId);
+          createdCategories++;
+        }
+
+        // Skip if a structure for this category already exists in this year (safety)
+        if (existingStructureCats.has(categoryId)) {
+          collectedIssueRows.push({
+            rowNumber: i + 1,
+            studentName: s.category_name,
+            className: "",
+            section: "",
+            rollNo: "",
+            parentName: "",
+            phone: "",
+            issueType: "Already Exists",
+            issueDetails: `A fee structure for "${s.category_name}" already exists in the selected academic year`,
+            actionRequired: "Edit the existing structure or remove it before re-importing",
+          });
+          setImportProgress(Math.round(((i + 1) / total) * 100));
+          continue;
+        }
+
+        const { data: newStructure, error: structErr } = await supabase
+          .from("fee_structures")
+          .insert({
+            school_id: school.id,
+            academic_year_id: resolvedYearId,
+            fee_category_id: categoryId,
+            total_amount: s.total_amount,
+          })
+          .select("id")
+          .single();
+        if (structErr) throw structErr;
+        createdStructures++;
+        existingStructureCats.add(categoryId);
+
+        // Insert installments — fall back to default due date if none parsed
+        const installmentRows = s.installments.map((inst, idx) => ({
+          fee_structure_id: newStructure.id,
+          name: inst.name,
+          amount: inst.amount,
+          due_date: inst.due_date || defaultDueDate || new Date().toISOString().slice(0, 10),
+          display_order: idx + 1,
+        }));
+
+        if (installmentRows.length > 0) {
+          const { error: instErr } = await supabase.from("installments").insert(installmentRows);
+          if (instErr) throw instErr;
+          createdInstallments += installmentRows.length;
+        }
+      } catch (err: any) {
+        errors++;
+        importErrors.push(`${s.category_name}: ${err.message}`);
+        collectedIssueRows.push({
+          rowNumber: i + 1,
+          studentName: s.category_name,
+          className: "",
+          section: "",
+          rollNo: "",
+          parentName: "",
+          phone: "",
+          issueType: "Failed to Create",
+          issueDetails: err.message,
+          actionRequired: "Create this fee structure manually",
+        });
+      }
+
+      setImportProgress(Math.round(((i + 1) / total) * 100));
+    }
+
+    // Skipped (deselected or pre-existing)
+    feeStructures
+      .filter((s) => !s._selected || s._exists)
+      .forEach((s, idx) => {
+        collectedIssueRows.push({
+          rowNumber: idx + 1,
+          studentName: s.category_name,
+          className: "",
+          section: "",
+          rollNo: "",
+          parentName: "",
+          phone: "",
+          issueType: s._exists ? "Already Exists" : "Skipped",
+          issueDetails: s._exists ? "A category with this name already exists" : "Deselected by admin",
+          actionRequired: s._exists ? "Edit the existing category if needed" : "Re-import if needed",
+        });
+      });
+
+    setSummary({
+      total,
+      imported: createdStructures,
+      skipped: collectedIssueRows.length,
+      errors,
+      errorDetails: importErrors,
+      ignoredColumns,
+      issueRows: collectedIssueRows,
+      createdCategories,
+      createdStructures,
+      createdInstallments,
+      detectedCategories,
+    });
+    setStep("done");
+
+    try {
+      await supabase.from("import_logs" as any).insert({
+        school_id: school.id,
+        file_name: file?.name || "unknown",
+        total_rows: feeStructures.length,
+        imported_count: createdStructures,
+        failed_count: collectedIssueRows.length + errors,
+        ignored_columns: ignoredColumns,
+        issue_rows: collectedIssueRows,
+      });
+      queryClient.invalidateQueries({ queryKey: ["import-logs"] });
+    } catch (logErr) {
+      console.error("Failed to save import log:", logErr);
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["fee-categories"] });
+    queryClient.invalidateQueries({ queryKey: ["fee-structures"] });
+    queryClient.invalidateQueries({ queryKey: ["academic-years"] });
+    onComplete?.({ mode: "fees", imported: createdStructures, createdCategories, createdStructures, createdInstallments, format: "fee_structure" });
+  };
+
   const handleImport = async () => {
     if (mode === "students") {
       await handleStudentImport();
+      return;
+    }
+    if (feeFormat === "fee_structure") {
+      await handleFeeStructureImport();
       return;
     }
     await handleFeeImport();
