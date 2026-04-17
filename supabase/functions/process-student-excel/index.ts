@@ -234,6 +234,18 @@ function extractClassFromSheetName(name: string): string {
   return n;
 }
 
+// Extract a single trailing section letter from sheet name.
+// Matches a letter that follows a digit, optionally separated by space/dash/underscore.
+// "Class 5 A" → "A", "Std 3-B" → "B", "Grade 2_C" → "C", "Class 10A" → "A"
+// "Class 5" → null, "Nursery"/"LKG" → null
+function extractSectionFromSheetName(name: string): string | null {
+  const n = (name || "").trim();
+  if (FOUNDATION_SHEET_RE.test(n)) return null;
+  const m = n.match(/\d+\s*[-_ ]?\s*([A-Za-z])\s*$/);
+  if (m) return m[1].toUpperCase();
+  return null;
+}
+
 function parseSheetRows(sheet: any): { headers: string[]; rows: Record<string, string>[] } {
   const raw = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
   if (raw.length < 2) return { headers: [], rows: [] };
