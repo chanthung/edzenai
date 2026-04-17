@@ -103,6 +103,8 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
       setRows([]);
       setWarnings([]);
       setIgnoredColumns([]);
+      setSheetSummary(null);
+      setIgnoredSheets([]);
       setImportProgress(0);
       setSummary(null);
       setIsProcessing(false);
@@ -229,6 +231,8 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
       setRows(processed);
       setWarnings(data.warnings || []);
       setIgnoredColumns(data.ignoredColumns || []);
+      setSheetSummary(data.sheetSummary || null);
+      setIgnoredSheets(data.ignoredSheets || []);
       setStep("preview");
     } catch (err: any) {
       console.error("Processing error:", err);
