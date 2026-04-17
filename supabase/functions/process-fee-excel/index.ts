@@ -433,6 +433,121 @@ ${JSON.stringify(sampleRows.slice(0, 3), null, 2)}`;
   }
 }
 
+function detectStructureColumns(headers: string[]) {
+  const normalizedHeaders = headers.map((h) => ({ raw: h, norm: normalizeHeader(h) }));
+
+  const hasStudentIndicator = normalizedHeaders.some((h) => STUDENT_INDICATOR_HEADERS.has(h.norm));
+  if (hasStudentIndicator) return null;
+
+  let categoryColumn: string | null = null;
+  let installmentColumn: string | null = null;
+  let amountColumn: string | null = null;
+  let totalColumn: string | null = null;
+  let dueDateColumn: string | null = null;
+  let mandatoryColumn: string | null = null;
+
+  for (const { raw, norm } of normalizedHeaders) {
+    if (!categoryColumn && STRUCTURE_CATEGORY_HEADERS.has(norm)) categoryColumn = raw;
+    else if (!installmentColumn && STRUCTURE_INSTALLMENT_HEADERS.has(norm)) installmentColumn = raw;
+    else if (!amountColumn && STRUCTURE_AMOUNT_HEADERS.has(norm)) amountColumn = raw;
+    else if (!totalColumn && STRUCTURE_TOTAL_HEADERS.has(norm)) totalColumn = raw;
+    else if (!dueDateColumn && STRUCTURE_DUE_DATE_HEADERS.has(norm)) dueDateColumn = raw;
+    else if (!mandatoryColumn && STRUCTURE_MANDATORY_HEADERS.has(norm)) mandatoryColumn = raw;
+  }
+
+  if (!categoryColumn) return null;
+  if (!amountColumn && !totalColumn) return null;
+
+  return { categoryColumn, installmentColumn, amountColumn, totalColumn, dueDateColumn, mandatoryColumn };
+}
+
+function normalizeDueDate(raw: string): string | null {
+  const value = normalizeText(raw);
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const dmy = value.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+  if (dmy) {
+    const [, d, m, y] = dmy;
+    const year = y.length === 2 ? `20${y}` : y;
+    return `${year}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  const ts = Date.parse(value);
+  if (!Number.isNaN(ts)) return new Date(ts).toISOString().slice(0, 10);
+  return null;
+}
+
+function parseMandatory(raw: string): boolean {
+  const v = normalizeText(raw).toLowerCase();
+  if (!v) return false;
+  return ["yes", "y", "true", "1", "mandatory", "compulsory", "required"].includes(v);
+}
+
+function buildStructureRows(
+  rows: Record<string, string>[],
+  cols: NonNullable<ReturnType<typeof detectStructureColumns>>,
+) {
+  const categoriesMap = new Map<string, ParsedFeeStructureCategory>();
+  const warnings: string[] = [];
+  let skipped = 0;
+
+  rows.forEach((row) => {
+    const categoryRaw = normalizeText(row[cols.categoryColumn!]);
+    if (!categoryRaw) { skipped++; return; }
+
+    const amountRaw = cols.amountColumn ? normalizeText(row[cols.amountColumn]) : "";
+    const totalRaw = cols.totalColumn ? normalizeText(row[cols.totalColumn]) : "";
+    const installmentName = cols.installmentColumn ? normalizeText(row[cols.installmentColumn]) : "";
+    const dueRaw = cols.dueDateColumn ? normalizeText(row[cols.dueDateColumn]) : "";
+    const mandatoryRaw = cols.mandatoryColumn ? normalizeText(row[cols.mandatoryColumn]) : "";
+
+    const amount = parseAmount(amountRaw);
+    const total = parseAmount(totalRaw);
+
+    if (amount === null && total === null) { skipped++; return; }
+
+    const key = categoryRaw.toLowerCase();
+    let category = categoriesMap.get(key);
+    if (!category) {
+      category = {
+        category_name: categoryRaw,
+        is_mandatory: parseMandatory(mandatoryRaw),
+        total_amount: total ?? 0,
+        installments: [],
+      };
+      categoriesMap.set(key, category);
+    } else if (total !== null && category.total_amount === 0) {
+      category.total_amount = total;
+    }
+    if (mandatoryRaw && parseMandatory(mandatoryRaw)) category.is_mandatory = true;
+
+    if (amount !== null) {
+      const name = installmentName || (category.installments.length === 0 ? "Full Payment" : `Installment ${category.installments.length + 1}`);
+      const dueDate = normalizeDueDate(dueRaw);
+      const existing = category.installments.find((inst) => inst.name.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        existing.amount = amount;
+        if (!existing.due_date && dueDate) existing.due_date = dueDate;
+      } else {
+        category.installments.push({ name, amount, due_date: dueDate });
+      }
+    }
+  });
+
+  const structures = Array.from(categoriesMap.values()).map((category) => {
+    if (!category.total_amount && category.installments.length > 0) {
+      category.total_amount = category.installments.reduce((sum, inst) => sum + inst.amount, 0);
+    }
+    if (category.installments.length === 0 && category.total_amount > 0) {
+      category.installments.push({ name: "Full Payment", amount: category.total_amount, due_date: null });
+    }
+    return category;
+  }).filter((c) => c.total_amount > 0);
+
+  if (skipped > 0) warnings.push(`${skipped} row${skipped === 1 ? " was" : "s were"} skipped (missing category or amount)`);
+
+  return { structures, warnings };
+}
+
 function buildWideRows(
   rows: Record<string, string>[],
   rowNumbers: number[],
