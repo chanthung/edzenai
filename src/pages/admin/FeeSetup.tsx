@@ -22,7 +22,8 @@ import { useFeeStructureClasses, useUpdateFeeStructureClasses, useDistinctClasse
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil, GraduationCap, Upload } from "lucide-react";
+import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil, GraduationCap, Upload, Download } from "lucide-react";
+import { exportToXLSX } from "@/lib/export-utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function FeeSetup() {
