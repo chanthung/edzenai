@@ -31,6 +31,19 @@ type SpreadsheetParseResult = {
   ignoredSheets?: string[];
 };
 
+type ParsedFeeStructureInstallment = {
+  name: string;
+  amount: number;
+  due_date: string | null;
+};
+
+type ParsedFeeStructureCategory = {
+  category_name: string;
+  is_mandatory: boolean;
+  total_amount: number;
+  installments: ParsedFeeStructureInstallment[];
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -93,6 +106,28 @@ const LONG_AMOUNT_HEADERS = new Set([
 const FEE_COLUMN_RE = /\b(fee|amount|term|installment|tuition|transport|admission|bus|hostel|van|library|lab|computer|exam|annual|monthly|quarterly|uniform|activity|activities|sports)\b/i;
 const CLASS_SHEET_RE = /^(class|std|standard|grade)\b/i;
 const FOUNDATION_SHEET_RE = /^(nursery|lkg|ukg|kg|pre[-\s]?(school|primary|kg)|kindergarten)\b/i;
+
+const STRUCTURE_CATEGORY_HEADERS = new Set([
+  "category", "fee category", "fee name", "fee type", "particular", "particulars", "head", "name",
+]);
+const STRUCTURE_INSTALLMENT_HEADERS = new Set([
+  "installment", "installment name", "term", "term name", "month", "period", "schedule",
+]);
+const STRUCTURE_AMOUNT_HEADERS = new Set([
+  "amount", "installment amount", "fee amount", "value", "amt",
+]);
+const STRUCTURE_TOTAL_HEADERS = new Set([
+  "total", "total amount", "total fee", "annual amount", "annual fee", "yearly", "grand total",
+]);
+const STRUCTURE_DUE_DATE_HEADERS = new Set([
+  "due date", "due_date", "duedate", "due", "date", "payment date",
+]);
+const STRUCTURE_MANDATORY_HEADERS = new Set([
+  "mandatory", "is mandatory", "compulsory", "required",
+]);
+const STUDENT_INDICATOR_HEADERS = new Set([
+  "name", "student name", "student", "full name", "roll no", "roll number", "rollno", "admission no", "admission number", "student id",
+]);
 
 function ok(body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -398,6 +433,121 @@ ${JSON.stringify(sampleRows.slice(0, 3), null, 2)}`;
   }
 }
 
+function detectStructureColumns(headers: string[]) {
+  const normalizedHeaders = headers.map((h) => ({ raw: h, norm: normalizeHeader(h) }));
+
+  const hasStudentIndicator = normalizedHeaders.some((h) => STUDENT_INDICATOR_HEADERS.has(h.norm));
+  if (hasStudentIndicator) return null;
+
+  let categoryColumn: string | null = null;
+  let installmentColumn: string | null = null;
+  let amountColumn: string | null = null;
+  let totalColumn: string | null = null;
+  let dueDateColumn: string | null = null;
+  let mandatoryColumn: string | null = null;
+
+  for (const { raw, norm } of normalizedHeaders) {
+    if (!categoryColumn && STRUCTURE_CATEGORY_HEADERS.has(norm)) categoryColumn = raw;
+    else if (!installmentColumn && STRUCTURE_INSTALLMENT_HEADERS.has(norm)) installmentColumn = raw;
+    else if (!amountColumn && STRUCTURE_AMOUNT_HEADERS.has(norm)) amountColumn = raw;
+    else if (!totalColumn && STRUCTURE_TOTAL_HEADERS.has(norm)) totalColumn = raw;
+    else if (!dueDateColumn && STRUCTURE_DUE_DATE_HEADERS.has(norm)) dueDateColumn = raw;
+    else if (!mandatoryColumn && STRUCTURE_MANDATORY_HEADERS.has(norm)) mandatoryColumn = raw;
+  }
+
+  if (!categoryColumn) return null;
+  if (!amountColumn && !totalColumn) return null;
+
+  return { categoryColumn, installmentColumn, amountColumn, totalColumn, dueDateColumn, mandatoryColumn };
+}
+
+function normalizeDueDate(raw: string): string | null {
+  const value = normalizeText(raw);
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const dmy = value.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+  if (dmy) {
+    const [, d, m, y] = dmy;
+    const year = y.length === 2 ? `20${y}` : y;
+    return `${year}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  const ts = Date.parse(value);
+  if (!Number.isNaN(ts)) return new Date(ts).toISOString().slice(0, 10);
+  return null;
+}
+
+function parseMandatory(raw: string): boolean {
+  const v = normalizeText(raw).toLowerCase();
+  if (!v) return false;
+  return ["yes", "y", "true", "1", "mandatory", "compulsory", "required"].includes(v);
+}
+
+function buildStructureRows(
+  rows: Record<string, string>[],
+  cols: NonNullable<ReturnType<typeof detectStructureColumns>>,
+) {
+  const categoriesMap = new Map<string, ParsedFeeStructureCategory>();
+  const warnings: string[] = [];
+  let skipped = 0;
+
+  rows.forEach((row) => {
+    const categoryRaw = normalizeText(row[cols.categoryColumn!]);
+    if (!categoryRaw) { skipped++; return; }
+
+    const amountRaw = cols.amountColumn ? normalizeText(row[cols.amountColumn]) : "";
+    const totalRaw = cols.totalColumn ? normalizeText(row[cols.totalColumn]) : "";
+    const installmentName = cols.installmentColumn ? normalizeText(row[cols.installmentColumn]) : "";
+    const dueRaw = cols.dueDateColumn ? normalizeText(row[cols.dueDateColumn]) : "";
+    const mandatoryRaw = cols.mandatoryColumn ? normalizeText(row[cols.mandatoryColumn]) : "";
+
+    const amount = parseAmount(amountRaw);
+    const total = parseAmount(totalRaw);
+
+    if (amount === null && total === null) { skipped++; return; }
+
+    const key = categoryRaw.toLowerCase();
+    let category = categoriesMap.get(key);
+    if (!category) {
+      category = {
+        category_name: categoryRaw,
+        is_mandatory: parseMandatory(mandatoryRaw),
+        total_amount: total ?? 0,
+        installments: [],
+      };
+      categoriesMap.set(key, category);
+    } else if (total !== null && category.total_amount === 0) {
+      category.total_amount = total;
+    }
+    if (mandatoryRaw && parseMandatory(mandatoryRaw)) category.is_mandatory = true;
+
+    if (amount !== null) {
+      const name = installmentName || (category.installments.length === 0 ? "Full Payment" : `Installment ${category.installments.length + 1}`);
+      const dueDate = normalizeDueDate(dueRaw);
+      const existing = category.installments.find((inst) => inst.name.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        existing.amount = amount;
+        if (!existing.due_date && dueDate) existing.due_date = dueDate;
+      } else {
+        category.installments.push({ name, amount, due_date: dueDate });
+      }
+    }
+  });
+
+  const structures = Array.from(categoriesMap.values()).map((category) => {
+    if (!category.total_amount && category.installments.length > 0) {
+      category.total_amount = category.installments.reduce((sum, inst) => sum + inst.amount, 0);
+    }
+    if (category.installments.length === 0 && category.total_amount > 0) {
+      category.installments.push({ name: "Full Payment", amount: category.total_amount, due_date: null });
+    }
+    return category;
+  }).filter((c) => c.total_amount > 0);
+
+  if (skipped > 0) warnings.push(`${skipped} row${skipped === 1 ? " was" : "s were"} skipped (missing category or amount)`);
+
+  return { structures, warnings };
+}
+
 function buildWideRows(
   rows: Record<string, string>[],
   rowNumbers: number[],
@@ -517,6 +667,37 @@ serve(async (req) => {
 
     if (filteredRows.length > 2000) {
       return ok({ success: false, error: "File contains too many rows (max 2000). Please split into smaller files.", feeRows: [], warnings: [], ignoredColumns: [] });
+    }
+
+    // Try fee_structure mode first (no student columns + has installment/amount/due date)
+    const structureCols = detectStructureColumns(parsed.headers);
+    if (structureCols) {
+      const built = buildStructureRows(filteredRows, structureCols);
+      if (built.structures.length === 0) {
+        return ok({ success: false, error: "Could not detect any valid fee structures. Please include category and amount columns.", feeRows: [], warnings: built.warnings, ignoredColumns: [] });
+      }
+
+      const usedHeaders = new Set<string>([
+        structureCols.categoryColumn,
+        structureCols.installmentColumn,
+        structureCols.amountColumn,
+        structureCols.totalColumn,
+        structureCols.dueDateColumn,
+        structureCols.mandatoryColumn,
+      ].filter(Boolean) as string[]);
+      const ignoredColumns = parsed.headers.filter((header) => !usedHeaders.has(header));
+
+      return ok({
+        success: true,
+        format: "fee_structure",
+        structures: built.structures,
+        warnings: built.warnings,
+        ignoredColumns,
+        detectedCategories: built.structures.map((s) => s.category_name),
+        feeRows: [],
+        sheetSummary: parsed.sheetSummary || null,
+        ignoredSheets: parsed.ignoredSheets || [],
+      });
     }
 
     let detection = detectColumns(parsed.headers);

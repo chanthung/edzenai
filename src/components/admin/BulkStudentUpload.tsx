@@ -52,11 +52,31 @@ type ParsedFeeRow = {
 
 type DuplicateType = "strong" | "soft" | null;
 type Mode = "students" | "fees";
+type FeeFormat = "wide" | "long" | "fee_structure";
 
 type MatchResult = {
   student: Student | null;
   reason?: string;
 };
+
+type ParsedStructureInstallment = {
+  name: string;
+  amount: number;
+  due_date: string | null;
+};
+
+type ParsedFeeStructure = {
+  category_name: string;
+  is_mandatory: boolean;
+  total_amount: number;
+  installments: ParsedStructureInstallment[];
+};
+
+interface ProcessedStructure extends ParsedFeeStructure {
+  _index: number;
+  _selected: boolean;
+  _exists: boolean;
+}
 
 interface ProcessedRow extends ParsedStudent {
   _rowIndex: number;
@@ -86,6 +106,7 @@ interface ImportSummary {
   issueRows: IssueRow[];
   createdCategories?: number;
   createdStructures?: number;
+  createdInstallments?: number;
   detectedCategories?: string[];
 }
 
@@ -95,7 +116,7 @@ interface BulkStudentUploadProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode?: Mode;
-  onComplete?: (payload: { mode: Mode; imported: number; createdCategories?: number; createdStructures?: number }) => void;
+  onComplete?: (payload: { mode: Mode; imported: number; createdCategories?: number; createdStructures?: number; createdInstallments?: number; format?: FeeFormat }) => void;
 }
 
 function normalizeText(value: string | null | undefined) {
@@ -133,6 +154,8 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
   const [isProcessing, setIsProcessing] = useState(false);
   const [rows, setRows] = useState<ProcessedRow[]>([]);
   const [feeRows, setFeeRows] = useState<ProcessedFeeRow[]>([]);
+  const [feeStructures, setFeeStructures] = useState<ProcessedStructure[]>([]);
+  const [feeFormat, setFeeFormat] = useState<FeeFormat | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [ignoredColumns, setIgnoredColumns] = useState<string[]>([]);
   const [detectedCategories, setDetectedCategories] = useState<string[]>([]);
@@ -160,6 +183,8 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
     setDefaultDueDate("");
     setRows([]);
     setFeeRows([]);
+    setFeeStructures([]);
+    setFeeFormat(null);
     setWarnings([]);
     setIgnoredColumns([]);
     setDetectedCategories([]);
@@ -371,29 +396,57 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
 
         setRows(processed);
       } else {
-        if (!data?.feeRows || !Array.isArray(data.feeRows)) {
-          throw new Error("Invalid response from AI processing");
+        if (data?.format === "fee_structure" && Array.isArray(data?.structures)) {
+          // Fetch existing categories to flag duplicates
+          let existingNames = new Set<string>();
+          if (school?.id) {
+            const { data: cats } = await supabase
+              .from("fee_categories")
+              .select("name")
+              .eq("school_id", school.id);
+            existingNames = new Set((cats || []).map((c: any) => normalizeText(c.name)));
+          }
+
+          const processed: ProcessedStructure[] = data.structures.map((s: ParsedFeeStructure, index: number) => {
+            const exists = existingNames.has(normalizeText(s.category_name));
+            return {
+              ...s,
+              installments: s.installments || [],
+              _index: index,
+              _selected: !exists,
+              _exists: exists,
+            };
+          });
+
+          setFeeStructures(processed);
+          setFeeFormat("fee_structure");
+          setDetectedCategories(data.detectedCategories || processed.map((s) => s.category_name));
+        } else {
+          if (!data?.feeRows || !Array.isArray(data.feeRows)) {
+            throw new Error("Invalid response from AI processing");
+          }
+
+          const processed: ProcessedFeeRow[] = data.feeRows.map((row: ParsedFeeRow, index: number) => {
+            const issues: string[] = [];
+            if (!row.fees?.length) issues.push("No fee amounts detected");
+            const match = matchStudentForFeeRow(row);
+            if (!match.student) issues.push("Student not found");
+            return {
+              ...row,
+              fees: row.fees || [],
+              _rowIndex: index,
+              _selected: issues.length === 0,
+              _issues: issues,
+              _matchedStudentId: match.student?.id ?? null,
+              _matchedStudentName: match.student?.name,
+              _matchReason: match.reason,
+            };
+          });
+
+          setFeeRows(processed);
+          setFeeFormat((data?.format as FeeFormat) || "wide");
+          setDetectedCategories(data.detectedCategories || []);
         }
-
-        const processed: ProcessedFeeRow[] = data.feeRows.map((row: ParsedFeeRow, index: number) => {
-          const issues: string[] = [];
-          if (!row.fees?.length) issues.push("No fee amounts detected");
-          const match = matchStudentForFeeRow(row);
-          if (!match.student) issues.push("Student not found");
-          return {
-            ...row,
-            fees: row.fees || [],
-            _rowIndex: index,
-            _selected: issues.length === 0,
-            _issues: issues,
-            _matchedStudentId: match.student?.id ?? null,
-            _matchedStudentName: match.student?.name,
-            _matchReason: match.reason,
-          };
-        });
-
-        setFeeRows(processed);
-        setDetectedCategories(data.detectedCategories || []);
       }
 
       setWarnings(data.warnings || []);
@@ -887,9 +940,215 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
     onComplete?.({ mode: "fees", imported, createdCategories, createdStructures });
   };
 
+  const toggleStructure = (idx: number) => {
+    setFeeStructures((prev) => prev.map((s) => (s._index === idx ? { ...s, _selected: !s._selected } : s)));
+  };
+
+  const structureStats = useMemo(() => {
+    const selected = feeStructures.filter((s) => s._selected && !s._exists);
+    const installments = selected.reduce((sum, s) => sum + s.installments.length, 0);
+    return {
+      total: feeStructures.length,
+      selected: selected.length,
+      duplicates: feeStructures.filter((s) => s._exists).length,
+      installments,
+    };
+  }, [feeStructures]);
+
+  const handleFeeStructureImport = async () => {
+    if (!school?.id) return;
+
+    const toImport = feeStructures.filter((s) => s._selected && !s._exists);
+    if (toImport.length === 0) {
+      toast.error("No fee structures selected to import");
+      return;
+    }
+
+    setStep("importing");
+    setImportProgress(0);
+
+    let resolvedYearId = effectiveYearId;
+    if (!resolvedYearId) {
+      try {
+        resolvedYearId = await autoCreateAcademicYear();
+      } catch (err: any) {
+        toast.error("Failed to auto-create academic year", { description: err.message });
+        setStep("preview");
+        return;
+      }
+    }
+
+    let createdCategories = 0;
+    let createdStructures = 0;
+    let createdInstallments = 0;
+    let errors = 0;
+    const importErrors: string[] = [];
+    const collectedIssueRows: IssueRow[] = [];
+    const total = toImport.length;
+
+    // Preload existing categories + structures to avoid duplicates
+    const { data: existingCats } = await supabase
+      .from("fee_categories")
+      .select("id, name")
+      .eq("school_id", school.id);
+    const catByName = new Map<string, string>();
+    (existingCats || []).forEach((c: any) => catByName.set(normalizeText(c.name), c.id));
+
+    const { data: existingStructures } = await supabase
+      .from("fee_structures")
+      .select("id, fee_category_id")
+      .eq("school_id", school.id)
+      .eq("academic_year_id", resolvedYearId);
+    const existingStructureCats = new Set((existingStructures || []).map((s: any) => s.fee_category_id));
+
+    for (let i = 0; i < toImport.length; i++) {
+      const s = toImport[i];
+      try {
+        let categoryId = catByName.get(normalizeText(s.category_name));
+        if (!categoryId) {
+          const { data: newCat, error: catErr } = await supabase
+            .from("fee_categories")
+            .insert({
+              school_id: school.id,
+              name: s.category_name.trim(),
+              description: "Imported from Excel",
+              is_mandatory: s.is_mandatory,
+            })
+            .select("id")
+            .single();
+          if (catErr) throw catErr;
+          categoryId = newCat.id;
+          catByName.set(normalizeText(s.category_name), categoryId);
+          createdCategories++;
+        }
+
+        // Skip if a structure for this category already exists in this year (safety)
+        if (existingStructureCats.has(categoryId)) {
+          collectedIssueRows.push({
+            rowNumber: i + 1,
+            studentName: s.category_name,
+            className: "",
+            section: "",
+            rollNo: "",
+            parentName: "",
+            phone: "",
+            issueType: "Already Exists",
+            issueDetails: `A fee structure for "${s.category_name}" already exists in the selected academic year`,
+            actionRequired: "Edit the existing structure or remove it before re-importing",
+          });
+          setImportProgress(Math.round(((i + 1) / total) * 100));
+          continue;
+        }
+
+        const { data: newStructure, error: structErr } = await supabase
+          .from("fee_structures")
+          .insert({
+            school_id: school.id,
+            academic_year_id: resolvedYearId,
+            fee_category_id: categoryId,
+            total_amount: s.total_amount,
+          })
+          .select("id")
+          .single();
+        if (structErr) throw structErr;
+        createdStructures++;
+        existingStructureCats.add(categoryId);
+
+        // Insert installments — fall back to default due date if none parsed
+        const installmentRows = s.installments.map((inst, idx) => ({
+          fee_structure_id: newStructure.id,
+          name: inst.name,
+          amount: inst.amount,
+          due_date: inst.due_date || defaultDueDate || new Date().toISOString().slice(0, 10),
+          display_order: idx + 1,
+        }));
+
+        if (installmentRows.length > 0) {
+          const { error: instErr } = await supabase.from("installments").insert(installmentRows);
+          if (instErr) throw instErr;
+          createdInstallments += installmentRows.length;
+        }
+      } catch (err: any) {
+        errors++;
+        importErrors.push(`${s.category_name}: ${err.message}`);
+        collectedIssueRows.push({
+          rowNumber: i + 1,
+          studentName: s.category_name,
+          className: "",
+          section: "",
+          rollNo: "",
+          parentName: "",
+          phone: "",
+          issueType: "Failed to Create",
+          issueDetails: err.message,
+          actionRequired: "Create this fee structure manually",
+        });
+      }
+
+      setImportProgress(Math.round(((i + 1) / total) * 100));
+    }
+
+    // Skipped (deselected or pre-existing)
+    feeStructures
+      .filter((s) => !s._selected || s._exists)
+      .forEach((s, idx) => {
+        collectedIssueRows.push({
+          rowNumber: idx + 1,
+          studentName: s.category_name,
+          className: "",
+          section: "",
+          rollNo: "",
+          parentName: "",
+          phone: "",
+          issueType: s._exists ? "Already Exists" : "Skipped",
+          issueDetails: s._exists ? "A category with this name already exists" : "Deselected by admin",
+          actionRequired: s._exists ? "Edit the existing category if needed" : "Re-import if needed",
+        });
+      });
+
+    setSummary({
+      total,
+      imported: createdStructures,
+      skipped: collectedIssueRows.length,
+      errors,
+      errorDetails: importErrors,
+      ignoredColumns,
+      issueRows: collectedIssueRows,
+      createdCategories,
+      createdStructures,
+      createdInstallments,
+      detectedCategories,
+    });
+    setStep("done");
+
+    try {
+      await supabase.from("import_logs" as any).insert({
+        school_id: school.id,
+        file_name: file?.name || "unknown",
+        total_rows: feeStructures.length,
+        imported_count: createdStructures,
+        failed_count: collectedIssueRows.length + errors,
+        ignored_columns: ignoredColumns,
+        issue_rows: collectedIssueRows,
+      });
+      queryClient.invalidateQueries({ queryKey: ["import-logs"] });
+    } catch (logErr) {
+      console.error("Failed to save import log:", logErr);
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["fee-categories"] });
+    queryClient.invalidateQueries({ queryKey: ["fee-structures"] });
+    queryClient.invalidateQueries({ queryKey: ["academic-years"] });
+    onComplete?.({ mode: "fees", imported: createdStructures, createdCategories, createdStructures, createdInstallments, format: "fee_structure" });
+  };
+
   const handleImport = async () => {
     if (mode === "students") {
       await handleStudentImport();
+      return;
+    }
+    if (feeFormat === "fee_structure") {
+      await handleFeeStructureImport();
       return;
     }
     await handleFeeImport();
@@ -898,7 +1157,7 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
   const title = mode === "students" ? "Import Students via Excel (AI)" : "Import Fees via Excel (AI)";
   const uploadDescription = mode === "students"
     ? "Upload any Excel or CSV file. AI will automatically map student columns — no reformatting needed."
-    : "Upload a fee sheet in wide or long format. AI will detect fee columns, match students, and prepare reusable fee structures.";
+    : "Upload a fee sheet — wide, long, or a fee structure template (no students needed). AI auto-detects the format.";
   const previewDescription = mode === "students"
     ? "Review the parsed data. Fix issues or deselect rows before importing."
     : "Review the detected fee categories, matched students, and skipped rows before importing.";
@@ -1141,7 +1400,82 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
           </div>
         )}
 
-        {step === "preview" && mode === "fees" && (
+        {step === "preview" && mode === "fees" && feeFormat === "fee_structure" && (
+          <div className="flex flex-col gap-3 flex-1 min-h-0">
+            <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-sm">
+              <div className="flex items-center gap-2 font-medium text-primary mb-2">
+                <Info className="h-4 w-4" />
+                <span>📊 Detected Fee Structures</span>
+              </div>
+              <div className="grid gap-2 md:grid-cols-3 text-xs">
+                <div><span className="text-muted-foreground">Categories:</span> <span className="font-semibold">{structureStats.total}</span></div>
+                <div><span className="text-muted-foreground">Selected:</span> <span className="font-semibold">{structureStats.selected}</span></div>
+                <div><span className="text-muted-foreground">Installments:</span> <span className="font-semibold">{structureStats.installments}</span></div>
+              </div>
+              {structureStats.duplicates > 0 && (
+                <p className="text-xs text-amber-700 mt-2">⚠️ {structureStats.duplicates} categor{structureStats.duplicates === 1 ? "y" : "ies"} already exist and will be skipped.</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Default Due Date <span className="text-muted-foreground text-xs font-normal">(used when Excel doesn't specify a date)</span></Label>
+              <Input type="date" value={defaultDueDate} onChange={(e) => setDefaultDueDate(e.target.value)} />
+            </div>
+
+            {ignoredColumns.length > 0 && (
+              <div className="bg-primary/5 border border-primary/20 rounded-md p-2 text-sm">
+                <div className="flex items-center gap-1 font-medium text-primary mb-1">
+                  <Info className="h-3.5 w-3.5" /> {ignoredColumns.length} column{ignoredColumns.length > 1 ? "s" : ""} ignored
+                </div>
+                <p className="text-xs text-muted-foreground">{ignoredColumns.join(", ")}</p>
+              </div>
+            )}
+
+            {warnings.length > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-2 text-sm">
+                <div className="flex items-center gap-1 font-medium text-amber-700 mb-1">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Warnings
+                </div>
+                {warnings.map((w, i) => <p key={i} className="text-amber-700 text-xs">{w}</p>)}
+              </div>
+            )}
+
+            <div className="flex-1 min-h-0 max-h-[45vh] overflow-auto rounded-md border p-2 space-y-2">
+              {feeStructures.map((s) => (
+                <div key={s._index} className={`rounded-md border p-3 ${s._exists ? "bg-muted/40" : ""}`}>
+                  <div className="flex items-start gap-3">
+                    <Checkbox checked={s._selected} onCheckedChange={() => toggleStructure(s._index)} disabled={s._exists} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-sm">{s.category_name}</p>
+                        {s.is_mandatory && <Badge variant="secondary" className="text-xs">Mandatory</Badge>}
+                        {s._exists && <Badge variant="outline" className="text-xs text-amber-700 border-amber-500/30">Already exists</Badge>}
+                        <Badge variant="outline" className="text-xs">Total: {formatCurrencyValue(s.total_amount)}</Badge>
+                      </div>
+                      <div className="mt-2 grid gap-1">
+                        {s.installments.map((inst, idx) => (
+                          <div key={idx} className="text-xs flex items-center justify-between rounded bg-muted/50 px-2 py-1">
+                            <span>{inst.name}</span>
+                            <span className="text-muted-foreground">{formatCurrencyValue(inst.amount)}{inst.due_date ? ` · ${inst.due_date}` : ""}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep("upload")}>Back</Button>
+              <Button onClick={handleImport} disabled={structureStats.selected === 0}>
+                Import {structureStats.selected} Structure{structureStats.selected !== 1 ? "s" : ""}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === "preview" && mode === "fees" && feeFormat !== "fee_structure" && (
           <div className="flex flex-col gap-3 flex-1 min-h-0">
             <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
               <div className="flex items-center gap-2 font-medium text-primary mb-3">
@@ -1347,6 +1681,12 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
                 <div className="flex items-center gap-2 text-primary">
                   <Info className="h-4 w-4 shrink-0" />
                   <span>ℹ️ {summary.createdStructures} new fee structure{summary.createdStructures === 1 ? "" : "s"} created</span>
+                </div>
+              ) : null}
+              {summary.createdInstallments ? (
+                <div className="flex items-center gap-2 text-primary">
+                  <Info className="h-4 w-4 shrink-0" />
+                  <span>ℹ️ {summary.createdInstallments} installment{summary.createdInstallments === 1 ? "" : "s"} created</span>
                 </div>
               ) : null}
               {summary.errors > 0 && (
