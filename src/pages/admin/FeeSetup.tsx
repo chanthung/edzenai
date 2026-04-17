@@ -273,65 +273,63 @@ export default function FeeSetup() {
                           Add Fee
                         </Button>
                       </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add Fee Structure</DialogTitle>
-                        <DialogDescription>
-                          Set the total amount for a fee category
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                          <Label>Fee Category</Label>
-                          <Select 
-                            value={newStructure.fee_category_id}
-                            onValueChange={(value) => setNewStructure({ ...newStructure, fee_category_id: value })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableCategories.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.id}>
-                                  {cat.name} {cat.is_mandatory ? "(Mandatory)" : "(Optional)"}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Total Amount (₹)</Label>
-                          <Input
-                            type="number"
-                            placeholder="50000"
-                            value={newStructure.total_amount}
-                            onChange={(e) => setNewStructure({ ...newStructure, total_amount: e.target.value })}
-                          />
-                        </div>
-                        {defaultDueDate && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>Due date: <span className="font-medium text-foreground">{formatDate(defaultDueDate)}</span></span>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add Fee Structure</DialogTitle>
+                          <DialogDescription>
+                            Set the total amount for a fee category
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="space-y-2">
+                            <Label>Fee Category</Label>
+                            <Select
+                              value={newStructure.fee_category_id}
+                              onValueChange={(value) => setNewStructure({ ...newStructure, fee_category_id: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableCategories.map((cat) => (
+                                  <SelectItem key={cat.id} value={cat.id}>
+                                    {cat.name} {cat.is_mandatory ? "(Mandatory)" : "(Optional)"}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                        )}
-                        {!defaultDueDate && (
-                          <p className="text-xs text-amber-600">No default due date set. A date 1 month from today will be used.</p>
-                        )}
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setStructureDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreateStructure} disabled={createStructure.isPending}>
-                          {createStructure.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                          Add Fee
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </RestrictedButton>
+                          <div className="space-y-2">
+                            <Label>Total Amount (₹)</Label>
+                            <Input
+                              type="number"
+                              placeholder="50000"
+                              value={newStructure.total_amount}
+                              onChange={(e) => setNewStructure({ ...newStructure, total_amount: e.target.value })}
+                            />
+                          </div>
+                          {defaultDueDate && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+                              <Calendar className="h-4 w-4" />
+                              <span>Due date: <span className="font-medium text-foreground">{formatDate(defaultDueDate)}</span></span>
+                            </div>
+                          )}
+                          {!defaultDueDate && (
+                            <p className="text-xs text-amber-600">No default due date set. A date 1 month from today will be used.</p>
+                          )}
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setStructureDialogOpen(false)}>Cancel</Button>
+                          <Button onClick={handleCreateStructure} disabled={createStructure.isPending}>
+                            {createStructure.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Add Fee
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </RestrictedButton>
+                </div>
               </div>
-            </>
-          )}
-        </TabsContent>
 
               {structuresLoading ? (
                 <div className="space-y-4">
