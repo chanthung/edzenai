@@ -1078,6 +1078,28 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
           if (instErr) throw instErr;
           createdInstallments += installmentRows.length;
         }
+
+        // Assign this fee structure to every class that has students, with auto_assign = true,
+        // then retroactively assign to existing students. This mirrors Fee Setup behavior.
+        if (schoolClasses.length > 0) {
+          const fscRows = schoolClasses.map((className) => ({
+            fee_structure_id: newStructure.id,
+            class_name: className,
+            auto_assign: true,
+            new_admission_only: false,
+          }));
+          const { error: fscErr } = await supabase.from("fee_structure_classes").insert(fscRows);
+          if (fscErr) throw fscErr;
+
+          for (const className of schoolClasses) {
+            await supabase.rpc("auto_assign_fees_for_class", {
+              _fee_structure_id: newStructure.id,
+              _class_name: className,
+              _academic_year_id: resolvedYearId,
+              _new_admission_only: false,
+            });
+          }
+        }
       } catch (err: any) {
         errors++;
         importErrors.push(`${s.category_name}: ${err.message}`);
