@@ -31,6 +31,19 @@ type SpreadsheetParseResult = {
   ignoredSheets?: string[];
 };
 
+type ParsedFeeStructureInstallment = {
+  name: string;
+  amount: number;
+  due_date: string | null;
+};
+
+type ParsedFeeStructureCategory = {
+  category_name: string;
+  is_mandatory: boolean;
+  total_amount: number;
+  installments: ParsedFeeStructureInstallment[];
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
