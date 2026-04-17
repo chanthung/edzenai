@@ -572,7 +572,7 @@ serve(async (req) => {
 
     console.log(`Processed ${students.length} students, ${warnings.length} warnings, ${ignoredColumns.length} ignored columns`);
 
-    return ok({ success: true, students, warnings, ignoredColumns });
+    return ok({ success: true, students, warnings, ignoredColumns, sheetSummary: sheetSummary || null, ignoredSheets: ignoredSheets || [] });
   } catch (error: any) {
     console.error("process-student-excel error:", error);
     // NEVER crash — always return 200 with error info
