@@ -78,6 +78,8 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
   const [rows, setRows] = useState<ProcessedRow[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [ignoredColumns, setIgnoredColumns] = useState<string[]>([]);
+  const [sheetSummary, setSheetSummary] = useState<{ sheetName: string; className: string; rowCount: number }[] | null>(null);
+  const [ignoredSheets, setIgnoredSheets] = useState<string[]>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [showInlineCreate, setShowInlineCreate] = useState(false);
@@ -101,6 +103,8 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
       setRows([]);
       setWarnings([]);
       setIgnoredColumns([]);
+      setSheetSummary(null);
+      setIgnoredSheets([]);
       setImportProgress(0);
       setSummary(null);
       setIsProcessing(false);
@@ -227,6 +231,8 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
       setRows(processed);
       setWarnings(data.warnings || []);
       setIgnoredColumns(data.ignoredColumns || []);
+      setSheetSummary(data.sheetSummary || null);
+      setIgnoredSheets(data.ignoredSheets || []);
       setStep("preview");
     } catch (err: any) {
       console.error("Processing error:", err);
@@ -513,6 +519,22 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
               )}
             </div>
 
+            {sheetSummary && sheetSummary.length > 0 && (
+              <div className="bg-primary/5 border border-primary/20 rounded-md p-2 text-sm">
+                <div className="flex items-center gap-1 font-medium text-primary mb-1">
+                  <FileSpreadsheet className="h-3.5 w-3.5" /> Detected {sheetSummary.length} class sheet{sheetSummary.length !== 1 ? "s" : ""}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {sheetSummary.map((s) => `${s.className} (${s.rowCount})`).join(" · ")}
+                </p>
+                {ignoredSheets.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ignored sheets: {ignoredSheets.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+
             {ignoredColumns.length > 0 && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-2 text-sm">
                 <div className="flex items-center gap-1 font-medium text-blue-800 dark:text-blue-200 mb-1">
@@ -679,6 +701,17 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Info className="h-4 w-4 shrink-0" />
                   <span>ℹ️ {summary.ignoredColumns.length} column{summary.ignoredColumns.length !== 1 ? "s" : ""} ignored: {summary.ignoredColumns.join(", ")}</span>
+                </div>
+              )}
+              {sheetSummary && sheetSummary.length > 0 && (
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <FileSpreadsheet className="h-4 w-4 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <div>Class-wise breakdown: {sheetSummary.map((s) => `${s.className} (${s.rowCount})`).join(" · ")}</div>
+                    {ignoredSheets.length > 0 && (
+                      <div className="mt-0.5">Ignored sheets: {ignoredSheets.join(", ")}</div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

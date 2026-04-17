@@ -215,22 +215,85 @@ function parseCSV(text: string): { headers: string[]; rows: Record<string, strin
   return { headers, rows };
 }
 
-function parseSpreadsheet(fileBase64: string, fileName: string) {
-  const bytes = base64ToUint8Array(fileBase64);
-  if (fileName.toLowerCase().endsWith(".csv")) {
-    return parseCSV(new TextDecoder("utf-8").decode(bytes));
+const CLASS_SHEET_RE = /^(class|std|standard|grade)\b/i;
+const FOUNDATION_SHEET_RE = /^(nursery|lkg|ukg|kg|pre[-\s]?(school|primary|kg)|kindergarten)\b/i;
+
+function isClassSheet(name: string): boolean {
+  const n = (name || "").trim();
+  return CLASS_SHEET_RE.test(n) || FOUNDATION_SHEET_RE.test(n);
+}
+
+function extractClassFromSheetName(name: string): string {
+  const n = (name || "").trim();
+  if (FOUNDATION_SHEET_RE.test(n)) {
+    // Title-case the foundational label
+    return n.replace(/\s+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
-  const workbook = XLSX.read(bytes.buffer, { type: "buffer" });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) throw new Error("No sheets found in workbook");
-  const raw = XLSX.utils.sheet_to_json<any[]>(workbook.Sheets[sheetName], { header: 1 });
-  if (raw.length < 2) throw new Error("File has no data rows");
+  const m = n.match(/(\d+)/);
+  if (m) return `Class ${parseInt(m[1], 10)}`;
+  return n;
+}
+
+function parseSheetRows(sheet: any): { headers: string[]; rows: Record<string, string>[] } {
+  const raw = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+  if (raw.length < 2) return { headers: [], rows: [] };
   const headers = (raw[0] as any[]).map((h: any) => String(h ?? "").trim()).filter(Boolean);
   const rows = (raw as any[][]).slice(1).map((row) => {
     const obj: Record<string, string> = {};
     headers.forEach((h, i) => { obj[h] = String(row[i] ?? "").trim(); });
     return obj;
   });
+  return { headers, rows };
+}
+
+function parseSpreadsheet(fileBase64: string, fileName: string): {
+  headers: string[];
+  rows: Record<string, string>[];
+  sheetSummary?: { sheetName: string; className: string; rowCount: number }[];
+  ignoredSheets?: string[];
+} {
+  const bytes = base64ToUint8Array(fileBase64);
+  if (fileName.toLowerCase().endsWith(".csv")) {
+    return parseCSV(new TextDecoder("utf-8").decode(bytes));
+  }
+  const workbook = XLSX.read(bytes.buffer, { type: "buffer" });
+  const allSheetNames = workbook.SheetNames;
+  if (allSheetNames.length === 0) throw new Error("No sheets found in workbook");
+
+  const classSheetNames = allSheetNames.filter(isClassSheet);
+
+  // Multi-sheet class-wise mode
+  if (classSheetNames.length > 0) {
+    const ignoredSheets = allSheetNames.filter((n) => !isClassSheet(n));
+    const sheetSummary: { sheetName: string; className: string; rowCount: number }[] = [];
+    const headersSet = new Set<string>();
+    headersSet.add("class_name");
+    const allRows: Record<string, string>[] = [];
+
+    for (const sheetName of classSheetNames) {
+      const className = extractClassFromSheetName(sheetName);
+      const { headers: sheetHeaders, rows: sheetRows } = parseSheetRows(workbook.Sheets[sheetName]);
+      sheetHeaders.forEach((h) => headersSet.add(h));
+
+      // Filter empty rows and inject class_name
+      const validRows = sheetRows.filter((r) =>
+        Object.values(r).some((v) => v !== null && v !== undefined && String(v).trim() !== "")
+      );
+      for (const r of validRows) {
+        r.class_name = className;
+        allRows.push(r);
+      }
+      sheetSummary.push({ sheetName, className, rowCount: validRows.length });
+    }
+
+    if (allRows.length === 0) throw new Error("File has no data rows");
+    return { headers: Array.from(headersSet), rows: allRows, sheetSummary, ignoredSheets };
+  }
+
+  // Single-sheet fallback (original behavior)
+  const sheetName = allSheetNames[0];
+  const { headers, rows } = parseSheetRows(workbook.Sheets[sheetName]);
+  if (rows.length === 0) throw new Error("File has no data rows");
   return { headers, rows };
 }
 
@@ -423,20 +486,22 @@ serve(async (req) => {
     // Parse spreadsheet safely
     let headers: string[];
     let rows: Record<string, string>[];
+    let sheetSummary: { sheetName: string; className: string; rowCount: number }[] | undefined;
+    let ignoredSheets: string[] | undefined;
     try {
       const parsed = parseSpreadsheet(fileBase64, fileName);
       headers = parsed.headers;
-      const parsedRows = parsed.rows;
-      headers = parsed.headers;
+      sheetSummary = parsed.sheetSummary;
+      ignoredSheets = parsed.ignoredSheets;
       // Filter out completely empty rows
-      rows = parsedRows.filter(row =>
+      rows = parsed.rows.filter(row =>
         Object.values(row).some(value => value !== null && value !== undefined && String(value).trim() !== "")
       );
     } catch (parseErr: any) {
       return ok({ success: false, error: parseErr.message || "Failed to parse file", students: [], warnings: [], ignoredColumns: [] });
     }
 
-    console.log(`Total parsed rows: ${rows.length} (after filtering empty rows). Headers:`, headers);
+    console.log(`Total parsed rows: ${rows.length} (after filtering empty rows). Headers:`, headers, "Sheet summary:", sheetSummary, "Ignored sheets:", ignoredSheets);
 
     if (rows.length === 0) return ok({ success: false, error: "File has no data rows", students: [], warnings: [], ignoredColumns: [] });
     if (rows.length > 2000) return ok({ success: false, error: "File contains too many rows (max 2000). Please split into smaller files.", students: [], warnings: [], ignoredColumns: [] });
@@ -507,7 +572,7 @@ serve(async (req) => {
 
     console.log(`Processed ${students.length} students, ${warnings.length} warnings, ${ignoredColumns.length} ignored columns`);
 
-    return ok({ success: true, students, warnings, ignoredColumns });
+    return ok({ success: true, students, warnings, ignoredColumns, sheetSummary: sheetSummary || null, ignoredSheets: ignoredSheets || [] });
   } catch (error: any) {
     console.error("process-student-excel error:", error);
     // NEVER crash — always return 200 with error info
