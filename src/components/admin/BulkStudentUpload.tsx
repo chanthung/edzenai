@@ -1683,6 +1683,12 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
                   <span>ℹ️ {summary.createdStructures} new fee structure{summary.createdStructures === 1 ? "" : "s"} created</span>
                 </div>
               ) : null}
+              {summary.createdInstallments ? (
+                <div className="flex items-center gap-2 text-primary">
+                  <Info className="h-4 w-4 shrink-0" />
+                  <span>ℹ️ {summary.createdInstallments} installment{summary.createdInstallments === 1 ? "" : "s"} created</span>
+                </div>
+              ) : null}
               {summary.errors > 0 && (
                 <div className="flex items-start gap-2 text-destructive">
                   <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
