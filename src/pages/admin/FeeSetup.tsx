@@ -262,6 +262,51 @@ export default function FeeSetup() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (!feeStructures?.length) return;
+                      const rows: Record<string, any>[] = [];
+                      feeStructures.forEach((s: any) => {
+                        const catName = s.fee_categories?.name || "—";
+                        const catGroup = s.fee_categories?.category_group || "";
+                        const mandatory = s.fee_categories?.is_mandatory ? "Yes" : "No";
+                        if (s.installments && s.installments.length > 0) {
+                          s.installments.forEach((inst: any) => {
+                            rows.push({
+                              "Category": catName,
+                              "Category Group": catGroup,
+                              "Mandatory": mandatory,
+                              "Total Amount": s.total_amount,
+                              "Installment": inst.name,
+                              "Installment Amount": inst.amount,
+                              "Due Date": inst.due_date,
+                            });
+                          });
+                        } else {
+                          rows.push({
+                            "Category": catName,
+                            "Category Group": catGroup,
+                            "Mandatory": mandatory,
+                            "Total Amount": s.total_amount,
+                            "Installment": "",
+                            "Installment Amount": "",
+                            "Due Date": "",
+                          });
+                        }
+                      });
+                      const yearName = academicYears?.find((y) => y.id === currentYearId)?.name || "fees";
+                      exportToXLSX(rows, {
+                        filename: `fee_setup_${yearName.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}`,
+                        sheetName: "Fee Setup",
+                      });
+                      toast.success(`Exported ${rows.length} rows`);
+                    }}
+                    disabled={!feeStructures?.length}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
                   <Button variant="outline" onClick={() => setFeeImportOpen(true)}>
                     <Upload className="h-4 w-4 mr-2" />
                     Import Fees via Excel (AI)
