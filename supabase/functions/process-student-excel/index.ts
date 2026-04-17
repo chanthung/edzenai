@@ -215,22 +215,85 @@ function parseCSV(text: string): { headers: string[]; rows: Record<string, strin
   return { headers, rows };
 }
 
-function parseSpreadsheet(fileBase64: string, fileName: string) {
-  const bytes = base64ToUint8Array(fileBase64);
-  if (fileName.toLowerCase().endsWith(".csv")) {
-    return parseCSV(new TextDecoder("utf-8").decode(bytes));
+const CLASS_SHEET_RE = /^(class|std|standard|grade)\b/i;
+const FOUNDATION_SHEET_RE = /^(nursery|lkg|ukg|kg|pre[-\s]?(school|primary|kg)|kindergarten)\b/i;
+
+function isClassSheet(name: string): boolean {
+  const n = (name || "").trim();
+  return CLASS_SHEET_RE.test(n) || FOUNDATION_SHEET_RE.test(n);
+}
+
+function extractClassFromSheetName(name: string): string {
+  const n = (name || "").trim();
+  if (FOUNDATION_SHEET_RE.test(n)) {
+    // Title-case the foundational label
+    return n.replace(/\s+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
-  const workbook = XLSX.read(bytes.buffer, { type: "buffer" });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) throw new Error("No sheets found in workbook");
-  const raw = XLSX.utils.sheet_to_json<any[]>(workbook.Sheets[sheetName], { header: 1 });
-  if (raw.length < 2) throw new Error("File has no data rows");
+  const m = n.match(/(\d+)/);
+  if (m) return `Class ${parseInt(m[1], 10)}`;
+  return n;
+}
+
+function parseSheetRows(sheet: any): { headers: string[]; rows: Record<string, string>[] } {
+  const raw = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+  if (raw.length < 2) return { headers: [], rows: [] };
   const headers = (raw[0] as any[]).map((h: any) => String(h ?? "").trim()).filter(Boolean);
   const rows = (raw as any[][]).slice(1).map((row) => {
     const obj: Record<string, string> = {};
     headers.forEach((h, i) => { obj[h] = String(row[i] ?? "").trim(); });
     return obj;
   });
+  return { headers, rows };
+}
+
+function parseSpreadsheet(fileBase64: string, fileName: string): {
+  headers: string[];
+  rows: Record<string, string>[];
+  sheetSummary?: { sheetName: string; className: string; rowCount: number }[];
+  ignoredSheets?: string[];
+} {
+  const bytes = base64ToUint8Array(fileBase64);
+  if (fileName.toLowerCase().endsWith(".csv")) {
+    return parseCSV(new TextDecoder("utf-8").decode(bytes));
+  }
+  const workbook = XLSX.read(bytes.buffer, { type: "buffer" });
+  const allSheetNames = workbook.SheetNames;
+  if (allSheetNames.length === 0) throw new Error("No sheets found in workbook");
+
+  const classSheetNames = allSheetNames.filter(isClassSheet);
+
+  // Multi-sheet class-wise mode
+  if (classSheetNames.length > 0) {
+    const ignoredSheets = allSheetNames.filter((n) => !isClassSheet(n));
+    const sheetSummary: { sheetName: string; className: string; rowCount: number }[] = [];
+    const headersSet = new Set<string>();
+    headersSet.add("class_name");
+    const allRows: Record<string, string>[] = [];
+
+    for (const sheetName of classSheetNames) {
+      const className = extractClassFromSheetName(sheetName);
+      const { headers: sheetHeaders, rows: sheetRows } = parseSheetRows(workbook.Sheets[sheetName]);
+      sheetHeaders.forEach((h) => headersSet.add(h));
+
+      // Filter empty rows and inject class_name
+      const validRows = sheetRows.filter((r) =>
+        Object.values(r).some((v) => v !== null && v !== undefined && String(v).trim() !== "")
+      );
+      for (const r of validRows) {
+        r.class_name = className;
+        allRows.push(r);
+      }
+      sheetSummary.push({ sheetName, className, rowCount: validRows.length });
+    }
+
+    if (allRows.length === 0) throw new Error("File has no data rows");
+    return { headers: Array.from(headersSet), rows: allRows, sheetSummary, ignoredSheets };
+  }
+
+  // Single-sheet fallback (original behavior)
+  const sheetName = allSheetNames[0];
+  const { headers, rows } = parseSheetRows(workbook.Sheets[sheetName]);
+  if (rows.length === 0) throw new Error("File has no data rows");
   return { headers, rows };
 }
 
