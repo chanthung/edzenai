@@ -1157,7 +1157,7 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
   const title = mode === "students" ? "Import Students via Excel (AI)" : "Import Fees via Excel (AI)";
   const uploadDescription = mode === "students"
     ? "Upload any Excel or CSV file. AI will automatically map student columns — no reformatting needed."
-    : "Upload a fee sheet in wide or long format. AI will detect fee columns, match students, and prepare reusable fee structures.";
+    : "Upload a fee sheet — wide, long, or a fee structure template (no students needed). AI auto-detects the format.";
   const previewDescription = mode === "students"
     ? "Review the parsed data. Fix issues or deselect rows before importing."
     : "Review the detected fee categories, matched students, and skipped rows before importing.";
