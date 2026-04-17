@@ -116,7 +116,7 @@ interface BulkStudentUploadProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode?: Mode;
-  onComplete?: (payload: { mode: Mode; imported: number; createdCategories?: number; createdStructures?: number }) => void;
+  onComplete?: (payload: { mode: Mode; imported: number; createdCategories?: number; createdStructures?: number; createdInstallments?: number; format?: FeeFormat }) => void;
 }
 
 function normalizeText(value: string | null | undefined) {
