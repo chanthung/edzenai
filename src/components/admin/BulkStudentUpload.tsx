@@ -396,29 +396,57 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
 
         setRows(processed);
       } else {
-        if (!data?.feeRows || !Array.isArray(data.feeRows)) {
-          throw new Error("Invalid response from AI processing");
+        if (data?.format === "fee_structure" && Array.isArray(data?.structures)) {
+          // Fetch existing categories to flag duplicates
+          let existingNames = new Set<string>();
+          if (school?.id) {
+            const { data: cats } = await supabase
+              .from("fee_categories")
+              .select("name")
+              .eq("school_id", school.id);
+            existingNames = new Set((cats || []).map((c: any) => normalizeText(c.name)));
+          }
+
+          const processed: ProcessedStructure[] = data.structures.map((s: ParsedFeeStructure, index: number) => {
+            const exists = existingNames.has(normalizeText(s.category_name));
+            return {
+              ...s,
+              installments: s.installments || [],
+              _index: index,
+              _selected: !exists,
+              _exists: exists,
+            };
+          });
+
+          setFeeStructures(processed);
+          setFeeFormat("fee_structure");
+          setDetectedCategories(data.detectedCategories || processed.map((s) => s.category_name));
+        } else {
+          if (!data?.feeRows || !Array.isArray(data.feeRows)) {
+            throw new Error("Invalid response from AI processing");
+          }
+
+          const processed: ProcessedFeeRow[] = data.feeRows.map((row: ParsedFeeRow, index: number) => {
+            const issues: string[] = [];
+            if (!row.fees?.length) issues.push("No fee amounts detected");
+            const match = matchStudentForFeeRow(row);
+            if (!match.student) issues.push("Student not found");
+            return {
+              ...row,
+              fees: row.fees || [],
+              _rowIndex: index,
+              _selected: issues.length === 0,
+              _issues: issues,
+              _matchedStudentId: match.student?.id ?? null,
+              _matchedStudentName: match.student?.name,
+              _matchReason: match.reason,
+            };
+          });
+
+          setFeeRows(processed);
+          setFeeFormat((data?.format as FeeFormat) || "wide");
+          setDetectedCategories(data.detectedCategories || []);
         }
-
-        const processed: ProcessedFeeRow[] = data.feeRows.map((row: ParsedFeeRow, index: number) => {
-          const issues: string[] = [];
-          if (!row.fees?.length) issues.push("No fee amounts detected");
-          const match = matchStudentForFeeRow(row);
-          if (!match.student) issues.push("Student not found");
-          return {
-            ...row,
-            fees: row.fees || [],
-            _rowIndex: index,
-            _selected: issues.length === 0,
-            _issues: issues,
-            _matchedStudentId: match.student?.id ?? null,
-            _matchedStudentName: match.student?.name,
-            _matchReason: match.reason,
-          };
-        });
-
-        setFeeRows(processed);
-        setDetectedCategories(data.detectedCategories || []);
       }
 
       setWarnings(data.warnings || []);
