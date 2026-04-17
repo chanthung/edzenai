@@ -1165,6 +1165,9 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
                 <div>
                   <p className="text-muted-foreground mb-1">Issues</p>
                   <p className="font-semibold">{feeStats.issueRows} row{feeStats.issueRows !== 1 ? "s" : ""} skipped</p>
+                  {feeStats.issueRows > 0 && feeStats.matchedRows < feeStats.totalRows && (
+                    <p className="text-xs text-muted-foreground">Tip: import missing students first, then retry.</p>
+                  )}
                   {warnings.length > 0 && <p className="text-xs text-muted-foreground">{warnings[0]}</p>}
                 </div>
               </div>
