@@ -52,11 +52,31 @@ type ParsedFeeRow = {
 
 type DuplicateType = "strong" | "soft" | null;
 type Mode = "students" | "fees";
+type FeeFormat = "wide" | "long" | "fee_structure";
 
 type MatchResult = {
   student: Student | null;
   reason?: string;
 };
+
+type ParsedStructureInstallment = {
+  name: string;
+  amount: number;
+  due_date: string | null;
+};
+
+type ParsedFeeStructure = {
+  category_name: string;
+  is_mandatory: boolean;
+  total_amount: number;
+  installments: ParsedStructureInstallment[];
+};
+
+interface ProcessedStructure extends ParsedFeeStructure {
+  _index: number;
+  _selected: boolean;
+  _exists: boolean;
+}
 
 interface ProcessedRow extends ParsedStudent {
   _rowIndex: number;
@@ -86,6 +106,7 @@ interface ImportSummary {
   issueRows: IssueRow[];
   createdCategories?: number;
   createdStructures?: number;
+  createdInstallments?: number;
   detectedCategories?: string[];
 }
 
