@@ -715,6 +715,8 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                 </div>
               )}
             </div>
+
+            <div className="flex justify-center gap-3">
               {(summary.issueRows.length > 0 || summary.ignoredColumns.length > 0) && (
                 <Button
                   variant="outline"
