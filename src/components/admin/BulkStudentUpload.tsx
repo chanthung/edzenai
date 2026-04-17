@@ -183,6 +183,8 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
     setDefaultDueDate("");
     setRows([]);
     setFeeRows([]);
+    setFeeStructures([]);
+    setFeeFormat(null);
     setWarnings([]);
     setIgnoredColumns([]);
     setDetectedCategories([]);
