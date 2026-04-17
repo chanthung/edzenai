@@ -525,7 +525,7 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                   <FileSpreadsheet className="h-3.5 w-3.5" /> Detected {sheetSummary.length} class sheet{sheetSummary.length !== 1 ? "s" : ""}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {sheetSummary.map((s) => `${s.className} (${s.rowCount})`).join(" · ")}
+                  {sheetSummary.map((s) => `${s.className}${s.section ? ` ${s.section}` : ""} (${s.rowCount})`).join(" · ")}
                 </p>
                 {ignoredSheets.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
