@@ -669,6 +669,37 @@ serve(async (req) => {
       return ok({ success: false, error: "File contains too many rows (max 2000). Please split into smaller files.", feeRows: [], warnings: [], ignoredColumns: [] });
     }
 
+    // Try fee_structure mode first (no student columns + has installment/amount/due date)
+    const structureCols = detectStructureColumns(parsed.headers);
+    if (structureCols) {
+      const built = buildStructureRows(filteredRows, structureCols);
+      if (built.structures.length === 0) {
+        return ok({ success: false, error: "Could not detect any valid fee structures. Please include category and amount columns.", feeRows: [], warnings: built.warnings, ignoredColumns: [] });
+      }
+
+      const usedHeaders = new Set<string>([
+        structureCols.categoryColumn,
+        structureCols.installmentColumn,
+        structureCols.amountColumn,
+        structureCols.totalColumn,
+        structureCols.dueDateColumn,
+        structureCols.mandatoryColumn,
+      ].filter(Boolean) as string[]);
+      const ignoredColumns = parsed.headers.filter((header) => !usedHeaders.has(header));
+
+      return ok({
+        success: true,
+        format: "fee_structure",
+        structures: built.structures,
+        warnings: built.warnings,
+        ignoredColumns,
+        detectedCategories: built.structures.map((s) => s.category_name),
+        feeRows: [],
+        sheetSummary: parsed.sheetSummary || null,
+        ignoredSheets: parsed.ignoredSheets || [],
+      });
+    }
+
     let detection = detectColumns(parsed.headers);
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
 
