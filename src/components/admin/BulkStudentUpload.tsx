@@ -78,6 +78,8 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
   const [rows, setRows] = useState<ProcessedRow[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [ignoredColumns, setIgnoredColumns] = useState<string[]>([]);
+  const [sheetSummary, setSheetSummary] = useState<{ sheetName: string; className: string; rowCount: number }[] | null>(null);
+  const [ignoredSheets, setIgnoredSheets] = useState<string[]>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [showInlineCreate, setShowInlineCreate] = useState(false);
