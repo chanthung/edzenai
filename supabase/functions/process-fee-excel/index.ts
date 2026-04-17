@@ -107,6 +107,28 @@ const FEE_COLUMN_RE = /\b(fee|amount|term|installment|tuition|transport|admissio
 const CLASS_SHEET_RE = /^(class|std|standard|grade)\b/i;
 const FOUNDATION_SHEET_RE = /^(nursery|lkg|ukg|kg|pre[-\s]?(school|primary|kg)|kindergarten)\b/i;
 
+const STRUCTURE_CATEGORY_HEADERS = new Set([
+  "category", "fee category", "fee name", "fee type", "particular", "particulars", "head", "name",
+]);
+const STRUCTURE_INSTALLMENT_HEADERS = new Set([
+  "installment", "installment name", "term", "term name", "month", "period", "schedule",
+]);
+const STRUCTURE_AMOUNT_HEADERS = new Set([
+  "amount", "installment amount", "fee amount", "value", "amt",
+]);
+const STRUCTURE_TOTAL_HEADERS = new Set([
+  "total", "total amount", "total fee", "annual amount", "annual fee", "yearly", "grand total",
+]);
+const STRUCTURE_DUE_DATE_HEADERS = new Set([
+  "due date", "due_date", "duedate", "due", "date", "payment date",
+]);
+const STRUCTURE_MANDATORY_HEADERS = new Set([
+  "mandatory", "is mandatory", "compulsory", "required",
+]);
+const STUDENT_INDICATOR_HEADERS = new Set([
+  "name", "student name", "student", "full name", "roll no", "roll number", "rollno", "admission no", "admission number", "student id",
+]);
+
 function ok(body: unknown) {
   return new Response(JSON.stringify(body), {
     status: 200,
