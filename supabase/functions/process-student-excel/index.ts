@@ -486,20 +486,22 @@ serve(async (req) => {
     // Parse spreadsheet safely
     let headers: string[];
     let rows: Record<string, string>[];
+    let sheetSummary: { sheetName: string; className: string; rowCount: number }[] | undefined;
+    let ignoredSheets: string[] | undefined;
     try {
       const parsed = parseSpreadsheet(fileBase64, fileName);
       headers = parsed.headers;
-      const parsedRows = parsed.rows;
-      headers = parsed.headers;
+      sheetSummary = parsed.sheetSummary;
+      ignoredSheets = parsed.ignoredSheets;
       // Filter out completely empty rows
-      rows = parsedRows.filter(row =>
+      rows = parsed.rows.filter(row =>
         Object.values(row).some(value => value !== null && value !== undefined && String(value).trim() !== "")
       );
     } catch (parseErr: any) {
       return ok({ success: false, error: parseErr.message || "Failed to parse file", students: [], warnings: [], ignoredColumns: [] });
     }
 
-    console.log(`Total parsed rows: ${rows.length} (after filtering empty rows). Headers:`, headers);
+    console.log(`Total parsed rows: ${rows.length} (after filtering empty rows). Headers:`, headers, "Sheet summary:", sheetSummary, "Ignored sheets:", ignoredSheets);
 
     if (rows.length === 0) return ok({ success: false, error: "File has no data rows", students: [], warnings: [], ignoredColumns: [] });
     if (rows.length > 2000) return ok({ success: false, error: "File contains too many rows (max 2000). Please split into smaller files.", students: [], warnings: [], ignoredColumns: [] });
