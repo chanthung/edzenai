@@ -519,6 +519,22 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
               )}
             </div>
 
+            {sheetSummary && sheetSummary.length > 0 && (
+              <div className="bg-primary/5 border border-primary/20 rounded-md p-2 text-sm">
+                <div className="flex items-center gap-1 font-medium text-primary mb-1">
+                  <FileSpreadsheet className="h-3.5 w-3.5" /> Detected {sheetSummary.length} class sheet{sheetSummary.length !== 1 ? "s" : ""}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {sheetSummary.map((s) => `${s.className} (${s.rowCount})`).join(" · ")}
+                </p>
+                {ignoredSheets.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ignored sheets: {ignoredSheets.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+
             {ignoredColumns.length > 0 && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-2 text-sm">
                 <div className="flex items-center gap-1 font-medium text-blue-800 dark:text-blue-200 mb-1">
