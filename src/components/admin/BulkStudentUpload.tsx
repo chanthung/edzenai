@@ -703,9 +703,18 @@ export function BulkStudentUpload({ open, onOpenChange }: BulkStudentUploadProps
                   <span>ℹ️ {summary.ignoredColumns.length} column{summary.ignoredColumns.length !== 1 ? "s" : ""} ignored: {summary.ignoredColumns.join(", ")}</span>
                 </div>
               )}
+              {sheetSummary && sheetSummary.length > 0 && (
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <FileSpreadsheet className="h-4 w-4 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <div>Class-wise breakdown: {sheetSummary.map((s) => `${s.className} (${s.rowCount})`).join(" · ")}</div>
+                    {ignoredSheets.length > 0 && (
+                      <div className="mt-0.5">Ignored sheets: {ignoredSheets.join(", ")}</div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-
-            <div className="flex justify-center gap-3">
               {(summary.issueRows.length > 0 || summary.ignoredColumns.length > 0) && (
                 <Button
                   variant="outline"
