@@ -1,47 +1,47 @@
 
+User wants to enhance multi-sheet import to also extract section from sheet names like "Class 5 A", "Std 3-B", "Grade 2 C".
 
-## Plan: Multi-Sheet Class-wise Import
+Current state: `extractClassFromSheetName` only extracts class number. `class_name` is injected per row, but section is not.
 
-### Current Behavior
-The `process-student-excel` edge function reads only `workbook.SheetNames[0]`. All other sheets are silently ignored. CSV files have only one sheet, so they're unaffected.
+Approach: add `extractSectionFromSheetName` and inject into each row only if the row doesn't already have a section value (so explicit Excel section column wins).
 
-### Approach
-Modify only the `parseSpreadsheet` function (and its return shape) inside the edge function to detect class-named sheets, parse each, auto-inject the class name from the sheet title, and merge rows. The downstream pipeline (rule + AI mapping, normalization, dedupe in client) needs **no changes** — it already handles `class_name` per row.
+Edge cases:
+- "Class 5" (no section) → don't inject; let downstream `normalizeSection` default to "A"
+- "Class 10A" (no separator) → trailing letter = section
+- "Nursery", "LKG" → no section letter; skip injection
+- Avoid matching letters inside words like "Class" or "Std" — only match a single trailing letter after a digit/separator
 
-### Changes
+## Plan: Auto-detect Section from Sheet Name
 
-**1. `supabase/functions/process-student-excel/index.ts` — `parseSpreadsheet`**
-- Detect if workbook has any "class sheets" matching `/^(class|std|grade|standard)\b/i` (case-insensitive).
-- **If yes** (multi-sheet mode):
-  - Extract class number/label from each matching sheet name (e.g., "Class 1" → "Class 1", "Std 5" → "Class 5", "Grade 10" → "Class 10", "Nursery"/"LKG"/"UKG" supported as bonus).
-  - Parse each class sheet, take its headers (per-sheet — first row), build row objects.
-  - Inject/override `class_name` (and any header that was already present) so every row carries the sheet's class.
-  - Merge headers across sheets (union) and concat all rows.
-  - Track per-sheet counts and ignored sheet names → return as new fields in response.
-- **If no class sheet pattern detected** → fall back to current single-sheet behavior (no breaking change).
+### Change (single file)
+`supabase/functions/process-student-excel/index.ts`
 
-**2. Response shape additions (backward compatible)**
-- Add optional `sheetSummary: { sheetName, className, rowCount }[]` and `ignoredSheets: string[]` to the JSON returned.
+**1. Add `extractSectionFromSheetName(name)`**
+- Regex: match a single trailing letter (A-Z) that follows a digit, optionally separated by space/dash/underscore. Examples:
+  - `"Class 5 A"` → `A`
+  - `"Std 3-B"` → `B`
+  - `"Grade 2_C"` → `C`
+  - `"Class 10A"` → `A`
+  - `"Class 5"` → `null`
+  - `"Nursery"` / `"LKG"` → `null`
+- Returns uppercase letter or `null`.
 
-**3. `src/components/admin/BulkStudentUpload.tsx` — display only**
-- Capture `data.sheetSummary` and `data.ignoredSheets` in state.
-- On the **preview** step, show a small info chip row: "Detected sheets: Class 1 (32), Class 2 (28), Class 3 (35) · Ignored: Razorpay, WhatsApp API".
-- On the **done** summary, append the same class-wise breakdown.
-- No changes to row processing, validation, or duplicate logic.
+**2. Update multi-sheet loop in `parseSpreadsheet`**
+- Compute `section = extractSectionFromSheetName(sheetName)` once per sheet.
+- For each row: only set `r.section = section` if `section` is non-null AND the row has no existing non-empty section value (Excel column wins).
 
-**4. Empty / edge cases**
-- If a class sheet is empty → skipped silently, included in `sheetSummary` with `rowCount: 0`.
-- If multi-sheet detected but **all** class sheets empty → return existing "File has no data rows" error.
-- If no class-pattern sheets at all → single-sheet fallback (unchanged behavior).
+**3. Update `sheetSummary` (optional, nice-to-have)**
+- Include `section` in each summary entry so the UI breakdown can show "Class 5 A (32)" instead of just "Class 5 (32)".
+
+**4. Frontend display (`src/components/admin/BulkStudentUpload.tsx`)**
+- If `summary.section` present, render `${className} ${section}` in the preview/done chips. Falls back to current behavior when section absent.
 
 ### What stays unchanged
 - Rule + AI column mapping
-- Phone / DOB / class normalization
-- Client-side duplicate detection, validation, and import flow
-- CSV handling
-- Edge function row cap (2000)
+- `normalizeSection` (still defaults blank → "A")
+- Single-sheet fallback path
+- All client-side validation, dedupe, and import flow
 
 ### Files Modified
-- `supabase/functions/process-student-excel/index.ts` (parsing logic + response fields)
-- `src/components/admin/BulkStudentUpload.tsx` (display sheet summary in preview + done screens)
-
+- `supabase/functions/process-student-excel/index.ts`
+- `src/components/admin/BulkStudentUpload.tsx`
