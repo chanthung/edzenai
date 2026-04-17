@@ -234,6 +234,18 @@ function extractClassFromSheetName(name: string): string {
   return n;
 }
 
+// Extract a single trailing section letter from sheet name.
+// Matches a letter that follows a digit, optionally separated by space/dash/underscore.
+// "Class 5 A" → "A", "Std 3-B" → "B", "Grade 2_C" → "C", "Class 10A" → "A"
+// "Class 5" → null, "Nursery"/"LKG" → null
+function extractSectionFromSheetName(name: string): string | null {
+  const n = (name || "").trim();
+  if (FOUNDATION_SHEET_RE.test(n)) return null;
+  const m = n.match(/\d+\s*[-_ ]?\s*([A-Za-z])\s*$/);
+  if (m) return m[1].toUpperCase();
+  return null;
+}
+
 function parseSheetRows(sheet: any): { headers: string[]; rows: Record<string, string>[] } {
   const raw = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
   if (raw.length < 2) return { headers: [], rows: [] };
@@ -249,7 +261,7 @@ function parseSheetRows(sheet: any): { headers: string[]; rows: Record<string, s
 function parseSpreadsheet(fileBase64: string, fileName: string): {
   headers: string[];
   rows: Record<string, string>[];
-  sheetSummary?: { sheetName: string; className: string; rowCount: number }[];
+  sheetSummary?: { sheetName: string; className: string; section: string | null; rowCount: number }[];
   ignoredSheets?: string[];
 } {
   const bytes = base64ToUint8Array(fileBase64);
@@ -265,25 +277,30 @@ function parseSpreadsheet(fileBase64: string, fileName: string): {
   // Multi-sheet class-wise mode
   if (classSheetNames.length > 0) {
     const ignoredSheets = allSheetNames.filter((n) => !isClassSheet(n));
-    const sheetSummary: { sheetName: string; className: string; rowCount: number }[] = [];
+    const sheetSummary: { sheetName: string; className: string; section: string | null; rowCount: number }[] = [];
     const headersSet = new Set<string>();
     headersSet.add("class_name");
+    headersSet.add("section");
     const allRows: Record<string, string>[] = [];
 
     for (const sheetName of classSheetNames) {
       const className = extractClassFromSheetName(sheetName);
+      const section = extractSectionFromSheetName(sheetName);
       const { headers: sheetHeaders, rows: sheetRows } = parseSheetRows(workbook.Sheets[sheetName]);
       sheetHeaders.forEach((h) => headersSet.add(h));
 
-      // Filter empty rows and inject class_name
+      // Filter empty rows and inject class_name + section (only when row lacks one)
       const validRows = sheetRows.filter((r) =>
         Object.values(r).some((v) => v !== null && v !== undefined && String(v).trim() !== "")
       );
       for (const r of validRows) {
         r.class_name = className;
+        if (section && (!r.section || String(r.section).trim() === "")) {
+          r.section = section;
+        }
         allRows.push(r);
       }
-      sheetSummary.push({ sheetName, className, rowCount: validRows.length });
+      sheetSummary.push({ sheetName, className, section, rowCount: validRows.length });
     }
 
     if (allRows.length === 0) throw new Error("File has no data rows");
