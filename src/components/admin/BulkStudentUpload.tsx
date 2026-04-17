@@ -1001,6 +1001,16 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
       .eq("academic_year_id", resolvedYearId);
     const existingStructureCats = new Set((existingStructures || []).map((s: any) => s.fee_category_id));
 
+    // Preload distinct classes that have students — used for auto-assign on import
+    const { data: studentClassRows } = await supabase
+      .from("students")
+      .select("class_name")
+      .eq("school_id", school.id)
+      .not("class_name", "is", null);
+    const schoolClasses = Array.from(
+      new Set((studentClassRows || []).map((r: any) => r.class_name).filter(Boolean))
+    ) as string[];
+
     for (let i = 0; i < toImport.length; i++) {
       const s = toImport[i];
       try {
@@ -1067,6 +1077,28 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
           const { error: instErr } = await supabase.from("installments").insert(installmentRows);
           if (instErr) throw instErr;
           createdInstallments += installmentRows.length;
+        }
+
+        // Assign this fee structure to every class that has students, with auto_assign = true,
+        // then retroactively assign to existing students. This mirrors Fee Setup behavior.
+        if (schoolClasses.length > 0) {
+          const fscRows = schoolClasses.map((className) => ({
+            fee_structure_id: newStructure.id,
+            class_name: className,
+            auto_assign: true,
+            new_admission_only: false,
+          }));
+          const { error: fscErr } = await supabase.from("fee_structure_classes").insert(fscRows);
+          if (fscErr) throw fscErr;
+
+          for (const className of schoolClasses) {
+            await supabase.rpc("auto_assign_fees_for_class", {
+              _fee_structure_id: newStructure.id,
+              _class_name: className,
+              _academic_year_id: resolvedYearId,
+              _new_admission_only: false,
+            });
+          }
         }
       } catch (err: any) {
         errors++;
