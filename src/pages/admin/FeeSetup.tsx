@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { BulkStudentUpload } from "@/components/admin/BulkStudentUpload";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,13 +22,15 @@ import { useFeeStructureClasses, useUpdateFeeStructureClasses, useDistinctClasse
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil, GraduationCap } from "lucide-react";
+import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil, GraduationCap, Upload } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function FeeSetup() {
   const { data: academicYears } = useAcademicYears();
   const activeYear = useActiveAcademicYear();
   const [selectedYearId, setSelectedYearId] = useState<string | undefined>(undefined);
+  const [feeImportOpen, setFeeImportOpen] = useState(false);
+  const [showFeeImportBanner, setShowFeeImportBanner] = useState(false);
   const { isRestricted } = useSubscriptionStatus();
   
   const currentYearId = selectedYearId || activeYear?.id;
@@ -209,6 +212,13 @@ export default function FeeSetup() {
         </Select>
       </PageHeader>
 
+      <BulkStudentUpload
+        open={feeImportOpen}
+        onOpenChange={setFeeImportOpen}
+        mode="fees"
+        onComplete={() => setShowFeeImportBanner(true)}
+      />
+
       <Tabs defaultValue="structures" className="mt-6">
         <TabsList>
           <TabsTrigger value="structures">Fee Structures</TabsTrigger>
@@ -226,6 +236,12 @@ export default function FeeSetup() {
             </Card>
           ) : (
             <>
+              {showFeeImportBanner && (
+                <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+                  ✨ Fee setup was auto-created from your Excel file. You can edit or add more fees anytime.
+                </div>
+              )}
+
               <div className="flex items-end justify-between gap-4 mb-4 flex-wrap">
                 <div className="flex items-end gap-3">
                   <div className="space-y-1">
@@ -244,70 +260,78 @@ export default function FeeSetup() {
                     </Badge>
                   )}
                 </div>
-                <RestrictedButton isRestricted={isRestricted}>
-                  <Dialog open={structureDialogOpen} onOpenChange={setStructureDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button disabled={availableCategories.length === 0 || isRestricted}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Fee
-                      </Button>
-                    </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Fee Structure</DialogTitle>
-                      <DialogDescription>
-                        Set the total amount for a fee category
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="space-y-2">
-                        <Label>Fee Category</Label>
-                        <Select 
-                          value={newStructure.fee_category_id}
-                          onValueChange={(value) => setNewStructure({ ...newStructure, fee_category_id: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableCategories.map((cat) => (
-                              <SelectItem key={cat.id} value={cat.id}>
-                                {cat.name} {cat.is_mandatory ? "(Mandatory)" : "(Optional)"}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Total Amount (₹)</Label>
-                        <Input
-                          type="number"
-                          placeholder="50000"
-                          value={newStructure.total_amount}
-                          onChange={(e) => setNewStructure({ ...newStructure, total_amount: e.target.value })}
-                        />
-                      </div>
-                      {defaultDueDate && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>Due date: <span className="font-medium text-foreground">{formatDate(defaultDueDate)}</span></span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button variant="outline" onClick={() => setFeeImportOpen(true)}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import Fees via Excel (AI)
+                  </Button>
+                  <RestrictedButton isRestricted={isRestricted}>
+                    <Dialog open={structureDialogOpen} onOpenChange={setStructureDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button disabled={availableCategories.length === 0 || isRestricted}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Fee
+                        </Button>
+                      </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Fee Structure</DialogTitle>
+                        <DialogDescription>
+                          Set the total amount for a fee category
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                          <Label>Fee Category</Label>
+                          <Select 
+                            value={newStructure.fee_category_id}
+                            onValueChange={(value) => setNewStructure({ ...newStructure, fee_category_id: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableCategories.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.id}>
+                                  {cat.name} {cat.is_mandatory ? "(Mandatory)" : "(Optional)"}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                      )}
-                      {!defaultDueDate && (
-                        <p className="text-xs text-amber-600">No default due date set. A date 1 month from today will be used.</p>
-                      )}
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setStructureDialogOpen(false)}>Cancel</Button>
-                      <Button onClick={handleCreateStructure} disabled={createStructure.isPending}>
-                        {createStructure.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Add Fee
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </RestrictedButton>
+                        <div className="space-y-2">
+                          <Label>Total Amount (₹)</Label>
+                          <Input
+                            type="number"
+                            placeholder="50000"
+                            value={newStructure.total_amount}
+                            onChange={(e) => setNewStructure({ ...newStructure, total_amount: e.target.value })}
+                          />
+                        </div>
+                        {defaultDueDate && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+                            <Calendar className="h-4 w-4" />
+                            <span>Due date: <span className="font-medium text-foreground">{formatDate(defaultDueDate)}</span></span>
+                          </div>
+                        )}
+                        {!defaultDueDate && (
+                          <p className="text-xs text-amber-600">No default due date set. A date 1 month from today will be used.</p>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setStructureDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateStructure} disabled={createStructure.isPending}>
+                          {createStructure.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          Add Fee
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </RestrictedButton>
               </div>
+            </>
+          )}
+        </TabsContent>
 
               {structuresLoading ? (
                 <div className="space-y-4">
