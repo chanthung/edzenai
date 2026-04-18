@@ -1,117 +1,84 @@
 
-This is a strategy/advisory question, not an implementation task. The user wants a go-to-market plan for acquiring their first 10 paying schools — no code changes needed. I'll respond directly with the strategic plan instead of using `<lov-plan>` for code work.
+User approved: PDF, detailed Progress, with screenshots. Need to generate a branded PDF user manual covering 4 roles (Admin, Teacher, Accountant + Student Progress reference) with screenshots from the live app.
 
-Wait — the system requires plan mode output. Since this is purely advisory (no code), I'll deliver the full strategic answer inside the plan tag as the complete response.
+## Plan
 
----
+**Deliverable:** Single branded PDF (`EdZenAI-User-Manual.pdf`) saved to `/mnt/documents/`, ~14-18 pages.
 
-# 30-Day Plan: First 10 Paying Schools for EdZen AI
+### Steps
+1. **Capture screenshots** from the live preview using browser tools — login as platform admin, navigate to key screens (Admin Dashboard, Students, Fee Setup, Teachers, Marks Entry, Attendance, Report Cards, Parent View). Save to `/tmp/screenshots/`.
+2. **Generate PDF** with ReportLab using EdZen AI indigo/purple branding (#6366f1, #8b5cf6), cover page, TOC, role sections, and embedded screenshots.
+3. **QA pass** — convert PDF to images, inspect every page for layout issues, fix, re-render.
+4. **Deliver** as `<lov-artifact>`.
 
-## 1. Day-by-Day Outreach Strategy
+### PDF Structure
 
-### Week 1 — Foundation (Days 1–7)
-- **Day 1:** Build a target list of 200 schools in 2–3 nearby cities. Sources: Google Maps ("private school near [area]"), Justdial, IndiaMART, school directories, state education board websites. Capture: school name, principal/admin name, WhatsApp number, location, approx. student count.
-- **Day 2:** Record a 60-second screen demo video (Loom/phone) showing: fee reminder going to parent → parent paying via UPI QR → admin seeing it. Upload to YouTube unlisted + create a vertical version for WhatsApp status.
-- **Day 3:** Create 3 WhatsApp-ready assets:
-  1. 1-page PDF brochure (problem → solution → pricing → free trial CTA)
-  2. 6-slide visual carousel (square images for WhatsApp)
-  3. The 60s demo video
-- **Day 4:** Set up a WhatsApp Business account with catalog, away message, and quick replies. Add a clean profile photo + edzenai.com link in bio.
-- **Day 5–6:** Personally visit 5 schools nearby. Walk in, ask for the Principal/Admin, give a 2-minute pitch + leave brochure. Get their WhatsApp.
-- **Day 7:** Review: Who responded? Which message worked? Refine pitch.
+**Cover** — EdZen AI logo, "User Manual v1.0", tagline, date
 
-### Week 2 — First Outreach Wave (Days 8–14)
-- Send WhatsApp to **20 schools/day** (Mon–Sat = 120 schools). Don't blast — personalize with school name + city.
-- Follow-up message after 48 hours if no reply.
-- Book demos for anyone who shows interest. Aim: **5 demos this week.**
-- Days 13–14: Conduct demos (15 min Zoom or in-person). Always end with: *"Want me to set this up free for 30 days? No card needed."*
+**TOC**
 
-### Week 3 — Convert + Referrals (Days 15–21)
-- Onboard trial schools yourself. Sit with them, import students, configure fees. **White-glove setup = highest conversion lever.**
-- Send follow-ups to remaining 80 schools from Wave 1.
-- New wave: 100 more schools.
-- Ask each trial school: *"Do you know 2 other principals I should talk to?"* — referrals close 3x faster.
+**Section 1 — Getting Started (1 page)**
+- Login URL, password reset, role overview
 
-### Week 4 — Close + Scale (Days 22–30)
-- Convert trials to paid. Offer: *"Pay for 3 months, get 1 free."*
-- Daily routine going forward:
-  - 1 hr morning: 20 new outreach messages
-  - 1 hr midday: Follow-ups
-  - 1 hr evening: Demos / onboarding
+**Section 2 — School Admin (3 pages)**
+- First 5 things after login (create academic year, add students, set up fees, add teachers, configure school profile)
+- Daily workflow (check dashboard → review pending fees → verify payment proofs → send reminders → respond to parent queries)
+- Common mistakes (skipping academic year setup, wrong class normalization, forgetting QR upload)
+- Tips (use bulk WhatsApp share, enable AI Help chatbot, monitor Birthday widget)
+- Screenshots: Dashboard, Students table, Fee Setup
 
-**Target:** 10 paying schools by Day 45–60 (realistic for cold outreach with no ads).
+**Section 3 — Teacher (3 pages)**
+- First 5 (verify subject assignments, set up assessments, enter marks for current assessment, mark today's attendance, generate sample report card)
+- Daily workflow (mark attendance → enter marks after each test → review at-risk students → use AI Insights weekly)
+- Common mistakes (wrong assessment selected, not saving marks, ignoring red-border validation)
+- Tips (Mark All Present then adjust, use templates, check Student Monitoring badges)
+- Screenshots: Marks Entry, Attendance, AI Insights panel
 
----
+**Section 4 — Accountant (2 pages)**
+- First 5 (review fee structures, check pending list, record first payment, verify payment proof, generate monthly report)
+- Daily workflow (check pending proofs → verify & approve → record offline payments → send WhatsApp reminders → reconcile)
+- Common mistakes (recording wrong installment, forgetting receipt, missing partial payments)
+- Tips (use installment grouping, bulk reminders, monthly collection report)
+- Screenshots: Payment Recorder, Pending Proofs, Fee Reports
 
-## 2. Exact WhatsApp Messages
+**Section 5 — Student Progress Module (3-4 pages, detailed)**
+- How marks flow: Subjects → Assessments → Templates → Marks Entry → Report Cards
+- NEP 2020 stages (Foundational/Preparatory/Middle/Secondary)
+- Competency tracking (Red/Amber/Green/Blue)
+- AI Insights (4 sections: trends, gaps, interventions, predictions)
+- At-Risk monitoring (Healthy/Watch/Needs Attention/Critical)
+- Report card generation (individual + bulk class print)
+- Screenshots: Subjects, Assessments, Report Card, Competency view
 
-### Message 1 — Initial Outreach (personal, not salesy)
-> Hello Sir/Madam, I'm [Your Name], founder of EdZen AI.
->
-> We help schools like [School Name] **save 10+ hours every week** on fee collection by sending automatic WhatsApp reminders to parents — and parents pay instantly via UPI QR.
->
-> We're offering a **free 30-day trial** with personal setup support. Would you like a quick 2-minute demo?
->
-> 🎥 Short video: [link]
-> 🌐 edzenai.com
+**Appendix — Parent View (1 page)**
+- What parents see via WhatsApp link
+- Tabs: Fees, Academic Progress
+- UPI deep-link payment flow
+- How staff can answer common parent questions
 
-### Message 2 — Follow-up (48 hrs later)
-> Hi Sir/Madam, just following up on EdZen AI 🙏
->
-> Even if you're busy, may I send you a 1-page PDF showing how schools in [City] are using it? You can review when free.
+**Back cover** — Support contact, edzenai.com, "Need help? Use the AI Help chatbot in the app"
 
-### Message 3 — Demo Confirmation
-> Thank you! Demo scheduled for [date/time]. It will take only 15 mins.
->
-> I'll show you:
-> ✅ How fees auto-track per student
-> ✅ How parents get WhatsApp reminders
-> ✅ How AI generates report cards (NEP 2020 ready)
->
-> Zoom link: [link]
+### Technical approach
+- ReportLab Platypus (SimpleDocTemplate, Paragraph, Image, Table, PageBreak)
+- Custom header/footer with page numbers
+- Indigo gradient cover page
+- Code blocks/tips in light-purple boxes
+- Screenshots auto-fitted to page width (max 6.5 inches)
+- A4 page size
 
-### Message 4 — Post-Demo Close
-> Thank you for your time today! As discussed, I've activated your **free 30-day Pro trial** — no card needed.
->
-> I'll personally help you import your students this week. When is a good time tomorrow for a 30-min setup call?
+### Screenshots capture plan
+Login as `support@edzenai.com` → navigate to:
+- `/admin/dashboard`
+- `/admin/students`
+- `/admin/fee-setup`
+- `/admin/teachers`
+- `/progress/dashboard`
+- `/progress/marks-entry`
+- `/progress/attendance`
+- `/progress/report-cards`
+- `/view/:name/:token` (parent view sample)
 
----
+If a screen requires data the test account lacks, use a clean placeholder note in the manual instead.
 
-## 3. The Offer (What Closes Schools)
-
-**Founding School Program — first 10 schools only:**
-- ✅ 30-day free Pro trial (no card)
-- ✅ Free white-glove setup (you import their students + fees)
-- ✅ 50% off for the first 6 months after trial
-- ✅ Lifetime "Founding School" badge + locked-in pricing
-- ✅ Direct WhatsApp line to founder (you)
-
-**Why this works:** Indian schools are risk-averse. Free + personal setup + heavy discount + scarcity = decision becomes easy.
-
----
-
-## 4. What NOT to Do
-
-- ❌ **Don't send bulk WhatsApp blasts** — your number gets banned, and schools mark you as spam. Always personalize.
-- ❌ **Don't lead with features.** Lead with one outcome: *"Save 10 hours/week on fee collection."*
-- ❌ **Don't try to sell on the first message.** Goal of message 1 = get a "yes" to a demo, not a sale.
-- ❌ **Don't over-discount permanently.** Time-bound the 50% offer ("first 10 schools only") or you'll never raise prices.
-- ❌ **Don't skip onboarding.** Schools that self-onboard churn fast. Your time = your CAC.
-- ❌ **Don't target large schools (2000+) yet.** They have committees, long sales cycles. Win 100–500 student schools first.
-- ❌ **Don't ignore referrals.** Every trial school = 2 warm intros. Always ask.
-- ❌ **Don't talk to teachers first.** Always go to **Principal, Owner, or Admin/Accountant** — they hold the budget.
-- ❌ **Don't build new features for one-off requests** during this phase. Sell what exists; iterate after 10 customers.
-
----
-
-## Success Metrics to Track Weekly
-| Metric | Target |
-|---|---|
-| Schools contacted | 100/week |
-| Reply rate | >20% |
-| Demos booked | 5–8/week |
-| Demos → trials | 60% |
-| Trials → paid | 40–50% |
-
-**Bottom line:** With 400 personalized WhatsApp messages + 20 demos + 10 trials, you should land your first 10 paying schools in 6–8 weeks.
-
+### QA
+After render: `pdftoppm -jpeg -r 120 manual.pdf qa` → view every page → fix overflow/clipping/contrast → re-render until clean. Report findings in final message.
