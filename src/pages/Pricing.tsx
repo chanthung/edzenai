@@ -51,7 +51,7 @@ function getPriceId(plan: 'starter' | 'pro', billing: 'monthly' | 'annual') {
 }
 
 export default function Pricing() {
-  usePageMeta({ title: "Pricing – EdZen AI", description: "Simple per-student pricing for EdZen AI school management. Starter from ₹7/student/month. 14-day free trial, no credit card required.", canonical: "/pricing" });
+  usePageMeta({ title: "Pricing – EdZen AI", description: "Simple per-student pricing for EdZen AI school management. Starter from ₹7/student/month. 30-day Pro free trial, no credit card required.", canonical: "/pricing" });
   const [students, setStudents] = useState(100);
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('pro');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');

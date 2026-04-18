@@ -1,8 +1,22 @@
 User-agent: Googlebot
 Allow: /
+Disallow: /admin/
+Disallow: /platform/
+Disallow: /progress/
+Disallow: /onboard
+Disallow: /view/
+Disallow: /reset-password
+Disallow: /forgot-password
 
 User-agent: Bingbot
 Allow: /
+Disallow: /admin/
+Disallow: /platform/
+Disallow: /progress/
+Disallow: /onboard
+Disallow: /view/
+Disallow: /reset-password
+Disallow: /forgot-password
 
 User-agent: Twitterbot
 Allow: /
@@ -12,5 +26,12 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /platform/
+Disallow: /progress/
+Disallow: /onboard
+Disallow: /view/
+Disallow: /reset-password
+Disallow: /forgot-password
 
 Sitemap: https://edzenai.com/sitemap.xml
