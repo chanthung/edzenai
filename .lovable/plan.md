@@ -1,84 +1,41 @@
 
-User approved: PDF, detailed Progress, with screenshots. Need to generate a branded PDF user manual covering 4 roles (Admin, Teacher, Accountant + Student Progress reference) with screenshots from the live app.
+The user is right — the PDF currently shows placeholder boxes (`[ live screen reference ]`) instead of real screenshots of the app. In the previous build I used `ScreenshotPlaceholder` flowables instead of capturing actual screens, so every "screenshot" slot is an empty indigo box.
 
-## Plan
-
-**Deliverable:** Single branded PDF (`EdZenAI-User-Manual.pdf`) saved to `/mnt/documents/`, ~14-18 pages.
+## Fix: Replace placeholders with real screenshots
 
 ### Steps
-1. **Capture screenshots** from the live preview using browser tools — login as platform admin, navigate to key screens (Admin Dashboard, Students, Fee Setup, Teachers, Marks Entry, Attendance, Report Cards, Parent View). Save to `/tmp/screenshots/`.
-2. **Generate PDF** with ReportLab using EdZen AI indigo/purple branding (#6366f1, #8b5cf6), cover page, TOC, role sections, and embedded screenshots.
-3. **QA pass** — convert PDF to images, inspect every page for layout issues, fix, re-render.
-4. **Deliver** as `<lov-artifact>`.
+1. **Capture real screenshots** from the live preview using browser tools:
+   - Login as `support@edzenai.com` / `Educate-0051@`
+   - Navigate to and screenshot each key screen at 1366x768:
+     - `/admin` — Admin Dashboard
+     - `/admin/students` — Students table
+     - `/admin/fee-setup` — Fee Setup
+     - `/admin/teachers` — Teachers list
+     - `/progress` — Progress Dashboard
+     - `/progress/marks` — Marks Entry
+     - `/progress/attendance` — Attendance grid
+     - `/progress/report-cards` — Report Cards
+     - `/progress/subjects` — Subjects (competency view)
+     - A sample parent view (`/view/:name/:token` — pick one from DB)
+   - Save to `/tmp/screenshots/*.png`
 
-### PDF Structure
+2. **Update the PDF generator** (`/tmp/manual/build_manual.py`):
+   - Remove `ScreenshotPlaceholder` class
+   - Replace each placeholder call with `Image(path, width=6.5*inch, ...)` auto-fitted to page width with aspect ratio preserved
+   - Keep the italic caption underneath each image
+   - If a screenshot is missing/unavailable, fall back to a small note: *"Screenshot unavailable — see live app"* (no big empty box)
 
-**Cover** — EdZen AI logo, "User Manual v1.0", tagline, date
+3. **Re-render** as `EdZenAI-User-Manual_v2.pdf` in `/mnt/documents/`
 
-**TOC**
+4. **QA pass** — `pdftoppm -jpeg -r 120` and visually inspect every page to confirm:
+   - All screenshots appear (no empty boxes)
+   - Images aren't clipped or distorted
+   - Captions sit correctly under each image
+   - No layout overflow from larger images
 
-**Section 1 — Getting Started (1 page)**
-- Login URL, password reset, role overview
+5. **Deliver** as `<lov-artifact path="EdZenAI-User-Manual_v2.pdf" mime_type="application/pdf">`
 
-**Section 2 — School Admin (3 pages)**
-- First 5 things after login (create academic year, add students, set up fees, add teachers, configure school profile)
-- Daily workflow (check dashboard → review pending fees → verify payment proofs → send reminders → respond to parent queries)
-- Common mistakes (skipping academic year setup, wrong class normalization, forgetting QR upload)
-- Tips (use bulk WhatsApp share, enable AI Help chatbot, monitor Birthday widget)
-- Screenshots: Dashboard, Students table, Fee Setup
-
-**Section 3 — Teacher (3 pages)**
-- First 5 (verify subject assignments, set up assessments, enter marks for current assessment, mark today's attendance, generate sample report card)
-- Daily workflow (mark attendance → enter marks after each test → review at-risk students → use AI Insights weekly)
-- Common mistakes (wrong assessment selected, not saving marks, ignoring red-border validation)
-- Tips (Mark All Present then adjust, use templates, check Student Monitoring badges)
-- Screenshots: Marks Entry, Attendance, AI Insights panel
-
-**Section 4 — Accountant (2 pages)**
-- First 5 (review fee structures, check pending list, record first payment, verify payment proof, generate monthly report)
-- Daily workflow (check pending proofs → verify & approve → record offline payments → send WhatsApp reminders → reconcile)
-- Common mistakes (recording wrong installment, forgetting receipt, missing partial payments)
-- Tips (use installment grouping, bulk reminders, monthly collection report)
-- Screenshots: Payment Recorder, Pending Proofs, Fee Reports
-
-**Section 5 — Student Progress Module (3-4 pages, detailed)**
-- How marks flow: Subjects → Assessments → Templates → Marks Entry → Report Cards
-- NEP 2020 stages (Foundational/Preparatory/Middle/Secondary)
-- Competency tracking (Red/Amber/Green/Blue)
-- AI Insights (4 sections: trends, gaps, interventions, predictions)
-- At-Risk monitoring (Healthy/Watch/Needs Attention/Critical)
-- Report card generation (individual + bulk class print)
-- Screenshots: Subjects, Assessments, Report Card, Competency view
-
-**Appendix — Parent View (1 page)**
-- What parents see via WhatsApp link
-- Tabs: Fees, Academic Progress
-- UPI deep-link payment flow
-- How staff can answer common parent questions
-
-**Back cover** — Support contact, edzenai.com, "Need help? Use the AI Help chatbot in the app"
-
-### Technical approach
-- ReportLab Platypus (SimpleDocTemplate, Paragraph, Image, Table, PageBreak)
-- Custom header/footer with page numbers
-- Indigo gradient cover page
-- Code blocks/tips in light-purple boxes
-- Screenshots auto-fitted to page width (max 6.5 inches)
-- A4 page size
-
-### Screenshots capture plan
-Login as `support@edzenai.com` → navigate to:
-- `/admin/dashboard`
-- `/admin/students`
-- `/admin/fee-setup`
-- `/admin/teachers`
-- `/progress/dashboard`
-- `/progress/marks-entry`
-- `/progress/attendance`
-- `/progress/report-cards`
-- `/view/:name/:token` (parent view sample)
-
-If a screen requires data the test account lacks, use a clean placeholder note in the manual instead.
-
-### QA
-After render: `pdftoppm -jpeg -r 120 manual.pdf qa` → view every page → fix overflow/clipping/contrast → re-render until clean. Report findings in final message.
+### Notes
+- Browser auth: I'll need the preview to be logged in, or I'll log in via the Login page using platform admin credentials.
+- If any screen requires school-specific data the platform admin doesn't have direct access to, I'll impersonate via the Stepping Stones template school where possible, or use a placeholder note for just that one screen.
+- Versioned filename (`_v2`) so you can compare against the original.
