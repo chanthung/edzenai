@@ -243,7 +243,9 @@ export default function Attendance() {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Daily Attendance</h1>
             <p className="text-sm text-muted-foreground">Mark attendance for your class</p>
           </div>
-          {attendanceData && attendanceData.length > 0 && (
+          <div className="flex items-center gap-2">
+            <AutoSaveIndicator status={autoSave.status} lastSavedAt={autoSave.lastSavedAt} />
+            {attendanceData && attendanceData.length > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -263,8 +265,25 @@ export default function Attendance() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Draft recovery */}
+        {autoSave.pendingDraft && (
+          <DraftRecoveryBanner
+            savedAt={autoSave.pendingDraft.savedAt}
+            onRestore={() => {
+              const draft = autoSave.restoreDraft();
+              if (draft) {
+                setLocalEntries(new Map(draft.data.entries));
+                setSelectedTime(draft.data.selectedTime);
+                setHasUnsavedChanges(true);
+              }
+            }}
+            onDismiss={autoSave.dismissDraft}
+          />
+        )}
 
         {/* Controls */}
         <Card>
