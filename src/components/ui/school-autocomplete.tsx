@@ -28,10 +28,11 @@ interface Suggestion {
 }
 
 let cachedKey: string | null = null;
-let cachedLoader: Promise<typeof google> | null = null;
+let cachedLoader: Loader | null = null;
+let placesLibPromise: Promise<google.maps.PlacesLibrary> | null = null;
 
-async function getMapsApi() {
-  if (cachedLoader) return cachedLoader;
+async function getPlacesLib(): Promise<google.maps.PlacesLibrary> {
+  if (placesLibPromise) return placesLibPromise;
   if (!cachedKey) {
     try {
       const { data } = await supabase.functions.invoke("get-maps-key");
@@ -41,13 +42,11 @@ async function getMapsApi() {
     }
   }
   if (!cachedKey) throw new Error("No Maps API key");
-  const loader = new Loader({
-    apiKey: cachedKey,
-    version: "weekly",
-    libraries: ["places"],
-  });
-  cachedLoader = loader.load();
-  return cachedLoader;
+  if (!cachedLoader) {
+    cachedLoader = new Loader({ apiKey: cachedKey, version: "weekly" });
+  }
+  placesLibPromise = cachedLoader.importLibrary("places") as Promise<google.maps.PlacesLibrary>;
+  return placesLibPromise;
 }
 
 export function SchoolAutocomplete({
@@ -88,9 +87,7 @@ export function SchoolAutocomplete({
     }
     setLoading(true);
     try {
-      await getMapsApi();
-      const { AutocompleteSessionToken, AutocompleteSuggestion } =
-        (await google.maps.importLibrary("places")) as google.maps.PlacesLibrary;
+      const { AutocompleteSessionToken, AutocompleteSuggestion } = await getPlacesLib();
 
       if (!sessionTokenRef.current) {
         sessionTokenRef.current = new AutocompleteSessionToken();
@@ -149,8 +146,7 @@ export function SchoolAutocomplete({
     setSuggestions([]);
     skipNextFetchRef.current = true;
     try {
-      await getMapsApi();
-      const { Place } = (await google.maps.importLibrary("places")) as google.maps.PlacesLibrary;
+      const { Place } = await getPlacesLib();
       const place = new Place({ id: s.placeId });
       await place.fetchFields({ fields: ["displayName", "addressComponents"] });
 
