@@ -13,6 +13,9 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
 import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
+import { SchoolAutocomplete } from "@/components/ui/school-autocomplete";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { INDIAN_STATES } from "@/lib/indian-states";
 
 export default function Signup() {
   const [step, setStep] = useState(1);
@@ -21,6 +24,8 @@ export default function Signup() {
 
   // Step 1 fields
   const [schoolName, setSchoolName] = useState("");
+  const [city, setCity] = useState("");
+  const [stateName, setStateName] = useState("");
   const [adminName, setAdminName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
