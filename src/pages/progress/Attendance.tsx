@@ -29,6 +29,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { exportToXLSX } from "@/lib/export-utils";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { AutoSaveIndicator, LastSavedLabel } from "@/components/auto-save/AutoSaveIndicator";
+import { DraftRecoveryBanner } from "@/components/auto-save/DraftRecoveryBanner";
+
+type AttendanceDraft = {
+  entries: Array<[string, AttendanceStatus]>;
+  selectedTime: string;
+};
 
 export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -162,22 +170,54 @@ export default function Attendance() {
     setHasUnsavedChanges(true);
   }, [attendanceData]);
 
-  const handleSave = async () => {
-    const entries = Array.from(localEntries.entries()).map(([student_id, status]) => ({
+  const performSave = useCallback(async (entriesMap: Map<string, AttendanceStatus>, time: string) => {
+    const entries = Array.from(entriesMap.entries()).map(([student_id, status]) => ({
       student_id,
       status,
     }));
+    await saveAttendance.mutateAsync({
+      date: selectedDate,
+      entries,
+      markedTime: time || null,
+      subjectId: selectedSubject || null,
+    });
+  }, [saveAttendance, selectedDate, selectedSubject]);
 
-    const markedTime = selectedTime || null;
+  // Auto-save scope: bound to date+class+section+subject so drafts don't cross-contaminate.
+  const autoSaveScopeKey = `${selectedDate}|${selectedClass}|${selectedSection}|${selectedSubject}`;
+  const autoSave = useAutoSave<AttendanceDraft>({
+    namespace: "attendance",
+    scopeKey: autoSaveScopeKey,
+    save: async (draft) => {
+      await performSave(new Map(draft.entries), draft.selectedTime);
+    },
+  });
 
+  const handleSave = async () => {
     try {
-      await saveAttendance.mutateAsync({ date: selectedDate, entries, markedTime, subjectId: selectedSubject || null });
-      toast({ title: "Attendance saved", description: `Saved for ${entries.length} students` });
+      await autoSave.manualSave();
+      // manualSave will invoke performSave via the configured save fn,
+      // but only if data was previously markDirty'd. To guarantee a save on
+      // first click before any auto-save tick, run performSave directly too:
+      if (autoSave.status !== "saved") {
+        await performSave(localEntries, selectedTime);
+        autoSave.markSaved();
+      }
+      toast({ title: "Attendance saved", description: `Saved for ${localEntries.size} students` });
       setHasUnsavedChanges(false);
     } catch (err: any) {
       toast({ title: "Error saving attendance", description: err.message, variant: "destructive" });
     }
   };
+
+  // Push changes into the auto-save manager whenever the in-memory map changes.
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    autoSave.markDirty({
+      entries: Array.from(localEntries.entries()),
+      selectedTime,
+    });
+  }, [localEntries, selectedTime, hasUnsavedChanges, autoSave]);
 
   // Summary counts
   const summary = useMemo(() => {
@@ -203,7 +243,9 @@ export default function Attendance() {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Daily Attendance</h1>
             <p className="text-sm text-muted-foreground">Mark attendance for your class</p>
           </div>
-          {attendanceData && attendanceData.length > 0 && (
+          <div className="flex items-center gap-2">
+            <AutoSaveIndicator status={autoSave.status} lastSavedAt={autoSave.lastSavedAt} />
+            {attendanceData && attendanceData.length > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -223,8 +265,25 @@ export default function Attendance() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Draft recovery */}
+        {autoSave.pendingDraft && (
+          <DraftRecoveryBanner
+            savedAt={autoSave.pendingDraft.savedAt}
+            onRestore={() => {
+              const draft = autoSave.restoreDraft();
+              if (draft) {
+                setLocalEntries(new Map(draft.data.entries));
+                setSelectedTime(draft.data.selectedTime);
+                setHasUnsavedChanges(true);
+              }
+            }}
+            onDismiss={autoSave.dismissDraft}
+          />
+        )}
 
         {/* Controls */}
         <Card>
@@ -353,7 +412,7 @@ export default function Attendance() {
 
         {/* Quick actions */}
         {attendanceData && attendanceData.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             <Button variant="outline" size="sm" onClick={markAllPresent} className="gap-1.5">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               Mark All Present
@@ -363,15 +422,18 @@ export default function Attendance() {
               selectedClass={selectedClass}
               selectedSection={selectedSection}
             />
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={saveAttendance.isPending || !hasUnsavedChanges}
-              className="gap-1.5 ml-auto"
-            >
-              <Save className="h-4 w-4" />
-              {saveAttendance.isPending ? 'Saving...' : 'Save Attendance'}
-            </Button>
+            <div className="ml-auto flex flex-col items-end">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={saveAttendance.isPending || !hasUnsavedChanges}
+                className="gap-1.5"
+              >
+                <Save className="h-4 w-4" />
+                {saveAttendance.isPending ? 'Saving...' : 'Save Attendance'}
+              </Button>
+              <LastSavedLabel lastSavedAt={autoSave.lastSavedAt} />
+            </div>
           </div>
         )}
 

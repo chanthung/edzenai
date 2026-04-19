@@ -34,6 +34,15 @@ import { PenLine, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CompetencyScoring } from "@/components/progress/CompetencyScoring";
 import { sortClassNames } from "@/lib/class-sort";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { AutoSaveIndicator, LastSavedLabel } from "@/components/auto-save/AutoSaveIndicator";
+import { DraftRecoveryBanner } from "@/components/auto-save/DraftRecoveryBanner";
+
+type MarksDraft = {
+  hasTemplate: boolean;
+  legacyMarks: Record<string, { marksObtained: string; maxMarks: string }>;
+  componentMarksInput: ComponentMarksMap;
+};
 
 // Per-student, per-component raw mark input
 type ComponentMarksMap = Record<string, Record<string, string>>; // studentId → componentId → value
@@ -257,6 +266,66 @@ export default function MarksEntry() {
     }
   };
 
+  // Auto-save: scope to the unique form context (year+class+section+assessment+subject)
+  const autoSaveScopeKey = `${effectiveYearId}|${selectedClass}|${selectedSection}|${selectedAssessmentId}|${selectedSubjectId}`;
+  const performSaveDraft = async (draft: MarksDraft) => {
+    // Reuse the same logic as handleSave but driven by the draft snapshot.
+    if (!selectedClass || !selectedSection || !selectedAssessmentId || !selectedSubjectId) return;
+    if (draft.hasTemplate) {
+      const marksToSave = filteredStudents
+        .filter(s => {
+          const cm = draft.componentMarksInput[s.id];
+          return cm && Object.values(cm).some(v => v !== "" && !isNaN(parseFloat(v)));
+        })
+        .map(s => {
+          const cm = draft.componentMarksInput[s.id] || {};
+          const inputs = templateComponents
+            .filter(c => cm[c.id] !== undefined && cm[c.id] !== "")
+            .map(c => ({ componentId: c.id, marksObtained: parseFloat(cm[c.id]) || 0 }));
+          const result = computeStudentResult(inputs, templateComponents, gradeMappings);
+          return {
+            student_id: s.id,
+            assessment_id: selectedAssessmentId,
+            subject_id: selectedSubjectId,
+            marks_obtained: result?.total ?? 0,
+            max_marks: result?.maxTotal ?? templateComponents.reduce((sum, c) => sum + Number(c.max_marks), 0),
+            componentMarks: inputs.map(i => ({ component_id: i.componentId, marks_obtained: i.marksObtained })),
+          };
+        });
+      if (marksToSave.length === 0) return;
+      await saveMarks.mutateAsync(marksToSave);
+    } else {
+      const marksToSave = Object.entries(draft.legacyMarks)
+        .filter(([, m]) => m.marksObtained && !isNaN(parseFloat(m.marksObtained)))
+        .map(([studentId, m]) => ({
+          student_id: studentId,
+          assessment_id: selectedAssessmentId,
+          subject_id: selectedSubjectId,
+          marks_obtained: parseFloat(m.marksObtained),
+          max_marks: parseFloat(m.maxMarks) || 100,
+        }));
+      if (marksToSave.length === 0) return;
+      await saveMarks.mutateAsync(marksToSave);
+    }
+  };
+
+  const autoSave = useAutoSave<MarksDraft>({
+    namespace: "marks",
+    scopeKey: autoSaveScopeKey,
+    save: performSaveDraft,
+  });
+
+  // Mark dirty on every input change to either map.
+  useEffect(() => {
+    if (!selectedAssessmentId || !selectedSubjectId) return;
+    const hasInput = hasTemplate
+      ? Object.values(componentMarksInput).some(cm => Object.values(cm).some(v => v !== ""))
+      : Object.values(legacyMarks).some(m => m.marksObtained !== "");
+    if (!hasInput) return;
+    autoSave.markDirty({ hasTemplate, legacyMarks, componentMarksInput });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legacyMarks, componentMarksInput, hasTemplate, selectedAssessmentId, selectedSubjectId]);
+
   const handleSave = async () => {
     if (!selectedClass || !selectedSection || !selectedAssessmentId || !selectedSubjectId) {
       toast({ title: "Please complete all selections", variant: "destructive" });
@@ -290,6 +359,7 @@ export default function MarksEntry() {
         return;
       }
       await saveMarks.mutateAsync(marksToSave);
+      autoSave.markSaved();
     } else {
       // Legacy mode
       const marksToSave = Object.entries(legacyMarks)
@@ -307,6 +377,7 @@ export default function MarksEntry() {
         return;
       }
       await saveMarks.mutateAsync(marksToSave);
+      autoSave.markSaved();
     }
   };
 
@@ -334,9 +405,26 @@ export default function MarksEntry() {
       />
 
       <div className="mt-6">
+        {/* Draft recovery */}
+        {autoSave.pendingDraft && (
+          <div className="mb-4">
+            <DraftRecoveryBanner
+              savedAt={autoSave.pendingDraft.savedAt}
+              onRestore={() => {
+                const draft = autoSave.restoreDraft();
+                if (draft) {
+                  setLegacyMarks(draft.data.legacyMarks);
+                  setComponentMarksInput(draft.data.componentMarksInput);
+                }
+              }}
+              onDismiss={autoSave.dismissDraft}
+            />
+          </div>
+        )}
+
         {/* Template indicator */}
         {selectedClass && (
-          <div className="mb-4">
+          <div className="mb-4 flex items-center gap-2 flex-wrap">
             {hasTemplate ? (
               <Badge variant="secondary" className="text-xs">
                 📋 Template loaded — {templateComponents.length} component(s), max {totalMaxMarks} marks
@@ -346,6 +434,7 @@ export default function MarksEntry() {
                 No template assigned — using simple marks entry
               </Badge>
             )}
+            <AutoSaveIndicator status={autoSave.status} lastSavedAt={autoSave.lastSavedAt} />
           </div>
         )}
 
@@ -420,10 +509,13 @@ export default function MarksEntry() {
         <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Enter Marks</CardTitle>
-            <Button onClick={handleSave} disabled={!canSave || saveMarks.isPending}>
-              {saveMarks.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              Save Marks
-            </Button>
+            <div className="flex flex-col items-end">
+              <Button onClick={handleSave} disabled={!canSave || saveMarks.isPending}>
+                {saveMarks.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Marks
+              </Button>
+              <LastSavedLabel lastSavedAt={autoSave.lastSavedAt} />
+            </div>
           </CardHeader>
           <CardContent>
             {!selectedClass ? (
