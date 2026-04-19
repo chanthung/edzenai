@@ -359,6 +359,7 @@ export default function MarksEntry() {
         return;
       }
       await saveMarks.mutateAsync(marksToSave);
+      autoSave.markSaved();
     } else {
       // Legacy mode
       const marksToSave = Object.entries(legacyMarks)
@@ -376,6 +377,7 @@ export default function MarksEntry() {
         return;
       }
       await saveMarks.mutateAsync(marksToSave);
+      autoSave.markSaved();
     }
   };
 
