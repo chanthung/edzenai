@@ -405,9 +405,26 @@ export default function MarksEntry() {
       />
 
       <div className="mt-6">
+        {/* Draft recovery */}
+        {autoSave.pendingDraft && (
+          <div className="mb-4">
+            <DraftRecoveryBanner
+              savedAt={autoSave.pendingDraft.savedAt}
+              onRestore={() => {
+                const draft = autoSave.restoreDraft();
+                if (draft) {
+                  setLegacyMarks(draft.data.legacyMarks);
+                  setComponentMarksInput(draft.data.componentMarksInput);
+                }
+              }}
+              onDismiss={autoSave.dismissDraft}
+            />
+          </div>
+        )}
+
         {/* Template indicator */}
         {selectedClass && (
-          <div className="mb-4">
+          <div className="mb-4 flex items-center gap-2 flex-wrap">
             {hasTemplate ? (
               <Badge variant="secondary" className="text-xs">
                 📋 Template loaded — {templateComponents.length} component(s), max {totalMaxMarks} marks
@@ -417,6 +434,7 @@ export default function MarksEntry() {
                 No template assigned — using simple marks entry
               </Badge>
             )}
+            <AutoSaveIndicator status={autoSave.status} lastSavedAt={autoSave.lastSavedAt} />
           </div>
         )}
 
@@ -491,10 +509,13 @@ export default function MarksEntry() {
         <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Enter Marks</CardTitle>
-            <Button onClick={handleSave} disabled={!canSave || saveMarks.isPending}>
-              {saveMarks.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              Save Marks
-            </Button>
+            <div className="flex flex-col items-end">
+              <Button onClick={handleSave} disabled={!canSave || saveMarks.isPending}>
+                {saveMarks.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Marks
+              </Button>
+              <LastSavedLabel lastSavedAt={autoSave.lastSavedAt} />
+            </div>
           </CardHeader>
           <CardContent>
             {!selectedClass ? (
