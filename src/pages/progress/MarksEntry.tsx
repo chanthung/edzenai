@@ -266,6 +266,66 @@ export default function MarksEntry() {
     }
   };
 
+  // Auto-save: scope to the unique form context (year+class+section+assessment+subject)
+  const autoSaveScopeKey = `${effectiveYearId}|${selectedClass}|${selectedSection}|${selectedAssessmentId}|${selectedSubjectId}`;
+  const performSaveDraft = async (draft: MarksDraft) => {
+    // Reuse the same logic as handleSave but driven by the draft snapshot.
+    if (!selectedClass || !selectedSection || !selectedAssessmentId || !selectedSubjectId) return;
+    if (draft.hasTemplate) {
+      const marksToSave = filteredStudents
+        .filter(s => {
+          const cm = draft.componentMarksInput[s.id];
+          return cm && Object.values(cm).some(v => v !== "" && !isNaN(parseFloat(v)));
+        })
+        .map(s => {
+          const cm = draft.componentMarksInput[s.id] || {};
+          const inputs = templateComponents
+            .filter(c => cm[c.id] !== undefined && cm[c.id] !== "")
+            .map(c => ({ componentId: c.id, marksObtained: parseFloat(cm[c.id]) || 0 }));
+          const result = computeStudentResult(inputs, templateComponents, gradeMappings);
+          return {
+            student_id: s.id,
+            assessment_id: selectedAssessmentId,
+            subject_id: selectedSubjectId,
+            marks_obtained: result?.total ?? 0,
+            max_marks: result?.maxTotal ?? templateComponents.reduce((sum, c) => sum + Number(c.max_marks), 0),
+            componentMarks: inputs.map(i => ({ component_id: i.componentId, marks_obtained: i.marksObtained })),
+          };
+        });
+      if (marksToSave.length === 0) return;
+      await saveMarks.mutateAsync(marksToSave);
+    } else {
+      const marksToSave = Object.entries(draft.legacyMarks)
+        .filter(([, m]) => m.marksObtained && !isNaN(parseFloat(m.marksObtained)))
+        .map(([studentId, m]) => ({
+          student_id: studentId,
+          assessment_id: selectedAssessmentId,
+          subject_id: selectedSubjectId,
+          marks_obtained: parseFloat(m.marksObtained),
+          max_marks: parseFloat(m.maxMarks) || 100,
+        }));
+      if (marksToSave.length === 0) return;
+      await saveMarks.mutateAsync(marksToSave);
+    }
+  };
+
+  const autoSave = useAutoSave<MarksDraft>({
+    namespace: "marks",
+    scopeKey: autoSaveScopeKey,
+    save: performSaveDraft,
+  });
+
+  // Mark dirty on every input change to either map.
+  useEffect(() => {
+    if (!selectedAssessmentId || !selectedSubjectId) return;
+    const hasInput = hasTemplate
+      ? Object.values(componentMarksInput).some(cm => Object.values(cm).some(v => v !== ""))
+      : Object.values(legacyMarks).some(m => m.marksObtained !== "");
+    if (!hasInput) return;
+    autoSave.markDirty({ hasTemplate, legacyMarks, componentMarksInput });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legacyMarks, componentMarksInput, hasTemplate, selectedAssessmentId, selectedSubjectId]);
+
   const handleSave = async () => {
     if (!selectedClass || !selectedSection || !selectedAssessmentId || !selectedSubjectId) {
       toast({ title: "Please complete all selections", variant: "destructive" });
