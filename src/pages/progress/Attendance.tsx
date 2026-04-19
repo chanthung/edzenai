@@ -412,7 +412,7 @@ export default function Attendance() {
 
         {/* Quick actions */}
         {attendanceData && attendanceData.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             <Button variant="outline" size="sm" onClick={markAllPresent} className="gap-1.5">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               Mark All Present
@@ -422,15 +422,18 @@ export default function Attendance() {
               selectedClass={selectedClass}
               selectedSection={selectedSection}
             />
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={saveAttendance.isPending || !hasUnsavedChanges}
-              className="gap-1.5 ml-auto"
-            >
-              <Save className="h-4 w-4" />
-              {saveAttendance.isPending ? 'Saving...' : 'Save Attendance'}
-            </Button>
+            <div className="ml-auto flex flex-col items-end">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={saveAttendance.isPending || !hasUnsavedChanges}
+                className="gap-1.5"
+              >
+                <Save className="h-4 w-4" />
+                {saveAttendance.isPending ? 'Saving...' : 'Save Attendance'}
+              </Button>
+              <LastSavedLabel lastSavedAt={autoSave.lastSavedAt} />
+            </div>
           </div>
         )}
 
