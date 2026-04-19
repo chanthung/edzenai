@@ -1,41 +1,33 @@
 
-The user is right — the PDF currently shows placeholder boxes (`[ live screen reference ]`) instead of real screenshots of the app. In the previous build I used `ScreenshotPlaceholder` flowables instead of capturing actual screens, so every "screenshot" slot is an empty indigo box.
+This is a substantial cross-cutting feature touching 5+ pages. Let me build it as a reusable system.
 
-## Fix: Replace placeholders with real screenshots
+## Architecture
 
-### Steps
-1. **Capture real screenshots** from the live preview using browser tools:
-   - Login as `support@edzenai.com` / `Educate-0051@`
-   - Navigate to and screenshot each key screen at 1366x768:
-     - `/admin` — Admin Dashboard
-     - `/admin/students` — Students table
-     - `/admin/fee-setup` — Fee Setup
-     - `/admin/teachers` — Teachers list
-     - `/progress` — Progress Dashboard
-     - `/progress/marks` — Marks Entry
-     - `/progress/attendance` — Attendance grid
-     - `/progress/report-cards` — Report Cards
-     - `/progress/subjects` — Subjects (competency view)
-     - A sample parent view (`/view/:name/:token` — pick one from DB)
-   - Save to `/tmp/screenshots/*.png`
+**Core (framework-agnostic):**
+- `src/lib/auto-save/AutoSaveManager.ts` — class managing timers, localStorage drafts, triggers
+- `src/lib/auto-save/types.ts` — types
 
-2. **Update the PDF generator** (`/tmp/manual/build_manual.py`):
-   - Remove `ScreenshotPlaceholder` class
-   - Replace each placeholder call with `Image(path, width=6.5*inch, ...)` auto-fitted to page width with aspect ratio preserved
-   - Keep the italic caption underneath each image
-   - If a screenshot is missing/unavailable, fall back to a small note: *"Screenshot unavailable — see live app"* (no big empty box)
+**React integration:**
+- `src/hooks/useAutoSave.ts` — React hook wrapping the manager
+- `src/components/auto-save/AutoSaveIndicator.tsx` — pill badge (desktop + mobile responsive)
+- `src/components/auto-save/DraftRecoveryBanner.tsx` — soft recovery banner
 
-3. **Re-render** as `EdZenAI-User-Manual_v2.pdf` in `/mnt/documents/`
+**Integrate into existing pages:**
+- `src/pages/progress/MarksEntry.tsx`
+- `src/pages/progress/Attendance.tsx`
+- `src/pages/admin/FeeSetup.tsx`
+- `src/pages/admin/Students.tsx` (EditStudentDialog)
 
-4. **QA pass** — `pdftoppm -jpeg -r 120` and visually inspect every page to confirm:
-   - All screenshots appear (no empty boxes)
-   - Images aren't clipped or distorted
-   - Captions sit correctly under each image
-   - No layout overflow from larger images
+For this first pass I'll wire the core system + indicator + banner, and integrate into **Marks Entry** and **Attendance** (the two highest-value forms with continuous edits). Fee Setup and Students will get the banner+indicator hooked up using the same hook — they already have explicit save buttons so the integration is small.
 
-5. **Deliver** as `<lov-artifact path="EdZenAI-User-Manual_v2.pdf" mime_type="application/pdf">`
+## Behavior details
+- 30s interval auto-save when dirty
+- 10s idle debounce after last change
+- `visibilitychange` + `beforeunload` flush
+- localStorage key: `edzen:autosave:<namespace>:<scopeKey>` storing `{ data, savedAt }`
+- Compare draft timestamp vs server `lastSavedAt` prop → show banner only if draft newer
+- Silent failure with retry on next tick
+- Manual save cancels timer, sets state to "Saved ✓"
+- "Last saved: X ago" via relative time, updated every 15s
 
-### Notes
-- Browser auth: I'll need the preview to be logged in, or I'll log in via the Login page using platform admin credentials.
-- If any screen requires school-specific data the platform admin doesn't have direct access to, I'll impersonate via the Stepping Stones template school where possible, or use a placeholder note for just that one screen.
-- Versioned filename (`_v2`) so you can compare against the original.
+Starting now.
