@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Loader } from "@googlemaps/js-api-loader";
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,7 @@ interface Suggestion {
 }
 
 let cachedKey: string | null = null;
-let cachedLoader: Loader | null = null;
+let optionsSet = false;
 let placesLibPromise: Promise<google.maps.PlacesLibrary> | null = null;
 
 async function getPlacesLib(): Promise<google.maps.PlacesLibrary> {
@@ -42,10 +42,11 @@ async function getPlacesLib(): Promise<google.maps.PlacesLibrary> {
     }
   }
   if (!cachedKey) throw new Error("No Maps API key");
-  if (!cachedLoader) {
-    cachedLoader = new Loader({ apiKey: cachedKey, version: "weekly" });
+  if (!optionsSet) {
+    setOptions({ key: cachedKey, v: "weekly" });
+    optionsSet = true;
   }
-  placesLibPromise = cachedLoader.importLibrary("places") as Promise<google.maps.PlacesLibrary>;
+  placesLibPromise = importLibrary("places");
   return placesLibPromise;
 }
 
