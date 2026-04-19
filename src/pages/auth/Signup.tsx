@@ -44,7 +44,7 @@ export default function Signup() {
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schoolName || !adminName || !email || !phone || !password || !confirmPassword) {
+    if (!schoolName || !city || !stateName || !adminName || !email || !phone || !password || !confirmPassword) {
       toast.error("Please fill all fields");
       return;
     }

@@ -13,6 +13,9 @@ import edzenIcon from "@/assets/edzen-icon.png";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
 import { DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "@/hooks/useSubscriptionPricing";
+import { SchoolAutocomplete } from "@/components/ui/school-autocomplete";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { INDIAN_STATES } from "@/lib/indian-states";
 
 export default function Onboard() {
   const [step, setStep] = useState(1);
@@ -22,6 +25,8 @@ export default function Onboard() {
 
   // Pre-fill from Google profile
   const [schoolName, setSchoolName] = useState("");
+  const [city, setCity] = useState("");
+  const [stateName, setStateName] = useState("");
   const [adminName, setAdminName] = useState("");
   const [phone, setPhone] = useState("");
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("pro");
@@ -41,6 +46,10 @@ export default function Onboard() {
       toast.error("Please enter your school name");
       return;
     }
+    if (!city || !stateName) {
+      toast.error("Please enter city and state");
+      return;
+    }
     setStep(2);
   };
 
@@ -48,7 +57,7 @@ export default function Onboard() {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("onboard-school", {
-        body: { schoolName, adminName, phone, selectedPlan },
+        body: { schoolName, adminName, phone, city, state: stateName, selectedPlan },
       });
 
       if (error || !data?.success) {
@@ -112,7 +121,36 @@ export default function Onboard() {
               <form onSubmit={handleStep1} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="schoolName">School Name</Label>
-                  <Input id="schoolName" placeholder="Delhi Public School" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} required />
+                  <SchoolAutocomplete
+                    id="schoolName"
+                    value={schoolName}
+                    onChange={setSchoolName}
+                    onPlaceSelected={({ name, city: c, state: s }) => {
+                      setSchoolName(name);
+                      if (c) setCity(c);
+                      if (s) setStateName(s);
+                    }}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Select value={stateName} onValueChange={setStateName}>
+                      <SelectTrigger id="state">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {INDIAN_STATES.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="adminName">Your Name</Label>
