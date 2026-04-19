@@ -71,6 +71,8 @@ export default function Signup() {
             full_name: adminName,
             phone,
             school_name: schoolName,
+            city,
+            state: stateName,
             selected_plan: selectedPlan,
           },
         },
@@ -164,7 +166,36 @@ export default function Signup() {
               <form onSubmit={handleStep1} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="schoolName">School Name</Label>
-                  <Input id="schoolName" placeholder="Delhi Public School" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} required />
+                  <SchoolAutocomplete
+                    id="schoolName"
+                    value={schoolName}
+                    onChange={setSchoolName}
+                    onPlaceSelected={({ name, city: c, state: s }) => {
+                      setSchoolName(name);
+                      if (c) setCity(c);
+                      if (s) setStateName(s);
+                    }}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Select value={stateName} onValueChange={setStateName}>
+                      <SelectTrigger id="state">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {INDIAN_STATES.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="adminName">Admin Name</Label>
