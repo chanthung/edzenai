@@ -170,22 +170,54 @@ export default function Attendance() {
     setHasUnsavedChanges(true);
   }, [attendanceData]);
 
-  const handleSave = async () => {
-    const entries = Array.from(localEntries.entries()).map(([student_id, status]) => ({
+  const performSave = useCallback(async (entriesMap: Map<string, AttendanceStatus>, time: string) => {
+    const entries = Array.from(entriesMap.entries()).map(([student_id, status]) => ({
       student_id,
       status,
     }));
+    await saveAttendance.mutateAsync({
+      date: selectedDate,
+      entries,
+      markedTime: time || null,
+      subjectId: selectedSubject || null,
+    });
+  }, [saveAttendance, selectedDate, selectedSubject]);
 
-    const markedTime = selectedTime || null;
+  // Auto-save scope: bound to date+class+section+subject so drafts don't cross-contaminate.
+  const autoSaveScopeKey = `${selectedDate}|${selectedClass}|${selectedSection}|${selectedSubject}`;
+  const autoSave = useAutoSave<AttendanceDraft>({
+    namespace: "attendance",
+    scopeKey: autoSaveScopeKey,
+    save: async (draft) => {
+      await performSave(new Map(draft.entries), draft.selectedTime);
+    },
+  });
 
+  const handleSave = async () => {
     try {
-      await saveAttendance.mutateAsync({ date: selectedDate, entries, markedTime, subjectId: selectedSubject || null });
-      toast({ title: "Attendance saved", description: `Saved for ${entries.length} students` });
+      await autoSave.manualSave();
+      // manualSave will invoke performSave via the configured save fn,
+      // but only if data was previously markDirty'd. To guarantee a save on
+      // first click before any auto-save tick, run performSave directly too:
+      if (autoSave.status !== "saved") {
+        await performSave(localEntries, selectedTime);
+        autoSave.markSaved();
+      }
+      toast({ title: "Attendance saved", description: `Saved for ${localEntries.size} students` });
       setHasUnsavedChanges(false);
     } catch (err: any) {
       toast({ title: "Error saving attendance", description: err.message, variant: "destructive" });
     }
   };
+
+  // Push changes into the auto-save manager whenever the in-memory map changes.
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    autoSave.markDirty({
+      entries: Array.from(localEntries.entries()),
+      selectedTime,
+    });
+  }, [localEntries, selectedTime, hasUnsavedChanges, autoSave]);
 
   // Summary counts
   const summary = useMemo(() => {
