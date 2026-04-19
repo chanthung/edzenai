@@ -29,6 +29,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { exportToXLSX } from "@/lib/export-utils";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { AutoSaveIndicator, LastSavedLabel } from "@/components/auto-save/AutoSaveIndicator";
+import { DraftRecoveryBanner } from "@/components/auto-save/DraftRecoveryBanner";
+
+type AttendanceDraft = {
+  entries: Array<[string, AttendanceStatus]>;
+  selectedTime: string;
+};
 
 export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
