@@ -12,39 +12,36 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTeachers } from "@/hooks/useTeachers";
-import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
-import { useTeacherClasses, type TeacherClassAssignment } from "@/hooks/useTeacherClasses";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useTeachers, type InviteAssignment } from "@/hooks/useTeachers";
 import { useSubjectsWithClasses } from "@/hooks/progress/useSubjects";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { EditTeacherDialog } from "@/components/admin/EditTeacherDialog";
-import { Plus, UserPlus, Mail, User, Pencil, BookOpen, School } from "lucide-react";
-import { toast } from "sonner";
+import { Plus, UserPlus, Mail, User, Pencil, BookOpen, School, Send, Phone, RefreshCw, X, Clock } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+type DeliveryMethod = 'email' | 'whatsapp' | 'both';
 
 export default function Teachers() {
-  const { teachers, isLoading, createTeacher, updateTeacher } = useTeachers();
+  const { teachers, invites, isLoading, inviteUser, updateTeacher, resendInvite, cancelInvite } = useTeachers();
   const { isRestricted } = useSubscriptionStatus();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
-    confirmPassword: "",
     role: "teacher" as "teacher" | "accountant",
+    delivery: "email" as DeliveryMethod,
+    phone: "",
   });
   const [addSelectedSubjects, setAddSelectedSubjects] = useState<string[]>([]);
   const [addSelectedClassSections, setAddSelectedClassSections] = useState<Set<string>>(new Set());
 
   const { data: subjects = [], isLoading: loadingSubjects } = useSubjectsWithClasses();
   const { data: allStudents = [] } = useResolvedStudents();
-  const { updateAssignments } = useTeacherSubjects();
-  const { updateAssignments: updateClassAssignments } = useTeacherClasses();
 
-  // Derive class-section combos
   const classSectionOptions = useMemo(() => {
     const map = new Map<string, Set<string>>();
     allStudents.forEach(s => {
@@ -61,13 +58,8 @@ export default function Teachers() {
     });
     for (const cls of sortedClasses) {
       const sections = Array.from(map.get(cls)!).sort();
-      if (sections.length === 0) {
-        result.push({ class_name: cls, section: null, key: `${cls}::` });
-      } else {
-        for (const sec of sections) {
-          result.push({ class_name: cls, section: sec, key: `${cls}::${sec}` });
-        }
-      }
+      if (sections.length === 0) result.push({ class_name: cls, section: null, key: `${cls}::` });
+      else for (const sec of sections) result.push({ class_name: cls, section: sec, key: `${cls}::${sec}` });
     }
     return result;
   }, [allStudents]);
@@ -75,50 +67,42 @@ export default function Teachers() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<typeof teachers[0] | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) return;
-
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-    if (formData.password.length < 6) {
-      toast.error("Password must be at least 6 characters");
-      return;
-    }
-
-    const result = await createTeacher.mutateAsync({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role,
-    });
-
-    // After creation, assign subjects and classes if role is teacher
-    const newTeacherId = result?.teacherId;
-    if (newTeacherId && formData.role === 'teacher') {
-      if (addSelectedSubjects.length > 0) {
-        // Convert flat subject IDs to subject-class assignments using subject_class_assignments
-        const subjectClassAssignments = subjects
-          .filter(s => addSelectedSubjects.includes(s.id))
-          .flatMap(s => s.assigned_classes.map(cn => ({ subject_id: s.id, class_name: cn })));
-        if (subjectClassAssignments.length > 0) {
-          await updateAssignments.mutateAsync({ teacherId: newTeacherId, assignments: subjectClassAssignments });
-        }
-      }
-      if (addSelectedClassSections.size > 0) {
-        const assignments: TeacherClassAssignment[] = Array.from(addSelectedClassSections).map(key => {
-          const [cls, sec] = key.split('::');
-          return { class_name: cls, section: sec || null };
-        });
-        await updateClassAssignments.mutateAsync({ teacherId: newTeacherId, assignments });
-      }
-    }
-
-    setFormData({ name: "", email: "", password: "", confirmPassword: "", role: "teacher" });
+  const resetForm = () => {
+    setFormData({ name: "", email: "", role: "teacher", delivery: "email", phone: "" });
     setAddSelectedSubjects([]);
     setAddSelectedClassSections(new Set());
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim() || !formData.email.trim()) return;
+    if ((formData.delivery === 'whatsapp' || formData.delivery === 'both') && !formData.phone.trim()) return;
+
+    const assignments: InviteAssignment[] = [];
+    if (formData.role === 'teacher') {
+      // Subject-class assignments
+      subjects
+        .filter(s => addSelectedSubjects.includes(s.id))
+        .forEach(s => s.assigned_classes.forEach(cn => {
+          assignments.push({ type: 'subject', subject_id: s.id, class_name: cn });
+        }));
+      // Class assignments
+      Array.from(addSelectedClassSections).forEach(key => {
+        const [class_name, section] = key.split('::');
+        assignments.push({ type: 'class', class_name, section: section || null });
+      });
+    }
+
+    await inviteUser.mutateAsync({
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
+      role: formData.role,
+      delivery_method: formData.delivery,
+      phone: formData.phone.trim() || null,
+      assignments,
+    });
+
+    resetForm();
     setDialogOpen(false);
   };
 
@@ -131,50 +115,41 @@ export default function Teachers() {
     setEditDialogOpen(true);
   };
 
-  const toggleAddSubject = (id: string) => {
+  const toggleAddSubject = (id: string) =>
     setAddSelectedSubjects(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
+  const toggleAddClassSection = (key: string) => setAddSelectedClassSections(prev => {
+    const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next;
+  });
 
-  const toggleAddClassSection = (key: string) => {
-    setAddSelectedClassSections(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
-
-  const roleLabel = (role: string) => {
-    if (role === 'accountant') return 'Accountant';
-    return 'Teacher';
-  };
+  const roleLabel = (role: string) => role === 'accountant' ? 'Accountant' : 'Teacher';
+  const showPhone = formData.delivery === 'whatsapp' || formData.delivery === 'both';
 
   return (
     <AdminLayout>
-      <PageHeader title="Users" description="Manage teacher and accountant accounts for your school">
+      <PageHeader title="Users" description="Invite teachers and accountants — they'll set their own password">
         <RestrictedButton isRestricted={isRestricted}>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
               <Button disabled={isRestricted}><Plus className="h-4 w-4 mr-2" />Add User</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col overflow-hidden">
-              <DialogHeader><DialogTitle>Add New User</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Invite New User</DialogTitle>
+              </DialogHeader>
               <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-4 py-2">
-                {/* Role Selector */}
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>
-                  <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v as "teacher" | "accountant" })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
+                  <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v as any })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="teacher">Teacher</SelectItem>
                       <SelectItem value="accountant">Accountant</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    {formData.role === 'teacher' 
-                      ? "Teachers can access Student Progress, marks entry, and attendance."
-                      : "Accountants can access fee management, payments, and student records."}
+                    {formData.role === 'teacher'
+                      ? "Teachers access Student Progress, marks, and attendance."
+                      : "Accountants access fee management, payments, and student records."}
                   </p>
                 </div>
 
@@ -185,6 +160,7 @@ export default function Teachers() {
                     <Input id="name" placeholder="Enter name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="pl-10" required />
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
                   <div className="relative">
@@ -192,26 +168,30 @@ export default function Teachers() {
                     <Input id="email" type="email" placeholder="user@school.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="pl-10" required />
                   </div>
                 </div>
+
+                {/* Delivery method */}
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <PasswordInput id="password" placeholder="Create a password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required minLength={6} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <PasswordInput id="confirmPassword" placeholder="Confirm password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} required minLength={6} className={formData.confirmPassword && formData.password !== formData.confirmPassword ? "border-destructive focus-visible:ring-destructive" : formData.confirmPassword && formData.password === formData.confirmPassword ? "border-emerald-500 focus-visible:ring-emerald-500" : ""} />
-                  {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                    <p className="text-xs text-destructive">Passwords do not match</p>
-                  )}
-                  {formData.confirmPassword && formData.password === formData.confirmPassword && (
-                    <p className="text-xs text-emerald-600">Passwords match</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">Minimum 6 characters. Share this password securely.</p>
+                  <Label>Send invite via</Label>
+                  <ToggleGroup type="single" value={formData.delivery} onValueChange={(v) => v && setFormData({ ...formData, delivery: v as DeliveryMethod })} className="justify-start">
+                    <ToggleGroupItem value="email" className="gap-2"><Mail className="h-4 w-4" />Email</ToggleGroupItem>
+                    <ToggleGroupItem value="whatsapp" className="gap-2"><Phone className="h-4 w-4" />WhatsApp</ToggleGroupItem>
+                    <ToggleGroupItem value="both" className="gap-2">Both</ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
 
-                {/* Only show class/subject assignments for teachers */}
+                {showPhone && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">WhatsApp Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input id="phone" type="tel" placeholder="10-digit mobile" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="pl-10" required={showPhone} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">+91 will be added automatically for 10-digit numbers.</p>
+                  </div>
+                )}
+
                 {formData.role === 'teacher' && (
                   <>
-                    {/* Class/Section Assignments */}
                     <div className="space-y-2">
                       <Label><School className="h-4 w-4 inline mr-1" />Assign Classes & Sections</Label>
                       {classSectionOptions.length === 0 ? (
@@ -228,7 +208,6 @@ export default function Teachers() {
                       )}
                     </div>
 
-                    {/* Subject Assignments */}
                     <div className="space-y-2">
                       <Label><BookOpen className="h-4 w-4 inline mr-1" />Assign Subjects</Label>
                       {loadingSubjects ? (
@@ -254,8 +233,9 @@ export default function Teachers() {
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit" disabled={createTeacher.isPending}>
-                    {createTeacher.isPending ? "Creating..." : `Create ${roleLabel(formData.role)}`}
+                  <Button type="submit" disabled={inviteUser.isPending} className="gap-2">
+                    <Send className="h-4 w-4" />
+                    {inviteUser.isPending ? "Sending..." : "Send Invite"}
                   </Button>
                 </div>
               </form>
@@ -264,17 +244,80 @@ export default function Teachers() {
         </RestrictedButton>
       </PageHeader>
 
+      {/* Pending invites */}
+      {invites.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4" /> Pending Invites ({invites.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Sent via</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invites.map(inv => {
+                  const expired = new Date(inv.expires_at) < new Date();
+                  return (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-medium">
+                        <div>{inv.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Last sent {formatDistanceToNow(new Date(inv.last_sent_at), { addSuffix: true })}
+                        </div>
+                      </TableCell>
+                      <TableCell>{inv.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={inv.role === 'accountant' ? 'border-amber-500 text-amber-700' : 'border-blue-500 text-blue-700'}>
+                          {roleLabel(inv.role)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {expired ? (
+                          <Badge variant="destructive">Expired</Badge>
+                        ) : (
+                          <Badge variant="secondary">Invited</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="capitalize text-sm text-muted-foreground">{inv.delivery_method}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => resendInvite.mutate(inv.id)} disabled={resendInvite.isPending}>
+                            <RefreshCw className="h-3.5 w-3.5" /> Resend
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => cancelInvite.mutate(inv.id)} disabled={cancelInvite.isPending}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
-        <CardHeader><CardTitle>User Accounts</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Active Users</CardTitle></CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
             </div>
           ) : teachers.length === 0 ? (
-            <EmptyState icon={UserPlus} title="No users yet" description="Add teachers or accountants to help manage your school." />
+            <EmptyState icon={UserPlus} title="No active users yet" description="Invite teachers or accountants to help manage your school." />
           ) : (
             <Table>
               <TableHeader>
@@ -335,7 +378,6 @@ export default function Teachers() {
               <li>Can view and manage subjects, assessments, and marks</li>
               <li>Can mark daily attendance for assigned classes</li>
             </ul>
-            <p className="mt-1">Teachers <strong>cannot</strong> access fee management, student records, or school settings.</p>
           </div>
           <div>
             <p className="font-medium text-foreground mb-1">Accountant</p>
@@ -344,7 +386,6 @@ export default function Teachers() {
               <li>Can create/update fee structures and mark payments</li>
               <li>Can send WhatsApp reminders and view fee reports</li>
             </ul>
-            <p className="mt-1">Accountants <strong>cannot</strong> access the Student Progress module.</p>
           </div>
         </CardContent>
       </Card>
