@@ -16,8 +16,14 @@ import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "
 import { SchoolAutocomplete } from "@/components/ui/school-autocomplete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { INDIAN_STATES } from "@/lib/indian-states";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Signup() {
+  usePageMeta({
+    title: "Start Free Trial – EdZen AI School Management",
+    description: "Sign up for EdZen AI's 30-day free Pro trial. No credit card required. Manage fees, attendance, and AI-powered student progress.",
+    canonical: "/signup",
+  });
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);

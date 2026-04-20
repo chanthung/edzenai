@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { GraduationCap, Loader2, Mail, RefreshCw } from "lucide-react";
 import edzenIcon from "@/assets/edzen-icon.png";
 import { PasswordInput } from "@/components/ui/password-input";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -21,6 +22,12 @@ export default function Login() {
   const [resending, setResending] = useState(false);
   const { signIn, signInWithOAuth, user, session } = useAuth();
   const navigate = useNavigate();
+
+  usePageMeta({
+    title: "Sign In – EdZen AI School Management",
+    description: "Sign in to EdZen AI to manage school fees, student progress, attendance, and NEP 2020 report cards.",
+    canonical: "/login",
+  });
 
   // Role-based redirection when session is detected
   useEffect(() => {
