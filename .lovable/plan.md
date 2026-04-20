@@ -1,52 +1,39 @@
 
-User chose to add visible City + State fields to signup form, plus Google Places autocomplete on School Name.
+The user pasted a snippet showing the **legacy** `google.maps.places.Autocomplete` widget with a working API key (`AIzaSyAYke-5Iq4_4JAdjOOK9bWVhFudSQsP3rA`). They want me to use this approach instead of the new `AutocompleteSuggestion` API I'm currently using — which is failing with `InvalidKey`.
+
+Two issues to address:
+1. **API key**: The provided key works (user tested it). The current stored secret is likely wrong/truncated. I'll update the `GOOGLE_MAPS_API_KEY` secret with this value.
+2. **API choice**: The legacy `Autocomplete` widget is simpler and works with broader key permissions. It's deprecated by Google (March 2025) but still functional for years. Given the new API keeps failing and the user has a working snippet using the legacy one, switch to it.
 
 ## Plan
 
-### 1. Request Google Maps API key
-Need `GOOGLE_MAPS_API_KEY` (Places API enabled, restricted by HTTP referrer to edzenai.com domains). This is a frontend key — exposed in client bundle, secured via referrer restrictions in Google Cloud Console.
+### 1. Update API key
+Update `GOOGLE_MAPS_API_KEY` secret to `AIzaSyAYke-5Iq4_4JAdjOOK9bWVhFudSQsP3rA` so the existing `get-maps-key` edge function returns a working key.
 
-### 2. New reusable component: `src/components/ui/school-autocomplete.tsx`
-- Wraps existing `Input` (same shadcn styling — rounded-xl, border-input, h-10)
-- Loads Places API via `@googlemaps/js-api-loader` once on mount
-- Debounced (250ms) calls to `AutocompleteSuggestion.fetchAutocompleteSuggestions` with:
-  - `input`: `"private school " + userText`
-  - `includedPrimaryTypes: ['school']`
-  - `includedRegionCodes: ['in']`
-- Slices to **5 results max**
-- Custom dropdown using Popover styling: `bg-popover border border-input rounded-xl shadow-md mt-1`, items with `hover:bg-accent`, min-h-10 tap targets
-- On select: fetches Place details (`displayName`, `addressComponents`), extracts:
-  - **City** ← `locality` (fallback: `administrative_area_level_2`)
-  - **State** ← `administrative_area_level_1`
-- Fires `onPlaceSelected({ name, city, state })`
-- Graceful fallback to plain Input if API key missing or load fails (no console spam)
+### 2. Rewrite `src/components/ui/school-autocomplete.tsx`
+Replace the new-API implementation with the legacy `Autocomplete` widget approach, but keep our custom dropdown styling so it matches shadcn inputs (Google's default dropdown looks foreign).
 
-### 3. Update `src/pages/auth/Signup.tsx`
-- Add two new state vars: `city`, `state`
-- Replace School Name `Input` with `<SchoolAutocomplete>`
-- Add City field (plain Input, free text, editable)
-- Add State field — use existing `INDIAN_STATES` Select (consistent with `CreateSchoolDialog`)
-- Both fields auto-fill on Place selection but remain user-editable
-- Pass `city`, `state` in `signUp` user metadata so onboarding edge function can persist them later
+Approach:
+- Load Maps JS via `@googlemaps/js-api-loader` with `libraries: ['places']`
+- Use `google.maps.places.AutocompleteService` (legacy, works with basic Places API enablement) for predictions
+- Use `google.maps.places.PlacesService` for details (city/state extraction)
+- Filter: `types: ['school']`, `componentRestrictions: { country: 'in' }`, prepend "private school" to bias
+- Limit to 5 suggestions
+- Keep custom dropdown UI (rounded-xl, border-input, popover styling, MapPin icons)
+- On select: extract `name`, `locality`/`administrative_area_level_2` (city), `administrative_area_level_1` (state) from address components
+- Keep `gm_authFailure` handler + graceful fallback to plain input
 
-### 4. Update `src/pages/auth/Onboard.tsx` (Google SSO path)
-- Same: replace School Name with `<SchoolAutocomplete>`, add City + State fields
-- Pass `city`, `state` to `onboard-school` edge function body (additive — backend ignores extras until updated)
+This way the user gets:
+- A working autocomplete (legacy API has fewer enablement gotchas)
+- Same beautiful custom dropdown matching the form
+- Same City/State auto-fill behavior
 
-### 5. Add dependency
-`@googlemaps/js-api-loader` (~10KB, official Google package)
+### 3. No other changes
+`Signup.tsx`, `Onboard.tsx`, edge function, config — all stay as is. The component's external API (`value`, `onChange`, `onPlaceSelected`) is unchanged.
 
-### Layout
-Signup form gets two new rows after School Name:
-```text
-[ School Name (autocomplete) ]
-[ City ............ ] [ State (select) ]
-[ Admin Name ......................... ]
-```
-On mobile, City and State stack vertically.
+## Files touched
+- update secret `GOOGLE_MAPS_API_KEY`
+- rewrite `src/components/ui/school-autocomplete.tsx`
 
-### Files touched
-- new: `src/components/ui/school-autocomplete.tsx`
-- edit: `src/pages/auth/Signup.tsx`
-- edit: `src/pages/auth/Onboard.tsx`
-- new: `.npmrc` not needed — public package
+## After approval
+Refresh the signup page and start typing — suggestions should appear within ~250ms.
