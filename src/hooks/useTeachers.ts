@@ -15,6 +15,24 @@ export interface Teacher {
   updated_at: string;
 }
 
+export interface UserInvite {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  school_id: string;
+  delivery_method: 'email' | 'whatsapp' | 'both';
+  phone: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  last_sent_at: string;
+  created_at: string;
+}
+
+export type InviteAssignment =
+  | { type: 'subject'; subject_id: string; class_name: string }
+  | { type: 'class'; class_name: string; section: string | null };
+
 export function useTeachers() {
   const { data: school } = useSchool();
   const queryClient = useQueryClient();
@@ -23,7 +41,6 @@ export function useTeachers() {
     queryKey: ['teachers', school?.id],
     queryFn: async () => {
       if (!school?.id) return [];
-      
       const { data, error } = await supabase
         .from('school_teachers')
         .select('*')
@@ -36,26 +53,77 @@ export function useTeachers() {
     enabled: !!school?.id,
   });
 
-  const createTeacher = useMutation({
-    mutationFn: async ({ name, email, password, role = 'teacher' }: { name: string; email: string; password: string; role?: string }) => {
+  const { data: invites = [] } = useQuery({
+    queryKey: ['user-invites', school?.id],
+    queryFn: async () => {
+      if (!school?.id) return [];
+      const { data, error } = await supabase
+        .from('user_invites' as any)
+        .select('*')
+        .eq('school_id', school.id)
+        .is('accepted_at', null)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as UserInvite[];
+    },
+    enabled: !!school?.id,
+  });
+
+  const inviteUser = useMutation({
+    mutationFn: async (params: {
+      name: string;
+      email: string;
+      role: 'teacher' | 'accountant';
+      delivery_method: 'email' | 'whatsapp' | 'both';
+      phone?: string | null;
+      assignments?: InviteAssignment[];
+    }) => {
       if (!school?.id) throw new Error('No school found');
-
-      const { data: authData, error: authError } = await supabase.functions.invoke('create-teacher', {
-        body: { name, email, password, schoolId: school.id, role },
+      const { data, error } = await supabase.functions.invoke('create-user-invite', {
+        body: { ...params },
       });
-
-      if (authError) throw authError;
-      if (authData?.error) throw new Error(authData.error);
-
-      return authData;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['teachers', school?.id] });
-      const label = variables.role === 'accountant' ? 'Accountant' : 'Teacher';
-      toast.success(`${label} created successfully`);
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['user-invites', school?.id] });
+      toast.success(`Invite sent to ${vars.email}`);
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create user');
+    onError: (err: Error) => {
+      toast.error(err.message || 'Failed to send invite');
+    },
+  });
+
+  const resendInvite = useMutation({
+    mutationFn: async (inviteId: string) => {
+      const { data, error } = await supabase.functions.invoke('resend-user-invite', {
+        body: { inviteId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-invites', school?.id] });
+      toast.success('Invite resent');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Failed to resend invite');
+    },
+  });
+
+  const cancelInvite = useMutation({
+    mutationFn: async (inviteId: string) => {
+      const { error } = await supabase.from('user_invites' as any).delete().eq('id', inviteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-invites', school?.id] });
+      toast.success('Invite cancelled');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Failed to cancel invite');
     },
   });
 
@@ -65,7 +133,6 @@ export function useTeachers() {
         .from('school_teachers')
         .update({ name, is_active })
         .eq('id', id);
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -79,11 +146,7 @@ export function useTeachers() {
 
   const deleteTeacher = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('school_teachers')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('school_teachers').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -97,10 +160,13 @@ export function useTeachers() {
 
   return {
     teachers,
+    invites,
     isLoading,
     error,
     refetch,
-    createTeacher,
+    inviteUser,
+    resendInvite,
+    cancelInvite,
     updateTeacher,
     deleteTeacher,
   };

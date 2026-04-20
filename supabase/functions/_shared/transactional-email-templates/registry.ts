@@ -15,6 +15,7 @@ import { template as paymentReceipt } from './payment-receipt.tsx'
 import { template as subscriptionConfirmation } from './subscription-confirmation.tsx'
 import { template as securityAlert } from './security-alert.tsx'
 import { template as contactNotification } from './contact-notification.tsx'
+import { template as userInvite } from './user-invite.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'welcome-school': welcomeSchool,
@@ -22,4 +23,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'subscription-confirmation': subscriptionConfirmation,
   'security-alert': securityAlert,
   'contact-notification': contactNotification,
+  'user-invite': userInvite,
 }

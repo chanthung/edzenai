@@ -1866,6 +1866,68 @@ export type Database = {
           },
         ]
       }
+      user_invites: {
+        Row: {
+          accepted_at: string | null
+          assignments: Json
+          created_at: string
+          delivery_method: Database["public"]["Enums"]["invite_delivery_method"]
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          last_sent_at: string
+          name: string
+          phone: string | null
+          role: string
+          school_id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          assignments?: Json
+          created_at?: string
+          delivery_method?: Database["public"]["Enums"]["invite_delivery_method"]
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          last_sent_at?: string
+          name: string
+          phone?: string | null
+          role: string
+          school_id: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          assignments?: Json
+          created_at?: string
+          delivery_method?: Database["public"]["Enums"]["invite_delivery_method"]
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          last_sent_at?: string
+          name?: string
+          phone?: string | null
+          role?: string
+          school_id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invites_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2042,6 +2104,7 @@ export type Database = {
       fee_status: "upcoming" | "due" | "overdue" | "paid"
       grade_scale: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D" | "E"
       grading_type: "percentage" | "custom_grades"
+      invite_delivery_method: "email" | "whatsapp" | "both"
       mastery_level: "beginning" | "developing" | "proficient" | "advanced"
       nep_learning_stage:
         | "foundational"
@@ -2197,6 +2260,7 @@ export const Constants = {
       fee_status: ["upcoming", "due", "overdue", "paid"],
       grade_scale: ["A+", "A", "B+", "B", "C+", "C", "D", "E"],
       grading_type: ["percentage", "custom_grades"],
+      invite_delivery_method: ["email", "whatsapp", "both"],
       mastery_level: ["beginning", "developing", "proficient", "advanced"],
       nep_learning_stage: [
         "foundational",
