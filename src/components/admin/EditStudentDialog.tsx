@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { StudentFamilyCard } from "./StudentFamilyCard";
+import { normalizeIndianPhone } from "@/lib/phone";
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
@@ -91,9 +92,10 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
   const handleSubmit = async () => {
     if (!student) return;
     if (!formData.name.trim()) { toast.error("Student name is required"); return; }
-    const phoneDigits = formData.parent_phone.replace(/\D/g, '');
+    const phoneDigits = normalizeIndianPhone(formData.parent_phone);
     if (!phoneDigits) { toast.error("Parent phone number is required"); return; }
     if (phoneDigits.length !== 10) { toast.error("Phone number must be exactly 10 digits"); return; }
+    formData.parent_phone = phoneDigits;
 
     try {
       const { academic_year_id, ...studentData } = formData;
@@ -241,7 +243,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                     <Label htmlFor="edit-parentPhone">Phone *</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">+91</span>
-                      <Input id="edit-parentPhone" placeholder="9876543210" className="pl-12" maxLength={10} value={formData.parent_phone} onChange={(e) => { const val = e.target.value.replace(/\D/g, '').slice(0, 10); setFormData({ ...formData, parent_phone: val }); }} required />
+                      <Input id="edit-parentPhone" placeholder="9876543210" className="pl-12" maxLength={10} value={formData.parent_phone} onChange={(e) => { const val = normalizeIndianPhone(e.target.value).slice(0, 10); setFormData({ ...formData, parent_phone: val }); }} required />
                     </div>
                   </div>
                   <div className="space-y-2">

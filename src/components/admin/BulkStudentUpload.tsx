@@ -565,7 +565,7 @@ export function BulkStudentUpload({ open, onOpenChange, mode = "students", onCom
           class_name: row.class_name?.trim() || null,
           section: row.section?.trim() || "A",
           parent_name: row.parent_name?.trim() || null,
-          parent_phone: row.parent_phone?.trim() || null,
+          parent_phone: (() => { const d = (row.parent_phone || '').replace(/\D/g, ''); if (!d) return null; let n = d; if (n.length === 12 && n.startsWith('91')) n = n.slice(2); if (n.length === 11 && n.startsWith('0')) n = n.slice(1); return n || null; })(),
           parent_email: row.parent_email?.trim() || null,
           guardian: row.guardian?.trim() || null,
           address: row.address?.trim() || null,

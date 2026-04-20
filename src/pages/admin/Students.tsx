@@ -48,6 +48,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { exportToXLSX } from "@/lib/export-utils";
 import { useLatestImportLog } from "@/hooks/useImportLogs";
 import { generateImportReport, type IssueRow } from "@/lib/import-report";
+import { normalizeIndianPhone } from "@/lib/phone";
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
@@ -320,7 +321,7 @@ export default function Students() {
       return;
     }
 
-    const phoneDigits = newStudent.parent_phone.replace(/\D/g, '');
+    const phoneDigits = normalizeIndianPhone(newStudent.parent_phone);
     if (!phoneDigits) {
       toast.error("Parent phone number is required");
       return;
@@ -329,6 +330,7 @@ export default function Students() {
       toast.error("Phone number must be exactly 10 digits");
       return;
     }
+    newStudent.parent_phone = phoneDigits;
 
     try {
       await createStudent.mutateAsync(newStudent);
@@ -405,18 +407,24 @@ export default function Students() {
       }
 
       const data = response.data;
-      if (data.success) {
-        toast.success("Link sent!", { 
-          description: `Parent link sent to ${student.parent_phone}` 
+      if (data?.success) {
+        toast.success("Link sent!", {
+          description: `Parent link sent to +91 ${student.parent_phone}`
         });
         queryClient.invalidateQueries({ queryKey: ['parent-link-dispatches'] });
+      } else if (data?.failureKind === 'invalid_number') {
+        toast.error("Invalid number", {
+          description: data.error || 'This number is not registered on WhatsApp. Please update the parent phone.',
+        });
       } else {
-        throw new Error(data.error || 'Failed to send link');
+        toast.error("Couldn't send right now", {
+          description: data?.error || 'WhatsApp service is temporarily unavailable. Please retry in a moment.',
+        });
       }
     } catch (error: any) {
       console.error('Share link error:', error);
-      toast.error("Failed to send link", { 
-        description: error.message || "Please try again later" 
+      toast.error("Failed to send link", {
+        description: error.message || "Please try again later"
       });
     } finally {
       setIsSendingLink(null);
@@ -767,7 +775,7 @@ export default function Students() {
                             maxLength={10}
                             value={newStudent.parent_phone}
                             onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              const val = normalizeIndianPhone(e.target.value).slice(0, 10);
                               setNewStudent({ ...newStudent, parent_phone: val });
                             }}
                             required
