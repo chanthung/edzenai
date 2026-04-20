@@ -86,22 +86,27 @@ export function StudentPendingReport({ data, isLoading }: StudentPendingReportPr
     setSendTotal(shareableStudents.length);
 
     let successCount = 0;
-    let failCount = 0;
+    let invalidCount = 0;
+    let transientCount = 0;
 
     for (let i = 0; i < shareableStudents.length; i++) {
       const student = shareableStudents[i];
       try {
-        const { error } = await supabase.functions.invoke('send-parent-link', {
+        const { data, error } = await supabase.functions.invoke('send-parent-link', {
           body: { studentId: student.studentId },
         });
         if (error) {
-          failCount++;
+          transientCount++;
           console.warn(`Failed for ${student.studentName}:`, error);
-        } else {
+        } else if (data?.success) {
           successCount++;
+        } else if (data?.failureKind === 'invalid_number') {
+          invalidCount++;
+        } else {
+          transientCount++;
         }
       } catch {
-        failCount++;
+        transientCount++;
       }
       setSendProgress(i + 1);
       if (i < shareableStudents.length - 1) {
@@ -115,8 +120,11 @@ export function StudentPendingReport({ data, isLoading }: StudentPendingReportPr
     if (successCount > 0) {
       toast.success(`Parent link sent to ${successCount} parent(s)`);
     }
-    if (failCount > 0) {
-      toast.error(`Failed to send to ${failCount} parent(s)`);
+    if (invalidCount > 0) {
+      toast.error(`${invalidCount} number(s) not on WhatsApp — please verify in student profile`);
+    }
+    if (transientCount > 0) {
+      toast.error(`${transientCount} send(s) failed — please retry in a moment`);
     }
   };
 
