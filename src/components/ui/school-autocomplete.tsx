@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
+import { Loader } from "@googlemaps/js-api-loader";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -28,11 +28,18 @@ interface Suggestion {
 }
 
 let cachedKey: string | null = null;
-let optionsSet = false;
-let placesLibPromise: Promise<google.maps.PlacesLibrary> | null = null;
+let loaderPromise: Promise<typeof google> | null = null;
+let authFailed = false;
 
-async function getPlacesLib(): Promise<google.maps.PlacesLibrary> {
-  if (placesLibPromise) return placesLibPromise;
+if (typeof window !== "undefined") {
+  (window as any).gm_authFailure = () => {
+    authFailed = true;
+    console.error("[SchoolAutocomplete] Google Maps auth failure - check API key & referrer restrictions");
+  };
+}
+
+async function loadGoogleMaps(): Promise<typeof google> {
+  if (loaderPromise) return loaderPromise;
   if (!cachedKey) {
     try {
       const { data } = await supabase.functions.invoke("get-maps-key");
@@ -42,12 +49,9 @@ async function getPlacesLib(): Promise<google.maps.PlacesLibrary> {
     }
   }
   if (!cachedKey) throw new Error("No Maps API key");
-  if (!optionsSet) {
-    setOptions({ key: cachedKey, v: "weekly" });
-    optionsSet = true;
-  }
-  placesLibPromise = importLibrary("places");
-  return placesLibPromise;
+  const loader = new Loader({ apiKey: cachedKey, version: "weekly", libraries: ["places"] });
+  loaderPromise = loader.load();
+  return loaderPromise;
 }
 
 export function SchoolAutocomplete({
@@ -64,12 +68,13 @@ export function SchoolAutocomplete({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [apiAvailable, setApiAvailable] = useState(true);
   const [highlight, setHighlight] = useState(0);
+  const serviceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const debounceRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const skipNextFetchRef = useRef(false);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -80,6 +85,26 @@ export function SchoolAutocomplete({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const ensureServices = useCallback(async () => {
+    if (serviceRef.current && placesServiceRef.current) return true;
+    try {
+      await loadGoogleMaps();
+      if (authFailed) {
+        setApiAvailable(false);
+        return false;
+      }
+      serviceRef.current = new google.maps.places.AutocompleteService();
+      // PlacesService requires an HTMLDivElement or a Map - use a hidden div
+      const div = document.createElement("div");
+      placesServiceRef.current = new google.maps.places.PlacesService(div);
+      return true;
+    } catch (err) {
+      console.error("[SchoolAutocomplete] Failed to load Google Maps:", err);
+      setApiAvailable(false);
+      return false;
+    }
+  }, []);
+
   const fetchSuggestions = useCallback(async (input: string) => {
     if (!input || input.trim().length < 2) {
       setSuggestions([]);
@@ -88,48 +113,47 @@ export function SchoolAutocomplete({
     }
     setLoading(true);
     try {
-      const { AutocompleteSessionToken, AutocompleteSuggestion } = await getPlacesLib();
-
+      const ok = await ensureServices();
+      if (!ok || !serviceRef.current) {
+        setLoading(false);
+        return;
+      }
       if (!sessionTokenRef.current) {
-        sessionTokenRef.current = new AutocompleteSessionToken();
+        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
       }
 
-      const request: google.maps.places.AutocompleteRequest = {
-        input: `private school ${input}`,
-        includedPrimaryTypes: ["school"],
-        includedRegionCodes: ["in"],
-        language: "en",
-        sessionToken: sessionTokenRef.current,
-      };
-
-      const { suggestions: results } =
-        await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
-
-      const mapped: Suggestion[] = results
-        .slice(0, 5)
-        .map((s) => {
-          const p = s.placePrediction;
-          if (!p) return null;
-          return {
-            placeId: p.placeId,
-            primaryText: p.mainText?.text ?? p.text.text,
-            secondaryText: p.secondaryText?.text ?? "",
-          };
-        })
-        .filter((x): x is Suggestion => x !== null);
-
-      setSuggestions(mapped);
-      setHighlight(0);
-      setOpen(mapped.length > 0);
-      setApiAvailable(true);
+      serviceRef.current.getPlacePredictions(
+        {
+          input: `private school ${input}`,
+          types: ["school"],
+          componentRestrictions: { country: "in" },
+          sessionToken: sessionTokenRef.current,
+        },
+        (predictions, status) => {
+          setLoading(false);
+          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+            setSuggestions([]);
+            setOpen(false);
+            return;
+          }
+          const mapped: Suggestion[] = predictions.slice(0, 5).map((p) => ({
+            placeId: p.place_id,
+            primaryText: p.structured_formatting?.main_text ?? p.description,
+            secondaryText: p.structured_formatting?.secondary_text ?? "",
+          }));
+          setSuggestions(mapped);
+          setHighlight(0);
+          setOpen(mapped.length > 0);
+          setApiAvailable(true);
+        }
+      );
     } catch {
       setApiAvailable(false);
       setSuggestions([]);
       setOpen(false);
-    } finally {
       setLoading(false);
     }
-  }, []);
+  }, [ensureServices]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value;
@@ -142,32 +166,43 @@ export function SchoolAutocomplete({
     debounceRef.current = window.setTimeout(() => fetchSuggestions(next), 250);
   };
 
-  const handleSelect = async (s: Suggestion) => {
+  const handleSelect = (s: Suggestion) => {
     setOpen(false);
     setSuggestions([]);
     skipNextFetchRef.current = true;
-    try {
-      const { Place } = await getPlacesLib();
-      const place = new Place({ id: s.placeId });
-      await place.fetchFields({ fields: ["displayName", "addressComponents"] });
 
-      const components = place.addressComponents ?? [];
-      const findComp = (...types: string[]) =>
-        components.find((c) => types.some((t) => c.types.includes(t)))?.longText ?? "";
-
-      const city = findComp("locality") || findComp("administrative_area_level_2") || findComp("administrative_area_level_3");
-      const state = findComp("administrative_area_level_1");
-      const name = place.displayName ?? s.primaryText;
-
-      onChange(name);
-      onPlaceSelected({ name, city, state });
-      // Reset session token after a place is picked
-      sessionTokenRef.current = null;
-    } catch {
-      // Fallback: just use the prediction text
+    if (!placesServiceRef.current) {
       onChange(s.primaryText);
       onPlaceSelected({ name: s.primaryText, city: "", state: "" });
+      return;
     }
+
+    placesServiceRef.current.getDetails(
+      {
+        placeId: s.placeId,
+        fields: ["name", "address_components"],
+        sessionToken: sessionTokenRef.current ?? undefined,
+      },
+      (place, status) => {
+        sessionTokenRef.current = null;
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !place) {
+          onChange(s.primaryText);
+          onPlaceSelected({ name: s.primaryText, city: "", state: "" });
+          return;
+        }
+        const components = place.address_components ?? [];
+        const findComp = (...types: string[]) =>
+          components.find((c) => types.some((t) => c.types.includes(t)))?.long_name ?? "";
+        const city =
+          findComp("locality") ||
+          findComp("administrative_area_level_2") ||
+          findComp("administrative_area_level_3");
+        const state = findComp("administrative_area_level_1");
+        const name = place.name ?? s.primaryText;
+        onChange(name);
+        onPlaceSelected({ name, city, state });
+      }
+    );
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -205,6 +240,12 @@ export function SchoolAutocomplete({
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
         )}
       </div>
+
+      {!apiAvailable && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          School search unavailable — type your school name manually.
+        </p>
+      )}
 
       {open && suggestions.length > 0 && (
         <div className="absolute z-50 mt-1 w-full bg-popover text-popover-foreground border border-input rounded-xl shadow-md overflow-hidden animate-in fade-in-0 zoom-in-95">
