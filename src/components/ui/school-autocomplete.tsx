@@ -28,6 +28,7 @@ interface Suggestion {
 }
 
 let cachedKey: string | null = null;
+let optionsSet = false;
 let loaderPromise: Promise<typeof google> | null = null;
 let authFailed = false;
 
@@ -49,8 +50,11 @@ async function loadGoogleMaps(): Promise<typeof google> {
     }
   }
   if (!cachedKey) throw new Error("No Maps API key");
-  const loader = new Loader({ apiKey: cachedKey, version: "weekly", libraries: ["places"] });
-  loaderPromise = loader.importLibrary("places").then(() => google);
+  if (!optionsSet) {
+    setOptions({ key: cachedKey, v: "weekly" });
+    optionsSet = true;
+  }
+  loaderPromise = importLibrary("places").then(() => google);
   return loaderPromise;
 }
 
