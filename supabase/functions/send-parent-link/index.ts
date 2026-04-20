@@ -134,9 +134,14 @@ Deno.serve(async (req) => {
     }
 
     if (!waOk) {
+      const providerMsg = waResult?.msg || waResult?.message || '';
+      const looksLikeBadNumber = /göndərilmədi|not sent|invalid|not registered|no whatsapp/i.test(providerMsg);
+      const userError = looksLikeBadNumber
+        ? `WhatsApp could not deliver to ${student.parent_phone}. The number may not be registered on WhatsApp or is incorrect. Please verify and try again.`
+        : 'WhatsApp service is temporarily unavailable. Please try again in a moment.';
       return new Response(
-        JSON.stringify({ error: 'WhatsApp delivery failed. The service may be temporarily unavailable — please try again in a moment.' }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: userError, providerResponse: providerMsg }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
