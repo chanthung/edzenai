@@ -50,8 +50,8 @@ project_id = "fwnvfkaihuqdfdcwkakj"
   [functions.get-maps-key]
     verify_jwt = false
   [functions.create-user-invite]
-    verify_jwt = true
+    verify_jwt = false
   [functions.resend-user-invite]
-    verify_jwt = true
+    verify_jwt = false
   [functions.accept-user-invite]
     verify_jwt = false
