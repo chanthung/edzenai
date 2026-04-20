@@ -50,7 +50,7 @@ async function loadGoogleMaps(): Promise<typeof google> {
   }
   if (!cachedKey) throw new Error("No Maps API key");
   const loader = new Loader({ apiKey: cachedKey, version: "weekly", libraries: ["places"] });
-  loaderPromise = loader.load();
+  loaderPromise = loader.importLibrary("places").then(() => google);
   return loaderPromise;
 }
 
