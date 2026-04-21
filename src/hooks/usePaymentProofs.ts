@@ -37,6 +37,12 @@ export interface PaymentProof {
   admin_notes: string | null;
   rejection_reason: ProofRejectionReason | null;
   rejection_message: string | null;
+  amount_paid: number | null;
+  ocr_amount: number | null;
+  ocr_transaction_id: string | null;
+  ocr_date: string | null;
+  ocr_status: 'pending' | 'success' | 'failed' | null;
+  ocr_confidence: 'high' | 'medium' | 'low' | null;
   created_at: string;
   updated_at: string;
 }
@@ -46,6 +52,12 @@ export interface PaymentProofInsert {
   installment_id: string;
   file_url: string;
   reference_number?: string;
+  amount_paid?: number | null;
+  ocr_amount?: number | null;
+  ocr_transaction_id?: string | null;
+  ocr_date?: string | null;
+  ocr_status?: 'pending' | 'success' | 'failed' | null;
+  ocr_confidence?: 'high' | 'medium' | 'low' | null;
 }
 
 export interface VerifyProofData {
