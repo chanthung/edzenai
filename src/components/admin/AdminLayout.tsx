@@ -51,6 +51,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const { enabled: soundEnabled, toggle: toggleSound } = useProofAlertSoundPref();
+  useNewProofAlerts(school?.id);
 
   // If user is an accountant, use AccountantLayout instead
   if (!authLoading && !roleLoading && isAccountant) {
@@ -166,12 +168,21 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   )}
                 </div>
               </div>
-              {/* Plan Badge + Status */}
+              {/* Plan Badge + Status + Sound toggle */}
               <div className="mt-4 flex items-center gap-2">
                 <Badge className={cn("text-xs", planInfo.colorClass)}>
                   {planInfo.badge}
                 </Badge>
                 <SchoolStatusBadge effectiveState={effectiveState} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-auto h-7 w-7"
+                  onClick={toggleSound}
+                  title={soundEnabled ? "Payment alert sound: ON" : "Payment alert sound: OFF"}
+                >
+                  {soundEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4 text-muted-foreground" />}
+                </Button>
               </div>
             </div>
 
