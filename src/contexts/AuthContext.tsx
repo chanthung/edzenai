@@ -44,6 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    try {
+      sessionStorage.removeItem("edzen_chat_history");
+      sessionStorage.removeItem("edzen_chat_open");
+    } catch { /* ignore */ }
     await supabase.auth.signOut();
   };
 

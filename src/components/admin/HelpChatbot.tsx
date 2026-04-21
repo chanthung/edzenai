@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Sparkles, X, Send, Loader2 } from "lucide-react";
+import { Sparkles, X, Send, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
@@ -19,14 +19,32 @@ const SUGGESTIONS = [
   "How to mark attendance?",
 ];
 
+const HISTORY_KEY = "edzen_chat_history";
+const OPEN_KEY = "edzen_chat_open";
+
 export function HelpChatbot() {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [open, setOpen] = useState<boolean>(() => {
+    try { return sessionStorage.getItem(OPEN_KEY) === "1"; } catch { return false; }
+  });
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    try {
+      const saved = sessionStorage.getItem(HISTORY_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(HISTORY_KEY, JSON.stringify(messages)); } catch { /* ignore */ }
+  }, [messages]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(OPEN_KEY, open ? "1" : "0"); } catch { /* ignore */ }
+  }, [open]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -172,14 +190,28 @@ export function HelpChatbot() {
               <Sparkles className="h-5 w-5" />
               <span className="font-semibold text-sm">EdZen AI Assistant</span>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
-              onClick={() => setOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
+                  onClick={() => setMessages([])}
+                  aria-label="Clear chat"
+                  title="Clear chat"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={() => setOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Messages */}
