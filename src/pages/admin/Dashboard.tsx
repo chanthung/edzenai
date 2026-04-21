@@ -25,6 +25,7 @@ import { MonthWiseCollectionReport } from "@/components/admin/reports/MonthWiseC
 import { PendingProofsPanel } from "@/components/admin/PendingProofsPanel";
 import { TrialBanner } from "@/components/admin/TrialBanner";
 import { ImportHistoryCard } from "@/components/admin/ImportHistoryCard";
+import { CollectionAnomalyCard } from "@/components/admin/CollectionAnomalyCard";
 import { Badge } from "@/components/ui/badge";
 import { exportMultiSheetXLSX } from "@/lib/export-utils";
 
@@ -224,6 +225,11 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* AI Collection Anomaly Insights */}
+          {students && students.length > 0 && (
+            <CollectionAnomalyCard schoolId={school?.id} />
           )}
 
           {/* Birthday Reminder */}
