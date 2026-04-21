@@ -19,14 +19,32 @@ const SUGGESTIONS = [
   "How to mark attendance?",
 ];
 
+const HISTORY_KEY = "edzen_chat_history";
+const OPEN_KEY = "edzen_chat_open";
+
 export function HelpChatbot() {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [open, setOpen] = useState<boolean>(() => {
+    try { return sessionStorage.getItem(OPEN_KEY) === "1"; } catch { return false; }
+  });
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    try {
+      const saved = sessionStorage.getItem(HISTORY_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(HISTORY_KEY, JSON.stringify(messages)); } catch { /* ignore */ }
+  }, [messages]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(OPEN_KEY, open ? "1" : "0"); } catch { /* ignore */ }
+  }, [open]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
