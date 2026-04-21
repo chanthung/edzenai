@@ -46,6 +46,7 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
   const { data: existingComponents } = useTemplateComponents(template?.id ?? null);
   const saveTerms = useSaveTemplateTerms();
   const saveComponents = useSaveTemplateComponents();
+  const saveGradeMappings = useSaveTemplateGradeMappings();
 
   const [name, setName] = useState(template?.name ?? "");
   const [gradingType, setGradingType] = useState<'percentage' | 'custom_grades'>(template?.grading_type ?? 'percentage');
@@ -53,6 +54,8 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
 
   const [terms, setTerms] = useState<LocalTerm[]>([]);
   const [components, setComponents] = useState<LocalComponent[]>([]);
+  const [pendingGradeMappings, setPendingGradeMappings] = useState<{ grade_label: string; min_percentage: number; max_percentage: number }[] | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
