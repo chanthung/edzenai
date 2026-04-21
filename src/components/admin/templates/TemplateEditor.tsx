@@ -141,13 +141,27 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h3 className="text-lg font-semibold">{template ? "Edit Template" : "Create Template"}</h3>
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <Button variant="outline" onClick={() => setAiOpen(true)} disabled={saving}>
+            <Sparkles className="h-4 w-4 mr-2 text-primary" />
+            Generate with AI
+          </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Save Template
           </Button>
         </div>
       </div>
+
+      <GenerateTemplateDialog open={aiOpen} onOpenChange={setAiOpen} onGenerated={handleAIGenerated} />
+
+      {pendingGradeMappings && gradingType === 'custom_grades' && !template?.id && (
+        <Card className="card-elevated border-primary/30 bg-primary/5">
+          <CardContent className="py-3 text-sm">
+            <span className="font-medium">✨ {pendingGradeMappings.length} AI-suggested grade bands</span> will be saved with this template.
+          </CardContent>
+        </Card>
+      )}
 
       {/* Basic Info */}
       <Card className="card-elevated">
