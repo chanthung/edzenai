@@ -76,6 +76,24 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
   const addComponent = () => setComponents(prev => [...prev, { key: crypto.randomUUID(), name: "", max_marks: 100, display_order: prev.length }]);
   const removeComponent = (key: string) => setComponents(prev => prev.filter(c => c.key !== key).map((c, i) => ({ ...c, display_order: i })));
 
+  const handleAIGenerated = (gen: GeneratedTemplate) => {
+    if (gen.name) setName(gen.name);
+    setGradingType(gen.grading_type);
+    setTerms((gen.terms ?? []).map((t, i) => ({ key: crypto.randomUUID(), name: t.name, display_order: i })));
+    setComponents((gen.components ?? []).map((c, i) => ({ key: crypto.randomUUID(), name: c.name, max_marks: Number(c.max_marks) || 0, display_order: i })));
+    if (gen.grading_type === 'custom_grades' && gen.grade_mappings?.length) {
+      setPendingGradeMappings(
+        gen.grade_mappings.map(m => ({
+          grade_label: m.grade_label,
+          min_percentage: Number(m.min_percentage),
+          max_percentage: Number(m.max_percentage),
+        }))
+      );
+    } else {
+      setPendingGradeMappings(null);
+    }
+  };
+
   const handleSave = async () => {
     if (!name.trim()) { toast.error("Template name is required"); return; }
     setSaving(true);
@@ -97,6 +115,15 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
         saveTerms.mutateAsync({ templateId: templateId!, terms: validTerms.map(({ name, display_order }) => ({ name, display_order })) }),
         saveComponents.mutateAsync({ templateId: templateId!, components: validComponents.map(({ name, max_marks, display_order }) => ({ name, max_marks, display_order })) }),
       ]);
+
+      // Save AI-generated grade mappings if pending
+      if (pendingGradeMappings && gradingType === 'custom_grades') {
+        await saveGradeMappings.mutateAsync({
+          templateId: templateId!,
+          mappings: pendingGradeMappings.map((m, i) => ({ ...m, display_order: i })),
+        });
+        setPendingGradeMappings(null);
+      }
 
       toast.success(template ? "Template updated" : "Template created");
       onBack();
