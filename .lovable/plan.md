@@ -1,89 +1,95 @@
 
 
-## QR Payment Proof — OCR-first parent flow + admin assist + alerts
+## AI opportunities — Assessment Templates + system-wide audit
 
-### What's already built (kept as-is)
-QR display, UPI deep-link, file upload, admin review/verify/reject with reasons, parent rejection re-upload, Razorpay "Pay Online (Instant)" path. **All existing UX stays.**
+### Yes, AI can absolutely help in Assessment Templates
 
-### New work — 5 changes
+Today the user manually types every term, every component, every grade band. That's tedious and error-prone — most schools follow a standard board pattern (CBSE / ICSE / State boards / Cambridge). One AI prompt can produce the whole thing in 5 seconds.
 
-**1. Database (1 migration)**
-Add to `payment_proofs`:
-- `amount_paid numeric` — confirmed by parent (entered/edited)
-- `ocr_amount numeric` · `ocr_transaction_id text` · `ocr_date date`
-- `ocr_status text` — `pending` | `success` | `failed`
-- `ocr_confidence text` — `high` | `medium` | `low`
-- `ocr_raw jsonb` — full model response (audit)
+### Proposed: "Generate with AI" button in Assessment Templates
 
-Partial unique index on `reference_number` per school (where not null) → blocks duplicate UTRs with a friendly error.
-
-**2. New edge function: `ocr-payment-proof`**
-- Called from the parent uploader **right after the screenshot is picked** (before submit)
-- Downloads the just-uploaded file from `payment-proofs` bucket
-- Calls Lovable AI Gateway `google/gemini-2.5-flash` with a tool-call schema returning `{ amount, transaction_id, date, confidence }`
-- Returns extracted values to the client for auto-fill
-- PDFs / failures → returns `ocr_status: 'failed'` so UI falls back to manual entry
-- Never auto-approves — OCR is assistive only
-
-**3. Parent-side: OCR-first uploader**
-Update `PaymentProofUploader.tsx` flow:
+Top-right of the Template Editor, next to "Save Template":
 
 ```text
-1. Parent picks screenshot
-2. Show inline "🔍 Scanning screenshot…" spinner
-3. Upload file → call ocr-payment-proof
-4. On success: pre-fill Amount + UTR fields (highlight as "auto-detected")
-   On failure: show "Could not detect details — please enter manually"
-5. Both fields remain fully editable
-6. Note above submit button: "Please confirm the details before submitting"
-7. Submit → insert payment_proofs row with both entered_* and ocr_* values
+[ ✨ Generate with AI ]   [ 💾 Save Template ]
 ```
 
-- **Amount Paid (₹)** — required (pre-filled from OCR or installment amount)
-- **Transaction ID (UTR)** — required (pre-filled from OCR if detected)
-- Friendly error if UTR already submitted for this school
-
-**4. Admin verifier: comparison panel**
-Update `PaymentProofVerifier.tsx` — add a comparison block above existing Verify/Reject buttons:
+Opens a small dialog:
 
 ```text
-                  Expected    Parent Entered    OCR Detected    Match
-Amount            ₹ 5,000     ₹ 5,000           ₹ 5,000         🟢
-UTR / Txn ID      —           UPI123ABC         UPI123ABC       🟢
-Date              —           —                 21 Apr 2026     🟡
-Confidence: HIGH
+Tell me about your assessment system
+─────────────────────────────────────
+Examples you can type:
+  "CBSE Class 6-10 with FA1, FA2, SA1, SA2"
+  "ICSE primary, 3 terms, internal + external"
+  "Cambridge IGCSE with coursework + final exam"
+  "Maharashtra State Board Std 5-8"
+  "Montessori — 3 terms, descriptive grades only"
+
+[ Free-text input box ]
+[ Generate ] [ Cancel ]
 ```
-- 🟢 all match · 🟡 partial / low confidence / OCR unavailable · 🔴 mismatch
-- New reject reason: `amount_mismatch_ocr`
-- Existing screenshot preview, Verify/Reject actions unchanged
 
-**5. Real-time toast + beep for new submissions**
-New hook `useNewProofAlerts(schoolId)` mounted in `AdminLayout`:
-- Subscribes to Supabase Realtime `INSERT` on `payment_proofs` filtered to school's students
-- On insert → sonner toast `"New payment submitted: ₹X – {Student Name}"` + plays `/notify.mp3` once (no loop)
-- **🔔 bell toggle** in admin top bar, persisted in `localStorage` (`edzen_proof_alert_sound`, default ON)
-- Gracefully handles browser autoplay blocks — toast still fires
-- Enables realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE payment_proofs`
+**What AI returns (one Lovable AI Gateway call to `google/gemini-2.5-flash`):**
+- Suggested template name
+- Grading type (`percentage` or `custom_grades`)
+- Terms list (e.g. FA1, FA2, SA1, SA2 / Term 1, Term 2, Final)
+- Mark components with max marks (Internal 20, External 80, etc.)
+- Grade mappings (A+/A/B/C… with the right cut-offs for that board)
 
-### Files
-- New: `supabase/functions/ocr-payment-proof/index.ts`
-- New: `src/hooks/useNewProofAlerts.ts`
-- New: `public/notify.mp3` (~80 KB short beep)
-- Modified: `src/components/parent/PaymentProofUploader.tsx`
-- Modified: `src/components/admin/PaymentProofVerifier.tsx`
-- Modified: `src/components/admin/AdminLayout.tsx`
-- Modified: `src/hooks/usePaymentProofs.ts` (new fields + duplicate-UTR error)
-- 1 DB migration
+User reviews everything in the existing editor and can edit anything before saving. Nothing auto-commits.
+
+**File:** new edge function `generate-assessment-template` + a small `GenerateTemplateDialog.tsx` mounted in `TemplateEditor.tsx`. Schema-locked tool-call response so the structure is always valid.
+
+---
+
+### System-wide AI audit — what's already AI-powered
+
+✅ Student Excel import (`process-student-excel` — column mapping)
+✅ Fee Excel import (`process-fee-excel`)
+✅ Payment proof OCR (just shipped)
+✅ Progress analysis (`analyze-progress` — student insights)
+✅ Help chatbot (`help-assistant`)
+
+### High-value AI additions ranked by impact
+
+**🔥 Tier 1 — biggest time-savers**
+
+1. **Assessment Template generator** (above) — saves 10-15 min per template
+2. **Fee Structure generator** — "₹45,000/year tuition + ₹3,000 books, split into 2 installments due Apr & Oct" → auto-creates categories, structures, installments
+3. **AI Reject Reason composer for payment proofs** — admin clicks 🤖 → AI drafts a polite, parent-friendly rejection message based on the comparison panel mismatch (currently they pick a canned reason)
+
+**⚡ Tier 2 — quality-of-life**
+
+4. **Smart Bulk WhatsApp message composer** — admin types intent ("remind unpaid Class 5 parents about Term 2 fees due next week"), AI drafts the message in chosen language (English / Hindi / regional)
+5. **AI report card comments** — auto-generate teacher remarks per subject based on marks + attendance + competency scores (huge time-saver during reporting season)
+6. **Parent question auto-responder** (parent view) — small "Ask about my child" box answers fee/attendance/progress questions from the data already loaded for that token
+
+**💡 Tier 3 — nice to have**
+
+7. **AI exam paper question bank** — generate practice questions per subject + class + chapter (NEP-aligned)
+8. **Onboarding assistant** — replaces the static 4-step wizard with a conversational "Tell me about your school" flow that pre-fills classes, fee structure, templates
+9. **Anomaly alerts on dashboard** — AI watches collection trends and surfaces "Class 7 collections dropped 40% this month vs last" type insights
+
+---
+
+### Recommendation for THIS turn
+
+Implement only **#1 (Assessment Template generator)** now — it's the most-requested area you just asked about, fully scoped, one edge function + one dialog, no DB changes. The rest stay on the roadmap and we tackle one per request.
+
+### What to build now
+
+- New edge function: `supabase/functions/generate-assessment-template/index.ts` (Gemini 2.5 Flash, tool-call schema)
+- New component: `src/components/admin/templates/GenerateTemplateDialog.tsx`
+- Modified: `src/components/admin/templates/TemplateEditor.tsx` — add "✨ Generate with AI" button + wire results into existing form state (terms, components, grading type, name)
+- No DB migration, no changes to existing save flow
 
 ### Safety
-- OCR never auto-approves — admin click still required
-- OCR failure → manual entry (no blocking)
-- Duplicate UTR blocked at DB level
-- Existing RLS policies cover new columns automatically
+- AI output populates the form only — user must click Save Template to commit
+- All fields remain fully editable
+- Schema-locked AI response prevents malformed data
+- Falls back gracefully if AI is unavailable (existing manual flow untouched)
 
-### Not changing
-- File picker UX, status pills, rejection re-upload flow
-- UPI deep-link tap-to-pay
-- Razorpay instant flow
-- 30-word reject message limit
+### Want a different pick?
+If you'd rather start with **AI report card comments** (#5 — arguably the biggest teacher time-saver) or the **Fee Structure generator** (#2), say the word and I'll re-plan around that instead.
 
