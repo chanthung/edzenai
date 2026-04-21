@@ -49,6 +49,12 @@ interface ProofWithDetails {
   file_url: string;
   reference_number: string | null;
   created_at: string;
+  amount_paid?: number | null;
+  ocr_amount?: number | null;
+  ocr_transaction_id?: string | null;
+  ocr_date?: string | null;
+  ocr_status?: 'pending' | 'success' | 'failed' | null;
+  ocr_confidence?: 'high' | 'medium' | 'low' | null;
   students: {
     id: string;
     name: string;
