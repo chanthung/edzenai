@@ -13,11 +13,13 @@ import {
   useSaveTemplateTerms,
   useTemplateComponents,
   useSaveTemplateComponents,
+  useSaveTemplateGradeMappings,
   type AssessmentTemplate,
 } from "@/hooks/progress/useAssessmentTemplates";
 import { GradeMappingEditor } from "./GradeMappingEditor";
+import { GenerateTemplateDialog, type GeneratedTemplate } from "./GenerateTemplateDialog";
 import { toast } from "sonner";
-import { Save, ArrowLeft, Plus, Trash2, Loader2, GripVertical } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, Loader2, GripVertical, Sparkles } from "lucide-react";
 
 interface TemplateEditorProps {
   template: AssessmentTemplate | null; // null = creating new
@@ -44,6 +46,7 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
   const { data: existingComponents } = useTemplateComponents(template?.id ?? null);
   const saveTerms = useSaveTemplateTerms();
   const saveComponents = useSaveTemplateComponents();
+  const saveGradeMappings = useSaveTemplateGradeMappings();
 
   const [name, setName] = useState(template?.name ?? "");
   const [gradingType, setGradingType] = useState<'percentage' | 'custom_grades'>(template?.grading_type ?? 'percentage');
@@ -51,6 +54,8 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
 
   const [terms, setTerms] = useState<LocalTerm[]>([]);
   const [components, setComponents] = useState<LocalComponent[]>([]);
+  const [pendingGradeMappings, setPendingGradeMappings] = useState<{ grade_label: string; min_percentage: number; max_percentage: number }[] | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -70,6 +75,24 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
 
   const addComponent = () => setComponents(prev => [...prev, { key: crypto.randomUUID(), name: "", max_marks: 100, display_order: prev.length }]);
   const removeComponent = (key: string) => setComponents(prev => prev.filter(c => c.key !== key).map((c, i) => ({ ...c, display_order: i })));
+
+  const handleAIGenerated = (gen: GeneratedTemplate) => {
+    if (gen.name) setName(gen.name);
+    setGradingType(gen.grading_type);
+    setTerms((gen.terms ?? []).map((t, i) => ({ key: crypto.randomUUID(), name: t.name, display_order: i })));
+    setComponents((gen.components ?? []).map((c, i) => ({ key: crypto.randomUUID(), name: c.name, max_marks: Number(c.max_marks) || 0, display_order: i })));
+    if (gen.grading_type === 'custom_grades' && gen.grade_mappings?.length) {
+      setPendingGradeMappings(
+        gen.grade_mappings.map(m => ({
+          grade_label: m.grade_label,
+          min_percentage: Number(m.min_percentage),
+          max_percentage: Number(m.max_percentage),
+        }))
+      );
+    } else {
+      setPendingGradeMappings(null);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error("Template name is required"); return; }
@@ -93,6 +116,15 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
         saveComponents.mutateAsync({ templateId: templateId!, components: validComponents.map(({ name, max_marks, display_order }) => ({ name, max_marks, display_order })) }),
       ]);
 
+      // Save AI-generated grade mappings if pending
+      if (pendingGradeMappings && gradingType === 'custom_grades') {
+        await saveGradeMappings.mutateAsync({
+          templateId: templateId!,
+          mappings: pendingGradeMappings.map((m, i) => ({ ...m, display_order: i })),
+        });
+        setPendingGradeMappings(null);
+      }
+
       toast.success(template ? "Template updated" : "Template created");
       onBack();
     } catch (e: any) {
@@ -109,13 +141,27 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h3 className="text-lg font-semibold">{template ? "Edit Template" : "Create Template"}</h3>
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <Button variant="outline" onClick={() => setAiOpen(true)} disabled={saving}>
+            <Sparkles className="h-4 w-4 mr-2 text-primary" />
+            Generate with AI
+          </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Save Template
           </Button>
         </div>
       </div>
+
+      <GenerateTemplateDialog open={aiOpen} onOpenChange={setAiOpen} onGenerated={handleAIGenerated} />
+
+      {pendingGradeMappings && gradingType === 'custom_grades' && !template?.id && (
+        <Card className="card-elevated border-primary/30 bg-primary/5">
+          <CardContent className="py-3 text-sm">
+            <span className="font-medium">✨ {pendingGradeMappings.length} AI-suggested grade bands</span> will be saved with this template.
+          </CardContent>
+        </Card>
+      )}
 
       {/* Basic Info */}
       <Card className="card-elevated">
