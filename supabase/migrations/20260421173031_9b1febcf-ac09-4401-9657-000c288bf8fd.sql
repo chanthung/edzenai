@@ -1,0 +1,1 @@
+ALTER TYPE public.proof_rejection_reason ADD VALUE IF NOT EXISTS 'amount_mismatch_ocr';

@@ -7,6 +7,7 @@ export type ProofStatus = 'pending' | 'verified' | 'rejected';
 
 export type ProofRejectionReason = 
   | 'amount_mismatch'
+  | 'amount_mismatch_ocr'
   | 'old_reused_screenshot'
   | 'payment_not_received'
   | 'wrong_month_selected'
@@ -16,6 +17,7 @@ export type ProofRejectionReason =
 
 export const REJECTION_REASON_LABELS: Record<ProofRejectionReason, string> = {
   amount_mismatch: 'Amount does not match',
+  amount_mismatch_ocr: 'Amount mismatch (OCR vs entered)',
   old_reused_screenshot: 'Old / reused screenshot',
   payment_not_received: 'Payment not received in bank',
   wrong_month_selected: 'Wrong month selected',
@@ -37,6 +39,12 @@ export interface PaymentProof {
   admin_notes: string | null;
   rejection_reason: ProofRejectionReason | null;
   rejection_message: string | null;
+  amount_paid: number | null;
+  ocr_amount: number | null;
+  ocr_transaction_id: string | null;
+  ocr_date: string | null;
+  ocr_status: 'pending' | 'success' | 'failed' | null;
+  ocr_confidence: 'high' | 'medium' | 'low' | null;
   created_at: string;
   updated_at: string;
 }
@@ -46,6 +54,12 @@ export interface PaymentProofInsert {
   installment_id: string;
   file_url: string;
   reference_number?: string;
+  amount_paid?: number | null;
+  ocr_amount?: number | null;
+  ocr_transaction_id?: string | null;
+  ocr_date?: string | null;
+  ocr_status?: 'pending' | 'success' | 'failed' | null;
+  ocr_confidence?: 'high' | 'medium' | 'low' | null;
 }
 
 export interface VerifyProofData {

@@ -799,16 +799,24 @@ export type Database = {
       payment_proofs: {
         Row: {
           admin_notes: string | null
+          amount_paid: number | null
           bank_verified: boolean | null
           created_at: string
           file_url: string
           id: string
           installment_id: string
+          ocr_amount: number | null
+          ocr_confidence: string | null
+          ocr_date: string | null
+          ocr_raw: Json | null
+          ocr_status: string | null
+          ocr_transaction_id: string | null
           reference_number: string | null
           rejection_message: string | null
           rejection_reason:
             | Database["public"]["Enums"]["proof_rejection_reason"]
             | null
+          school_id: string | null
           status: Database["public"]["Enums"]["proof_status"]
           student_id: string
           updated_at: string
@@ -817,16 +825,24 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          amount_paid?: number | null
           bank_verified?: boolean | null
           created_at?: string
           file_url: string
           id?: string
           installment_id: string
+          ocr_amount?: number | null
+          ocr_confidence?: string | null
+          ocr_date?: string | null
+          ocr_raw?: Json | null
+          ocr_status?: string | null
+          ocr_transaction_id?: string | null
           reference_number?: string | null
           rejection_message?: string | null
           rejection_reason?:
             | Database["public"]["Enums"]["proof_rejection_reason"]
             | null
+          school_id?: string | null
           status?: Database["public"]["Enums"]["proof_status"]
           student_id: string
           updated_at?: string
@@ -835,16 +851,24 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          amount_paid?: number | null
           bank_verified?: boolean | null
           created_at?: string
           file_url?: string
           id?: string
           installment_id?: string
+          ocr_amount?: number | null
+          ocr_confidence?: string | null
+          ocr_date?: string | null
+          ocr_raw?: Json | null
+          ocr_status?: string | null
+          ocr_transaction_id?: string | null
           reference_number?: string | null
           rejection_message?: string | null
           rejection_reason?:
             | Database["public"]["Enums"]["proof_rejection_reason"]
             | null
+          school_id?: string | null
           status?: Database["public"]["Enums"]["proof_status"]
           student_id?: string
           updated_at?: string
@@ -2120,6 +2144,7 @@ export type Database = {
         | "screenshot_unclear"
         | "incorrect_reference"
         | "other"
+        | "amount_mismatch_ocr"
       proof_status: "pending" | "verified" | "rejected"
       school_system_state:
         | "trial_active"
@@ -2277,6 +2302,7 @@ export const Constants = {
         "screenshot_unclear",
         "incorrect_reference",
         "other",
+        "amount_mismatch_ocr",
       ],
       proof_status: ["pending", "verified", "rejected"],
       school_system_state: [

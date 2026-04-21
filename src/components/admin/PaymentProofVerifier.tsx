@@ -41,6 +41,7 @@ import {
 } from '@/hooks/usePaymentProofs';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { RestrictedButton } from '@/components/admin/RestrictedOverlay';
+import { OcrComparisonPanel } from '@/components/admin/OcrComparisonPanel';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { toast } from 'sonner';
 
@@ -49,6 +50,12 @@ interface ProofWithDetails {
   file_url: string;
   reference_number: string | null;
   created_at: string;
+  amount_paid?: number | null;
+  ocr_amount?: number | null;
+  ocr_transaction_id?: string | null;
+  ocr_date?: string | null;
+  ocr_status?: 'pending' | 'success' | 'failed' | null;
+  ocr_confidence?: 'high' | 'medium' | 'low' | null;
   students: {
     id: string;
     name: string;
@@ -109,6 +116,11 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
   const handleVerify = async () => {
     if (!proof) return;
 
+    // Use parent-entered amount when present, fallback to installment amount
+    const amountToRecord = typeof proof.amount_paid === 'number' && proof.amount_paid > 0
+      ? proof.amount_paid
+      : proof.installments.amount;
+
     try {
       await verifyProof.mutateAsync({
         proofId: proof.id,
@@ -116,7 +128,7 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
         adminNotes: adminNotes || undefined,
         studentId: proof.students.id,
         installmentId: proof.installments.id,
-        amount: proof.installments.amount,
+        amount: amountToRecord,
       });
 
       // Fire-and-forget WhatsApp confirmation
@@ -281,6 +293,18 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
               </div>
             )}
           </div>
+
+          {/* OCR Comparison Panel */}
+          <OcrComparisonPanel
+            expectedAmount={installment.amount}
+            enteredAmount={proof.amount_paid ?? null}
+            enteredUtr={proof.reference_number}
+            ocrAmount={proof.ocr_amount ?? null}
+            ocrUtr={proof.ocr_transaction_id ?? null}
+            ocrDate={proof.ocr_date ?? null}
+            ocrStatus={proof.ocr_status ?? null}
+            ocrConfidence={proof.ocr_confidence ?? null}
+          />
 
           {/* Verification Mode */}
           {mode === 'view' && (
