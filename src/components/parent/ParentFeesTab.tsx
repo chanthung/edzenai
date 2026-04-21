@@ -368,6 +368,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                           <PaymentProofUploader
                             studentId={student.id}
                             installmentId={inst.id}
+                            installmentAmount={inst.amount}
                             existingProof={inst.proof}
                             onSuccess={onProofSuccess}
                           />
@@ -380,6 +381,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                           <PaymentProofUploader
                             studentId={student.id}
                             installmentId={inst.id}
+                            installmentAmount={inst.amount}
                             existingProof={inst.proof}
                             onSuccess={onProofSuccess}
                           />

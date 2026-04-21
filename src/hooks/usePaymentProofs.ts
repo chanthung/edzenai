@@ -7,6 +7,7 @@ export type ProofStatus = 'pending' | 'verified' | 'rejected';
 
 export type ProofRejectionReason = 
   | 'amount_mismatch'
+  | 'amount_mismatch_ocr'
   | 'old_reused_screenshot'
   | 'payment_not_received'
   | 'wrong_month_selected'
@@ -16,6 +17,7 @@ export type ProofRejectionReason =
 
 export const REJECTION_REASON_LABELS: Record<ProofRejectionReason, string> = {
   amount_mismatch: 'Amount does not match',
+  amount_mismatch_ocr: 'Amount mismatch (OCR vs entered)',
   old_reused_screenshot: 'Old / reused screenshot',
   payment_not_received: 'Payment not received in bank',
   wrong_month_selected: 'Wrong month selected',
