@@ -41,6 +41,7 @@ import {
 } from '@/hooks/usePaymentProofs';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { RestrictedButton } from '@/components/admin/RestrictedOverlay';
+import { OcrComparisonPanel } from '@/components/admin/OcrComparisonPanel';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { toast } from 'sonner';
 

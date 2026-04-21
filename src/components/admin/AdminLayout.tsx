@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpChatbot } from "@/components/admin/HelpChatbot";
+import { Bell, BellOff } from "lucide-react";
+import { useNewProofAlerts, useProofAlertSoundPref } from "@/hooks/useNewProofAlerts";
 
 interface AdminLayoutProps {
   children: ReactNode;
