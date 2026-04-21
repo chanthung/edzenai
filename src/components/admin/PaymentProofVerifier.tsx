@@ -293,6 +293,18 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
             )}
           </div>
 
+          {/* OCR Comparison Panel */}
+          <OcrComparisonPanel
+            expectedAmount={installment.amount}
+            enteredAmount={proof.amount_paid ?? null}
+            enteredUtr={proof.reference_number}
+            ocrAmount={proof.ocr_amount ?? null}
+            ocrUtr={proof.ocr_transaction_id ?? null}
+            ocrDate={proof.ocr_date ?? null}
+            ocrStatus={proof.ocr_status ?? null}
+            ocrConfidence={proof.ocr_confidence ?? null}
+          />
+
           {/* Verification Mode */}
           {mode === 'view' && (
             <div className="space-y-3 pt-2 border-t">
