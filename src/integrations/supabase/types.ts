@@ -2144,6 +2144,7 @@ export type Database = {
         | "screenshot_unclear"
         | "incorrect_reference"
         | "other"
+        | "amount_mismatch_ocr"
       proof_status: "pending" | "verified" | "rejected"
       school_system_state:
         | "trial_active"
@@ -2301,6 +2302,7 @@ export const Constants = {
         "screenshot_unclear",
         "incorrect_reference",
         "other",
+        "amount_mismatch_ocr",
       ],
       proof_status: ["pending", "verified", "rejected"],
       school_system_state: [
