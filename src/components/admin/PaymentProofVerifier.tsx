@@ -115,6 +115,11 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
   const handleVerify = async () => {
     if (!proof) return;
 
+    // Use parent-entered amount when present, fallback to installment amount
+    const amountToRecord = typeof proof.amount_paid === 'number' && proof.amount_paid > 0
+      ? proof.amount_paid
+      : proof.installments.amount;
+
     try {
       await verifyProof.mutateAsync({
         proofId: proof.id,
@@ -122,7 +127,7 @@ export function PaymentProofVerifier({ proof, open, onOpenChange }: PaymentProof
         adminNotes: adminNotes || undefined,
         studentId: proof.students.id,
         installmentId: proof.installments.id,
-        amount: proof.installments.amount,
+        amount: amountToRecord,
       });
 
       // Fire-and-forget WhatsApp confirmation
