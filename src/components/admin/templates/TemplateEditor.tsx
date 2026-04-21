@@ -13,11 +13,13 @@ import {
   useSaveTemplateTerms,
   useTemplateComponents,
   useSaveTemplateComponents,
+  useSaveTemplateGradeMappings,
   type AssessmentTemplate,
 } from "@/hooks/progress/useAssessmentTemplates";
 import { GradeMappingEditor } from "./GradeMappingEditor";
+import { GenerateTemplateDialog, type GeneratedTemplate } from "./GenerateTemplateDialog";
 import { toast } from "sonner";
-import { Save, ArrowLeft, Plus, Trash2, Loader2, GripVertical } from "lucide-react";
+import { Save, ArrowLeft, Plus, Trash2, Loader2, GripVertical, Sparkles } from "lucide-react";
 
 interface TemplateEditorProps {
   template: AssessmentTemplate | null; // null = creating new
