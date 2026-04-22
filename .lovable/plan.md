@@ -1,122 +1,96 @@
 
 
-## AI-Assisted Subject Creation (Nursery → Class 12)
+## One-Click School Onboarding — guided full setup in <60s
 
-A **"Quick Add Subjects"** flow on `Subjects.tsx` that lets admins go from zero subjects to a fully-populated curriculum in under 30 seconds — using a local board-based subject library plus optional AI suggestions for edge cases.
+Replace the existing minimal 4-step `GettingStarted` wizard with a single "Set up everything in one go" flow that creates the academic year, board profile, subjects (per board × class), and starter fee structures — all from one form, with a preview & confirm step.
 
-### What's already built (kept untouched)
-- `subjects` table + `subject_class_assignments` junction (insert path already exists)
-- `useCreateSubject` hook (handles dedupe by name + class assignment via upsert)
-- "Add Subject" single-entry dialog on `/progress/subjects`
-- Marks entry, report cards, competencies — **none of these are touched**
+### Important schema realities (adapted from spec)
 
-### Adapted from your spec (what changes vs. the prompt)
+The spec assumes a `classes` table and a `sections_per_class` table. **This codebase has neither** — classes are implicit (text on students/subjects), sections are text on student records. So:
 
-Two things in the prompt don't match this codebase, so I'm adapting:
+- "Create classes" → just **stored as the school's selected class list** (used to drive subject assignment + later student creation defaults). We don't insert empty class rows.
+- "Create sections" → stored as a **default sections list** the admin will use when adding students. No standalone section table.
+- We persist the chosen class & section defaults on `schools` via two new nullable columns (`default_classes text[]`, `default_sections text[]`) so /admin/students and other modules can prefill them.
 
-1. **`school_settings.board` doesn't exist.** No board field on `schools`. → I'll add `board text` to `schools` with values `CBSE | ICSE | ISC | STATE_BOARD | OTHER` (nullable, defaults null). First time the new dialog opens, if board is null we ask once and persist it. Fallback per spec: detect from default Assessment Template name (look for "CBSE"/"ICSE"/"ISC" substring).
+Everything else in the spec maps cleanly to existing tables.
 
-2. **Junction model is `class_name` (text), not `class_id`.** Existing schema uses class names like `"Class 5"`, `"Nursery"` — no `classes` table. → Dedupe constraint becomes `UNIQUE (school_id, lower(name), class_name)` on a new junction-aware check (we already have `UNIQUE (subject_id, class_name)` on `subject_class_assignments`; existing dedupe by name in `useCreateSubject` covers the rest). No breaking change.
+### What the new flow does
 
-### The 5 changes
-
-**1. DB migration (small)**
-- `ALTER TABLE schools ADD COLUMN board text` (nullable)
-- No other schema changes — existing junction handles class assignments
-
-**2. New file: `src/lib/subject-library.ts`**
-
-Pure-frontend lookup table — no API call. Shape:
-
-```ts
-type ClassGroup = 'pre_primary' | 'primary' | 'middle' | 'secondary' | 'senior';
-type Stream = 'science' | 'commerce' | 'arts';
-type Board = 'CBSE' | 'ICSE' | 'ISC' | 'STATE_BOARD';
-
-SUBJECT_LIBRARY: Record<Board, Record<ClassGroup, { name; code; type }[]>>
-SENIOR_STREAMS: Record<Stream, { name; code; type }[]>
-
-classifyClass(className): ClassGroup        // "Nursery"|"LKG"|"UKG" → pre_primary, "Class 5" → primary, etc.
-generateSubjectCode(name): string           // uppercase, max 6 chars, strips vowels if needed
-```
-
-Seeded with realistic curricula:
-- **Pre-primary**: English, Hindi, Numbers, EVS, Art, Rhymes
-- **Primary (1-5)**: English, Hindi, Maths, EVS, Computer, Art, PE, GK
-- **Middle (6-8)**: English, Hindi, Maths, Science, Social Studies, Sanskrit/3rd Lang, Computer, PE
-- **Secondary (9-10)**: English, Hindi, Maths, Science, Social Science + board variants (ICSE adds History/Civics + Geography separately, etc.)
-- **Senior (11-12)**: Common (English) + stream-specific (Sci: PCM/PCB; Com: Accounts/BST/Eco; Arts: History/Pol Sci/Psych/Sociology)
-
-**3. New component: `src/components/progress/QuickAddSubjectsDialog.tsx`**
-
-Replaces nothing — opens via a new **"⚡ Quick Add"** button next to existing "Add Subject":
+**One screen, three tabs (Configure → Preview → Done):**
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│ AI Subject Assistant            [ICSE Board detected] │
-├─────────────────────────────────────────────────────────┤
-│ 1. Pick classes:                                        │
-│    [Nursery] [LKG] [Class 1] [Class 5] [Class 9]…       │
-│                                                         │
-│ 2. (auto-shown if Class 11/12 picked)                   │
-│    Stream: ( ) Science ( ) Commerce ( ) Arts            │
-│                                                         │
-│ 3. Suggested subjects for ICSE • Middle:                │
-│    [✓ English ENG] [✓ Maths MATH] [Science SCI]         │
-│    [Social Sci SST] [Sanskrit SAN] [+ Custom…]          │
-│                                                         │
-│ 4. (optional) [✨ AI Suggest] for unusual subject       │
-│    "describe what you teach…" → returns {name, code}    │
-│                                                         │
-│ 5. Selected (4): editable rows                          │
-│    ┌─────────────────────────────────────┐             │
-│    │ English   [ENG  ] [Regenerate] [×]  │             │
-│    │ Maths     [MATH ] [Regenerate] [×]  │             │
-│    └─────────────────────────────────────┘             │
-│                                                         │
-│           [Cancel]  [Create 4 Subjects]                 │
-└─────────────────────────────────────────────────────────┘
+Configure
+─────────────────────────────────
+School name      [pre-filled, editable]
+Board            (•) CBSE  ( ) ICSE  ( ) ISC  ( ) State Board
+Academic Year    [2025-26]  Start [Apr 1]  End [Mar 31]
+Classes          [Nursery] [LKG] [UKG] [Class 1]…[Class 12]   (all on by default)
+Sections         [A] [B]   (A+B on by default, click to add C/D/E)
+Streams (11-12)  [✓ Science] [✓ Commerce] [✓ Arts]   (only if Class 11/12 picked)
+
+Fee setup (starter)
+  ✓ Tuition Fee     ₹[ 30000 ]/year   (mandatory)
+  ☐ Transport Fee   ₹[  6000 ]/year   (optional)
+  ☐ Activities Fee  ₹[  3000 ]/year   (optional)
+
+           [ Preview Setup → ]
 ```
 
-Behavior:
-- Board badge: pulls from `schools.board`. If null → a one-time inline prompt picks it and saves.
-- Class chips read from existing `useUniqueClasses` (same source as today's dialog)
-- Auto-groups picked classes → derives which library buckets to show
-- Stream selector appears only when Class 11/12 is in the picked set
-- Chips multi-select; clicking promotes to an editable row (name + code editable, regenerate code button)
-- Duplicate guard: pre-flight check against current `subjects` list — already-existing names show a yellow "exists, will be assigned to new classes only" tag (existing `useCreateSubject` already upserts safely)
+**Preview** — read-only summary card before any DB write:
 
-**4. New edge function: `suggest-subject` (optional AI fallback)**
-- Single call to Lovable AI Gateway `google/gemini-3-flash-preview`
-- Tool-call schema returns `{ name: string, code: string }` strictly
-- Used only when admin clicks "AI Suggest" for a subject not in the library
-- No auto-call on dialog open — keeps it instant and zero-cost by default
+```text
+You're about to create:
+  • Academic year: 2025-26 (Apr 1 – Mar 31)
+  • 16 classes × 2 sections = 32 class-sections
+  • 47 subjects across all classes (CBSE)
+       Pre-Primary: 6 · Primary: 8 · Middle: 8 · Secondary: 7 · Senior Sci/Com/Arts: 18
+  • 1 fee category, 1 fee structure, 1 installment per class
+  
+[ ← Back ]                          [ Create Everything ]
+```
 
-**5. Wire-up in `src/pages/progress/Subjects.tsx`**
-- Add **"⚡ Quick Add"** button next to existing "Add Subject"
-- On submit: loop selected rows → call existing `createSubject.mutateAsync` per row with all selected class names (existing hook already handles "subject exists → just upsert assignments")
-- Toast: `"Created 6 subjects across 4 classes"`
+**Done** — success screen with the 3 CTAs from the spec (Add Students / Import Excel / Invite Teachers).
 
-### Files
-- New: `supabase/migrations/<ts>_add_school_board.sql` (1 column add)
-- New: `src/lib/subject-library.ts`
-- New: `src/components/progress/QuickAddSubjectsDialog.tsx`
-- New: `supabase/functions/suggest-subject/index.ts`
-- Modified: `src/pages/progress/Subjects.tsx` (add button + mount dialog)
-- Modified: `src/hooks/useSchool.ts` types (add `board: string | null`)
+### What gets written (atomic-ish, in order)
 
-### Safety / non-breaking guarantees (from spec)
-- Marks entry, report cards, competencies, existing subjects — **untouched**
-- Existing single "Add Subject" dialog — **untouched**, sits next to new button
-- All existing RLS on `subjects` + `subject_class_assignments` covers new inserts automatically
-- Duplicate prevention uses existing `useCreateSubject` logic (case-insensitive name match → upserts class assignments instead of creating)
-- AI Suggest is opt-in, never blocks the flow, never auto-approves
-- Library is local — works offline, instant chip render, zero API cost for the common path
+For each step, we **skip-if-exists** (never overwrite). Idempotent — safe to re-run.
+
+1. `schools` UPDATE: `board`, `default_classes[]`, `default_sections[]`, `onboarding_completed=true`
+2. `academic_years` INSERT (skip if a year with same name already exists; mark new one active)
+3. `subjects` + `subject_class_assignments` — uses existing `useCreateSubject` logic (case-insensitive name match → upsert assignments). For each picked class:
+   - resolve `classifyClass(className)` → group
+   - pull `getSuggestions(board, [group], stream?)` from existing `subject-library.ts`
+   - for senior classes (11-12), add subjects for each picked stream
+4. `fee_categories` INSERT (only categories the admin checked + amount > 0; skip if name already exists for school — uses existing default seeded set if none)
+5. `fee_structures` INSERT — one per (category × academic_year). Uses existing `useCreateFeeStructure` which auto-creates a "Full Payment" installment with default due date
+
+If any step fails after partial writes, we surface the error and **leave what was created** (no DB transactions across REST calls — but each step is independently idempotent, so admin can simply hit "Create Everything" again and it skips what's done).
+
+### Non-breaking guarantees
+
+- **Skip onboarding if data exists:** before showing the form, check if `school.onboarding_completed === true` → redirect to `/admin` (already done today). Plus, if any of `academic_years`, `subjects`, or `fee_structures` already has rows for this school, show: "Setup already done — [Go to Dashboard]" with a small "Run again to add missing pieces" link that re-enters the flow in **idempotent mode** (everything skip-if-exists).
+- Existing modules (Students, Fees, Marks, Reports, Promotions) read from the same tables — they get the seeded data automatically, no code changes required.
+- The current `BulkStudentUpload` step is preserved — it now appears on the **Done** screen as the "Import Excel" CTA.
+
+### The 5 file changes
+
+**1. DB migration** — `ALTER TABLE schools ADD COLUMN default_classes text[], ADD COLUMN default_sections text[]` (board column already exists from prior work)
+
+**2. Replace** `src/pages/admin/GettingStarted.tsx` with the new 3-tab Configure → Preview → Done flow described above. Old "select classes / sections / upload students" steps are absorbed.
+
+**3. New file** `src/lib/onboarding-engine.ts` — pure helper that takes `(school, board, year, classes, sections, streams, feeRows)` and:
+   - returns a `previewSummary()` object (counts for the preview screen, no DB writes)
+   - exposes `executeOnboarding()` that runs the 5 ordered idempotent steps above using existing supabase client + reusing existing hooks' insert logic where possible
+
+**4. Modify** `src/hooks/useSchool.ts` — add `default_classes: string[] | null` and `default_sections: string[] | null` to the `School` type
+
+**5. Use existing libraries** — no new edge function, no AI call. Subject library (`src/lib/subject-library.ts`) and `useCreateSubject` deduplication already cover the needs.
 
 ### Acceptance
-- Open Quick Add → pick "Class 1, 2, 3, 4, 5" → 8 chips appear → click 6 → click Create → 6 subjects created and each assigned to all 5 classes in <30s
-- Pick "Class 11" → stream selector appears → choose Science → PCM/PCB chips show
-- Pick CBSE board → chips swap to CBSE curriculum; pick ICSE → ICSE curriculum (incl. split History/Civics + Geography)
-- Re-running with same selections → no duplicates created, toast says "0 new (all already exist)"
-- Marks entry + report cards continue to work unchanged
+
+- Fresh school → Configure (board=CBSE, all 16 classes, 2 sections, Tuition ₹30k checked) → Preview → Create → AY 2025-26 active, ~30 unique subjects created and assigned to the 16 classes, 1 fee category + 1 structure + 1 "Full Payment" installment, `onboarding_completed=true`, redirected to Done
+- Re-running the flow on a school that already has subjects → 0 duplicates, toast "Already set up — added 0 new items"
+- Picking Class 11 + Class 12 with Science + Commerce → senior subjects from both streams appear in preview & get created
+- Existing single-student add, marks entry, fee assignment for new students continue to work unchanged
+- Total wall-clock time on a fresh school: under 60 seconds
 
