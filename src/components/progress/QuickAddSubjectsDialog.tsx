@@ -337,7 +337,7 @@ export function QuickAddSubjectsDialog({ open, onOpenChange, uniqueClasses, exis
                         {s.code}
                       </span>
                       {exists && !sel && (
-                        <span className="text-xs text-amber-600">•exists</span>
+                        <span className="text-xs text-muted-foreground">•exists</span>
                       )}
                     </button>
                   );

@@ -363,6 +363,15 @@ export default function Subjects() {
           </Dialog>
         </div>}
 
+        {!isTeacher && (
+          <QuickAddSubjectsDialog
+            open={isQuickAddOpen}
+            onOpenChange={setIsQuickAddOpen}
+            uniqueClasses={uniqueClasses}
+            existingSubjects={subjects}
+          />
+        )}
+
         <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader>
             <CardTitle>Subjects List</CardTitle>
