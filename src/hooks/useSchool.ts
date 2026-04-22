@@ -35,6 +35,7 @@ export interface School {
   // Onboarding defaults
   default_classes: string[] | null;
   default_sections: string[] | null;
+  onboarding_completed: boolean;
 }
 
 export function useSchool() {
