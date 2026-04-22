@@ -1,95 +1,122 @@
 
 
-## AI opportunities — Assessment Templates + system-wide audit
+## AI-Assisted Subject Creation (Nursery → Class 12)
 
-### Yes, AI can absolutely help in Assessment Templates
+A **"Quick Add Subjects"** flow on `Subjects.tsx` that lets admins go from zero subjects to a fully-populated curriculum in under 30 seconds — using a local board-based subject library plus optional AI suggestions for edge cases.
 
-Today the user manually types every term, every component, every grade band. That's tedious and error-prone — most schools follow a standard board pattern (CBSE / ICSE / State boards / Cambridge). One AI prompt can produce the whole thing in 5 seconds.
+### What's already built (kept untouched)
+- `subjects` table + `subject_class_assignments` junction (insert path already exists)
+- `useCreateSubject` hook (handles dedupe by name + class assignment via upsert)
+- "Add Subject" single-entry dialog on `/progress/subjects`
+- Marks entry, report cards, competencies — **none of these are touched**
 
-### Proposed: "Generate with AI" button in Assessment Templates
+### Adapted from your spec (what changes vs. the prompt)
 
-Top-right of the Template Editor, next to "Save Template":
+Two things in the prompt don't match this codebase, so I'm adapting:
 
-```text
-[ ✨ Generate with AI ]   [ 💾 Save Template ]
+1. **`school_settings.board` doesn't exist.** No board field on `schools`. → I'll add `board text` to `schools` with values `CBSE | ICSE | ISC | STATE_BOARD | OTHER` (nullable, defaults null). First time the new dialog opens, if board is null we ask once and persist it. Fallback per spec: detect from default Assessment Template name (look for "CBSE"/"ICSE"/"ISC" substring).
+
+2. **Junction model is `class_name` (text), not `class_id`.** Existing schema uses class names like `"Class 5"`, `"Nursery"` — no `classes` table. → Dedupe constraint becomes `UNIQUE (school_id, lower(name), class_name)` on a new junction-aware check (we already have `UNIQUE (subject_id, class_name)` on `subject_class_assignments`; existing dedupe by name in `useCreateSubject` covers the rest). No breaking change.
+
+### The 5 changes
+
+**1. DB migration (small)**
+- `ALTER TABLE schools ADD COLUMN board text` (nullable)
+- No other schema changes — existing junction handles class assignments
+
+**2. New file: `src/lib/subject-library.ts`**
+
+Pure-frontend lookup table — no API call. Shape:
+
+```ts
+type ClassGroup = 'pre_primary' | 'primary' | 'middle' | 'secondary' | 'senior';
+type Stream = 'science' | 'commerce' | 'arts';
+type Board = 'CBSE' | 'ICSE' | 'ISC' | 'STATE_BOARD';
+
+SUBJECT_LIBRARY: Record<Board, Record<ClassGroup, { name; code; type }[]>>
+SENIOR_STREAMS: Record<Stream, { name; code; type }[]>
+
+classifyClass(className): ClassGroup        // "Nursery"|"LKG"|"UKG" → pre_primary, "Class 5" → primary, etc.
+generateSubjectCode(name): string           // uppercase, max 6 chars, strips vowels if needed
 ```
 
-Opens a small dialog:
+Seeded with realistic curricula:
+- **Pre-primary**: English, Hindi, Numbers, EVS, Art, Rhymes
+- **Primary (1-5)**: English, Hindi, Maths, EVS, Computer, Art, PE, GK
+- **Middle (6-8)**: English, Hindi, Maths, Science, Social Studies, Sanskrit/3rd Lang, Computer, PE
+- **Secondary (9-10)**: English, Hindi, Maths, Science, Social Science + board variants (ICSE adds History/Civics + Geography separately, etc.)
+- **Senior (11-12)**: Common (English) + stream-specific (Sci: PCM/PCB; Com: Accounts/BST/Eco; Arts: History/Pol Sci/Psych/Sociology)
+
+**3. New component: `src/components/progress/QuickAddSubjectsDialog.tsx`**
+
+Replaces nothing — opens via a new **"⚡ Quick Add"** button next to existing "Add Subject":
 
 ```text
-Tell me about your assessment system
-─────────────────────────────────────
-Examples you can type:
-  "CBSE Class 6-10 with FA1, FA2, SA1, SA2"
-  "ICSE primary, 3 terms, internal + external"
-  "Cambridge IGCSE with coursework + final exam"
-  "Maharashtra State Board Std 5-8"
-  "Montessori — 3 terms, descriptive grades only"
-
-[ Free-text input box ]
-[ Generate ] [ Cancel ]
+┌─────────────────────────────────────────────────────────┐
+│ AI Subject Assistant            [ICSE Board detected] │
+├─────────────────────────────────────────────────────────┤
+│ 1. Pick classes:                                        │
+│    [Nursery] [LKG] [Class 1] [Class 5] [Class 9]…       │
+│                                                         │
+│ 2. (auto-shown if Class 11/12 picked)                   │
+│    Stream: ( ) Science ( ) Commerce ( ) Arts            │
+│                                                         │
+│ 3. Suggested subjects for ICSE • Middle:                │
+│    [✓ English ENG] [✓ Maths MATH] [Science SCI]         │
+│    [Social Sci SST] [Sanskrit SAN] [+ Custom…]          │
+│                                                         │
+│ 4. (optional) [✨ AI Suggest] for unusual subject       │
+│    "describe what you teach…" → returns {name, code}    │
+│                                                         │
+│ 5. Selected (4): editable rows                          │
+│    ┌─────────────────────────────────────┐             │
+│    │ English   [ENG  ] [Regenerate] [×]  │             │
+│    │ Maths     [MATH ] [Regenerate] [×]  │             │
+│    └─────────────────────────────────────┘             │
+│                                                         │
+│           [Cancel]  [Create 4 Subjects]                 │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**What AI returns (one Lovable AI Gateway call to `google/gemini-2.5-flash`):**
-- Suggested template name
-- Grading type (`percentage` or `custom_grades`)
-- Terms list (e.g. FA1, FA2, SA1, SA2 / Term 1, Term 2, Final)
-- Mark components with max marks (Internal 20, External 80, etc.)
-- Grade mappings (A+/A/B/C… with the right cut-offs for that board)
+Behavior:
+- Board badge: pulls from `schools.board`. If null → a one-time inline prompt picks it and saves.
+- Class chips read from existing `useUniqueClasses` (same source as today's dialog)
+- Auto-groups picked classes → derives which library buckets to show
+- Stream selector appears only when Class 11/12 is in the picked set
+- Chips multi-select; clicking promotes to an editable row (name + code editable, regenerate code button)
+- Duplicate guard: pre-flight check against current `subjects` list — already-existing names show a yellow "exists, will be assigned to new classes only" tag (existing `useCreateSubject` already upserts safely)
 
-User reviews everything in the existing editor and can edit anything before saving. Nothing auto-commits.
+**4. New edge function: `suggest-subject` (optional AI fallback)**
+- Single call to Lovable AI Gateway `google/gemini-3-flash-preview`
+- Tool-call schema returns `{ name: string, code: string }` strictly
+- Used only when admin clicks "AI Suggest" for a subject not in the library
+- No auto-call on dialog open — keeps it instant and zero-cost by default
 
-**File:** new edge function `generate-assessment-template` + a small `GenerateTemplateDialog.tsx` mounted in `TemplateEditor.tsx`. Schema-locked tool-call response so the structure is always valid.
+**5. Wire-up in `src/pages/progress/Subjects.tsx`**
+- Add **"⚡ Quick Add"** button next to existing "Add Subject"
+- On submit: loop selected rows → call existing `createSubject.mutateAsync` per row with all selected class names (existing hook already handles "subject exists → just upsert assignments")
+- Toast: `"Created 6 subjects across 4 classes"`
 
----
+### Files
+- New: `supabase/migrations/<ts>_add_school_board.sql` (1 column add)
+- New: `src/lib/subject-library.ts`
+- New: `src/components/progress/QuickAddSubjectsDialog.tsx`
+- New: `supabase/functions/suggest-subject/index.ts`
+- Modified: `src/pages/progress/Subjects.tsx` (add button + mount dialog)
+- Modified: `src/hooks/useSchool.ts` types (add `board: string | null`)
 
-### System-wide AI audit — what's already AI-powered
+### Safety / non-breaking guarantees (from spec)
+- Marks entry, report cards, competencies, existing subjects — **untouched**
+- Existing single "Add Subject" dialog — **untouched**, sits next to new button
+- All existing RLS on `subjects` + `subject_class_assignments` covers new inserts automatically
+- Duplicate prevention uses existing `useCreateSubject` logic (case-insensitive name match → upserts class assignments instead of creating)
+- AI Suggest is opt-in, never blocks the flow, never auto-approves
+- Library is local — works offline, instant chip render, zero API cost for the common path
 
-✅ Student Excel import (`process-student-excel` — column mapping)
-✅ Fee Excel import (`process-fee-excel`)
-✅ Payment proof OCR (just shipped)
-✅ Progress analysis (`analyze-progress` — student insights)
-✅ Help chatbot (`help-assistant`)
-
-### High-value AI additions ranked by impact
-
-**🔥 Tier 1 — biggest time-savers**
-
-1. **Assessment Template generator** (above) — saves 10-15 min per template
-2. **Fee Structure generator** — "₹45,000/year tuition + ₹3,000 books, split into 2 installments due Apr & Oct" → auto-creates categories, structures, installments
-3. **AI Reject Reason composer for payment proofs** — admin clicks 🤖 → AI drafts a polite, parent-friendly rejection message based on the comparison panel mismatch (currently they pick a canned reason)
-
-**⚡ Tier 2 — quality-of-life**
-
-4. **Smart Bulk WhatsApp message composer** — admin types intent ("remind unpaid Class 5 parents about Term 2 fees due next week"), AI drafts the message in chosen language (English / Hindi / regional)
-5. **AI report card comments** — auto-generate teacher remarks per subject based on marks + attendance + competency scores (huge time-saver during reporting season)
-6. **Parent question auto-responder** (parent view) — small "Ask about my child" box answers fee/attendance/progress questions from the data already loaded for that token
-
-**💡 Tier 3 — nice to have**
-
-7. **AI exam paper question bank** — generate practice questions per subject + class + chapter (NEP-aligned)
-8. **Onboarding assistant** — replaces the static 4-step wizard with a conversational "Tell me about your school" flow that pre-fills classes, fee structure, templates
-9. **Anomaly alerts on dashboard** — AI watches collection trends and surfaces "Class 7 collections dropped 40% this month vs last" type insights
-
----
-
-### Recommendation for THIS turn
-
-Implement only **#1 (Assessment Template generator)** now — it's the most-requested area you just asked about, fully scoped, one edge function + one dialog, no DB changes. The rest stay on the roadmap and we tackle one per request.
-
-### What to build now
-
-- New edge function: `supabase/functions/generate-assessment-template/index.ts` (Gemini 2.5 Flash, tool-call schema)
-- New component: `src/components/admin/templates/GenerateTemplateDialog.tsx`
-- Modified: `src/components/admin/templates/TemplateEditor.tsx` — add "✨ Generate with AI" button + wire results into existing form state (terms, components, grading type, name)
-- No DB migration, no changes to existing save flow
-
-### Safety
-- AI output populates the form only — user must click Save Template to commit
-- All fields remain fully editable
-- Schema-locked AI response prevents malformed data
-- Falls back gracefully if AI is unavailable (existing manual flow untouched)
-
-### Want a different pick?
-If you'd rather start with **AI report card comments** (#5 — arguably the biggest teacher time-saver) or the **Fee Structure generator** (#2), say the word and I'll re-plan around that instead.
+### Acceptance
+- Open Quick Add → pick "Class 1, 2, 3, 4, 5" → 8 chips appear → click 6 → click Create → 6 subjects created and each assigned to all 5 classes in <30s
+- Pick "Class 11" → stream selector appears → choose Science → PCM/PCB chips show
+- Pick CBSE board → chips swap to CBSE curriculum; pick ICSE → ICSE curriculum (incl. split History/Civics + Geography)
+- Re-running with same selections → no duplicates created, toast says "0 new (all already exist)"
+- Marks entry + report cards continue to work unchanged
 
