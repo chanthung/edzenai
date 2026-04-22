@@ -44,8 +44,9 @@ import { useMySubjectIds } from "@/hooks/progress/useMySubjectIds";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { BookOpen, Plus, Edit, Trash2, Loader2, Info } from "lucide-react";
+import { BookOpen, Plus, Edit, Trash2, Loader2, Info, Zap } from "lucide-react";
 import { CompetencyManager } from "@/components/progress/CompetencyManager";
+import { QuickAddSubjectsDialog } from "@/components/progress/QuickAddSubjectsDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -105,6 +106,7 @@ export default function Subjects() {
   const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<{
     id: string;
     name: string;
@@ -226,7 +228,11 @@ export default function Subjects() {
       />
 
       <div className="mt-6">
-        {!isTeacher && <div className="flex justify-end mb-4">
+        {!isTeacher && <div className="flex justify-end gap-2 mb-4">
+          <Button variant="outline" onClick={() => setIsQuickAddOpen(true)}>
+            <Zap className="h-4 w-4 mr-2 text-primary" />
+            Quick Add
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => handleOpenDialog()}>

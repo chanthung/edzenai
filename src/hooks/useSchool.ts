@@ -30,6 +30,8 @@ export interface School {
   payment_verified: boolean | null;
   payment_verified_at: string | null;
   payment_verified_by: string | null;
+  // Curriculum
+  board: string | null;
 }
 
 export function useSchool() {
