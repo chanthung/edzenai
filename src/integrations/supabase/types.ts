@@ -1126,6 +1126,7 @@ export type Database = {
         Row: {
           address: string | null
           billing_cycle: string
+          board: string | null
           created_at: string
           custom_per_student_fee: number | null
           discount_percent: number
@@ -1157,6 +1158,7 @@ export type Database = {
         Insert: {
           address?: string | null
           billing_cycle?: string
+          board?: string | null
           created_at?: string
           custom_per_student_fee?: number | null
           discount_percent?: number
@@ -1188,6 +1190,7 @@ export type Database = {
         Update: {
           address?: string | null
           billing_cycle?: string
+          board?: string | null
           created_at?: string
           custom_per_student_fee?: number | null
           discount_percent?: number
