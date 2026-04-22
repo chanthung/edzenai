@@ -1,9 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from "@/hooks/useSchool";
 import { useStudents } from "@/hooks/useStudents";
@@ -13,164 +17,262 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import edzenIcon from "@/assets/edzen-icon.png";
 import {
-  GraduationCap,
   ArrowRight,
   ArrowLeft,
   Upload,
   UserPlus,
   CheckCircle2,
   Sparkles,
-  Brain,
-  TrendingUp,
   SkipForward,
   Loader2,
+  GraduationCap,
+  Calendar,
+  Wallet,
+  Users,
 } from "lucide-react";
+import {
+  DEFAULT_CLASSES,
+  DEFAULT_SECTIONS,
+  DEFAULT_FEES,
+  defaultYearName,
+  previewSummary,
+  executeOnboarding,
+  type OnboardingFeeRow,
+} from "@/lib/onboarding-engine";
+import {
+  BOARD_LABELS,
+  CLASS_GROUP_LABELS,
+  type Board,
+  type Stream,
+} from "@/lib/subject-library";
 
-const CLASS_OPTIONS = [
-  "Pre-School", "Nursery", "LKG", "UKG",
-  "Class 1", "Class 2", "Class 3", "Class 4", "Class 5",
-  "Class 6", "Class 7", "Class 8", "Class 9", "Class 10",
-  "Class 11", "Class 12",
+const BOARDS: Board[] = ["CBSE", "ICSE", "ISC", "STATE_BOARD"];
+const STREAMS: { id: Stream; label: string }[] = [
+  { id: "science", label: "Science" },
+  { id: "commerce", label: "Commerce" },
+  { id: "arts", label: "Arts" },
 ];
 
-const SECTION_OPTIONS = ["A", "B", "C", "D", "E"];
+type Step = "configure" | "preview" | "done";
 
 export default function GettingStarted() {
-  const [step, setStep] = useState(1);
-  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
-  const [selectedSections, setSelectedSections] = useState<string[]>(["A"]);
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [completing, setCompleting] = useState(false);
-
   const navigate = useNavigate();
   const { data: school } = useSchool();
   const { data: students, refetch: refetchStudents } = useStudents();
   const { data: academicYears } = useAcademicYears();
 
-  const activeYear = academicYears?.find((y) => y.is_active);
-  const studentCount = students?.length || 0;
+  const [step, setStep] = useState<Step>("configure");
+  const [executing, setExecuting] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
-  // If onboarding already completed, redirect to dashboard
+  // Form state
+  const initialYear = useMemo(() => defaultYearName(), []);
+  const [schoolName, setSchoolName] = useState("");
+  const [board, setBoard] = useState<Board>("CBSE");
+  const [yearName, setYearName] = useState(initialYear.name);
+  const [yearStart, setYearStart] = useState(initialYear.start);
+  const [yearEnd, setYearEnd] = useState(initialYear.end);
+  const [selectedClasses, setSelectedClasses] = useState<string[]>(DEFAULT_CLASSES);
+  const [selectedSections, setSelectedSections] = useState<string[]>(["A", "B"]);
+  const [selectedStreams, setSelectedStreams] = useState<Stream[]>(["science", "commerce", "arts"]);
+  const [fees, setFees] = useState<OnboardingFeeRow[]>(DEFAULT_FEES);
+  const [resultSummary, setResultSummary] = useState<string>("");
+
+  // Hydrate from existing school
   useEffect(() => {
-    if (school && (school as any).onboarding_completed) {
+    if (!school) return;
+    if (school.onboarding_completed) {
       navigate("/admin", { replace: true });
+      return;
     }
+    if (school.name) setSchoolName(school.name);
+    if (school.board && BOARDS.includes(school.board as Board)) {
+      setBoard(school.board as Board);
+    }
+    if (school.default_classes?.length) setSelectedClasses(school.default_classes);
+    if (school.default_sections?.length) setSelectedSections(school.default_sections);
   }, [school, navigate]);
 
-  const completeOnboarding = async () => {
+  const studentCount = students?.length ?? 0;
+  const hasSenior = selectedClasses.some((c) => c === "Class 11" || c === "Class 12");
+
+  const summary = useMemo(() => {
+    if (!school) return null;
+    return previewSummary({
+      schoolId: school.id,
+      schoolName,
+      board,
+      yearName,
+      yearStart,
+      yearEnd,
+      classes: selectedClasses,
+      sections: selectedSections,
+      streams: hasSenior ? selectedStreams : [],
+      fees,
+    });
+  }, [school, schoolName, board, yearName, yearStart, yearEnd, selectedClasses, selectedSections, selectedStreams, hasSenior, fees]);
+
+  const toggle = <T,>(arr: T[], v: T) =>
+    arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
+
+  const handleSkip = async () => {
     if (!school) return;
-    setCompleting(true);
+    await supabase.from("schools").update({ onboarding_completed: true }).eq("id", school.id);
+    navigate("/admin", { replace: true });
+  };
+
+  const handleCreate = async () => {
+    if (!school || !summary) return;
+    setExecuting(true);
     try {
-      await supabase
-        .from("schools")
-        .update({ onboarding_completed: true } as any)
-        .eq("id", school.id);
-      navigate("/admin", { replace: true });
-    } catch {
-      toast.error("Something went wrong");
+      const result = await executeOnboarding({
+        schoolId: school.id,
+        schoolName,
+        board,
+        yearName,
+        yearStart,
+        yearEnd,
+        classes: selectedClasses,
+        sections: selectedSections,
+        streams: hasSenior ? selectedStreams : [],
+        fees,
+      });
+      const totalNew =
+        (result.yearCreated ? 1 : 0) +
+        result.subjectsCreated +
+        result.feeCategoriesCreated +
+        result.feeStructuresCreated;
+      setResultSummary(
+        totalNew === 0
+          ? "Already set up — added 0 new items"
+          : `Created ${result.subjectsCreated} new subjects · ${result.feeStructuresCreated} fee structures · ${result.classAssignments} class assignments`
+      );
+      if (result.errors.length > 0) {
+        toast.warning(`Setup completed with ${result.errors.length} warning(s)`, {
+          description: result.errors[0],
+        });
+      } else {
+        toast.success("School setup complete");
+      }
+      setStep("done");
+    } catch (e) {
+      toast.error("Setup failed", { description: (e as Error).message });
     } finally {
-      setCompleting(false);
+      setExecuting(false);
     }
   };
 
-  const handleSkip = async () => {
-    await completeOnboarding();
-  };
-
-  const toggleClass = (cls: string) => {
-    setSelectedClasses((prev) =>
-      prev.includes(cls) ? prev.filter((c) => c !== cls) : [...prev, cls]
-    );
-  };
-
-  const toggleSection = (sec: string) => {
-    setSelectedSections((prev) =>
-      prev.includes(sec) ? prev.filter((s) => s !== sec) : [...prev, sec]
-    );
-  };
+  const stepIndex = step === "configure" ? 0 : step === "preview" ? 1 : 2;
 
   return (
     <AdminLayout>
-      <div className="max-w-2xl mx-auto py-8 px-4">
-        {/* Progress indicator */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {[1, 2, 3, 4].map((s) => (
-            <div key={s} className="flex items-center gap-2">
+      <div className="max-w-3xl mx-auto py-8 px-4">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mx-auto mb-3">
+            <img src={edzenIcon} alt="EdZen AI" className="h-8 w-8 object-contain" />
+          </div>
+          <h1 className="text-2xl font-bold">One-Click School Setup</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Configure everything in under a minute
+          </p>
+        </div>
+
+        {/* Progress */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          {["Configure", "Preview", "Done"].map((label, i) => (
+            <div key={label} className="flex items-center gap-2">
               <div
                 className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                  s < step
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
+                  i < stepIndex
+                    ? "bg-primary/10 text-primary"
+                    : i === stepIndex
                     ? "bg-primary text-primary-foreground"
-                    : s === step
-                    ? "bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2"
                     : "bg-muted text-muted-foreground"
                 )}
               >
-                {s < step ? <CheckCircle2 className="h-4 w-4" /> : s}
+                {i < stepIndex ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span>{i + 1}</span>}
+                {label}
               </div>
-              {s < 4 && (
-                <div
-                  className={cn(
-                    "w-8 h-0.5",
-                    s < step ? "bg-primary" : "bg-muted"
-                  )}
-                />
-              )}
+              {i < 2 && <div className={cn("w-6 h-0.5", i < stepIndex ? "bg-primary" : "bg-muted")} />}
             </div>
           ))}
         </div>
 
-        {/* Step 1: Welcome */}
-        {step === 1 && (
-          <Card className="border-border/50 shadow-card animate-fade-in">
-            <CardContent className="pt-10 pb-10 text-center space-y-6">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mx-auto">
-                <img src={edzenIcon} alt="EdZen AI" className="h-11 w-11 object-contain" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold">Welcome to EdZen AI</h1>
-                <p className="text-muted-foreground mt-2 text-lg">
-                  Let's set up your school in 2 minutes
-                </p>
-              </div>
-              <Button size="lg" onClick={() => setStep(2)} className="gap-2">
-                Get Started
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 2: School Config */}
-        {step === 2 && (
+        {/* CONFIGURE */}
+        {step === "configure" && (
           <Card className="border-border/50 shadow-card animate-fade-in">
             <CardHeader>
               <CardTitle>Configure Your School</CardTitle>
               <CardDescription>
-                Select the classes and sections in your school
+                Pick your board, classes, sections, and starter fees. We'll create everything in one go.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Academic Year (read-only) */}
-              {activeYear && (
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Academic Year</p>
-                  <p className="font-medium">{activeYear.name}</p>
+              {/* School name */}
+              <div className="space-y-2">
+                <Label htmlFor="school-name">School Name</Label>
+                <Input
+                  id="school-name"
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                  placeholder="Stepping Stones School"
+                />
+              </div>
+
+              {/* Board */}
+              <div className="space-y-2">
+                <Label>Board</Label>
+                <RadioGroup
+                  value={board}
+                  onValueChange={(v) => setBoard(v as Board)}
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+                >
+                  {BOARDS.map((b) => (
+                    <label
+                      key={b}
+                      className={cn(
+                        "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors",
+                        board === b ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                      )}
+                    >
+                      <RadioGroupItem value={b} />
+                      <span className="text-sm font-medium">{BOARD_LABELS[b]}</span>
+                    </label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* Academic year */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" /> Academic Year
+                </Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Input value={yearName} onChange={(e) => setYearName(e.target.value)} placeholder="2025-26" />
+                  <Input type="date" value={yearStart} onChange={(e) => setYearStart(e.target.value)} />
+                  <Input type="date" value={yearEnd} onChange={(e) => setYearEnd(e.target.value)} />
                 </div>
-              )}
+              </div>
 
               {/* Classes */}
               <div className="space-y-2">
-                <p className="text-sm font-medium">Classes</p>
+                <Label className="flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4" /> Classes
+                  <span className="text-xs text-muted-foreground font-normal">
+                    ({selectedClasses.length} selected)
+                  </span>
+                </Label>
                 <div className="flex flex-wrap gap-2">
-                  {CLASS_OPTIONS.map((cls) => (
+                  {DEFAULT_CLASSES.map((c) => (
                     <Badge
-                      key={cls}
-                      variant={selectedClasses.includes(cls) ? "default" : "outline"}
+                      key={c}
+                      variant={selectedClasses.includes(c) ? "default" : "outline"}
                       className="cursor-pointer select-none px-3 py-1.5 text-sm"
-                      onClick={() => toggleClass(cls)}
+                      onClick={() => setSelectedClasses(toggle(selectedClasses, c))}
                     >
-                      {cls}
+                      {c}
                     </Badge>
                   ))}
                 </div>
@@ -178,28 +280,96 @@ export default function GettingStarted() {
 
               {/* Sections */}
               <div className="space-y-2">
-                <p className="text-sm font-medium">Sections</p>
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Sections per class
+                </Label>
                 <div className="flex flex-wrap gap-2">
-                  {SECTION_OPTIONS.map((sec) => (
+                  {DEFAULT_SECTIONS.map((s) => (
                     <Badge
-                      key={sec}
-                      variant={selectedSections.includes(sec) ? "default" : "outline"}
+                      key={s}
+                      variant={selectedSections.includes(s) ? "default" : "outline"}
                       className="cursor-pointer select-none px-3 py-1.5 text-sm"
-                      onClick={() => toggleSection(sec)}
+                      onClick={() => setSelectedSections(toggle(selectedSections, s))}
                     >
-                      {sec}
+                      {s}
                     </Badge>
                   ))}
                 </div>
               </div>
 
+              {/* Streams (only if Class 11/12 picked) */}
+              {hasSenior && (
+                <div className="space-y-2">
+                  <Label>Streams (Class 11–12)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {STREAMS.map((s) => (
+                      <Badge
+                        key={s.id}
+                        variant={selectedStreams.includes(s.id) ? "default" : "outline"}
+                        className="cursor-pointer select-none px-3 py-1.5 text-sm"
+                        onClick={() => setSelectedStreams(toggle(selectedStreams, s.id))}
+                      >
+                        {s.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fees */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4" /> Starter Fee Setup
+                </Label>
+                <div className="space-y-2">
+                  {fees.map((fee, idx) => (
+                    <div
+                      key={fee.name}
+                      className="flex items-center gap-3 p-3 rounded-lg border bg-card"
+                    >
+                      <Checkbox
+                        checked={fee.enabled}
+                        onCheckedChange={(checked) =>
+                          setFees((prev) =>
+                            prev.map((f, i) => (i === idx ? { ...f, enabled: !!checked } : f))
+                          )
+                        }
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{fee.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {fee.is_mandatory ? "Mandatory" : "Optional"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm text-muted-foreground">₹</span>
+                        <Input
+                          type="number"
+                          value={fee.amount}
+                          onChange={(e) =>
+                            setFees((prev) =>
+                              prev.map((f, i) =>
+                                i === idx ? { ...f, amount: parseFloat(e.target.value) || 0 } : f
+                              )
+                            )
+                          }
+                          className="w-28 h-9"
+                          disabled={!fee.enabled}
+                        />
+                        <span className="text-xs text-muted-foreground">/year</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-2">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back
-                </Button>
-                <Button onClick={() => setStep(3)} className="flex-1 gap-2">
-                  Continue
+                <Button
+                  onClick={() => setStep("preview")}
+                  className="flex-1 gap-2"
+                  disabled={!schoolName.trim() || selectedClasses.length === 0 || selectedSections.length === 0}
+                >
+                  Preview Setup
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -214,142 +384,124 @@ export default function GettingStarted() {
           </Card>
         )}
 
-        {/* Step 3: Add Students */}
-        {step === 3 && (
+        {/* PREVIEW */}
+        {step === "preview" && summary && (
           <Card className="border-border/50 shadow-card animate-fade-in">
             <CardHeader>
-              <CardTitle>Add Your Students</CardTitle>
+              <CardTitle>Review Your Setup</CardTitle>
               <CardDescription>
-                Upload your student list to get started quickly
+                Nothing is created yet. Confirm to apply — re-running later won't create duplicates.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {studentCount > 0 && (
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                  <p className="text-sm font-medium">
-                    {studentCount} student{studentCount !== 1 ? "s" : ""} added
+              <div className="grid sm:grid-cols-2 gap-3">
+                <PreviewItem
+                  icon={<Calendar className="h-4 w-4" />}
+                  label="Academic Year"
+                  value={`${summary.yearName} (${summary.yearStart} – ${summary.yearEnd})`}
+                />
+                <PreviewItem
+                  icon={<GraduationCap className="h-4 w-4" />}
+                  label="Classes × Sections"
+                  value={`${summary.classCount} × ${summary.sectionCount} = ${summary.classCount * summary.sectionCount} class-sections`}
+                />
+                <PreviewItem
+                  icon={<Sparkles className="h-4 w-4" />}
+                  label={`Subjects (${BOARD_LABELS[board]})`}
+                  value={`${summary.totalSubjects} unique subjects`}
+                />
+                <PreviewItem
+                  icon={<Wallet className="h-4 w-4" />}
+                  label="Fees"
+                  value={`${summary.feeCategoryCount} categor${summary.feeCategoryCount === 1 ? "y" : "ies"} · ${summary.feeStructureCount} structure${summary.feeStructureCount === 1 ? "" : "s"}`}
+                />
+              </div>
+
+              {summary.totalSubjects > 0 && (
+                <div className="p-3 rounded-lg bg-muted/50 text-sm">
+                  <p className="font-medium mb-1">Subject breakdown</p>
+                  <p className="text-muted-foreground text-xs">
+                    {(Object.keys(summary.subjectsByGroup) as (keyof typeof summary.subjectsByGroup)[])
+                      .filter((g) => summary.subjectsByGroup[g] > 0)
+                      .map((g) => `${CLASS_GROUP_LABELS[g]}: ${summary.subjectsByGroup[g]}`)
+                      .join(" · ")}
                   </p>
                 </div>
               )}
 
-              {/* Excel Upload - Primary */}
-              <button
-                onClick={() => setShowBulkUpload(true)}
-                className="w-full p-6 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors text-center space-y-2"
-              >
-                <Upload className="h-8 w-8 text-primary mx-auto" />
-                <p className="font-semibold">Upload Excel File</p>
-                <p className="text-sm text-muted-foreground">
-                  Recommended — Import students from a spreadsheet
-                </p>
-              </button>
-
-              {/* Manual Add - Secondary */}
-              <button
-                onClick={() => navigate("/admin/students")}
-                className="w-full p-4 rounded-xl border border-border hover:bg-muted/50 transition-colors text-center space-y-1"
-              >
-                <UserPlus className="h-6 w-6 text-muted-foreground mx-auto" />
-                <p className="font-medium text-sm">Add Manually</p>
-                <p className="text-xs text-muted-foreground">
-                  Add students one at a time
-                </p>
-              </button>
-
               <div className="flex gap-3 pt-2">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1 gap-2">
+                <Button variant="outline" onClick={() => setStep("configure")} className="flex-1 gap-2">
                   <ArrowLeft className="h-4 w-4" />
                   Back
                 </Button>
-                <Button
-                  onClick={() => {
-                    refetchStudents();
-                    setStep(4);
-                  }}
-                  className="flex-1 gap-2"
-                  disabled={studentCount === 0}
-                >
-                  Continue
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="text-center">
-                <Button variant="ghost" size="sm" onClick={handleSkip} className="text-muted-foreground gap-1">
-                  <SkipForward className="h-3.5 w-3.5" />
-                  Skip for now
+                <Button onClick={handleCreate} disabled={executing} className="flex-1 gap-2">
+                  {executing && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {executing ? "Creating..." : "Create Everything"}
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 4: Success + AI Preview */}
-        {step === 4 && (
+        {/* DONE */}
+        {step === "done" && (
           <Card className="border-border/50 shadow-card animate-fade-in">
-            <CardContent className="pt-10 pb-10 text-center space-y-6">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mx-auto">
-                <CheckCircle2 className="h-10 w-10 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">
-                  {studentCount > 0
-                    ? `${studentCount} Students Added Successfully 🎉`
-                    : "You're All Set!"}
-                </h2>
-                <p className="text-muted-foreground mt-1">
-                  Here's what EdZen AI can do for you
-                </p>
+            <CardContent className="pt-10 pb-10 space-y-6">
+              <div className="text-center space-y-3">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto">
+                  <CheckCircle2 className="h-8 w-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold">Your school is ready 🎉</h2>
+                <p className="text-muted-foreground text-sm">{resultSummary}</p>
               </div>
 
-              {/* AI Insight Preview Cards */}
-              <div className="grid gap-3 text-left max-w-md mx-auto">
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <Brain className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">AI Student Insights</p>
-                    <p className="text-xs text-muted-foreground">
-                      Detect students who may need attention in specific subjects
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <TrendingUp className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">Performance Tracking</p>
-                    <p className="text-xs text-muted-foreground">
-                      Class performance trends and NEP 2020 aligned report cards
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">Fee Transparency</p>
-                    <p className="text-xs text-muted-foreground">
-                      Parents can view fees and submit payment proofs instantly
-                    </p>
-                  </div>
-                </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <button
+                  onClick={() => navigate("/admin/students")}
+                  className="p-4 rounded-xl border hover:bg-muted/50 transition-colors text-center space-y-2"
+                >
+                  <UserPlus className="h-6 w-6 text-primary mx-auto" />
+                  <p className="font-medium text-sm">Add Students</p>
+                  <p className="text-xs text-muted-foreground">One at a time</p>
+                </button>
+                <button
+                  onClick={() => setShowBulkUpload(true)}
+                  className="p-4 rounded-xl border-2 border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors text-center space-y-2"
+                >
+                  <Upload className="h-6 w-6 text-primary mx-auto" />
+                  <p className="font-medium text-sm">Import Excel</p>
+                  <p className="text-xs text-muted-foreground">Recommended</p>
+                </button>
+                <button
+                  onClick={() => navigate("/admin/teachers")}
+                  className="p-4 rounded-xl border hover:bg-muted/50 transition-colors text-center space-y-2"
+                >
+                  <Users className="h-6 w-6 text-primary mx-auto" />
+                  <p className="font-medium text-sm">Invite Teachers</p>
+                  <p className="text-xs text-muted-foreground">Add staff</p>
+                </button>
               </div>
 
-              <Button
-                size="lg"
-                onClick={completeOnboarding}
-                disabled={completing}
-                className="gap-2"
-              >
-                {completing && <Loader2 className="h-4 w-4 animate-spin" />}
-                Go to Dashboard
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+              {studentCount > 0 && (
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                  <p className="text-sm font-medium">
+                    {studentCount} student{studentCount !== 1 ? "s" : ""} already added
+                  </p>
+                </div>
+              )}
+
+              <div className="text-center pt-2">
+                <Button onClick={() => navigate("/admin")} size="lg" className="gap-2">
+                  Go to Dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
       </div>
 
-      {/* Bulk Upload Dialog */}
       <BulkStudentUpload
         open={showBulkUpload}
         onOpenChange={(open) => {
@@ -358,5 +510,17 @@ export default function GettingStarted() {
         }}
       />
     </AdminLayout>
+  );
+}
+
+function PreviewItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="p-3 rounded-lg border bg-card space-y-1">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <p className="text-sm font-medium">{value}</p>
+    </div>
   );
 }

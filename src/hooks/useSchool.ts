@@ -32,6 +32,10 @@ export interface School {
   payment_verified_by: string | null;
   // Curriculum
   board: string | null;
+  // Onboarding defaults
+  default_classes: string[] | null;
+  default_sections: string[] | null;
+  onboarding_completed: boolean;
 }
 
 export function useSchool() {
