@@ -1129,6 +1129,8 @@ export type Database = {
           board: string | null
           created_at: string
           custom_per_student_fee: number | null
+          default_classes: string[] | null
+          default_sections: string[] | null
           discount_percent: number
           email: string | null
           id: string
@@ -1161,6 +1163,8 @@ export type Database = {
           board?: string | null
           created_at?: string
           custom_per_student_fee?: number | null
+          default_classes?: string[] | null
+          default_sections?: string[] | null
           discount_percent?: number
           email?: string | null
           id?: string
@@ -1193,6 +1197,8 @@ export type Database = {
           board?: string | null
           created_at?: string
           custom_per_student_fee?: number | null
+          default_classes?: string[] | null
+          default_sections?: string[] | null
           discount_percent?: number
           email?: string | null
           id?: string
