@@ -10,7 +10,9 @@ import { AccountantLayout } from "@/components/admin/AccountantLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { SubscriptionBanner } from "@/components/admin/SubscriptionBanner";
+import { LifecycleBanner } from "@/components/admin/LifecycleBanner";
+import { SuspendedScreen } from "@/components/admin/SuspendedScreen";
+import { useLifecycleStage } from "@/hooks/useLifecycleStage";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { PLAN_DISPLAY } from "@/config/plan-features";
 import { 
@@ -47,6 +49,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
   const { data: school, isLoading: schoolLoading } = useSchool();
   const { effectiveState, daysRemaining, isRestricted, currentPlan, canAccessFeature } = useSubscriptionStatus();
+  const { isHardLocked } = useLifecycleStage();
   const { isAccountant, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,6 +75,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Hard lock for suspended/terminated schools — block all admin UI
+  if (isHardLocked) {
+    return <SuspendedScreen schoolName={school?.name} />;
   }
 
   const planInfo = PLAN_DISPLAY[currentPlan];
@@ -230,13 +238,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         {/* Main content */}
         <main className="flex-1 lg:pl-[260px]">
           <div className="p-4 sm:p-6 lg:px-8 lg:py-7 max-w-7xl mx-auto">
-            {/* Subscription Banner */}
-            <SubscriptionBanner 
-              effectiveState={effectiveState} 
-              daysRemaining={daysRemaining}
-              currentPlan={currentPlan}
-              className="mb-6"
-            />
+            {/* Lifecycle banner (replaces TrialBanner / SubscriptionBanner) */}
+            <div className="mb-6">
+              <LifecycleBanner />
+            </div>
             {children}
           </div>
         </main>

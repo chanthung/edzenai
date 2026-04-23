@@ -1133,7 +1133,9 @@ export type Database = {
           default_sections: string[] | null
           discount_percent: number
           email: string | null
+          expiry_anchor_date: string | null
           id: string
+          lifecycle_entered_at: string | null
           logo_url: string | null
           name: string
           next_billing_date: string | null
@@ -1144,6 +1146,7 @@ export type Database = {
           pending_amount: number
           phone: string | null
           qr_code_url: string | null
+          scheduled_purge_at: string | null
           subscription_plan: string
           subscription_renewal_date: string | null
           subscription_start_date: string | null
@@ -1152,6 +1155,7 @@ export type Database = {
           system_state:
             | Database["public"]["Enums"]["school_system_state"]
             | null
+          terminated_at: string | null
           trial_end_date: string | null
           trial_start_date: string | null
           updated_at: string
@@ -1167,7 +1171,9 @@ export type Database = {
           default_sections?: string[] | null
           discount_percent?: number
           email?: string | null
+          expiry_anchor_date?: string | null
           id?: string
+          lifecycle_entered_at?: string | null
           logo_url?: string | null
           name: string
           next_billing_date?: string | null
@@ -1178,6 +1184,7 @@ export type Database = {
           pending_amount?: number
           phone?: string | null
           qr_code_url?: string | null
+          scheduled_purge_at?: string | null
           subscription_plan?: string
           subscription_renewal_date?: string | null
           subscription_start_date?: string | null
@@ -1186,6 +1193,7 @@ export type Database = {
           system_state?:
             | Database["public"]["Enums"]["school_system_state"]
             | null
+          terminated_at?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string
@@ -1201,7 +1209,9 @@ export type Database = {
           default_sections?: string[] | null
           discount_percent?: number
           email?: string | null
+          expiry_anchor_date?: string | null
           id?: string
+          lifecycle_entered_at?: string | null
           logo_url?: string | null
           name?: string
           next_billing_date?: string | null
@@ -1212,6 +1222,7 @@ export type Database = {
           pending_amount?: number
           phone?: string | null
           qr_code_url?: string | null
+          scheduled_purge_at?: string | null
           subscription_plan?: string
           subscription_renewal_date?: string | null
           subscription_start_date?: string | null
@@ -1220,6 +1231,7 @@ export type Database = {
           system_state?:
             | Database["public"]["Enums"]["school_system_state"]
             | null
+          terminated_at?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string
@@ -1571,6 +1583,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "subjects_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_lifecycle_logs: {
+        Row: {
+          created_at: string
+          from_stage: string | null
+          id: string
+          reason: string | null
+          school_id: string
+          to_stage: string
+        }
+        Insert: {
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          reason?: string | null
+          school_id: string
+          to_stage: string
+        }
+        Update: {
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          reason?: string | null
+          school_id?: string
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_lifecycle_logs_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
@@ -2036,6 +2083,10 @@ export type Database = {
           is_duplicate: boolean
         }[]
       }
+      compute_lifecycle_stage: {
+        Args: { _anchor_date: string }
+        Returns: string
+      }
       create_school_with_primary_admin: {
         Args: { _school_name: string }
         Returns: string
@@ -2160,6 +2211,10 @@ export type Database = {
         | "trial_expired"
         | "subscription_active"
         | "restricted_mode"
+        | "grace_period"
+        | "warning_phase"
+        | "suspended"
+        | "terminated"
       subject_type: "academic" | "co_curricular" | "vocational"
     }
     CompositeTypes: {
@@ -2319,6 +2374,10 @@ export const Constants = {
         "trial_expired",
         "subscription_active",
         "restricted_mode",
+        "grace_period",
+        "warning_phase",
+        "suspended",
+        "terminated",
       ],
       subject_type: ["academic", "co_curricular", "vocational"],
     },

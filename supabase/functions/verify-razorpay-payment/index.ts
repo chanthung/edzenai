@@ -98,20 +98,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update school status — same logic as Paddle webhook
+    // Update school status — clears all lifecycle fields on renewal
     if (schoolId) {
+      const periodEndDate = periodEnd.toISOString().split('T')[0];
       await supabase.from('schools').update({
         subscription_status: 'active',
         subscription_plan: plan,
         billing_cycle: billingCycle,
         subscription_start_date: now.toISOString(),
-        subscription_renewal_date: periodEnd.toISOString(),
-        next_billing_date: periodEnd.toISOString(),
+        subscription_renewal_date: periodEndDate,
+        next_billing_date: periodEndDate,
         payment_verified: true,
         payment_verified_at: now.toISOString(),
         system_state: 'subscription_active',
+        // Reset lifecycle on successful renewal
+        expiry_anchor_date: periodEndDate,
+        terminated_at: null,
+        scheduled_purge_at: null,
+        lifecycle_entered_at: now.toISOString(),
         updated_at: now.toISOString(),
       }).eq('id', schoolId);
+
+      // Log the lifecycle reset
+      await supabase.from('subscription_lifecycle_logs').insert({
+        school_id: schoolId,
+        from_stage: null,
+        to_stage: 'subscription_active',
+        reason: `Renewed via Razorpay (${billingCycle}) — anchor date ${periodEndDate}`,
+      });
     }
 
     console.log('Razorpay payment verified:', razorpay_payment_id, 'school:', schoolId);

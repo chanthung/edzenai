@@ -86,23 +86,38 @@ async function handleSubscriptionCreated(data: any, env: PaddleEnv) {
     return;
   }
 
-  // Update school subscription status
+  // Update school subscription status — clears lifecycle on renewal
   if (schoolId) {
     const plan = productId.includes('starter') ? 'starter' : 'pro';
     const billingCycle = priceId.includes('annual') ? 'annual' : 'monthly';
-    
+    const renewalDate = currentBillingPeriod?.endsAt
+      ? new Date(currentBillingPeriod.endsAt).toISOString().split('T')[0]
+      : null;
+
     await supabase.from('schools').update({
       subscription_status: 'active',
       subscription_plan: plan,
       billing_cycle: billingCycle,
       subscription_start_date: currentBillingPeriod?.startsAt || new Date().toISOString(),
-      subscription_renewal_date: currentBillingPeriod?.endsAt,
-      next_billing_date: currentBillingPeriod?.endsAt,
+      subscription_renewal_date: renewalDate,
+      next_billing_date: renewalDate,
       payment_verified: true,
       payment_verified_at: new Date().toISOString(),
       system_state: 'subscription_active',
+      // Reset lifecycle on successful renewal
+      expiry_anchor_date: renewalDate,
+      terminated_at: null,
+      scheduled_purge_at: null,
+      lifecycle_entered_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', schoolId);
+
+    await supabase.from('subscription_lifecycle_logs').insert({
+      school_id: schoolId,
+      from_stage: null,
+      to_stage: 'subscription_active',
+      reason: `Renewed via Paddle (${billingCycle}) — anchor date ${renewalDate}`,
+    });
   }
 
   console.log('Subscription created:', id, 'for user:', userId, 'school:', schoolId);
