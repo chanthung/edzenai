@@ -111,43 +111,104 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Right — Fee Summary Card */}
-          <div className="flex justify-center lg:justify-end">
-            <Card className="w-full max-w-sm rounded-3xl shadow-xl shadow-primary/5 border-border/60 overflow-hidden">
-              <CardContent className="p-0">
-                <div className="p-6 pb-4">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Balance</p>
-                  <p className="text-4xl font-extrabold tracking-tight">₹1,200.00</p>
-                  <Badge className="mt-2 bg-primary/10 text-primary border-primary/20 text-xs">Up to date</Badge>
-                </div>
-                <div className="px-6 pb-6 space-y-3">
-                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-status-paid/5 border border-status-paid/15">
-                    <div className="flex items-center gap-2.5">
-                      <CheckCircle2 className="h-4.5 w-4.5 text-status-paid" />
-                      <span className="text-sm font-medium">Paid Amount</span>
+          {/* Right — Live Activity Mockup */}
+          <div className="relative flex justify-center lg:justify-end">
+            {/* Decorative glow */}
+            <div className="absolute -inset-8 bg-gradient-to-tr from-primary/20 via-accent/10 to-transparent blur-3xl rounded-full opacity-60 pointer-events-none" />
+
+            {/* Main phone-style card */}
+            <div className="relative w-full max-w-sm">
+              <Card className="rounded-3xl shadow-2xl shadow-primary/10 border-border/60 overflow-hidden bg-card">
+                {/* Gradient header */}
+                <div className="relative bg-gradient-to-br from-primary via-primary to-accent p-6 pb-8 text-primary-foreground">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                        <GraduationCap className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] opacity-80">Welcome back</p>
+                        <p className="text-sm font-semibold leading-tight">Aarav's Parent</p>
+                      </div>
                     </div>
-                    <span className="font-bold text-status-paid">₹800</span>
+                    <Badge className="bg-white/20 hover:bg-white/20 text-white border-0 text-[10px] backdrop-blur">
+                      <span className="h-1.5 w-1.5 rounded-full bg-status-paid mr-1.5 animate-pulse" />
+                      Live
+                    </Badge>
                   </div>
-                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-status-due/5 border border-status-due/15">
-                    <div className="flex items-center gap-2.5">
-                      <Clock className="h-4.5 w-4.5 text-status-due" />
-                      <span className="text-sm font-medium">Pending</span>
+                  <p className="text-xs opacity-80 mb-1">Outstanding this term</p>
+                  <p className="text-4xl font-extrabold tracking-tight">₹4,200</p>
+                  <p className="text-xs opacity-80 mt-1">Due in 7 days · Auto-reminder set</p>
+                </div>
+
+                {/* Activity feed */}
+                <CardContent className="p-5 space-y-3">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    Recent activity
+                  </p>
+
+                  <ActivityRow
+                    icon={CheckCircle2}
+                    iconBg="bg-status-paid/10"
+                    iconColor="text-status-paid"
+                    title="Tuition Fee paid"
+                    meta="UPI · 2 min ago"
+                    amount="₹8,500"
+                    amountClass="text-status-paid"
+                  />
+
+                  <ActivityRow
+                    icon={Sparkles}
+                    iconBg="bg-accent/10"
+                    iconColor="text-accent"
+                    title="AI flagged: Maths attention"
+                    meta="Aarav · Class 7"
+                    amount="View"
+                    amountClass="text-accent"
+                  />
+
+                  <ActivityRow
+                    icon={CalendarCheck}
+                    iconBg="bg-primary/10"
+                    iconColor="text-primary"
+                    title="Attendance: Present"
+                    meta="Today · 8:42 AM"
+                    amount="98%"
+                    amountClass="text-primary"
+                  />
+
+                  <div className="pt-2 mt-1 border-t border-border/50 flex items-center justify-between">
+                    <p className="text-[11px] text-muted-foreground">WhatsApp updates ON</p>
+                    <div className="flex items-center gap-1">
+                      <div className="h-1.5 w-1.5 rounded-full bg-status-paid" />
+                      <span className="text-[11px] font-medium text-status-paid">Synced</span>
                     </div>
-                    <span className="font-bold text-status-due">₹400</span>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Floating badge top-right */}
+              <div className="absolute -top-3 -right-3 sm:-right-6 bg-card rounded-2xl shadow-xl border border-border/60 px-3.5 py-2.5 flex items-center gap-2 animate-fade-in">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
+                  <Zap className="h-4 w-4 text-white" />
                 </div>
-                <div className="px-6 pb-6 flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
-                  <span>Due Date</span>
-                  <span className="font-medium text-foreground">
-                    {new Intl.DateTimeFormat("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    }).format(new Date(Date.now() + 20 * 86400000))}
-                  </span>
+                <div>
+                  <p className="text-[10px] text-muted-foreground leading-tight">Saved this month</p>
+                  <p className="text-sm font-bold leading-tight">12 hrs admin</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              {/* Floating badge bottom-left */}
+              <div className="absolute -bottom-4 -left-3 sm:-left-6 bg-card rounded-2xl shadow-xl border border-border/60 px-3.5 py-2.5 flex items-center gap-2 animate-fade-in">
+                <div className="h-8 w-8 rounded-xl bg-status-paid/10 flex items-center justify-center shrink-0">
+                  <TrendingUp className="h-4 w-4 text-status-paid" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground leading-tight">Collection rate</p>
+                  <p className="text-sm font-bold leading-tight text-status-paid">+38% ↑</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -186,37 +247,85 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ═══ SOLUTION — "A Single Source of Truth" ═══ */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 bg-muted/30">
-        <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          {/* Visual Card */}
-          <div>
-            <Card className="rounded-3xl shadow-lg border-border/50 overflow-hidden">
-              <CardContent className="p-0">
-                <div className="p-5 bg-muted/40">
-                  <p className="text-2xs uppercase text-muted-foreground tracking-wider mb-1">Pending Settled</p>
-                  <p className="text-3xl font-extrabold">₹0.00</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Remaining balance</p>
-                </div>
-                <div className="p-5 border-t border-border/30">
-                  <p className="text-2xs uppercase text-muted-foreground tracking-wider mb-1">Total Paid</p>
-                  <p className="text-3xl font-extrabold text-primary">₹150.00</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Out of ₹150</p>
-                </div>
-              </CardContent>
-            </Card>
+      {/* ═══ SOLUTION — "One platform. Every workflow." ═══ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6 bg-gradient-to-b from-muted/30 via-background to-muted/30 relative overflow-hidden">
+        {/* Decorative blobs */}
+        <div className="absolute top-1/4 -left-32 h-72 w-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 -right-32 h-72 w-72 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center relative">
+          {/* Visual — Stat grid mockup */}
+          <div className="relative order-2 lg:order-1">
+            <div className="grid grid-cols-2 gap-4">
+              <StatTile
+                icon={IndianRupee}
+                label="Collected this month"
+                value="₹3.2L"
+                trend="+38%"
+                accent="primary"
+                tall
+              />
+              <div className="space-y-4">
+                <StatTile icon={Users} label="Active students" value="487" trend="+12" accent="accent" />
+                <StatTile icon={CalendarCheck} label="Avg attendance" value="94%" trend="+3%" accent="paid" />
+              </div>
+              <div className="col-span-2">
+                <Card className="rounded-3xl border-border/60 shadow-lg overflow-hidden bg-gradient-to-br from-primary/[0.08] via-card to-accent/[0.08]">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                          <Brain className="h-4 w-4 text-white" />
+                        </div>
+                        <p className="text-sm font-semibold">AI Insight</p>
+                      </div>
+                      <Badge className="bg-accent/15 text-accent border-accent/20 text-[10px]">Just now</Badge>
+                    </div>
+                    <p className="text-sm leading-relaxed text-foreground/90">
+                      <span className="font-semibold">3 students</span> in Class 7 show declining performance in Maths.
+                      <span className="text-primary font-medium"> Recommend extra revision class.</span>
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
+
           {/* Text */}
-          <div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">A Single Source of Truth</h2>
-            <p className="text-muted-foreground mb-8 leading-relaxed">
-              We prioritize clarity over complexity. Our dashboard shows the Status First, so you never have to
-              interpret the numbers yourself.
+          <div className="order-1 lg:order-2">
+            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">
+              <Sparkles className="h-3 w-3 mr-1.5" />
+              Built for modern schools
+            </Badge>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 tracking-tight leading-tight">
+              One platform.<br />
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Every workflow.
+              </span>
+            </h2>
+            <p className="text-muted-foreground mb-8 leading-relaxed text-lg">
+              From fee collection to attendance, parent updates to AI-powered student insights — replace 5 disconnected
+              tools with one calm, intelligent dashboard.
             </p>
-            <div className="space-y-4">
-              <SolutionBullet text="Instant status verification" />
-              <SolutionBullet text="Automated breakdown of every payment" />
-              <SolutionBullet text="Transparent installment tracking" />
+
+            <div className="space-y-4 mb-8">
+              <FeatureRow icon={Zap} text="Set up your entire school in under 60 seconds" />
+              <FeatureRow icon={MessageSquareWarning} text="Auto WhatsApp reminders for fees & updates" />
+              <FeatureRow icon={Brain} text="AI flags at-risk students before report card day" />
+              <FeatureRow icon={ShieldCheck} text="Parents view fees & progress — no app required" />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <Button size="lg" asChild className="h-12 shadow-md shadow-primary/20">
+                <Link to="/signup?plan=pro">
+                  Start Free Trial
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-status-paid" />
+                <span>30-day free trial · No card required</span>
+              </div>
             </div>
           </div>
         </div>
@@ -573,6 +682,87 @@ function ProblemCard({
         <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function ActivityRow({
+  icon: Icon,
+  iconBg,
+  iconColor,
+  title,
+  meta,
+  amount,
+  amountClass,
+}: {
+  icon: typeof CheckCircle2;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  meta: string;
+  amount: string;
+  amountClass: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", iconBg)}>
+        <Icon className={cn("h-4 w-4", iconColor)} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium leading-tight truncate">{title}</p>
+        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{meta}</p>
+      </div>
+      <span className={cn("text-sm font-bold shrink-0", amountClass)}>{amount}</span>
+    </div>
+  );
+}
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  trend,
+  accent,
+  tall = false,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: string;
+  trend: string;
+  accent: "primary" | "accent" | "paid";
+  tall?: boolean;
+}) {
+  const accentMap = {
+    primary: { icon: "text-primary", bg: "bg-primary/10", trend: "text-primary" },
+    accent: { icon: "text-accent", bg: "bg-accent/10", trend: "text-accent" },
+    paid: { icon: "text-status-paid", bg: "bg-status-paid/10", trend: "text-status-paid" },
+  }[accent];
+
+  return (
+    <Card className={cn("rounded-3xl border-border/60 shadow-md hover:shadow-lg transition-shadow", tall && "h-full")}>
+      <CardContent className={cn("p-5 flex flex-col", tall && "h-full justify-between min-h-[200px]")}>
+        <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center mb-4", accentMap.bg)}>
+          <Icon className={cn("h-5 w-5", accentMap.icon)} />
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">{label}</p>
+          <div className="flex items-baseline gap-2">
+            <p className={cn("font-extrabold tracking-tight", tall ? "text-4xl" : "text-2xl")}>{value}</p>
+            <span className={cn("text-xs font-semibold", accentMap.trend)}>{trend}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FeatureRow({ icon: Icon, text }: { icon: typeof Zap; text: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center shrink-0">
+        <Icon className="h-4 w-4 text-primary" />
+      </div>
+      <p className="text-base text-foreground/90 pt-1.5 leading-snug">{text}</p>
+    </div>
   );
 }
 
