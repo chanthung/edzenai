@@ -141,7 +141,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Student Name *</Label>
-                <Input id="edit-name" placeholder="Rahul Sharma" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                <Input id="edit-name" placeholder="John Smith" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-roll">Roll Number</Label>
@@ -236,7 +236,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-parentName">Parent Name</Label>
-                  <Input id="edit-parentName" placeholder="Mr. Vijay Sharma" value={formData.parent_name} onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })} />
+                  <Input id="edit-parentName" placeholder="Mr. David Smith" value={formData.parent_name} onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -261,7 +261,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
               <p className="text-sm font-medium mb-3">Guardian Details (if different from parent)</p>
               <div className="space-y-2">
                 <Label htmlFor="edit-guardian">Guardian Name & Relation</Label>
-                <Input id="edit-guardian" placeholder="Mr. Ramesh Sharma (Uncle)" value={formData.guardian} onChange={(e) => setFormData({ ...formData, guardian: e.target.value })} />
+                <Input id="edit-guardian" placeholder="Mr. Michael Smith (Uncle)" value={formData.guardian} onChange={(e) => setFormData({ ...formData, guardian: e.target.value })} />
               </div>
             </div>
 

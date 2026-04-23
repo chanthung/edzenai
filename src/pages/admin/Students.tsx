@@ -609,7 +609,7 @@ export default function Students() {
                     <Label htmlFor="name">Student Name *</Label>
                     <Input
                       id="name"
-                      placeholder="Rahul Sharma"
+                      placeholder="John Smith"
                       value={newStudent.name}
                       onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
                     />
@@ -758,7 +758,7 @@ export default function Students() {
                       <Label htmlFor="parentName">Parent Name</Label>
                       <Input
                         id="parentName"
-                        placeholder="Mr. Vijay Sharma"
+                        placeholder="Mr. David Smith"
                         value={newStudent.parent_name}
                         onChange={(e) => setNewStudent({ ...newStudent, parent_name: e.target.value })}
                       />
@@ -810,7 +810,7 @@ export default function Students() {
                     <Label htmlFor="guardian">Guardian Name & Relation</Label>
                     <Input
                       id="guardian"
-                      placeholder="Mr. Ramesh Sharma (Uncle)"
+                      placeholder="Mr. Michael Smith (Uncle)"
                       value={newStudent.guardian}
                       onChange={(e) => setNewStudent({ ...newStudent, guardian: e.target.value })}
                     />
