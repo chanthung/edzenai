@@ -72,7 +72,21 @@ export default function Assessments() {
   const { isTeacher } = useUserRole();
 
   const { data: students = [] } = useResolvedStudents();
-  const uniqueClasses = sortClassNames([...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[]);
+  const { data: myAssignments } = useMySubjectIds();
+
+  // Teachers: restrict to their assigned classes. Admins: see all.
+  const teacherClasses = isTeacher && myAssignments
+    ? [...new Set(myAssignments.map((a) => a.className).filter(Boolean))]
+    : null;
+
+  const allClasses = [...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[];
+  const visibleClasses = teacherClasses ? allClasses.filter((c) => teacherClasses.includes(c)) : allClasses;
+  const uniqueClasses = sortClassNames(visibleClasses);
+
+  // Filter assessments for teachers: show only assigned classes + school-wide (null class_name)
+  const visibleAssessments = teacherClasses
+    ? assessments.filter((a) => !a.class_name || teacherClasses.includes(a.class_name))
+    : assessments;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [name, setName] = useState("");
