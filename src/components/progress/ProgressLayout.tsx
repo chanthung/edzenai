@@ -314,6 +314,7 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
           </div>
         </main>
       </div>
+      <HelpChatbot />
     </div>
   );
 }
