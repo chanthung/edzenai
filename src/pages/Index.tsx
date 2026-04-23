@@ -1,5 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import Autoplay from "embla-carousel-autoplay";
 import edzenIcon from "@/assets/edzen-icon.png";
 import edzenLogoFull from "@/assets/edzen-logo-full.png";
@@ -52,6 +54,41 @@ export default function Index() {
   const { data: discountTiers = [] } = useVolumeDiscounts();
   const starterRate = pricing?.find((p) => p.plan === "starter")?.per_student_fee ?? DEFAULT_STARTER_RATE;
   const proRate = pricing?.find((p) => p.plan === "pro")?.per_student_fee ?? DEFAULT_PRO_RATE;
+
+  // Safety net: if an authenticated user lands on the marketing page
+  // (e.g. via OAuth callback that didn't reach /login), route them correctly.
+  const { user, session, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (authLoading || !session || !user) return;
+    if (!user.email_confirmed_at) return;
+
+    let cancelled = false;
+    (async () => {
+      const { data: isPlatformAdmin } = await supabase.rpc('is_platform_admin');
+      if (cancelled) return;
+      if (isPlatformAdmin) { navigate("/platform", { replace: true }); return; }
+
+      const { data: schoolAdmin } = await supabase
+        .from('school_admins').select('school_id').eq('user_id', user.id).maybeSingle();
+      if (cancelled) return;
+      if (schoolAdmin) { navigate("/admin", { replace: true }); return; }
+
+      const { data: staffMember } = await supabase
+        .from('school_teachers').select('school_id, role')
+        .eq('user_id', user.id).eq('is_active', true).maybeSingle();
+      if (cancelled) return;
+      if (staffMember) {
+        const r = (staffMember as any).role || 'teacher';
+        navigate(r === 'accountant' ? "/admin" : "/progress", { replace: true });
+        return;
+      }
+
+      // Authenticated but no school yet → onboarding
+      navigate("/onboard", { replace: true });
+    })();
+    return () => { cancelled = true; };
+  }, [authLoading, session, user, navigate]);
 
   return (
     <div className="min-h-screen bg-background">

@@ -52,8 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithOAuth = async (provider: 'google' | 'apple') => {
+    // Redirect back to /login so the role-based redirect useEffect runs
+    // (which routes new OAuth users to /onboard and existing users to their dashboard)
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/login`,
     });
     if (result.error) {
       return { error: result.error as Error };
