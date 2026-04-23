@@ -132,7 +132,7 @@ export default function Index() {
                       </div>
                     </div>
                     <Badge className="bg-white/20 hover:bg-white/20 text-white border-0 text-[10px] backdrop-blur">
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-300 mr-1.5 animate-pulse" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-status-paid mr-1.5 animate-pulse" />
                       Live
                     </Badge>
                   </div>
