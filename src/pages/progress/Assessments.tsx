@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAssessments, useCreateAssessment, useDeleteAssessment, type AssessmentDomain, type AssessmentCategory } from "@/hooks/progress/useAssessments";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
 import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
+import { useMySubjectIds } from "@/hooks/progress/useMySubjectIds";
 import { useUserRole } from "@/hooks/useUserRole";
 import { ClipboardList, Plus, Trash2, Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
@@ -71,7 +72,21 @@ export default function Assessments() {
   const { isTeacher } = useUserRole();
 
   const { data: students = [] } = useResolvedStudents();
-  const uniqueClasses = sortClassNames([...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[]);
+  const { data: myAssignments } = useMySubjectIds();
+
+  // Teachers: restrict to their assigned classes. Admins: see all.
+  const teacherClasses = isTeacher && myAssignments
+    ? [...new Set(myAssignments.map((a) => a.className).filter(Boolean))]
+    : null;
+
+  const allClasses = [...new Set(students.map((s) => s.class_name).filter(Boolean))] as string[];
+  const visibleClasses = teacherClasses ? allClasses.filter((c) => teacherClasses.includes(c)) : allClasses;
+  const uniqueClasses = sortClassNames(visibleClasses);
+
+  // Filter assessments for teachers: show only assigned classes + school-wide (null class_name)
+  const visibleAssessments = teacherClasses
+    ? assessments.filter((a) => !a.class_name || teacherClasses.includes(a.class_name))
+    : assessments;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [name, setName] = useState("");
@@ -274,7 +289,7 @@ export default function Assessments() {
                   </div>
                 ))}
               </div>
-            ) : assessments.length === 0 ? (
+            ) : visibleAssessments.length === 0 ? (
               <EmptyState
                 icon={ClipboardList}
                 title="No assessments yet"
@@ -298,7 +313,7 @@ export default function Assessments() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {assessments.map((assessment) => (
+                  {visibleAssessments.map((assessment) => (
                     <TableRow key={assessment.id}>
                       <TableCell className="font-medium">{assessment.name}</TableCell>
                       <TableCell>
