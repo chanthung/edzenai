@@ -685,6 +685,87 @@ function ProblemCard({
   );
 }
 
+function ActivityRow({
+  icon: Icon,
+  iconBg,
+  iconColor,
+  title,
+  meta,
+  amount,
+  amountClass,
+}: {
+  icon: typeof CheckCircle2;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  meta: string;
+  amount: string;
+  amountClass: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", iconBg)}>
+        <Icon className={cn("h-4 w-4", iconColor)} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium leading-tight truncate">{title}</p>
+        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{meta}</p>
+      </div>
+      <span className={cn("text-sm font-bold shrink-0", amountClass)}>{amount}</span>
+    </div>
+  );
+}
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  trend,
+  accent,
+  tall = false,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: string;
+  trend: string;
+  accent: "primary" | "accent" | "paid";
+  tall?: boolean;
+}) {
+  const accentMap = {
+    primary: { icon: "text-primary", bg: "bg-primary/10", trend: "text-primary" },
+    accent: { icon: "text-accent", bg: "bg-accent/10", trend: "text-accent" },
+    paid: { icon: "text-status-paid", bg: "bg-status-paid/10", trend: "text-status-paid" },
+  }[accent];
+
+  return (
+    <Card className={cn("rounded-3xl border-border/60 shadow-md hover:shadow-lg transition-shadow", tall && "h-full")}>
+      <CardContent className={cn("p-5 flex flex-col", tall && "h-full justify-between min-h-[200px]")}>
+        <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center mb-4", accentMap.bg)}>
+          <Icon className={cn("h-5 w-5", accentMap.icon)} />
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">{label}</p>
+          <div className="flex items-baseline gap-2">
+            <p className={cn("font-extrabold tracking-tight", tall ? "text-4xl" : "text-2xl")}>{value}</p>
+            <span className={cn("text-xs font-semibold", accentMap.trend)}>{trend}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FeatureRow({ icon: Icon, text }: { icon: typeof Zap; text: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center shrink-0">
+        <Icon className="h-4 w-4 text-primary" />
+      </div>
+      <p className="text-base text-foreground/90 pt-1.5 leading-snug">{text}</p>
+    </div>
+  );
+}
+
 import slide1 from "@/assets/slide-1.png";
 import slide2 from "@/assets/slide-2.png";
 import slide3 from "@/assets/slide-3.png";
