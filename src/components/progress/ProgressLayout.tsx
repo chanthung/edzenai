@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SubscriptionBanner } from "@/components/admin/SubscriptionBanner";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
+import { HelpChatbot } from "@/components/admin/HelpChatbot";
 import { 
   BarChart3, 
   BookOpen, 
