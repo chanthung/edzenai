@@ -1,96 +1,119 @@
 
 
-## One-Click School Onboarding — guided full setup in <60s
+## Subscription Lifecycle: Grace → Warning → Suspension → Termination + 1-Week Pre-Reminder
 
-Replace the existing minimal 4-step `GettingStarted` wizard with a single "Set up everything in one go" flow that creates the academic year, board profile, subjects (per board × class), and starter fee structures — all from one form, with a preview & confirm step.
+Two combined upgrades:
 
-### Important schema realities (adapted from spec)
+1. **Auto-restrict when subscription/trial expires** (the gap from last response) — implemented via the new 4-stage lifecycle from your image
+2. **Fee reminders start 7 days before due date** (not 5)
 
-The spec assumes a `classes` table and a `sections_per_class` table. **This codebase has neither** — classes are implicit (text on students/subjects), sections are text on student records. So:
+---
 
-- "Create classes" → just **stored as the school's selected class list** (used to drive subject assignment + later student creation defaults). We don't insert empty class rows.
-- "Create sections" → stored as a **default sections list** the admin will use when adding students. No standalone section table.
-- We persist the chosen class & section defaults on `schools` via two new nullable columns (`default_classes text[]`, `default_sections text[]`) so /admin/students and other modules can prefill them.
+### Part A — Subscription Lifecycle Engine (4 stages from your image)
 
-Everything else in the spec maps cleanly to existing tables.
+Today the system has only 2 effective states post-trial (`trial_active` / `trial_expired` → restricted). Razorpay one-time payments have **no auto-expiry job**, so a paid school whose `subscription_renewal_date` passed still appears active. We fix this with a **daily cron** that walks every school and applies the correct lifecycle stage based on days past expiry.
 
-### What the new flow does
+**The 4 stages (`subscription_lifecycle_stage` enum):**
 
-**One screen, three tabs (Configure → Preview → Done):**
+| Stage | Window | Access | What happens |
+|---|---|---|---|
+| `grace_period` | Days 1–15 past expiry | **Full access** | Auto "Gentle Reminder" emails + WhatsApp on day 1, 7, 14 to school admin; soft yellow banner in app |
+| `warning_phase` | Days 16–30 | **Limited (Admin-only, view-mostly)** | Login still works for admins; teachers/accountants see "School subscription expired" page; in-app modal on every admin page; daily emails on day 16, 21, 28 |
+| `suspension` | Days 31–89 | **No access** (data safe) | All users land on a "Service Paused" screen; only "Pay Now" + "Contact Support" buttons; data preserved untouched; weekly emails |
+| `termination` | Day 90+ | **Deleted** | Marked `terminated_at`; scheduled hard-delete after 30 more days (admin can restore in 30-day window via support); final notice email sent |
 
-```text
-Configure
-─────────────────────────────────
-School name      [pre-filled, editable]
-Board            (•) CBSE  ( ) ICSE  ( ) ISC  ( ) State Board
-Academic Year    [2025-26]  Start [Apr 1]  End [Mar 31]
-Classes          [Nursery] [LKG] [UKG] [Class 1]…[Class 12]   (all on by default)
-Sections         [A] [B]   (A+B on by default, click to add C/D/E)
-Streams (11-12)  [✓ Science] [✓ Commerce] [✓ Arts]   (only if Class 11/12 picked)
+**Trial expiry follows the same 4-stage flow** (currently it just goes straight to `trial_expired`). So a school whose 30-day Pro trial ends gets 15 days grace, 15 days warning, then suspension — same UX path as a paid school whose renewal lapses.
 
-Fee setup (starter)
-  ✓ Tuition Fee     ₹[ 30000 ]/year   (mandatory)
-  ☐ Transport Fee   ₹[  6000 ]/year   (optional)
-  ☐ Activities Fee  ₹[  3000 ]/year   (optional)
+**Schema changes:**
+```sql
+ALTER TYPE school_system_state ADD VALUE 'grace_period';
+ALTER TYPE school_system_state ADD VALUE 'warning_phase';
+ALTER TYPE school_system_state ADD VALUE 'suspended';
+ALTER TYPE school_system_state ADD VALUE 'terminated';
 
-           [ Preview Setup → ]
+ALTER TABLE schools
+  ADD COLUMN expiry_anchor_date date,         -- trial_end_date OR subscription_renewal_date, whichever applies
+  ADD COLUMN lifecycle_entered_at timestamptz, -- when current stage started
+  ADD COLUMN terminated_at timestamptz,       -- when stage flipped to 'terminated' (for 30-day restore window)
+  ADD COLUMN scheduled_purge_at timestamptz;  -- terminated_at + 30 days
+
+CREATE TABLE subscription_lifecycle_logs (
+  id uuid pk, school_id, from_stage, to_stage, reason text, created_at
+);
 ```
 
-**Preview** — read-only summary card before any DB write:
+`get_school_effective_state()` is rewritten to compute the correct stage from `expiry_anchor_date` + today's date. Old `'trial_expired'` and `'restricted_mode'` values stay supported (mapped to `warning_phase` for back-compat).
 
-```text
-You're about to create:
-  • Academic year: 2025-26 (Apr 1 – Mar 31)
-  • 16 classes × 2 sections = 32 class-sections
-  • 47 subjects across all classes (CBSE)
-       Pre-Primary: 6 · Primary: 8 · Middle: 8 · Secondary: 7 · Senior Sci/Com/Arts: 18
-  • 1 fee category, 1 fee structure, 1 installment per class
-  
-[ ← Back ]                          [ Create Everything ]
-```
+**The daily cron job** (`process-subscription-lifecycle`):
+- Runs daily at 2 AM IST via pg_cron
+- For each school: computes correct stage from anchor date, updates `system_state` if changed, writes a row to `subscription_lifecycle_logs`, queues notification emails on transition days (1, 7, 14, 16, 21, 28, 31, 45, 60, 89, 90)
+- For `terminated` schools past `scheduled_purge_at` → hard delete (separate function, requires service role)
 
-**Done** — success screen with the 3 CTAs from the spec (Add Students / Import Excel / Invite Teachers).
+**Frontend enforcement (extends existing `useSubscriptionStatus` + `RestrictedOverlay`):**
 
-### What gets written (atomic-ish, in order)
+| Stage | UX |
+|---|---|
+| `grace_period` | Yellow banner: "⏰ Your subscription expired N days ago. {15-N} days of full access remaining. [Renew Now]" — **no feature blocks** |
+| `warning_phase` | Red banner + dismissible modal on each admin login: "Limited access mode — renew within {30-N} days to avoid suspension". Teachers/Accountants → full lock screen |
+| `suspended` | Hard lock screen at app shell level (above router): "Service Paused — your data is safe. [Pay Now] [Contact Support]". No navigation possible |
+| `terminated` | "Account Terminated — data scheduled for deletion on {date}. [Contact Support to Restore]" |
 
-For each step, we **skip-if-exists** (never overwrite). Idempotent — safe to re-run.
+**Renewal flow:** Existing `verify-razorpay-payment` and `payments-webhook` already update `subscription_renewal_date` + flip to `subscription_active`. We add one line: also clear `terminated_at` / `scheduled_purge_at`, set new `expiry_anchor_date`, log the transition.
 
-1. `schools` UPDATE: `board`, `default_classes[]`, `default_sections[]`, `onboarding_completed=true`
-2. `academic_years` INSERT (skip if a year with same name already exists; mark new one active)
-3. `subjects` + `subject_class_assignments` — uses existing `useCreateSubject` logic (case-insensitive name match → upsert assignments). For each picked class:
-   - resolve `classifyClass(className)` → group
-   - pull `getSuggestions(board, [group], stream?)` from existing `subject-library.ts`
-   - for senior classes (11-12), add subjects for each picked stream
-4. `fee_categories` INSERT (only categories the admin checked + amount > 0; skip if name already exists for school — uses existing default seeded set if none)
-5. `fee_structures` INSERT — one per (category × academic_year). Uses existing `useCreateFeeStructure` which auto-creates a "Full Payment" installment with default due date
+---
 
-If any step fails after partial writes, we surface the error and **leave what was created** (no DB transactions across REST calls — but each step is independently idempotent, so admin can simply hit "Create Everything" again and it skips what's done).
+### Part B — 1-Week Advance Fee Reminder (parent-facing)
 
-### Non-breaking guarantees
+Tiny change to the existing `send-fee-reminders` edge function:
 
-- **Skip onboarding if data exists:** before showing the form, check if `school.onboarding_completed === true` → redirect to `/admin` (already done today). Plus, if any of `academic_years`, `subjects`, or `fee_structures` already has rows for this school, show: "Setup already done — [Go to Dashboard]" with a small "Run again to add missing pieces" link that re-enters the flow in **idempotent mode** (everything skip-if-exists).
-- Existing modules (Students, Fees, Marks, Reports, Promotions) read from the same tables — they get the seeded data automatically, no code changes required.
-- The current `BulkStudentUpload` step is preserved — it now appears on the **Done** screen as the "Import Excel" CTA.
+**Today** it checks 3 dates: `+5 days`, `today`, `yesterday`.
 
-### The 5 file changes
+**New schedule** matching your "Gentle Reminder" cadence:
+- **−7 days** ("📅 Friendly reminder: ₹X for {student} is due in 1 week on {date}")
+- **−3 days** ("⏰ Reminder: ₹X for {student} is due in 3 days")
+- **due day** ("⚠️ ₹X for {student} is due today")
+- **+1 day overdue** ("🔴 ₹X for {student} is overdue")
+- **+7 days overdue** ("🔴 Final reminder: ₹X for {student} is 1 week overdue")
 
-**1. DB migration** — `ALTER TABLE schools ADD COLUMN default_classes text[], ADD COLUMN default_sections text[]` (board column already exists from prior work)
+`fee_reminder_logs.reminder_type` enum is extended: `before_7d | before_3d | on | after_1d | after_7d` (existing `before` rows back-compat → treated as `before_5d`, no resend). Existing dedup-per-installment-per-type prevents duplicates.
 
-**2. Replace** `src/pages/admin/GettingStarted.tsx` with the new 3-tab Configure → Preview → Done flow described above. Old "select classes / sections / upload students" steps are absorbed.
+Cron (already runs daily at 8 AM IST) is unchanged — same job now sweeps 5 dates instead of 3.
 
-**3. New file** `src/lib/onboarding-engine.ts` — pure helper that takes `(school, board, year, classes, sections, streams, feeRows)` and:
-   - returns a `previewSummary()` object (counts for the preview screen, no DB writes)
-   - exposes `executeOnboarding()` that runs the 5 ordered idempotent steps above using existing supabase client + reusing existing hooks' insert logic where possible
+---
 
-**4. Modify** `src/hooks/useSchool.ts` — add `default_classes: string[] | null` and `default_sections: string[] | null` to the `School` type
+### Files
 
-**5. Use existing libraries** — no new edge function, no AI call. Subject library (`src/lib/subject-library.ts`) and `useCreateSubject` deduplication already cover the needs.
+**New:**
+- `supabase/migrations/<ts>_subscription_lifecycle.sql` — enum extension, schools columns, lifecycle logs table, rewritten `get_school_effective_state()`, helper `compute_lifecycle_stage(anchor_date)`
+- `supabase/functions/process-subscription-lifecycle/index.ts` — daily walker + email queuer + purge runner
+- `src/components/admin/SuspendedScreen.tsx` — full-screen lock for `suspended` / `terminated` stages
+- `src/components/admin/LifecycleBanner.tsx` — replaces `TrialBanner`, handles all 4 stages with countdowns
+- `src/hooks/useLifecycleStage.ts` — thin wrapper over `useSubscriptionStatus` exposing stage + days remaining + UX hints
+- `supabase/functions/_shared/lifecycle-emails.ts` — templates: gentle-reminder, warning, suspension, final-notice
+
+**Modified:**
+- `supabase/functions/send-fee-reminders/index.ts` — 5-date sweep + new templates
+- `supabase/functions/verify-razorpay-payment/index.ts` + `payments-webhook/index.ts` — clear lifecycle fields on successful renewal, set new `expiry_anchor_date`
+- `src/hooks/useSubscriptionStatus.ts` — return new `lifecycleStage`, `daysIntoExpiry`, `daysUntilNextStage`
+- `src/App.tsx` — top-level guard: if stage is `suspended` or `terminated`, render `SuspendedScreen` instead of routes (admins get an exception with limited shell)
+- `src/components/admin/AdminLayout.tsx` — mount `LifecycleBanner` (replaces `TrialBanner`)
+- Cron schedule (one-off SQL via insert tool, not migration): daily 2 AM IST → `process-subscription-lifecycle`
+
+### Safety / Non-breaking
+
+- Existing `trial_active` / `subscription_active` schools — **untouched**; they never enter the lifecycle states
+- `restricted_mode` rows currently in DB → migration backfills `expiry_anchor_date` from `trial_end_date` and lets the cron compute the correct stage on next run
+- Hard-delete (`termination → purge`) is gated by a 30-day `scheduled_purge_at` window AND requires a separate manual confirmation from a Platform Admin; cron only **schedules** the purge, never auto-deletes data without that 30-day buffer
+- Email/WhatsApp transitions are idempotent — `subscription_lifecycle_logs` prevents resends
+- All new emails go through existing `send-transactional-email` infrastructure
+- Fee reminder change is additive — existing `before` logs are honored, no parents get a sudden flood
 
 ### Acceptance
 
-- Fresh school → Configure (board=CBSE, all 16 classes, 2 sections, Tuition ₹30k checked) → Preview → Create → AY 2025-26 active, ~30 unique subjects created and assigned to the 16 classes, 1 fee category + 1 structure + 1 "Full Payment" installment, `onboarding_completed=true`, redirected to Done
-- Re-running the flow on a school that already has subjects → 0 duplicates, toast "Already set up — added 0 new items"
-- Picking Class 11 + Class 12 with Science + Commerce → senior subjects from both streams appear in preview & get created
-- Existing single-student add, marks entry, fee assignment for new students continue to work unchanged
-- Total wall-clock time on a fresh school: under 60 seconds
+- Trial ends → next 2 AM cron flips school to `grace_period`; admin sees yellow banner "15 days full access remaining"; "Gentle Reminder" email arrives same day
+- Day 16 → flips to `warning_phase`; admin sees red modal; teachers/accountants get locked out
+- Day 31 → flips to `suspended`; entire app shell shows "Service Paused" screen for everyone
+- Day 90 → flips to `terminated`; `scheduled_purge_at` set to day 120
+- Admin renews on day 20 → school flips to `subscription_active`, all banners gone, no data lost
+- Fee due in 7 days → parent gets "due in 1 week" WhatsApp; same parent gets 3-day reminder, day-of, +1, +7 overdue — never duplicates
 
