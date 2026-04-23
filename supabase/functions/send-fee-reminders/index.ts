@@ -28,15 +28,18 @@ Deno.serve(async (req) => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
-    const fiveDaysLater = new Date(today);
-    fiveDaysLater.setDate(fiveDaysLater.getDate() + 5);
-    const fiveDaysLaterStr = fiveDaysLater.toISOString().split('T')[0];
+    const dateOffset = (days: number) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split('T')[0];
+    };
 
-    const yesterdayDate = new Date(today);
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
+    const sevenDaysLaterStr = dateOffset(7);   // before_7d
+    const threeDaysLaterStr = dateOffset(3);   // before_3d
+    const yesterdayStr = dateOffset(-1);       // after_1d (1 day overdue)
+    const sevenDaysAgoStr = dateOffset(-7);    // after_7d (1 week overdue)
 
-    // Fetch installments due in 5 days, today, or yesterday (overdue)
+    // Fetch installments matching any of the 5 reminder dates
     const { data: installments, error: instError } = await supabase
       .from('installments')
       .select(`
@@ -46,7 +49,7 @@ Deno.serve(async (req) => {
           school:schools(name)
         )
       `)
-      .in('due_date', [fiveDaysLaterStr, todayStr, yesterdayStr]);
+      .in('due_date', [sevenDaysLaterStr, threeDaysLaterStr, todayStr, yesterdayStr, sevenDaysAgoStr]);
 
     if (instError) {
       console.error('Error fetching installments:', instError);
@@ -70,23 +73,25 @@ Deno.serve(async (req) => {
       const schoolName = feeStructure.school?.name || 'School';
       const feeStructureId = feeStructure.id;
 
-      // Determine reminder type
+      // Determine reminder type from due date offset
       let reminderType: string;
-      let emoji: string;
       let messageTemplate: string;
 
-      if (installment.due_date === fiveDaysLaterStr) {
-        reminderType = 'before';
-        emoji = '📅';
-        messageTemplate = `${emoji} Reminder: ₹{amount} for {studentName} is due on {dueDate}.\n\nView details & pay here:\n{parentLink}\n\n- ${schoolName}`;
+      if (installment.due_date === sevenDaysLaterStr) {
+        reminderType = 'before_7d';
+        messageTemplate = `📅 Friendly reminder: ₹{amount} for {studentName} is due in 1 week on {dueDate}.\n\nView & pay here:\n{parentLink}\n\n- ${schoolName}`;
+      } else if (installment.due_date === threeDaysLaterStr) {
+        reminderType = 'before_3d';
+        messageTemplate = `⏰ Reminder: ₹{amount} for {studentName} is due in 3 days on {dueDate}.\n\nPay here:\n{parentLink}\n\n- ${schoolName}`;
       } else if (installment.due_date === todayStr) {
         reminderType = 'on';
-        emoji = '⚠️';
-        messageTemplate = `${emoji} ₹{amount} for {studentName} is due today.\n\nPay now:\n{parentLink}\n\n- ${schoolName}`;
+        messageTemplate = `⚠️ ₹{amount} for {studentName} is due today.\n\nPay now:\n{parentLink}\n\n- ${schoolName}`;
+      } else if (installment.due_date === yesterdayStr) {
+        reminderType = 'after_1d';
+        messageTemplate = `🔴 ₹{amount} for {studentName} is overdue (was due yesterday).\n\nPlease pay at:\n{parentLink}\n\n- ${schoolName}`;
       } else {
-        reminderType = 'after';
-        emoji = '🔴';
-        messageTemplate = `${emoji} ₹{amount} for {studentName} is overdue.\n\nPlease pay at:\n{parentLink}\n\n- ${schoolName}`;
+        reminderType = 'after_7d';
+        messageTemplate = `🔴 Final reminder: ₹{amount} for {studentName} is 1 week overdue.\n\nPlease pay immediately:\n{parentLink}\n\n- ${schoolName}`;
       }
 
       // Find students assigned to this fee structure who haven't fully paid this installment

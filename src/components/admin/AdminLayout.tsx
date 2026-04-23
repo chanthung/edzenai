@@ -10,7 +10,9 @@ import { AccountantLayout } from "@/components/admin/AccountantLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { SubscriptionBanner } from "@/components/admin/SubscriptionBanner";
+import { LifecycleBanner } from "@/components/admin/LifecycleBanner";
+import { SuspendedScreen } from "@/components/admin/SuspendedScreen";
+import { useLifecycleStage } from "@/hooks/useLifecycleStage";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { PLAN_DISPLAY } from "@/config/plan-features";
 import { 
