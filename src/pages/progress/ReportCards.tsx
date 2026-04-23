@@ -11,6 +11,8 @@ import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
 import { useReportCard } from "@/hooks/progress/useReportCard";
 import { useClassReportCards } from "@/hooks/progress/useClassReportCards";
+import { useMySubjectIds } from "@/hooks/progress/useMySubjectIds";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { FileText, Printer, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +21,8 @@ export default function ReportCards() {
   const { data: students = [], isLoading: studentsLoading } = useResolvedStudents();
   const { data: academicYears = [], isLoading: yearsLoading } = useResolvedAcademicYears();
   const activeYear = useResolvedActiveAcademicYear();
+  const { isTeacher } = useUserRole();
+  const { data: myAssignments } = useMySubjectIds();
 
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
@@ -26,10 +30,20 @@ export default function ReportCards() {
   const [viewMode, setViewMode] = useState<"individual" | "class">("individual");
 
   const effectiveYearId = selectedYearId || activeYear?.id || "";
-  const classNames = sortClassNames([...new Set(students.map(s => s.class_name).filter(Boolean) as string[])]);
-  const filteredStudents = selectedClass && selectedClass !== "__all__"
-    ? students.filter(s => s.class_name === selectedClass)
+
+  // Teacher: limit to assigned classes only
+  const teacherClasses = isTeacher && myAssignments
+    ? [...new Set(myAssignments.map((a) => a.className).filter(Boolean) as string[])]
+    : null;
+
+  const visibleStudents = teacherClasses
+    ? students.filter((s) => s.class_name && teacherClasses.includes(s.class_name))
     : students;
+
+  const classNames = sortClassNames([...new Set(visibleStudents.map(s => s.class_name).filter(Boolean) as string[])]);
+  const filteredStudents = selectedClass && selectedClass !== "__all__"
+    ? visibleStudents.filter(s => s.class_name === selectedClass)
+    : visibleStudents;
 
   const { data: reportCard, isLoading: reportLoading } = useReportCard(
     viewMode === "individual" ? (selectedStudentId || null) : null,
