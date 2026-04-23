@@ -11,6 +11,8 @@ import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { useResolvedAcademicYears, useResolvedActiveAcademicYear } from "@/hooks/progress/useResolvedAcademicYears";
 import { useReportCard } from "@/hooks/progress/useReportCard";
 import { useClassReportCards } from "@/hooks/progress/useClassReportCards";
+import { useMySubjectIds } from "@/hooks/progress/useMySubjectIds";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { FileText, Printer, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
