@@ -17,6 +17,7 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HelpChatbot } from "@/components/admin/HelpChatbot";
 
 interface TeacherLayoutProps {
   children: ReactNode;
@@ -179,6 +180,7 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
           </div>
         </main>
       </div>
+      <HelpChatbot />
     </div>
   );
 }
