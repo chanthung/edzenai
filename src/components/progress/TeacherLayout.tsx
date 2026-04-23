@@ -180,6 +180,7 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
           </div>
         </main>
       </div>
+      <HelpChatbot />
     </div>
   );
 }
