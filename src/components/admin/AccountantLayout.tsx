@@ -17,6 +17,7 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HelpChatbot } from "@/components/admin/HelpChatbot";
 
 interface AccountantLayoutProps {
   children: ReactNode;
@@ -194,6 +195,7 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
           </div>
         </main>
       </div>
+      <HelpChatbot />
     </div>
   );
 }
