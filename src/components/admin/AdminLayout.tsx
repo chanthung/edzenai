@@ -77,6 +77,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     return <Navigate to="/login" replace />;
   }
 
+  // Hard lock for suspended/terminated schools — block all admin UI
+  if (isHardLocked) {
+    return <SuspendedScreen schoolName={school?.name} />;
+  }
+
   const planInfo = PLAN_DISPLAY[currentPlan];
 
   return (
