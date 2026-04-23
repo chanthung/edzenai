@@ -289,7 +289,7 @@ export default function Assessments() {
                   </div>
                 ))}
               </div>
-            ) : assessments.length === 0 ? (
+            ) : visibleAssessments.length === 0 ? (
               <EmptyState
                 icon={ClipboardList}
                 title="No assessments yet"
@@ -313,7 +313,7 @@ export default function Assessments() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {assessments.map((assessment) => (
+                  {visibleAssessments.map((assessment) => (
                     <TableRow key={assessment.id}>
                       <TableCell className="font-medium">{assessment.name}</TableCell>
                       <TableCell>
