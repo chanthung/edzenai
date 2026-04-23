@@ -247,37 +247,85 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ═══ SOLUTION — "A Single Source of Truth" ═══ */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 bg-muted/30">
-        <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          {/* Visual Card */}
-          <div>
-            <Card className="rounded-3xl shadow-lg border-border/50 overflow-hidden">
-              <CardContent className="p-0">
-                <div className="p-5 bg-muted/40">
-                  <p className="text-2xs uppercase text-muted-foreground tracking-wider mb-1">Pending Settled</p>
-                  <p className="text-3xl font-extrabold">₹0.00</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Remaining balance</p>
-                </div>
-                <div className="p-5 border-t border-border/30">
-                  <p className="text-2xs uppercase text-muted-foreground tracking-wider mb-1">Total Paid</p>
-                  <p className="text-3xl font-extrabold text-primary">₹150.00</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Out of ₹150</p>
-                </div>
-              </CardContent>
-            </Card>
+      {/* ═══ SOLUTION — "One platform. Every workflow." ═══ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6 bg-gradient-to-b from-muted/30 via-background to-muted/30 relative overflow-hidden">
+        {/* Decorative blobs */}
+        <div className="absolute top-1/4 -left-32 h-72 w-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 -right-32 h-72 w-72 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center relative">
+          {/* Visual — Stat grid mockup */}
+          <div className="relative order-2 lg:order-1">
+            <div className="grid grid-cols-2 gap-4">
+              <StatTile
+                icon={IndianRupee}
+                label="Collected this month"
+                value="₹3.2L"
+                trend="+38%"
+                accent="primary"
+                tall
+              />
+              <div className="space-y-4">
+                <StatTile icon={Users} label="Active students" value="487" trend="+12" accent="accent" />
+                <StatTile icon={CalendarCheck} label="Avg attendance" value="94%" trend="+3%" accent="paid" />
+              </div>
+              <div className="col-span-2">
+                <Card className="rounded-3xl border-border/60 shadow-lg overflow-hidden bg-gradient-to-br from-primary/[0.08] via-card to-accent/[0.08]">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                          <Brain className="h-4 w-4 text-white" />
+                        </div>
+                        <p className="text-sm font-semibold">AI Insight</p>
+                      </div>
+                      <Badge className="bg-accent/15 text-accent border-accent/20 text-[10px]">Just now</Badge>
+                    </div>
+                    <p className="text-sm leading-relaxed text-foreground/90">
+                      <span className="font-semibold">3 students</span> in Class 7 show declining performance in Maths.
+                      <span className="text-primary font-medium"> Recommend extra revision class.</span>
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
+
           {/* Text */}
-          <div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">A Single Source of Truth</h2>
-            <p className="text-muted-foreground mb-8 leading-relaxed">
-              We prioritize clarity over complexity. Our dashboard shows the Status First, so you never have to
-              interpret the numbers yourself.
+          <div className="order-1 lg:order-2">
+            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">
+              <Sparkles className="h-3 w-3 mr-1.5" />
+              Built for modern schools
+            </Badge>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 tracking-tight leading-tight">
+              One platform.<br />
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Every workflow.
+              </span>
+            </h2>
+            <p className="text-muted-foreground mb-8 leading-relaxed text-lg">
+              From fee collection to attendance, parent updates to AI-powered student insights — replace 5 disconnected
+              tools with one calm, intelligent dashboard.
             </p>
-            <div className="space-y-4">
-              <SolutionBullet text="Instant status verification" />
-              <SolutionBullet text="Automated breakdown of every payment" />
-              <SolutionBullet text="Transparent installment tracking" />
+
+            <div className="space-y-4 mb-8">
+              <FeatureRow icon={Zap} text="Set up your entire school in under 60 seconds" />
+              <FeatureRow icon={MessageSquareWarning} text="Auto WhatsApp reminders for fees & updates" />
+              <FeatureRow icon={Brain} text="AI flags at-risk students before report card day" />
+              <FeatureRow icon={ShieldCheck} text="Parents view fees & progress — no app required" />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <Button size="lg" asChild className="h-12 shadow-md shadow-primary/20">
+                <Link to="/signup?plan=pro">
+                  Start Free Trial
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-status-paid" />
+                <span>30-day free trial · No card required</span>
+              </div>
             </div>
           </div>
         </div>
