@@ -39,22 +39,34 @@ async function createAssessmentsFromTerms(
 
   if (termsError || !terms || terms.length === 0) return;
 
-  // Fetch existing assessments for this class+year to avoid duplicates
+  // Fetch existing assessments for this class+year to avoid duplicates and fill missing dates
   const { data: existing } = await supabase
     .from("assessments")
-    .select("name")
+    .select("id,name,assessment_date")
     .eq("school_id", schoolId)
     .eq("academic_year_id", academicYearId)
     .eq("class_name", className)
     .eq("assessment_type", "term_exam");
 
-  const existingNames = new Set(existing?.map((a) => a.name) ?? []);
+  const existingByName = new Map(existing?.map((a) => [a.name, a]) ?? []);
+
+  await Promise.all(
+    terms
+      .map((term) => {
+        const assessment = existingByName.get(term.name);
+        const termDate = (term as { assessment_date?: string | null }).assessment_date;
+        if (!assessment || !termDate || assessment.assessment_date) return null;
+        return supabase.from("assessments").update({ assessment_date: termDate }).eq("id", assessment.id);
+      })
+      .filter(Boolean)
+  );
 
   const newAssessments = terms
-    .filter((t) => !existingNames.has(t.name))
+    .filter((t) => !existingByName.has(t.name))
     .map((t) => ({
       name: t.name,
       assessment_type: "term_exam",
+      assessment_date: (t as { assessment_date?: string | null }).assessment_date || null,
       class_name: className,
       academic_year_id: academicYearId,
       school_id: schoolId,
