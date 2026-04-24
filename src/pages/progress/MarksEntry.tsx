@@ -298,7 +298,7 @@ export default function MarksEntry() {
           };
         });
       if (marksToSave.length === 0) return;
-      await saveMarks.mutateAsync(marksToSave, { silent: true });
+      await saveMarks.mutateAsync({ marks: marksToSave, silent: true });
     } else {
       const marksToSave = Object.entries(draft.legacyMarks)
         .filter(([, m]) => m.marksObtained && !isNaN(parseFloat(m.marksObtained)))
@@ -310,7 +310,7 @@ export default function MarksEntry() {
           max_marks: parseFloat(m.maxMarks) || 100,
         }));
       if (marksToSave.length === 0) return;
-      await saveMarks.mutateAsync(marksToSave, { silent: true });
+      await saveMarks.mutateAsync({ marks: marksToSave, silent: true });
     }
   };
 
@@ -320,6 +320,10 @@ export default function MarksEntry() {
     save: performSaveDraft,
     idleMs: MARKS_AUTO_SAVE_IDLE_MS,
   });
+
+  const hasValidationErrors = Object.values(validationErrors).some(
+    studentErrors => Object.keys(studentErrors).length > 0
+  );
 
   // Mark dirty on every input change to either map.
   useEffect(() => {
@@ -394,10 +398,6 @@ export default function MarksEntry() {
   const hasAnyInput = hasTemplate
     ? Object.values(componentMarksInput).some(cm => Object.values(cm).some(v => v !== ""))
     : Object.values(legacyMarks).some(m => m.marksObtained !== "");
-
-  const hasValidationErrors = Object.values(validationErrors).some(
-    studentErrors => Object.keys(studentErrors).length > 0
-  );
 
   const canSave = selectedClass && selectedSection && selectedAssessmentId && selectedSubjectId && hasAnyInput && !hasValidationErrors;
 
