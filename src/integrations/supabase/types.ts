@@ -1916,6 +1916,7 @@ export type Database = {
       }
       template_terms: {
         Row: {
+          assessment_date: string | null
           created_at: string
           display_order: number
           id: string
@@ -1923,6 +1924,7 @@ export type Database = {
           template_id: string
         }
         Insert: {
+          assessment_date?: string | null
           created_at?: string
           display_order?: number
           id?: string
@@ -1930,6 +1932,7 @@ export type Database = {
           template_id: string
         }
         Update: {
+          assessment_date?: string | null
           created_at?: string
           display_order?: number
           id?: string
