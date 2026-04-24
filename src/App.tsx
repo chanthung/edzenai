@@ -31,6 +31,7 @@ import TermsOfService from "./pages/TermsOfService";
 import Unsubscribe from "./pages/Unsubscribe";
 import RefundPolicy from "./pages/RefundPolicy";
 import BookDemo from "./pages/BookDemo";
+import UserManual from "./pages/UserManual";
 
 // Progress Module Pages
 import ProgressDashboard from "./pages/progress/ProgressDashboard";
@@ -82,6 +83,7 @@ const App = () => (
             <Route path="/admin/settings" element={<Settings />} />
             <Route path="/admin/teachers" element={<Teachers />} />
             <Route path="/admin/getting-started" element={<GettingStarted />} />
+            <Route path="/admin/user-manual" element={<UserManual />} />
 
             {/* Student Progress Module */}
             <Route path="/progress" element={<ProgressDashboard />} />
