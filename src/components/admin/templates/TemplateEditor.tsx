@@ -260,15 +260,15 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
         </CardContent>
       </Card>
 
-      {/* Grade Mappings (only for custom_grades) */}
-      {gradingType === 'custom_grades' && template?.id && (
+      {/* Grade Mappings */}
+      {template?.id && (
         <>
           <Separator />
           <GradeMappingEditor templateId={template.id} />
         </>
       )}
 
-      {gradingType === 'custom_grades' && !template?.id && (
+      {!template?.id && (
         <Card className="card-elevated">
           <CardContent className="py-6">
             <p className="text-sm text-muted-foreground text-center">
