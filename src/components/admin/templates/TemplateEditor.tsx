@@ -29,6 +29,7 @@ interface TemplateEditorProps {
 interface LocalTerm {
   key: string;
   name: string;
+  assessment_date: string;
   display_order: number;
 }
 
@@ -60,7 +61,7 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
 
   useEffect(() => {
     if (existingTerms) {
-      setTerms(existingTerms.map(t => ({ key: t.id, name: t.name, display_order: t.display_order })));
+      setTerms(existingTerms.map(t => ({ key: t.id, name: t.name, assessment_date: t.assessment_date ?? "", display_order: t.display_order })));
     }
   }, [existingTerms]);
 
@@ -70,7 +71,7 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
     }
   }, [existingComponents]);
 
-  const addTerm = () => setTerms(prev => [...prev, { key: crypto.randomUUID(), name: "", display_order: prev.length }]);
+  const addTerm = () => setTerms(prev => [...prev, { key: crypto.randomUUID(), name: "", assessment_date: "", display_order: prev.length }]);
   const removeTerm = (key: string) => setTerms(prev => prev.filter(t => t.key !== key).map((t, i) => ({ ...t, display_order: i })));
 
   const addComponent = () => setComponents(prev => [...prev, { key: crypto.randomUUID(), name: "", max_marks: 100, display_order: prev.length }]);
