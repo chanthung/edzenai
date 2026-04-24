@@ -1,4 +1,6 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { ProgressLayout } from "@/components/progress/ProgressLayout";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -114,8 +116,11 @@ const ScreenshotPanel = ({ title, markers }: { title: string; markers: string[] 
 );
 
 export default function UserManual() {
+  const { isTeacher, isSchoolAdmin } = useUserRole();
+  const Layout = isTeacher && !isSchoolAdmin ? ProgressLayout : AdminLayout;
+
   return (
-    <AdminLayout>
+    <Layout>
       <div className="space-y-8">
         <section className="rounded-3xl bg-gradient-to-br from-primary to-accent p-6 text-primary-foreground shadow-floating sm:p-8">
           <Badge className="mb-4 border-primary-foreground/25 bg-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/15">
@@ -215,6 +220,6 @@ export default function UserManual() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </Layout>
   );
 }
