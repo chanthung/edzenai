@@ -16,6 +16,7 @@ export interface TemplateTerm {
   id: string;
   template_id: string;
   name: string;
+  assessment_date: string | null;
   display_order: number;
 }
 
@@ -130,13 +131,13 @@ export function useTemplateTerms(templateId: string | null) {
 export function useSaveTemplateTerms() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ templateId, terms }: { templateId: string; terms: { name: string; display_order: number }[] }) => {
+    mutationFn: async ({ templateId, terms }: { templateId: string; terms: { name: string; assessment_date?: string | null; display_order: number }[] }) => {
       // Delete existing, then insert new
       await supabase.from('template_terms').delete().eq('template_id', templateId);
       if (terms.length > 0) {
         const { error } = await supabase
           .from('template_terms')
-          .insert(terms.map(t => ({ ...t, template_id: templateId })));
+          .insert(terms.map(t => ({ ...t, assessment_date: t.assessment_date || null, template_id: templateId } as any)));
         if (error) throw error;
       }
     },

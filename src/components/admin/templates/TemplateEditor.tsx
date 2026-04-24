@@ -29,6 +29,7 @@ interface TemplateEditorProps {
 interface LocalTerm {
   key: string;
   name: string;
+  assessment_date: string;
   display_order: number;
 }
 
@@ -60,7 +61,7 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
 
   useEffect(() => {
     if (existingTerms) {
-      setTerms(existingTerms.map(t => ({ key: t.id, name: t.name, display_order: t.display_order })));
+      setTerms(existingTerms.map(t => ({ key: t.id, name: t.name, assessment_date: t.assessment_date ?? "", display_order: t.display_order })));
     }
   }, [existingTerms]);
 
@@ -70,7 +71,7 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
     }
   }, [existingComponents]);
 
-  const addTerm = () => setTerms(prev => [...prev, { key: crypto.randomUUID(), name: "", display_order: prev.length }]);
+  const addTerm = () => setTerms(prev => [...prev, { key: crypto.randomUUID(), name: "", assessment_date: "", display_order: prev.length }]);
   const removeTerm = (key: string) => setTerms(prev => prev.filter(t => t.key !== key).map((t, i) => ({ ...t, display_order: i })));
 
   const addComponent = () => setComponents(prev => [...prev, { key: crypto.randomUUID(), name: "", max_marks: 100, display_order: prev.length }]);
@@ -79,7 +80,7 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
   const handleAIGenerated = (gen: GeneratedTemplate) => {
     if (gen.name) setName(gen.name);
     setGradingType(gen.grading_type);
-    setTerms((gen.terms ?? []).map((t, i) => ({ key: crypto.randomUUID(), name: t.name, display_order: i })));
+    setTerms((gen.terms ?? []).map((t, i) => ({ key: crypto.randomUUID(), name: t.name, assessment_date: "", display_order: i })));
     setComponents((gen.components ?? []).map((c, i) => ({ key: crypto.randomUUID(), name: c.name, max_marks: Number(c.max_marks) || 0, display_order: i })));
     if (gen.grading_type === 'custom_grades' && gen.grade_mappings?.length) {
       setPendingGradeMappings(
@@ -112,7 +113,7 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
       const validComponents = components.filter(c => c.name.trim());
 
       await Promise.all([
-        saveTerms.mutateAsync({ templateId: templateId!, terms: validTerms.map(({ name, display_order }) => ({ name, display_order })) }),
+        saveTerms.mutateAsync({ templateId: templateId!, terms: validTerms.map(({ name, assessment_date, display_order }) => ({ name, assessment_date, display_order })) }),
         saveComponents.mutateAsync({ templateId: templateId!, components: validComponents.map(({ name, max_marks, display_order }) => ({ name, max_marks, display_order })) }),
       ]);
 
@@ -209,6 +210,12 @@ export function TemplateEditor({ template, onBack }: TemplateEditorProps) {
                     value={t.name}
                     onChange={e => setTerms(prev => prev.map(x => x.key === t.key ? { ...x, name: e.target.value } : x))}
                     className="flex-1"
+                  />
+                  <Input
+                    type="date"
+                    value={t.assessment_date}
+                    onChange={e => setTerms(prev => prev.map(x => x.key === t.key ? { ...x, assessment_date: e.target.value } : x))}
+                    className="w-40"
                   />
                   <Button variant="ghost" size="icon" onClick={() => removeTerm(t.key)} className="text-destructive shrink-0">
                     <Trash2 className="h-4 w-4" />
