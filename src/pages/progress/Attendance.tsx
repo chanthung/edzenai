@@ -188,10 +188,14 @@ export default function Attendance() {
   const autoSave = useAutoSave<AttendanceDraft>({
     namespace: "attendance",
     scopeKey: autoSaveScopeKey,
+    idleMs: 1_500,
+    intervalMs: 10_000,
     save: async (draft) => {
       await performSave(new Map(draft.entries), draft.selectedTime);
+      setHasUnsavedChanges(false);
     },
   });
+  const { markDirty } = autoSave;
 
   const handleSave = async () => {
     try {
@@ -213,11 +217,11 @@ export default function Attendance() {
   // Push changes into the auto-save manager whenever the in-memory map changes.
   useEffect(() => {
     if (!hasUnsavedChanges) return;
-    autoSave.markDirty({
+    markDirty({
       entries: Array.from(localEntries.entries()),
       selectedTime,
     });
-  }, [localEntries, selectedTime, hasUnsavedChanges, autoSave]);
+  }, [localEntries, selectedTime, hasUnsavedChanges, markDirty]);
 
   // Summary counts
   const summary = useMemo(() => {
