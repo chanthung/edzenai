@@ -88,8 +88,8 @@ export function GradeMappingEditor({ templateId }: { templateId: string }) {
             {mappings.map(m => (
               <div key={m.key} className="grid grid-cols-[1fr_80px_80px_auto] gap-2 items-center">
                 <Input value={m.grade_label} onChange={e => setMappings(prev => prev.map(x => x.key === m.key ? { ...x, grade_label: e.target.value } : x))} placeholder="A+" />
-                <Input type="number" value={m.min_percentage || ""} onChange={e => setMappings(prev => prev.map(x => x.key === m.key ? { ...x, min_percentage: Number(e.target.value) } : x))} />
-                <Input type="number" value={m.max_percentage || ""} onChange={e => setMappings(prev => prev.map(x => x.key === m.key ? { ...x, max_percentage: Number(e.target.value) } : x))} />
+                <Input type="number" value={m.min_percentage} onChange={e => setMappings(prev => prev.map(x => x.key === m.key ? { ...x, min_percentage: Number(e.target.value) } : x))} />
+                <Input type="number" value={m.max_percentage} onChange={e => setMappings(prev => prev.map(x => x.key === m.key ? { ...x, max_percentage: Number(e.target.value) } : x))} />
                 <Button variant="ghost" size="icon" onClick={() => remove(m.key)} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))}
