@@ -10,6 +10,7 @@ export interface AttendanceRecord {
   student_id: string;
   school_id: string;
   date: string;
+  marked_time: string | null;
   status: AttendanceStatus;
   marked_by: string | null;
   remarks: string | null;

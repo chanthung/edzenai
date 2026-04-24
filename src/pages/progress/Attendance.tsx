@@ -145,6 +145,8 @@ export default function Attendance() {
           (item.attendance?.status as AttendanceStatus) ?? 'present'
         );
       });
+      const savedTime = attendanceData.find(item => item.attendance?.marked_time)?.attendance?.marked_time;
+      if (savedTime) setSelectedTime(savedTime);
       setLocalEntries(map);
       setHasUnsavedChanges(false);
     }
@@ -260,6 +262,7 @@ export default function Attendance() {
                   'Class': item.student.class_name || '',
                   'Section': item.student.section || '',
                   'Date': selectedDate,
+                  'Time': item.attendance?.marked_time || selectedTime || '',
                   'Status': (localEntries.get(item.student.id) || item.attendance?.status || 'present').toUpperCase(),
                 }));
                 exportToXLSX(rows, { filename: `attendance_${selectedClass || 'all'}_${selectedDate}`, sheetName: 'Attendance' });
