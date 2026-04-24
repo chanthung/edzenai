@@ -107,7 +107,7 @@ export function useSaveMarks() {
 
   return useMutation({
     mutationFn: async (
-      marks: Array<{
+      variables: Array<{
         student_id: string;
         assessment_id: string;
         subject_id: string;
@@ -115,9 +115,21 @@ export function useSaveMarks() {
         max_marks: number;
         remarks?: string;
         componentMarks?: Array<{ component_id: string; marks_obtained: number }>;
-      }>,
-      options?: { silent?: boolean }
+      }> | {
+        marks: Array<{
+          student_id: string;
+          assessment_id: string;
+          subject_id: string;
+          marks_obtained: number;
+          max_marks: number;
+          remarks?: string;
+          componentMarks?: Array<{ component_id: string; marks_obtained: number }>;
+        }>;
+        silent?: boolean;
+      }
     ) => {
+      const marks = Array.isArray(variables) ? variables : variables.marks;
+      const silent = Array.isArray(variables) ? false : variables.silent ?? false;
       // Upsert main student_marks
       const { data, error } = await supabase
         .from('student_marks')
@@ -176,7 +188,7 @@ export function useSaveMarks() {
         }
       }
 
-      return { data, silent: options?.silent ?? false };
+      return { data, silent };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['student-marks', schoolId] });
