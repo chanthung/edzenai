@@ -115,7 +115,8 @@ export function useSaveMarks() {
         max_marks: number;
         remarks?: string;
         componentMarks?: Array<{ component_id: string; marks_obtained: number }>;
-      }>
+      }>,
+      options?: { silent?: boolean }
     ) => {
       // Upsert main student_marks
       const { data, error } = await supabase
@@ -144,7 +145,7 @@ export function useSaveMarks() {
           markIdMap.set(`${row.student_id}_${row.subject_id}`, row.id);
         }
 
-        const componentRows: Array<{ student_mark_id: string; component_id: string; marks_obtained: number }> = [];
+        const componentRowMap = new Map<string, { student_mark_id: string; component_id: string; marks_obtained: number }>();
         const markIdsToClean: string[] = [];
 
         for (const m of marksWithComponents) {
@@ -152,7 +153,7 @@ export function useSaveMarks() {
           if (markId && m.componentMarks) {
             markIdsToClean.push(markId);
             for (const cm of m.componentMarks) {
-              componentRows.push({
+              componentRowMap.set(`${markId}_${cm.component_id}`, {
                 student_mark_id: markId,
                 component_id: cm.component_id,
                 marks_obtained: cm.marks_obtained,
@@ -161,24 +162,28 @@ export function useSaveMarks() {
           }
         }
 
+        const componentRows = [...componentRowMap.values()];
+
         // Delete existing component marks for these student_marks, then insert fresh
         if (markIdsToClean.length > 0) {
           await supabase.from('component_marks').delete().in('student_mark_id', markIdsToClean);
         }
         if (componentRows.length > 0) {
-          const { error: cmError } = await supabase.from('component_marks').insert(componentRows);
+          const { error: cmError } = await supabase
+            .from('component_marks')
+            .upsert(componentRows, { onConflict: 'student_mark_id,component_id' });
           if (cmError) throw cmError;
         }
       }
 
-      return data;
+      return { data, silent: options?.silent ?? false };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['student-marks', schoolId] });
       queryClient.invalidateQueries({ queryKey: ['student-marks-by-student'] });
       queryClient.invalidateQueries({ queryKey: ['class-progress'] });
       queryClient.invalidateQueries({ queryKey: ['component-marks'] });
-      toast({ title: 'Marks saved successfully' });
+      if (!result.silent) toast({ title: 'Marks saved successfully' });
     },
     onError: (error) => {
       toast({
