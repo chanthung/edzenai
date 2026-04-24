@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 
 const manualSections = [
@@ -61,6 +62,15 @@ const workflows = [
       "Teachers only see assigned classes and subjects in Marks Entry and Report Cards, keeping the workflow focused and protecting unrelated class data.",
     callouts: ["Assigned classes only", "Subject-class mapping", "Admin controls access"],
   },
+];
+
+const featureHighlights: { icon: LucideIcon; title: string; text: string }[] = [
+  { icon: Settings, title: "Settings", text: "School profile, QR code, message templates, assessment templates, grade mappings, and class assignment." },
+  { icon: ClipboardList, title: "Assessments", text: "Assessment types are created from class-linked templates and can carry term dates into Student Progress." },
+  { icon: FileSpreadsheet, title: "Exports", text: "Excel exports include key operational fields such as attendance time and fee/payment status." },
+  { icon: CalendarCheck, title: "Attendance", text: "Fast auto-save, date and time selection, status marking, and teacher-friendly class tracking." },
+  { icon: ShieldCheck, title: "Access Control", text: "Admins manage users; teachers see only assigned classes and subjects in progress workflows." },
+  { icon: Sparkles, title: "AI Tools", text: "Template generation, payment proof OCR, collection anomaly analysis, and progress insights where enabled." },
 ];
 
 const ScreenshotPanel = ({ title, markers }: { title: string; markers: string[] }) => (
@@ -174,24 +184,16 @@ export default function UserManual() {
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {[
-            [Settings, "Settings", "School profile, QR code, message templates, assessment templates, grade mappings, and class assignment."],
-            [ClipboardList, "Assessments", "Assessment types are created from class-linked templates and can carry term dates into Student Progress."],
-            [FileSpreadsheet, "Exports", "Excel exports include key operational fields such as attendance time and fee/payment status."],
-            [CalendarCheck, "Attendance", "Fast auto-save, date and time selection, status marking, and teacher-friendly class tracking."],
-            [ShieldCheck, "Access Control", "Admins manage users; teachers see only assigned classes and subjects in progress workflows."],
-            [Sparkles, "AI Tools", "Template generation, payment proof OCR, collection anomaly analysis, and progress insights where enabled."],
-          ].map(([Icon, title, text]) => {
-            const TypedIcon = Icon as typeof Settings;
+          {featureHighlights.map(({ icon: Icon, title, text }) => {
             return (
-              <Card key={title as string}>
+              <Card key={title}>
                 <CardContent className="flex gap-4 p-5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                    <TypedIcon className="h-5 w-5" />
+                    <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">{title as string}</h3>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{text as string}</p>
+                    <h3 className="font-semibold">{title}</h3>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{text}</p>
                   </div>
                 </CardContent>
               </Card>
