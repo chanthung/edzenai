@@ -17,6 +17,7 @@ import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { PLAN_DISPLAY } from "@/config/plan-features";
 import { 
   GraduationCap, 
+  BookOpenCheck,
   Users, 
   CalendarDays, 
   Receipt, 
@@ -42,6 +43,7 @@ const navItems = [
   { href: "/admin/fee-setup", label: "Fee Setup", icon: Receipt },
   { href: "/admin/teachers", label: "Users", icon: Users },
   { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/user-manual", label: "User Manual", icon: BookOpenCheck },
   { href: "/progress", label: "Student Progress", icon: GraduationCap },
 ];
 
