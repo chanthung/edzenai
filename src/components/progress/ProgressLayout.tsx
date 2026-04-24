@@ -13,6 +13,7 @@ import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { HelpChatbot } from "@/components/admin/HelpChatbot";
 import { 
   BarChart3, 
+  BookOpenCheck,
   BookOpen, 
   ClipboardList, 
   PenLine,
@@ -38,6 +39,7 @@ const navItems = [
   { href: "/progress/marks", label: "Marks Entry", icon: PenLine },
   { href: "/progress/attendance", label: "Attendance", icon: CalendarCheck },
   { href: "/progress/report-cards", label: "Report Cards", icon: FileText },
+  { href: "/admin/user-manual", label: "User Manual", icon: BookOpenCheck },
 ];
 
 export function ProgressLayout({ children }: ProgressLayoutProps) {
