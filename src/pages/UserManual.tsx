@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import {
   ArrowRight,
   BookOpenCheck,
@@ -76,37 +77,54 @@ const featureHighlights: { icon: LucideIcon; title: string; text: string }[] = [
 ];
 
 const ScreenshotPanel = ({ title, markers }: { title: string; markers: string[] }) => (
-  <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
+  <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
     <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-4 py-3">
       <span className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
       <span className="h-2.5 w-2.5 rounded-full bg-status-due/70" />
       <span className="h-2.5 w-2.5 rounded-full bg-status-paid/70" />
-      <span className="ml-3 text-xs font-medium text-muted-foreground">{title}</span>
+      <span className="ml-3 text-xs font-semibold text-foreground">{title}</span>
     </div>
     <div className="grid gap-4 p-4 sm:grid-cols-[180px_1fr]">
-      <div className="space-y-2 rounded-xl bg-muted/50 p-3">
-        {markers.slice(0, 4).map((marker) => (
-          <div key={marker} className="h-8 rounded-lg bg-card px-3 py-2 text-xs font-medium text-muted-foreground">
+      <div className="space-y-2 rounded-xl border border-border/60 bg-muted/40 p-3">
+        {markers.slice(0, 4).map((marker, index) => (
+          <div
+            key={marker}
+            className={cn(
+              "rounded-lg bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-sm",
+              index === 1 && "border border-primary bg-primary/10 text-primary"
+            )}
+          >
             {marker}
           </div>
         ))}
       </div>
-      <div className="space-y-3 rounded-xl border border-border/60 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="h-5 w-40 rounded bg-muted" />
-          <div className="h-8 w-28 rounded-lg bg-primary/15 ring-2 ring-primary/30" />
+      <div className="space-y-3 rounded-xl border border-border/60 bg-background p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">{markers[1] || title}</p>
+            <p className="text-xs text-muted-foreground">Highlighted setup area</p>
+          </div>
+          <div className="rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-semibold text-primary ring-2 ring-primary/25">
+            Action button
+          </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="h-20 rounded-xl bg-muted/70 ring-2 ring-primary/25" />
-          <div className="h-20 rounded-xl bg-muted/70" />
-          <div className="h-20 rounded-xl bg-muted/70 ring-2 ring-status-paid/30" />
+          <div className="rounded-xl border-2 border-primary bg-primary/10 p-3 text-xs font-semibold text-primary">
+            {markers[2] || "Primary field"}
+          </div>
+          <div className="rounded-xl border border-border bg-muted/60 p-3 text-xs font-medium text-muted-foreground">
+            Supporting data
+          </div>
+          <div className="rounded-xl border-2 border-status-paid bg-status-paid/10 p-3 text-xs font-semibold text-status-paid">
+            Synced result
+          </div>
         </div>
         <div className="space-y-2">
-          {[1, 2, 3].map((row) => (
-            <div key={row} className="grid grid-cols-[1fr_90px_90px] gap-2">
-              <div className="h-9 rounded-lg bg-muted/60" />
-              <div className="h-9 rounded-lg bg-primary/10 ring-2 ring-primary/25" />
-              <div className="h-9 rounded-lg bg-muted/60" />
+          {markers.slice(0, 3).map((marker, row) => (
+            <div key={`${marker}-${row}`} className="grid grid-cols-[1fr_90px_90px] gap-2">
+              <div className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">{marker}</div>
+              <div className="rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-semibold text-primary">Date/Time</div>
+              <div className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">Export</div>
             </div>
           ))}
         </div>
