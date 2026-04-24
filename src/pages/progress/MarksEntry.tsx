@@ -38,6 +38,8 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator, LastSavedLabel } from "@/components/auto-save/AutoSaveIndicator";
 import { DraftRecoveryBanner } from "@/components/auto-save/DraftRecoveryBanner";
 
+const MARKS_AUTO_SAVE_IDLE_MS = 2_500;
+
 type MarksDraft = {
   hasTemplate: boolean;
   legacyMarks: Record<string, { marksObtained: string; maxMarks: string }>;
@@ -73,6 +75,7 @@ export default function MarksEntry() {
   // Template mode state
   const [componentMarksInput, setComponentMarksInput] = useState<ComponentMarksMap>({});
   const [validationErrors, setValidationErrors] = useState<ValidationErrorsMap>({});
+  const [hasUserEditedMarks, setHasUserEditedMarks] = useState(false);
 
   // Fetch template assignment for selected class + year
   const { data: classAssignments = [] } = useClassTemplateAssignments(effectiveYearId || null);
@@ -222,6 +225,7 @@ export default function MarksEntry() {
   }, [componentMarksInput, templateComponents, gradeMappings, filteredStudents, hasTemplate]);
 
   const handleComponentChange = (studentId: string, componentId: string, value: string, maxMarks: number) => {
+    setHasUserEditedMarks(true);
     setComponentMarksInput(prev => ({
       ...prev,
       [studentId]: { ...(prev[studentId] || {}), [componentId]: value },
@@ -242,6 +246,7 @@ export default function MarksEntry() {
   };
 
   const handleLegacyChange = (studentId: string, field: "marksObtained" | "maxMarks", value: string) => {
+    setHasUserEditedMarks(true);
     const currentMax = parseFloat(legacyMarks[studentId]?.maxMarks || defaultMaxMarks);
     setLegacyMarks(prev => ({
       ...prev,
@@ -293,7 +298,7 @@ export default function MarksEntry() {
           };
         });
       if (marksToSave.length === 0) return;
-      await saveMarks.mutateAsync(marksToSave);
+      await saveMarks.mutateAsync(marksToSave, { silent: true });
     } else {
       const marksToSave = Object.entries(draft.legacyMarks)
         .filter(([, m]) => m.marksObtained && !isNaN(parseFloat(m.marksObtained)))
@@ -305,7 +310,7 @@ export default function MarksEntry() {
           max_marks: parseFloat(m.maxMarks) || 100,
         }));
       if (marksToSave.length === 0) return;
-      await saveMarks.mutateAsync(marksToSave);
+      await saveMarks.mutateAsync(marksToSave, { silent: true });
     }
   };
 
@@ -313,18 +318,19 @@ export default function MarksEntry() {
     namespace: "marks",
     scopeKey: autoSaveScopeKey,
     save: performSaveDraft,
+    idleMs: MARKS_AUTO_SAVE_IDLE_MS,
   });
 
   // Mark dirty on every input change to either map.
   useEffect(() => {
-    if (!selectedAssessmentId || !selectedSubjectId) return;
+    if (!selectedAssessmentId || !selectedSubjectId || !hasUserEditedMarks || hasValidationErrors) return;
     const hasInput = hasTemplate
       ? Object.values(componentMarksInput).some(cm => Object.values(cm).some(v => v !== ""))
       : Object.values(legacyMarks).some(m => m.marksObtained !== "");
     if (!hasInput) return;
     autoSave.markDirty({ hasTemplate, legacyMarks, componentMarksInput });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [legacyMarks, componentMarksInput, hasTemplate, selectedAssessmentId, selectedSubjectId]);
+  }, [legacyMarks, componentMarksInput, hasTemplate, selectedAssessmentId, selectedSubjectId, hasUserEditedMarks, hasValidationErrors]);
 
   const handleSave = async () => {
     if (!selectedClass || !selectedSection || !selectedAssessmentId || !selectedSubjectId) {
