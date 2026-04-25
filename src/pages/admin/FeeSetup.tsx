@@ -223,12 +223,11 @@ export default function FeeSetup() {
         onComplete={() => setShowFeeImportBanner(true)}
       />
 
-      <ReminderSettingsCard schoolId={school?.id} />
-
       <Tabs defaultValue="structures" className="mt-6">
         <TabsList>
           <TabsTrigger value="structures">Fee Structures</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="reminders">WhatsApp Fee Reminders</TabsTrigger>
         </TabsList>
 
         <TabsContent value="structures" className="mt-4">
