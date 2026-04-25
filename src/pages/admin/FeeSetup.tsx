@@ -584,6 +584,9 @@ export default function FeeSetup() {
           )}
         </TabsContent>
 
+        <TabsContent value="reminders" className="mt-4">
+          <ReminderSettingsCard schoolId={school?.id} />
+        </TabsContent>
       {/* Edit Category Dialog */}
       <Dialog open={editCategoryDialogOpen} onOpenChange={(open) => {
         setEditCategoryDialogOpen(open);
