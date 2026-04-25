@@ -17,7 +17,7 @@ export function useClassReportCards(className: string | null, academicYearId: st
       // Fetch students, school, year, marks, subjects, template assignments in parallel
       const [studentsRes, schoolRes, yearRes, assignmentRes] = await Promise.all([
         supabase.from('students').select('*').eq('school_id', schoolId).eq('class_name', className).order('name'),
-        supabase.from('schools').select('name').eq('id', schoolId).single(),
+        supabase.from('schools').select('name, logo_url, address').eq('id', schoolId).single(),
         supabase.from('academic_years').select('name').eq('id', academicYearId).single(),
         supabase.from('class_template_assignments').select('template_id')
           .eq('school_id', schoolId)
@@ -29,6 +29,8 @@ export function useClassReportCards(className: string | null, academicYearId: st
       if (students.length === 0) return [];
 
       const schoolName = schoolRes.data?.name ?? '';
+      const schoolLogoUrl = (schoolRes.data as any)?.logo_url ?? null;
+      const schoolAddress = (schoolRes.data as any)?.address ?? null;
       const academicYear = yearRes.data?.name ?? '';
       const studentIds = students.map(s => s.id);
 
@@ -145,6 +147,8 @@ export function useClassReportCards(className: string | null, academicYearId: st
             parentName: student.parent_name,
           },
           schoolName,
+          schoolLogoUrl,
+          schoolAddress,
           academicYear,
           termNames,
           scholastic,

@@ -19,8 +19,9 @@ import type { AssessmentTemplate } from "@/hooks/progress/useAssessmentTemplates
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown, GraduationCap } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown, GraduationCap, Image as ImageIcon } from "lucide-react";
 import { PromotionRulesEditor } from "@/components/admin/PromotionRulesEditor";
+import { LogoUploader } from "@/components/ui/logo-uploader";
 
 export default function Settings() {
   const { data: school, isLoading } = useSchool();
@@ -35,6 +36,7 @@ export default function Settings() {
     email: "",
     upi_id: "",
     qr_code_url: "",
+    logo_url: "",
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -58,6 +60,7 @@ export default function Settings() {
         email: school.email || "",
         upi_id: school.upi_id || "",
         qr_code_url: school.qr_code_url || "",
+        logo_url: school.logo_url || "",
       });
     }
   }, [school]);
@@ -265,6 +268,46 @@ export default function Settings() {
                   <Input id="email" type="email" placeholder="info@school.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} disabled={isRestricted} />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* School Logo */}
+          <Card className="card-elevated">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <ImageIcon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>School Logo</CardTitle>
+                  <CardDescription>
+                    Appears on Report Cards, Transfer Certificates, fee receipts, and all other printouts.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <RestrictedOverlay isRestricted={isRestricted}>
+                {school && (
+                  <LogoUploader
+                    bucket="school-logos"
+                    folder={school.id}
+                    value={formData.logo_url}
+                    onChange={async (url) => {
+                      setFormData((prev) => ({ ...prev, logo_url: url }));
+                      // Persist immediately so prints reflect the new logo without requiring "Save"
+                      try {
+                        await updateSchool.mutateAsync({ logo_url: url });
+                      } catch (e: any) {
+                        toast.error("Could not save logo", { description: e?.message });
+                      }
+                    }}
+                    disabled={isRestricted}
+                    label="School Logo"
+                    helpText="PNG or JPG up to 2MB. Square logos look best."
+                  />
+                )}
+              </RestrictedOverlay>
             </CardContent>
           </Card>
 

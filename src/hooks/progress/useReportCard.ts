@@ -22,6 +22,8 @@ export interface ReportCardData {
     parentName: string | null;
   };
   schoolName: string;
+  schoolLogoUrl: string | null;
+  schoolAddress: string | null;
   academicYear: string;
   termNames: string[];
   scholastic: ReportCardSubjectRow[];
@@ -40,7 +42,7 @@ export function useReportCard(studentId: string | null, academicYearId: string |
       // Fetch student, school, academic year, marks, subjects in parallel
       const [studentRes, schoolRes, yearRes, marksRes, subjectsRes, assignmentRes] = await Promise.all([
         supabase.from('students').select('*').eq('id', studentId).single(),
-        supabase.from('schools').select('name').eq('id', schoolId).single(),
+        supabase.from('schools').select('name, logo_url, address').eq('id', schoolId).single(),
         supabase.from('academic_years').select('name').eq('id', academicYearId).single(),
         supabase.from('student_marks').select(`
           *,
@@ -56,6 +58,8 @@ export function useReportCard(studentId: string | null, academicYearId: string |
       if (studentRes.error || !studentRes.data) return null;
       const student = studentRes.data;
       const schoolName = schoolRes.data?.name ?? '';
+      const schoolLogoUrl = (schoolRes.data as any)?.logo_url ?? null;
+      const schoolAddress = (schoolRes.data as any)?.address ?? null;
       const academicYear = yearRes.data?.name ?? '';
       const marks = marksRes.data ?? [];
 
@@ -155,6 +159,8 @@ export function useReportCard(studentId: string | null, academicYearId: string |
           parentName: student.parent_name,
         },
         schoolName,
+        schoolLogoUrl,
+        schoolAddress,
         academicYear,
         termNames,
         scholastic,

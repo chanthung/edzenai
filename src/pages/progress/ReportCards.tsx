@@ -278,10 +278,16 @@ function BulkReportCardContent({ data }: { data: ReportCardData }) {
 
   return (
     <div className="report-card">
-      <div style={{ textAlign: 'center', marginBottom: 16, borderBottom: '3px double #1a1a1a', paddingBottom: 12 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' as const }}>{data.schoolName}</div>
-        <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4, color: '#444' }}>Progress Report Card</div>
-        <div style={{ fontSize: 11, color: '#666' }}>Academic Year: {data.academicYear}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center', textAlign: 'center', marginBottom: 16, borderBottom: '3px double #1a1a1a', paddingBottom: 12 }}>
+        {data.schoolLogoUrl && (
+          <img src={data.schoolLogoUrl} alt="" style={{ height: 64, width: 64, objectFit: 'contain' }} crossOrigin="anonymous" />
+        )}
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' as const }}>{data.schoolName}</div>
+          {data.schoolAddress && <div style={{ fontSize: 11, color: '#555' }}>{data.schoolAddress}</div>}
+          <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4, color: '#444' }}>Progress Report Card</div>
+          <div style={{ fontSize: 11, color: '#666' }}>Academic Year: {data.academicYear}</div>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px', marginBottom: 16, padding: 10, background: '#f8f9fa', borderRadius: 6, fontSize: 11 }}>
