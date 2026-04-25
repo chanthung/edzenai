@@ -86,10 +86,23 @@ export function ReportCardView({ data }: ReportCardViewProps) {
       <div ref={printRef} className="bg-white text-foreground rounded-lg border border-border p-6 max-w-4xl mx-auto">
         <div className="report-card">
           {/* Header */}
-          <div className="text-center mb-4 pb-3 border-b-4 border-double border-foreground">
-            <h1 className="text-xl font-bold tracking-wide uppercase">{data.schoolName}</h1>
-            <p className="text-sm font-semibold text-muted-foreground mt-1">Progress Report Card</p>
-            <p className="text-xs text-muted-foreground">Academic Year: {data.academicYear}</p>
+          <div className="flex items-center justify-center gap-4 mb-4 pb-3 border-b-4 border-double border-foreground">
+            {(data as any).schoolLogoUrl && (
+              <img
+                src={(data as any).schoolLogoUrl}
+                alt=""
+                className="h-16 w-16 object-contain"
+                crossOrigin="anonymous"
+              />
+            )}
+            <div className="text-center">
+              <h1 className="text-xl font-bold tracking-wide uppercase">{data.schoolName}</h1>
+              {(data as any).schoolAddress && (
+                <p className="text-xs text-muted-foreground">{(data as any).schoolAddress}</p>
+              )}
+              <p className="text-sm font-semibold text-muted-foreground mt-1">Progress Report Card</p>
+              <p className="text-xs text-muted-foreground">Academic Year: {data.academicYear}</p>
+            </div>
           </div>
 
           {/* Student Info */}
