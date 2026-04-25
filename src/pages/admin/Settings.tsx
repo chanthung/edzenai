@@ -271,6 +271,46 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          {/* School Logo */}
+          <Card className="card-elevated">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <ImageIcon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>School Logo</CardTitle>
+                  <CardDescription>
+                    Appears on Report Cards, Transfer Certificates, fee receipts, and all other printouts.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <RestrictedOverlay isRestricted={isRestricted}>
+                {school && (
+                  <LogoUploader
+                    bucket="school-logos"
+                    folder={school.id}
+                    value={formData.logo_url}
+                    onChange={async (url) => {
+                      setFormData((prev) => ({ ...prev, logo_url: url }));
+                      // Persist immediately so prints reflect the new logo without requiring "Save"
+                      try {
+                        await updateSchool.mutateAsync({ logo_url: url });
+                      } catch (e: any) {
+                        toast.error("Could not save logo", { description: e?.message });
+                      }
+                    }}
+                    disabled={isRestricted}
+                    label="School Logo"
+                    helpText="PNG or JPG up to 2MB. Square logos look best."
+                  />
+                )}
+              </RestrictedOverlay>
+            </CardContent>
+          </Card>
+
           {/* Payment Settings */}
           <Card className="card-elevated">
             <CardHeader>
