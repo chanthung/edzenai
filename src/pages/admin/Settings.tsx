@@ -60,6 +60,7 @@ export default function Settings() {
         email: school.email || "",
         upi_id: school.upi_id || "",
         qr_code_url: school.qr_code_url || "",
+        logo_url: school.logo_url || "",
       });
     }
   }, [school]);
