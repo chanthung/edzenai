@@ -31,12 +31,11 @@ export default function ReportCardTemplates() {
       <PageHeader
         title="Report Card Templates"
         description="Design your school's branded report card with drag-and-drop. Set one as default to use across the school."
-        action={
-          <Button onClick={handleCreate} disabled={createMut.isPending}>
-            <Plus className="h-4 w-4 mr-1" /> New Template
-          </Button>
-        }
-      />
+      >
+        <Button onClick={handleCreate} disabled={createMut.isPending}>
+          <Plus className="h-4 w-4 mr-1" /> New Template
+        </Button>
+      </PageHeader>
 
       <div className="mt-6">
         {isLoading ? (
