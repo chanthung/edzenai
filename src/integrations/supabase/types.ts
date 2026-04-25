@@ -1046,6 +1046,167 @@ export type Database = {
           },
         ]
       }
+      promotion_outcomes: {
+        Row: {
+          auto_status: string | null
+          created_at: string
+          failing_subjects: Json | null
+          final_pct: number | null
+          from_class: string | null
+          from_section: string | null
+          id: string
+          override_reason: string | null
+          run_id: string
+          status: string
+          student_id: string
+          to_class: string | null
+          to_section: string | null
+        }
+        Insert: {
+          auto_status?: string | null
+          created_at?: string
+          failing_subjects?: Json | null
+          final_pct?: number | null
+          from_class?: string | null
+          from_section?: string | null
+          id?: string
+          override_reason?: string | null
+          run_id: string
+          status: string
+          student_id: string
+          to_class?: string | null
+          to_section?: string | null
+        }
+        Update: {
+          auto_status?: string | null
+          created_at?: string
+          failing_subjects?: Json | null
+          final_pct?: number | null
+          from_class?: string | null
+          from_section?: string | null
+          id?: string
+          override_reason?: string | null
+          run_id?: string
+          status?: string
+          student_id?: string
+          to_class?: string | null
+          to_section?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_outcomes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_rules: {
+        Row: {
+          attendance_threshold: number | null
+          best_of_n: number | null
+          board: string
+          class_range: string
+          created_at: string
+          custom_rules: Json | null
+          english_compulsory: boolean
+          grace_marks: number
+          id: string
+          is_board_exit: boolean
+          max_compartment_subjects: number
+          min_internal_pct: number | null
+          min_practical_pct: number | null
+          min_subject_pct: number
+          min_theory_pct: number | null
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_threshold?: number | null
+          best_of_n?: number | null
+          board?: string
+          class_range: string
+          created_at?: string
+          custom_rules?: Json | null
+          english_compulsory?: boolean
+          grace_marks?: number
+          id?: string
+          is_board_exit?: boolean
+          max_compartment_subjects?: number
+          min_internal_pct?: number | null
+          min_practical_pct?: number | null
+          min_subject_pct?: number
+          min_theory_pct?: number | null
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_threshold?: number | null
+          best_of_n?: number | null
+          board?: string
+          class_range?: string
+          created_at?: string
+          custom_rules?: Json | null
+          english_compulsory?: boolean
+          grace_marks?: number
+          id?: string
+          is_board_exit?: boolean
+          max_compartment_subjects?: number
+          min_internal_pct?: number | null
+          min_practical_pct?: number | null
+          min_subject_pct?: number
+          min_theory_pct?: number | null
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promotion_runs: {
+        Row: {
+          consent: Json | null
+          created_at: string
+          from_year_id: string
+          id: string
+          initiated_at: string
+          initiated_by: string | null
+          ip_address: string | null
+          notes: string | null
+          rules_snapshot: Json | null
+          school_id: string
+          status: string
+          to_year_id: string
+        }
+        Insert: {
+          consent?: Json | null
+          created_at?: string
+          from_year_id: string
+          id?: string
+          initiated_at?: string
+          initiated_by?: string | null
+          ip_address?: string | null
+          notes?: string | null
+          rules_snapshot?: Json | null
+          school_id: string
+          status?: string
+          to_year_id: string
+        }
+        Update: {
+          consent?: Json | null
+          created_at?: string
+          from_year_id?: string
+          id?: string
+          initiated_at?: string
+          initiated_by?: string | null
+          ip_address?: string | null
+          notes?: string | null
+          rules_snapshot?: Json | null
+          school_id?: string
+          status?: string
+          to_year_id?: string
+        }
+        Relationships: []
+      }
       school_admins: {
         Row: {
           created_at: string
