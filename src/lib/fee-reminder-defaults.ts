@@ -21,10 +21,12 @@ export const DEFAULT_TEMPLATES: Record<ReminderKey, string> = {
 export const PLACEHOLDERS = ['{amount}', '{studentName}', '{dueDate}', '{parentLink}', '{schoolName}'];
 
 export function renderPreview(tpl: string): string {
-  return tpl
-    .replaceAll('{amount}', '5,000')
-    .replaceAll('{studentName}', 'Aarav Sharma')
-    .replaceAll('{dueDate}', new Date().toLocaleDateString('en-IN'))
-    .replaceAll('{parentLink}', 'https://www.edzenai.com/view/aarav/sample')
-    .replaceAll('{schoolName}', 'Stepping Stones School');
+  const r = (s: string, a: string, b: string) => s.split(a).join(b);
+  let out = tpl;
+  out = r(out, '{amount}', '5,000');
+  out = r(out, '{studentName}', 'Aarav Sharma');
+  out = r(out, '{dueDate}', new Date().toLocaleDateString('en-IN'));
+  out = r(out, '{parentLink}', 'https://www.edzenai.com/view/aarav/sample');
+  out = r(out, '{schoolName}', 'Stepping Stones School');
+  return out;
 }
