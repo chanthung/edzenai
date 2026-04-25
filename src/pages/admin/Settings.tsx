@@ -209,10 +209,11 @@ export default function Settings() {
       <PageHeader title="Settings" description="Manage your school information, payment settings, and assessment templates" />
 
       <Tabs defaultValue="school" className="mt-6">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 flex-wrap h-auto">
           <TabsTrigger value="school"><Building className="h-4 w-4 mr-1.5" /> School</TabsTrigger>
           <TabsTrigger value="subscription"><Crown className="h-4 w-4 mr-1.5" /> Subscription</TabsTrigger>
           <TabsTrigger value="templates"><ClipboardList className="h-4 w-4 mr-1.5" /> Assessment Templates</TabsTrigger>
+          <TabsTrigger value="promotion-rules"><GraduationCap className="h-4 w-4 mr-1.5" /> Promotion Rules</TabsTrigger>
         </TabsList>
 
         {/* School Settings Tab */}
