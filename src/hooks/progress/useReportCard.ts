@@ -159,6 +159,8 @@ export function useReportCard(studentId: string | null, academicYearId: string |
           parentName: student.parent_name,
         },
         schoolName,
+        schoolLogoUrl,
+        schoolAddress,
         academicYear,
         termNames,
         scholastic,
