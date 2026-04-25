@@ -381,6 +381,10 @@ export default function Settings() {
             </>
           )}
         </TabsContent>
+
+        <TabsContent value="promotion-rules" className="space-y-6">
+          <PromotionRulesEditor />
+        </TabsContent>
       </Tabs>
     </AdminLayout>
   );
