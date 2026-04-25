@@ -25,6 +25,9 @@ import {
   XCircle,
   Info,
 } from "lucide-react";
+import { PromotionConfirmDialog } from "@/components/admin/PromotionConfirmDialog";
+import { PromotionResultReport } from "@/components/admin/PromotionResultReport";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type PromotionAction = "promote" | "retain" | "exclude";
 
