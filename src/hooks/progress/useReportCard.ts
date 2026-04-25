@@ -58,6 +58,8 @@ export function useReportCard(studentId: string | null, academicYearId: string |
       if (studentRes.error || !studentRes.data) return null;
       const student = studentRes.data;
       const schoolName = schoolRes.data?.name ?? '';
+      const schoolLogoUrl = (schoolRes.data as any)?.logo_url ?? null;
+      const schoolAddress = (schoolRes.data as any)?.address ?? null;
       const academicYear = yearRes.data?.name ?? '';
       const marks = marksRes.data ?? [];
 
