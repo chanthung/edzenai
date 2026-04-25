@@ -95,6 +95,8 @@ const App = () => (
             <Route path="/progress/student/:studentId" element={<StudentProgress />} />
             <Route path="/progress/attendance" element={<Attendance />} />
             <Route path="/progress/report-cards" element={<ReportCards />} />
+            <Route path="/progress/report-card-templates" element={<ReportCardTemplates />} />
+            <Route path="/progress/report-card-templates/:id" element={<ReportCardTemplateEditor />} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
