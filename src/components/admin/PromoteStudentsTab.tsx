@@ -273,7 +273,7 @@ export function PromoteStudentsTab({ academicYears, schoolId }: PromoteStudentsT
 
   // Promote mutation
   const promoteMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (consent?: { consent: Record<string, boolean>; notifyWhatsApp: boolean }) => {
       const toInsert = activeRows
         .filter((r) => r.promoted_class || r.action === "retain")
         .map((r) => ({
@@ -296,13 +296,66 @@ export function PromoteStudentsTab({ academicYears, schoolId }: PromoteStudentsT
           .eq("id", row.student_id);
         if (error) console.error("Failed to update student class:", error);
       }
+
+      // Audit run + outcomes (best-effort; non-blocking on failure)
+      try {
+        const { data: runRow } = await supabase
+          .from("promotion_runs" as any)
+          .insert({
+            school_id: schoolId,
+            from_year_id: fromYearId,
+            to_year_id: toYearId,
+            consent: consent?.consent ?? null,
+            notes: consent?.notifyWhatsApp ? "WhatsApp opt-in" : null,
+          } as any)
+          .select("id")
+          .single();
+        const runId = (runRow as any)?.id;
+        if (runId) {
+          const outcomes = activeRows.map((r) => ({
+            run_id: runId,
+            student_id: r.student_id,
+            from_class: r.current_class,
+            from_section: r.section,
+            to_class: r.action === "retain" ? r.current_class : r.promoted_class,
+            to_section: r.section,
+            final_pct: r.avgPercentage,
+            failing_subjects: r.failingSubjects,
+            auto_status: r.autoSuggestion,
+            status: r.action === "promote" ? "promoted" : r.action === "retain" ? "retained" : "excluded",
+          }));
+          await supabase.from("promotion_outcomes" as any).insert(outcomes as any);
+        }
+      } catch (e) {
+        console.warn("Audit log write failed", e);
+      }
+
+      // Build report payload
+      const report = activeRows.map((r) => ({
+        student_id: r.student_id,
+        student_name: r.student_name,
+        from_class: r.current_class,
+        from_section: r.section,
+        to_class: r.action === "retain" ? r.current_class : r.promoted_class,
+        to_section: r.section,
+        final_pct: r.avgPercentage,
+        status: (r.action === "promote" ? "promoted" : r.action === "retain" ? "retained" : "excluded") as "promoted" | "retained" | "excluded",
+        failing_subjects: r.failingSubjects,
+      }));
+      return report;
     },
-    onSuccess: () => {
+    onSuccess: (report) => {
       toast.success(`${activeRows.length} students processed for ${selectedClass}`);
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["enrollments-for-promotion"] });
       queryClient.invalidateQueries({ queryKey: ["existing-enrollments"] });
       setOverrides({});
+      setConfirmOpen(false);
+      setLastReport({
+        outcomes: report as any,
+        from: academicYears.find((y) => y.id === fromYearId)?.name ?? "",
+        to: academicYears.find((y) => y.id === toYearId)?.name ?? "",
+      });
     },
     onError: (error: any) => {
       toast.error("Promotion failed", { description: error.message });
