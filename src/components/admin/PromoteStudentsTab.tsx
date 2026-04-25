@@ -52,6 +52,8 @@ export function PromoteStudentsTab({ academicYears, schoolId }: PromoteStudentsT
   const [toYearId, setToYearId] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
   const [overrides, setOverrides] = useState<Record<string, { action: PromotionAction }>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [lastReport, setLastReport] = useState<null | { outcomes: import("@/components/admin/PromotionResultReport").PromotionOutcomeRow[]; from: string; to: string }>(null);
 
   const sortedYears = useMemo(
     () => [...academicYears].sort((a, b) => a.start_date.localeCompare(b.start_date)),
