@@ -22,6 +22,8 @@ export interface ReportCardData {
     parentName: string | null;
   };
   schoolName: string;
+  schoolLogoUrl: string | null;
+  schoolAddress: string | null;
   academicYear: string;
   termNames: string[];
   scholastic: ReportCardSubjectRow[];
