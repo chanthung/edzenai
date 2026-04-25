@@ -36,6 +36,7 @@ export default function Settings() {
     email: "",
     upi_id: "",
     qr_code_url: "",
+    logo_url: "",
   });
 
   const [passwordData, setPasswordData] = useState({
