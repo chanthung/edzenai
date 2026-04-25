@@ -403,6 +403,51 @@ export type Database = {
         }
         Relationships: []
       }
+      document_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          doc_type: string
+          elements: Json
+          id: string
+          is_default: boolean
+          margins: Json
+          name: string
+          orientation: string
+          paper_size: string
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          doc_type?: string
+          elements?: Json
+          id?: string
+          is_default?: boolean
+          margins?: Json
+          name: string
+          orientation?: string
+          paper_size?: string
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          doc_type?: string
+          elements?: Json
+          id?: string
+          is_default?: boolean
+          margins?: Json
+          name?: string
+          orientation?: string
+          paper_size?: string
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
