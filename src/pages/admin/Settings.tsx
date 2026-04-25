@@ -19,7 +19,8 @@ import type { AssessmentTemplate } from "@/hooks/progress/useAssessmentTemplates
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown, GraduationCap } from "lucide-react";
+import { PromotionRulesEditor } from "@/components/admin/PromotionRulesEditor";
 
 export default function Settings() {
   const { data: school, isLoading } = useSchool();
@@ -208,10 +209,11 @@ export default function Settings() {
       <PageHeader title="Settings" description="Manage your school information, payment settings, and assessment templates" />
 
       <Tabs defaultValue="school" className="mt-6">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 flex-wrap h-auto">
           <TabsTrigger value="school"><Building className="h-4 w-4 mr-1.5" /> School</TabsTrigger>
           <TabsTrigger value="subscription"><Crown className="h-4 w-4 mr-1.5" /> Subscription</TabsTrigger>
           <TabsTrigger value="templates"><ClipboardList className="h-4 w-4 mr-1.5" /> Assessment Templates</TabsTrigger>
+          <TabsTrigger value="promotion-rules"><GraduationCap className="h-4 w-4 mr-1.5" /> Promotion Rules</TabsTrigger>
         </TabsList>
 
         {/* School Settings Tab */}
@@ -378,6 +380,10 @@ export default function Settings() {
               <ClassAssignment isRestricted={isRestricted} />
             </>
           )}
+        </TabsContent>
+
+        <TabsContent value="promotion-rules" className="space-y-6">
+          <PromotionRulesEditor />
         </TabsContent>
       </Tabs>
     </AdminLayout>
