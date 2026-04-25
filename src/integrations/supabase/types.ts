@@ -1239,6 +1239,39 @@ export type Database = {
           },
         ]
       }
+      school_reminder_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          offsets_enabled: Json
+          school_id: string
+          send_hour_ist: number
+          templates: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          offsets_enabled?: Json
+          school_id: string
+          send_hour_ist?: number
+          templates?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          offsets_enabled?: Json
+          school_id?: string
+          send_hour_ist?: number
+          templates?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       school_teachers: {
         Row: {
           created_at: string
