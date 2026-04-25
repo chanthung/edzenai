@@ -660,6 +660,3 @@ export function PromoteStudentsTab({ academicYears, schoolId }: PromoteStudentsT
     </div>
   );
 }
-    </div>
-  );
-}
