@@ -39,6 +39,7 @@ const navItems = [
   { href: "/progress/marks", label: "Marks Entry", icon: PenLine },
   { href: "/progress/attendance", label: "Attendance", icon: CalendarCheck },
   { href: "/progress/report-cards", label: "Report Cards", icon: FileText },
+  { href: "/progress/report-card-templates", label: "Templates", icon: FileText },
   { href: "/admin/user-manual", label: "User Manual", icon: BookOpenCheck },
 ];
 

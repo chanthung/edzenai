@@ -40,6 +40,8 @@ import ProgressAssessments from "./pages/progress/Assessments";
 import ProgressMarksEntry from "./pages/progress/MarksEntry";
 import StudentProgress from "./pages/progress/StudentProgress";
 import ReportCards from "./pages/progress/ReportCards";
+import ReportCardTemplates from "./pages/progress/ReportCardTemplates";
+import ReportCardTemplateEditor from "./pages/progress/ReportCardTemplateEditor";
 import Attendance from "./pages/progress/Attendance";
 
 const queryClient = new QueryClient();
@@ -93,6 +95,8 @@ const App = () => (
             <Route path="/progress/student/:studentId" element={<StudentProgress />} />
             <Route path="/progress/attendance" element={<Attendance />} />
             <Route path="/progress/report-cards" element={<ReportCards />} />
+            <Route path="/progress/report-card-templates" element={<ReportCardTemplates />} />
+            <Route path="/progress/report-card-templates/:id" element={<ReportCardTemplateEditor />} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
