@@ -13,6 +13,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getNextClass, getPromotionStatus } from "@/lib/grade-promotion";
+import { evaluateStudent, resolveRule, type Board, type SubjectMark } from "@/lib/promotion-rules";
+import { usePromotionRules } from "@/hooks/usePromotionRules";
+import { useSchool } from "@/hooks/useSchool";
+import { PromotionConfirmDialog } from "@/components/admin/PromotionConfirmDialog";
+import { PromotionResultReport, type PromotionOutcomeRow } from "@/components/admin/PromotionResultReport";
+import { Select as BoardSelect, SelectContent as BoardSelectContent, SelectItem as BoardSelectItem, SelectTrigger as BoardSelectTrigger, SelectValue as BoardSelectValue } from "@/components/ui/select";
 import type { AcademicYear } from "@/hooks/useAcademicYears";
 import {
   ArrowRight,
