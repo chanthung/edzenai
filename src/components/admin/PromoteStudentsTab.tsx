@@ -25,6 +25,9 @@ import {
   XCircle,
   Info,
 } from "lucide-react";
+import { PromotionConfirmDialog } from "@/components/admin/PromotionConfirmDialog";
+import { PromotionResultReport } from "@/components/admin/PromotionResultReport";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type PromotionAction = "promote" | "retain" | "exclude";
 
@@ -612,12 +615,12 @@ export function PromoteStudentsTab({ academicYears, schoolId }: PromoteStudentsT
 
                 <div className="mt-4 flex justify-end">
                   <Button
-                    onClick={() => promoteMutation.mutate()}
+                    onClick={() => setConfirmOpen(true)}
                     disabled={promoteMutation.isPending || activeRows.length === 0}
                     size="lg"
                   >
                     {promoteMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Confirm {activeRows.length} Students
+                    Review & Confirm ({activeRows.length})
                   </Button>
                 </div>
               </>
@@ -625,6 +628,35 @@ export function PromoteStudentsTab({ academicYears, schoolId }: PromoteStudentsT
           </CardContent>
         </Card>
       )}
+
+      <PromotionConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        promoteCount={promoteCount}
+        retainCount={retainCount}
+        fromYearName={fromYear?.name ?? ""}
+        toYearName={toYear?.name ?? ""}
+        isPending={promoteMutation.isPending}
+        onConfirm={async (consent, notifyWhatsApp) => {
+          await promoteMutation.mutateAsync({ consent, notifyWhatsApp });
+        }}
+      />
+
+      <Dialog open={!!lastReport} onOpenChange={(o) => !o && setLastReport(null)}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Promotion Results</DialogTitle>
+          </DialogHeader>
+          {lastReport && (
+            <PromotionResultReport
+              fromYear={lastReport.from}
+              toYear={lastReport.to}
+              outcomes={lastReport.outcomes}
+              onClose={() => setLastReport(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
