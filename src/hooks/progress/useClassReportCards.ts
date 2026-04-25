@@ -29,6 +29,8 @@ export function useClassReportCards(className: string | null, academicYearId: st
       if (students.length === 0) return [];
 
       const schoolName = schoolRes.data?.name ?? '';
+      const schoolLogoUrl = (schoolRes.data as any)?.logo_url ?? null;
+      const schoolAddress = (schoolRes.data as any)?.address ?? null;
       const academicYear = yearRes.data?.name ?? '';
       const studentIds = students.map(s => s.id);
 
