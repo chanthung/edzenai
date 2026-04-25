@@ -42,7 +42,7 @@ export function useReportCard(studentId: string | null, academicYearId: string |
       // Fetch student, school, academic year, marks, subjects in parallel
       const [studentRes, schoolRes, yearRes, marksRes, subjectsRes, assignmentRes] = await Promise.all([
         supabase.from('students').select('*').eq('id', studentId).single(),
-        supabase.from('schools').select('name').eq('id', schoolId).single(),
+        supabase.from('schools').select('name, logo_url, address').eq('id', schoolId).single(),
         supabase.from('academic_years').select('name').eq('id', academicYearId).single(),
         supabase.from('student_marks').select(`
           *,
