@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil, GraduationCap, Upload, Download } from "lucide-react";
 import { exportToXLSX } from "@/lib/export-utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ReminderSettingsCard } from "@/components/admin/fees/ReminderSettingsCard";
+import { useSchool } from "@/hooks/useSchool";
 
 export default function FeeSetup() {
   const { data: academicYears } = useAcademicYears();
@@ -33,6 +35,7 @@ export default function FeeSetup() {
   const [feeImportOpen, setFeeImportOpen] = useState(false);
   const [showFeeImportBanner, setShowFeeImportBanner] = useState(false);
   const { isRestricted } = useSubscriptionStatus();
+  const { data: school } = useSchool();
   
   const currentYearId = selectedYearId || activeYear?.id;
   
@@ -219,6 +222,8 @@ export default function FeeSetup() {
         mode="fees"
         onComplete={() => setShowFeeImportBanner(true)}
       />
+
+      <ReminderSettingsCard schoolId={school?.id} />
 
       <Tabs defaultValue="structures" className="mt-6">
         <TabsList>
