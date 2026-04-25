@@ -3,15 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MessageSquare, Pencil, Send, Clock } from "lucide-react";
+import { Loader2, MessageSquare, Pencil, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useReminderSettings, useSaveReminderSettings, type ReminderSettings } from "@/hooks/useReminderSettings";
-import { REMINDER_ORDER, REMINDER_LABELS, DEFAULT_TEMPLATES, type ReminderKey } from "@/lib/fee-reminder-defaults";
+import { REMINDER_ORDER, REMINDER_LABELS, type ReminderKey } from "@/lib/fee-reminder-defaults";
 import { TemplateEditorDialog } from "./TemplateEditorDialog";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   schoolId: string | undefined;
@@ -22,8 +20,6 @@ export function ReminderSettingsCard({ schoolId }: Props) {
   const save = useSaveReminderSettings();
   const [draft, setDraft] = useState<ReminderSettings | null>(null);
   const [editingKey, setEditingKey] = useState<ReminderKey | null>(null);
-  const [testPhone, setTestPhone] = useState("");
-  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (data) setDraft(data);
@@ -47,32 +43,6 @@ export function ReminderSettingsCard({ schoolId }: Props) {
       toast.success("Reminder settings saved");
     } catch (e: any) {
       toast.error(e.message || "Failed to save");
-    }
-  };
-
-  const handleTest = async () => {
-    if (!testPhone.trim()) {
-      toast.error("Enter a phone number");
-      return;
-    }
-    if (!schoolId) return;
-    setTesting(true);
-    try {
-      const { data: res, error } = await supabase.functions.invoke("send-test-fee-reminder", {
-        body: {
-          school_id: schoolId,
-          phone: testPhone.trim(),
-          template: draft.templates.on || DEFAULT_TEMPLATES.on,
-          reminder_type: "on",
-        },
-      });
-      if (error) throw error;
-      if ((res as any)?.error) throw new Error((res as any).error);
-      toast.success("Test WhatsApp sent");
-    } catch (e: any) {
-      toast.error(e.message || "Test send failed");
-    } finally {
-      setTesting(false);
     }
   };
 

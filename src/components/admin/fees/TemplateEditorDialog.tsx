@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,11 +21,14 @@ export function TemplateEditorDialog({ open, onOpenChange, reminderKey, initialV
   const isCustom = !!initialValue;
   const effective = value || DEFAULT_TEMPLATES[reminderKey || 'on'];
 
-  // Reset when dialog opens
-  const handleOpenChange = (next: boolean) => {
-    if (next && reminderKey) {
+  // Seed textarea with custom value or default whenever the dialog opens for a key
+  useEffect(() => {
+    if (open && reminderKey) {
       setValue(initialValue ?? DEFAULT_TEMPLATES[reminderKey]);
     }
+  }, [open, reminderKey, initialValue]);
+
+  const handleOpenChange = (next: boolean) => {
     onOpenChange(next);
   };
 
