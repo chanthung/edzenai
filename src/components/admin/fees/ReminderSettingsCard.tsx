@@ -143,26 +143,6 @@ export function ReminderSettingsCard({ schoolId }: Props) {
           </div>
         </div>
 
-        {/* Test send */}
-        <div className="rounded-md border bg-muted/30 p-3 space-y-2">
-          <div className="text-sm font-medium">Send a test reminder</div>
-          <div className="flex flex-wrap gap-2">
-            <Input
-              placeholder="WhatsApp number (e.g. 9876543210)"
-              value={testPhone}
-              onChange={(e) => setTestPhone(e.target.value)}
-              className="max-w-xs"
-            />
-            <Button onClick={handleTest} disabled={testing} variant="secondary">
-              {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-              Send test
-            </Button>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Uses the "On due date" template with sample data.
-          </div>
-        </div>
-
         <div className="flex justify-end">
           <Button onClick={handleSave} disabled={!dirty || save.isPending}>
             {save.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
