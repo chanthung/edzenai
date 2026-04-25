@@ -1,81 +1,116 @@
-## Goal
 
-Let each school control its own WhatsApp fee reminder behavior from the Fee Setup page, instead of using the current hardcoded settings (08:00 IST, all 5 offsets always on, fixed templates).
+# Visual Report Card Template Builder — MVP
 
-## What admins will be able to configure
+A drag-and-drop canvas where each school designs its own branded Report Card, saves it as JSON, previews it filled with real student data, and exports to PDF in the browser. Other document types (fee receipts, TC, ID cards, etc.) follow the same engine in later iterations.
 
-In a new **Reminder Settings** section on the Fee Setup page:
+## What the user gets
 
-1. **Master switch** — turn fee reminders on/off for the whole school.
-2. **Send time** — pick the hour of day (IST) reminders go out. Single hour per day (e.g. 9 AM, 6 PM).
-3. **Which reminders to send** — independent toggles for each of the 5 offsets:
-   - 7 days before due
-   - 3 days before due
-   - On the due date
-   - 1 day after due (overdue)
-   - 7 days after due (final)
-4. **Custom message templates** — editable WhatsApp text per reminder type with placeholders `{amount}`, `{studentName}`, `{dueDate}`, `{parentLink}`, `{schoolName}`. Each row also shows a live preview and a "Reset to default" button.
+1. **New page** under Progress → "Report Card Templates" (`/progress/report-card-templates`) with a list of saved templates and a "New Template" button.
+2. **Canvas editor** at `/progress/report-card-templates/:id`:
+   - Left rail: draggable **field chips** (Student, Academic, School, Signature, plus a "Marks Table" block and basic shapes: Text, Image, Line, Box).
+   - Center: A4 canvas (794×1123px @ 96dpi) with a grid background.
+   - Right rail: properties panel for the selected element (position, size, font, weight, color, alignment, border).
+   - Top bar: template name, paper size (A4/A5), orientation (P/L), margins, Save, Preview, Export PDF, Set as Default.
+3. **Drag, drop, resize, delete** elements freely (absolute-positioned). Snap-to-grid (8px) and snap-to-edges of other elements.
+4. **Field chips** render as `{placeholder}` in edit mode, and are replaced with real values in preview/export.
+5. **Marks table** is a special block that auto-expands to all subjects/terms for the selected student.
+6. **Preview mode**: pick a real student + assessment → canvas fills with that student's data.
+7. **Export PDF**: client-side via `html2canvas` + `jspdf` at A4 size. Single-student or bulk (loop students in the class, zip not needed for MVP — generates a multi-page PDF).
+8. **Set as Default** marks one template per school as the active one used by the existing Report Card flow (`ReportCardView` becomes a renderer that respects the saved template if one exists).
 
-A "Send test reminder to my number" button lets admins fire off a sample WhatsApp message before going live.
+## Technical design
 
-## UI
-
-New collapsible card at the top of `/admin/fee-setup`, above the existing Fee Structures / Categories tabs:
-
+### New table: `document_templates`
 ```text
-┌─ WhatsApp Fee Reminders ──────────────────── [● Enabled] ─┐
-│ Send daily at: [09:00 ▼] IST                              │
-│                                                            │
-│ Reminders to send:                                         │
-│  [✓] 7 days before due   [Edit template]                   │
-│  [✓] 3 days before due   [Edit template]                   │
-│  [✓] On due date         [Edit template]                   │
-│  [✓] 1 day after due     [Edit template]                   │
-│  [✓] 7 days after due    [Edit template]                   │
-│                                                            │
-│ [Send test to my WhatsApp]            [Save changes]       │
-└────────────────────────────────────────────────────────────┘
+id              uuid pk
+school_id       uuid (RLS via get_user_school_ids)
+doc_type        text  ('report_card' for MVP; future: fee_receipt, tc, id_card…)
+name            text
+is_default      boolean
+paper_size      text  ('A4'|'A5'|'Letter')
+orientation     text  ('portrait'|'landscape')
+margins         jsonb {top,right,bottom,left} mm
+elements        jsonb  array of element nodes (see schema below)
+created_by      uuid
+created_at, updated_at
+```
+RLS: school admins manage their school's templates; teachers can read.
+A partial unique index ensures only one `is_default=true` per (school_id, doc_type).
+
+### Element JSON schema (stored in `elements`)
+```text
+{
+  id: string,
+  type: 'text' | 'field' | 'image' | 'line' | 'box' | 'marks_table' | 'signature_line',
+  x: number, y: number, w: number, h: number,    // px on A4 canvas
+  rotation?: number,
+  // type-specific:
+  text?: string,                                 // for 'text'
+  field?: '{student_name}' | ...,                // for 'field'
+  src?: string,                                  // for 'image' (school logo etc.)
+  style?: { fontSize, fontWeight, fontFamily, color, align, bgColor, borderColor, borderWidth, borderRadius, padding },
+  tableConfig?: { showGrade, showPercentage, showRank, termColumns: 'all'|'selected', termIds?: string[] },
+  signatureLabel?: 'Principal' | 'Class Teacher' | 'Parent/Guardian' | 'Examiner'
+}
 ```
 
-Template editor opens in a dialog with textarea + placeholder chips + preview.
+### Field resolver
+A pure function `resolveField(token, ctx) → string | ReactNode` where `ctx = { student, school, academicYear, marks, attendance }`. Reuses data already loaded by `useReportCard`. The marks_table element gets a dedicated React renderer that pulls from `ctx.marks` and respects `tableConfig`.
 
-## Technical changes
+### Components / files to add
+```text
+src/pages/progress/ReportCardTemplates.tsx          (list page)
+src/pages/progress/ReportCardTemplateEditor.tsx     (editor page)
+src/components/templates/Canvas.tsx                 (A4 surface, dnd-kit DndContext)
+src/components/templates/CanvasElement.tsx          (renders + selects + resizes one element)
+src/components/templates/FieldChipsRail.tsx         (left rail draggables)
+src/components/templates/PropertiesPanel.tsx        (right rail editor for selected node)
+src/components/templates/TemplateToolbar.tsx        (top bar: name, paper, save, preview, export)
+src/components/templates/TemplateRenderer.tsx       (read-only render: used in preview + ReportCardView fallback)
+src/components/templates/MarksTableElement.tsx
+src/lib/templates/field-registry.ts                 (single source of truth for field tags + labels + groups)
+src/lib/templates/resolve-fields.ts                 (token → value)
+src/lib/templates/pdf-export.ts                     (html2canvas + jspdf)
+src/lib/templates/default-report-card.ts            (seed JSON used when "New Template" is created)
+src/hooks/templates/useDocumentTemplates.ts         (list/create/update/delete/setDefault)
+src/integrations/supabase/types.ts                  (auto-regenerated)
+supabase/migrations/<ts>_document_templates.sql
+```
 
-**New table** `school_reminder_settings` (one row per school):
-- `school_id` (PK, FK schools)
-- `enabled boolean default true`
-- `send_hour_ist int default 8` (0–23)
-- `offsets_enabled jsonb` — `{before_7d, before_3d, on, after_1d, after_7d}` booleans
-- `templates jsonb` — same keys → string templates (null = use built-in default)
-- `updated_at`, `updated_by`
+### Drag & drop (dnd-kit)
+- Field chips are `useDraggable` with `data: { kind: 'field', field: '{student_name}' }`.
+- Canvas is one big `useDroppable`; on drop, compute pointer position relative to canvas and append a new element.
+- Inside the canvas, each `CanvasElement` is itself draggable for repositioning (custom pointer-based handler — not dnd-kit — to also support resize handles and avoid awkward dnd-kit nested DnD).
+- Selection model: clicking an element selects it; properties panel binds to selected node id.
+- Snap-to-grid (8px) on move/resize. Arrow keys nudge by 1px (10px with shift).
 
-RLS: school admins manage their school's row; service role read for the cron function.
+### PDF export (browser-side)
+- `html2canvas` on the canvas DOM at scale 2 → PNG → embed into `jsPDF` A4 page.
+- Bulk: iterate over students, re-render the renderer for each, append a new page per student. Show a progress toast.
+- Acceptable quality for MVP; Puppeteer/300dpi can come later.
 
-**Edge function `send-fee-reminders`** — read each affected school's settings:
-- Skip if `enabled = false`
-- Skip offsets where toggle is off
-- Use custom template if present, else fall back to built-in default
-- Only act when current IST hour matches `send_hour_ist` (compare hour at function start, since cron now runs hourly)
+### Integration with existing report card
+- `useReportCard` already fetches everything we need. The renderer reuses that data.
+- On the existing `ReportCards` page, if a default template exists for the school, switch the rendered output from `ReportCardView` to `<TemplateRenderer template={defaultTemplate} data={reportData} />`. If none, keep current behavior — zero regression.
 
-**Cron** — change `daily-fee-reminders` schedule from `30 2 * * *` (single 02:30 UTC tick) to **hourly at :00** (`0 * * * *`). Each school is processed only on its chosen hour. Done via `pg_cron` update.
+### Field library (MVP subset)
+Student: name, roll_number, class_section, dob, admission_number, parent_name, parent_phone, student_photo
+Academic: marks_table, total_marks, max_marks_total, percentage, grade, rank, attendance_percentage, days_present, days_absent, teacher_remarks, principal_remarks
+School: school_name, school_logo, school_address, school_phone, academic_year, term_name, exam_name, print_date
+Signatures: principal_signature_line, class_teacher_signature_line, parent_signature_line
 
-**New edge function `send-test-fee-reminder`** — admin-only, sends one sample WhatsApp to the caller's chosen test number using the school's `on_due` template with sample data.
+## Out of scope (future phases)
+- Other document types (fee receipt, TC, ID card 8-up, fee book, bonafide, merit cert)
+- AI layout detection from uploaded sample
+- Server-side Puppeteer / 300dpi
+- WhatsApp send of generated PDF
+- Template versioning, locking, marketplace/sharing across schools
 
-**Frontend**:
-- New hook `useReminderSettings(schoolId)` — fetch + upsert
-- New component `src/components/admin/fees/ReminderSettingsCard.tsx`
-- New component `src/components/admin/fees/TemplateEditorDialog.tsx`
-- Mounted at top of `src/pages/admin/FeeSetup.tsx`
-- Default template constants live in `src/lib/fee-reminder-defaults.ts` (shared shape; edge function has its own copy)
-
-## Migration & backfill
-
-- Create table + RLS
-- Backfill one row per existing school with defaults (enabled=true, hour=8, all offsets on, templates=null)
-- Update pg_cron schedule for `daily-fee-reminders` to hourly
-
-## Out of scope
-
-- Per-class or per-student overrides
-- Multiple send slots per day (you chose single hour)
-- SMS / email channels (WhatsApp only, as today)
+## Acceptance criteria
+1. Admin can create, name, save, and reload a Report Card template; canvas state is identical after refresh.
+2. Field chips drop onto canvas as resolvable placeholders; preview with a real student fills them with correct values.
+3. Marks table block auto-renders all subjects + terms for the selected student.
+4. PDF export downloads a single-page A4 PDF that visually matches the canvas.
+5. Bulk export generates one multi-page PDF for an entire class within ~60s.
+6. Setting a template as default makes the existing Report Card page render via the new template; deleting/unsetting falls back to the current view.
+7. RLS: a school cannot see/edit another school's templates.
