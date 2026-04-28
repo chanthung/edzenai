@@ -31,13 +31,13 @@ export function usePartnerSchools(partnerId?: string) {
     queryKey: ["partner-schools", partnerId],
     enabled: !!partnerId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("schools")
         .select("id, name, created_at, system_state, subscription_status, payment_verified, trial_end_date")
-        .eq("referred_by" as any, partnerId!)
+        .eq("referred_by", partnerId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      return (data || []) as any[];
     },
   });
 }
