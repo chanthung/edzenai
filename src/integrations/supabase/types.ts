@@ -2422,6 +2422,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      validate_payment_proof_insert: {
+        Args: { _installment_id: string; _student_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "platform_admin" | "school_admin" | "teacher" | "accountant"
