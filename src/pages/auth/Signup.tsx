@@ -28,6 +28,25 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
 
+  // Referral code from ?ref=
+  const [referralCode, setReferralCode] = useState<string>("");
+  const [referrerName, setReferrerName] = useState<string>("");
+
+  useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("ref");
+    if (code) {
+      const upper = code.trim().toUpperCase();
+      (supabase as any).rpc("resolve_referral_code", { _code: upper }).then(({ data }: any) => {
+        if (data && data.length > 0) {
+          setReferralCode(data[0].referral_code);
+          setReferrerName(data[0].name);
+        }
+      });
+    }
+    return undefined;
+  });
+
   // Step 1 fields
   const [schoolName, setSchoolName] = useState("");
   const [city, setCity] = useState("");
@@ -80,6 +99,7 @@ export default function Signup() {
             city,
             state: stateName,
             selected_plan: selectedPlan,
+            referral_code: referralCode || null,
           },
         },
       });
