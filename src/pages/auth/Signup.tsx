@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -32,20 +32,18 @@ export default function Signup() {
   const [referralCode, setReferralCode] = useState<string>("");
   const [referrerName, setReferrerName] = useState<string>("");
 
-  useState(() => {
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("ref");
-    if (code) {
-      const upper = code.trim().toUpperCase();
-      (supabase as any).rpc("resolve_referral_code", { _code: upper }).then(({ data }: any) => {
-        if (data && data.length > 0) {
-          setReferralCode(data[0].referral_code);
-          setReferrerName(data[0].name);
-        }
-      });
-    }
-    return undefined;
-  });
+    if (!code) return;
+    const upper = code.trim().toUpperCase();
+    (supabase as any).rpc("resolve_referral_code", { _code: upper }).then(({ data }: any) => {
+      if (data && data.length > 0) {
+        setReferralCode(data[0].referral_code);
+        setReferrerName(data[0].name);
+      }
+    });
+  }, []);
 
   // Step 1 fields
   const [schoolName, setSchoolName] = useState("");
