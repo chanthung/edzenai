@@ -841,6 +841,140 @@ export type Database = {
           },
         ]
       }
+      partner_commissions: {
+        Row: {
+          amount: number
+          commission_percent: number
+          created_at: string
+          id: string
+          partner_id: string
+          payment_amount: number
+          payout_id: string | null
+          platform_payment_id: string
+          school_id: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          commission_percent: number
+          created_at?: string
+          id?: string
+          partner_id: string
+          payment_amount: number
+          payout_id?: string | null
+          platform_payment_id: string
+          school_id: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          partner_id?: string
+          payment_amount?: number
+          payout_id?: string | null
+          platform_payment_id?: string
+          school_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commissions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_commissions_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "partner_payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_payouts: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          paid_at: string
+          partner_id: string
+          recorded_by: string | null
+          reference_number: string | null
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string
+          partner_id: string
+          recorded_by?: string | null
+          reference_number?: string | null
+          total_amount: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string
+          partner_id?: string
+          recorded_by?: string | null
+          reference_number?: string | null
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_payouts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          commission_percent: number
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          referral_code: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          commission_percent?: number
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          referral_code: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          commission_percent?: number
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          referral_code?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       payment_proofs: {
         Row: {
           admin_notes: string | null
@@ -1385,6 +1519,7 @@ export type Database = {
           pending_amount: number
           phone: string | null
           qr_code_url: string | null
+          referred_by: string | null
           scheduled_purge_at: string | null
           subscription_plan: string
           subscription_renewal_date: string | null
@@ -1423,6 +1558,7 @@ export type Database = {
           pending_amount?: number
           phone?: string | null
           qr_code_url?: string | null
+          referred_by?: string | null
           scheduled_purge_at?: string | null
           subscription_plan?: string
           subscription_renewal_date?: string | null
@@ -1461,6 +1597,7 @@ export type Database = {
           pending_amount?: number
           phone?: string | null
           qr_code_url?: string | null
+          referred_by?: string | null
           scheduled_purge_at?: string | null
           subscription_plan?: string
           subscription_renewal_date?: string | null
@@ -1476,7 +1613,15 @@ export type Database = {
           updated_at?: string
           upi_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "schools_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_competency_scores: {
         Row: {
@@ -2342,6 +2487,7 @@ export type Database = {
         Returns: number
       }
       get_accountant_school_ids: { Args: never; Returns: string[] }
+      get_my_partner_id: { Args: never; Returns: string }
       get_nep_stage: {
         Args: { class_name: string }
         Returns: Database["public"]["Enums"]["nep_learning_stage"]
@@ -2399,6 +2545,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_partner: { Args: never; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       is_school_admin: { Args: { _school_id: string }; Returns: boolean }
       is_school_restricted: { Args: { _school_id: string }; Returns: boolean }
@@ -2422,13 +2569,26 @@ export type Database = {
           read_ct: number
         }[]
       }
+      resolve_referral_code: {
+        Args: { _code: string }
+        Returns: {
+          id: string
+          name: string
+          referral_code: string
+        }[]
+      }
       validate_payment_proof_insert: {
         Args: { _installment_id: string; _student_id: string }
         Returns: boolean
       }
     }
     Enums: {
-      app_role: "platform_admin" | "school_admin" | "teacher" | "accountant"
+      app_role:
+        | "platform_admin"
+        | "school_admin"
+        | "teacher"
+        | "accountant"
+        | "partner"
       assessment_category: "formative" | "summative"
       assessment_domain: "cognitive" | "affective" | "psychomotor"
       attendance_status: "present" | "absent" | "late" | "leave"
@@ -2589,7 +2749,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["platform_admin", "school_admin", "teacher", "accountant"],
+      app_role: [
+        "platform_admin",
+        "school_admin",
+        "teacher",
+        "accountant",
+        "partner",
+      ],
       assessment_category: ["formative", "summative"],
       assessment_domain: ["cognitive", "affective", "psychomotor"],
       attendance_status: ["present", "absent", "late", "leave"],
