@@ -156,6 +156,11 @@ export default function Signup() {
                 ? "No credit card required · Full Pro access for 30 days"
                 : "No credit card required · Core features for your school"}
           </p>
+          {referrerName && (
+            <Badge variant="outline" className="mt-3 bg-emerald-500/10 text-emerald-700 border-emerald-500/30">
+              ✨ Referred by {referrerName}
+            </Badge>
+          )}
         </div>
 
         {/* Step indicator */}

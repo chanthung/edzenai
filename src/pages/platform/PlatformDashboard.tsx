@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard } from "lucide-react";
+import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard, Handshake } from "lucide-react";
 import { toast } from "sonner";
 import { CreateSchoolDialog } from "@/components/platform/CreateSchoolDialog";
 import { EditSchoolDialog } from "@/components/platform/EditSchoolDialog";
@@ -219,6 +219,9 @@ export default function PlatformDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate("/platform/partners")}>
+              <Handshake className="mr-2 h-4 w-4" />Partners
+            </Button>
             <Button variant="outline" onClick={() => navigate("/platform/subscription-settings")}>
               <Settings2 className="mr-2 h-4 w-4" />Subscription Settings
             </Button>
