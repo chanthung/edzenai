@@ -23,6 +23,9 @@ import GettingStarted from "./pages/admin/GettingStarted";
 import ParentView from "./pages/parent/ParentView";
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import SubscriptionSettings from "./pages/platform/SubscriptionSettings";
+import Partners from "./pages/platform/Partners";
+import PartnerDetail from "./pages/platform/PartnerDetail";
+import PartnerDashboard from "./pages/partner/PartnerDashboard";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
@@ -76,6 +79,11 @@ const App = () => (
             {/* Platform Admin routes */}
             <Route path="/platform" element={<PlatformDashboard />} />
             <Route path="/platform/subscription-settings" element={<SubscriptionSettings />} />
+            <Route path="/platform/partners" element={<Partners />} />
+            <Route path="/platform/partners/:id" element={<PartnerDetail />} />
+
+            {/* Partner routes */}
+            <Route path="/partner" element={<PartnerDashboard />} />
             
             {/* School Admin routes */}
             <Route path="/admin" element={<Dashboard />} />

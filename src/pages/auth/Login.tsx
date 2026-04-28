@@ -51,6 +51,17 @@ export default function Login() {
         return;
       }
 
+      // Check partner
+      const { data: partner } = await (supabase as any)
+        .from('partners')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (partner) {
+        navigate("/partner", { replace: true });
+        return;
+      }
+
       const { data: schoolAdmin } = await supabase
         .from('school_admins')
         .select('school_id')

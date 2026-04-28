@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { schoolName, adminName, email, phone, password, selectedPlan } = await req.json()
+    const { schoolName, adminName, email, phone, password, selectedPlan, referralCode } = await req.json()
 
     // Validate required fields
     if (!schoolName || !adminName || !email || !phone || !password) {
@@ -58,6 +58,18 @@ Deno.serve(async (req) => {
     const trialEndDate = isPro ? new Date(today) : null
     if (trialEndDate) trialEndDate.setDate(trialEndDate.getDate() + 30)
 
+    // Resolve referral code → partner_id (silently ignore invalid)
+    let referredBy: string | null = null
+    if (referralCode && typeof referralCode === 'string') {
+      const { data: partnerRow } = await supabaseAdmin
+        .from('partners')
+        .select('id')
+        .eq('referral_code', referralCode.trim().toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle()
+      if (partnerRow) referredBy = (partnerRow as any).id
+    }
+
     // Create the school
     const { data: school, error: schoolError } = await supabaseAdmin
       .from('schools')
@@ -72,6 +84,7 @@ Deno.serve(async (req) => {
         next_billing_date: isPro && trialEndDate ? formatDate(trialEndDate) : null,
         system_state: isPro ? 'trial_active' : 'subscription_active',
         payment_verified: !isPro,
+        referred_by: referredBy,
       })
       .select()
       .single()

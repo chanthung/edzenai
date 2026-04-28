@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,23 @@ export default function Signup() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+
+  // Referral code from ?ref=
+  const [referralCode, setReferralCode] = useState<string>("");
+  const [referrerName, setReferrerName] = useState<string>("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("ref");
+    if (!code) return;
+    const upper = code.trim().toUpperCase();
+    (supabase as any).rpc("resolve_referral_code", { _code: upper }).then(({ data }: any) => {
+      if (data && data.length > 0) {
+        setReferralCode(data[0].referral_code);
+        setReferrerName(data[0].name);
+      }
+    });
+  }, []);
 
   // Step 1 fields
   const [schoolName, setSchoolName] = useState("");
@@ -80,6 +97,7 @@ export default function Signup() {
             city,
             state: stateName,
             selected_plan: selectedPlan,
+            referral_code: referralCode || null,
           },
         },
       });
@@ -138,6 +156,11 @@ export default function Signup() {
                 ? "No credit card required · Full Pro access for 30 days"
                 : "No credit card required · Core features for your school"}
           </p>
+          {referrerName && (
+            <Badge variant="outline" className="mt-3 bg-emerald-500/10 text-emerald-700 border-emerald-500/30">
+              ✨ Referred by {referrerName}
+            </Badge>
+          )}
         </div>
 
         {/* Step indicator */}
