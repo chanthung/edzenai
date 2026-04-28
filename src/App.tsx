@@ -13,6 +13,7 @@ import Onboard from "./pages/auth/Onboard";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AcceptInvite from "./pages/auth/AcceptInvite";
+import AcceptPartnerInvite from "./pages/auth/AcceptPartnerInvite";
 import Dashboard from "./pages/admin/Dashboard";
 import Students from "./pages/admin/Students";
 import AcademicYears from "./pages/admin/AcademicYears";
@@ -72,6 +73,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth/accept-invite" element={<AcceptInvite />} />
+            <Route path="/auth/accept-partner-invite" element={<AcceptPartnerInvite />} />
             
             {/* Parent view - unique link access */}
             <Route path="/view/:name/:token" element={<ParentView />} />

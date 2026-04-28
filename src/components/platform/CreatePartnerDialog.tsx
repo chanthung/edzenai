@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -11,12 +11,6 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-}
-
-function generateCode(name: string) {
-  const base = (name || "PARTNER").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PART";
-  const suffix = Math.floor(100 + Math.random() * 900);
-  return `${base}${suffix}`;
 }
 
 export function CreatePartnerDialog({ open, onOpenChange, onSuccess }: Props) {
@@ -41,20 +35,26 @@ export function CreatePartnerDialog({ open, onOpenChange, onSuccess }: Props) {
       toast.error("Commission % must be between 0-100");
       return;
     }
-    const code = (referralCode.trim() || generateCode(name)).toUpperCase();
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("partners" as any).insert({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim() || null,
-        referral_code: code,
-        commission_percent: pct,
-        is_active: true,
-      } as any);
+      const { data, error } = await supabase.functions.invoke("create-partner-invite", {
+        body: {
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone.trim() || null,
+          referral_code: referralCode.trim() || null,
+          commission_percent: pct,
+        },
+      });
       if (error) throw error;
-      toast.success(`Partner created — code: ${code}`);
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(`Partner created — code: ${data.referralCode}`, {
+        description: data.emailSent
+          ? "Invite email sent. They'll set their password via the link."
+          : "Partner created, but invite email failed. Resend from the partner detail page.",
+      });
       reset();
       onSuccess();
       onOpenChange(false);
@@ -70,7 +70,9 @@ export function CreatePartnerDialog({ open, onOpenChange, onSuccess }: Props) {
       <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
           <DialogTitle>Add Partner</DialogTitle>
-          <DialogDescription>Create a new affiliate partner. They'll get a unique referral link.</DialogDescription>
+          <DialogDescription>
+            Create a new affiliate partner. They'll receive an email invite to set their password and access the partner dashboard.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
@@ -80,6 +82,9 @@ export function CreatePartnerDialog({ open, onOpenChange, onSuccess }: Props) {
           <div className="space-y-2">
             <Label>Email *</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="partner@example.com" />
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Mail className="h-3 w-3" /> Invite email with password setup link will be sent here
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Phone</Label>
@@ -97,10 +102,10 @@ export function CreatePartnerDialog({ open, onOpenChange, onSuccess }: Props) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Create Partner
+            Create & Send Invite
           </Button>
         </DialogFooter>
       </DialogContent>
