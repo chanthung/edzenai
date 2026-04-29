@@ -41,13 +41,13 @@ export function TrialBanner() {
                       : 'Unlock AI insights, report cards, and more with Pro.'}
                   </p>
                 </>
-              ) : (
+              ) : currentPlan === 'pro' ? (
                 <>
                   <p className="font-medium">
                     🚀 You are on Pro Trial
                     {daysRemaining !== null && daysRemaining > 0
                       ? ` (${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left)`
-                      : " (Expires today)"}
+                      : ""}
                   </p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
@@ -55,6 +55,15 @@ export function TrialBanner() {
                     <Badge variant="outline" className="text-xs capitalize">
                       {currentPlan} plan
                     </Badge>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">
+                    ✨ You're on the Starter plan
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    Upgrade to Pro to unlock AI insights, report cards, and advanced analytics.
                   </div>
                 </>
               )}
