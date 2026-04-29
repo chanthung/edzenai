@@ -111,10 +111,25 @@ export default function Pricing() {
 
   const signupUrl = (plan: 'starter' | 'pro') => `/signup?plan=${plan}&billing=${billingCycle}`;
 
+  // Gateway minimum billable quantity (volume-pricing floor in Paddle/Razorpay).
+  const GATEWAY_MIN_QTY = 10;
+  // What we will actually bill for: the displayed slider value, but never
+  // below the real roster (already enforced by minStudents) and never below
+  // the gateway minimum.
+  const billableStudents = Math.max(students, GATEWAY_MIN_QTY);
+  const isBelowGatewayMin = isLoggedInSchool && rosterCount > 0 && rosterCount < GATEWAY_MIN_QTY;
+  const hasNoStudents = isLoggedInSchool && rosterCount === 0;
+
   // For logged-in users: show payment method dialog
   const handleCheckout = (plan: 'starter' | 'pro') => {
     if (!user || !school) {
       toast.error("Please log in and set up your school first");
+      return;
+    }
+    if (hasNoStudents) {
+      toast.error("Add students before subscribing", {
+        description: "Your subscription is billed per student. Add students first.",
+      });
       return;
     }
     setSelectedPlan(plan);
@@ -125,13 +140,12 @@ export default function Pricing() {
     if (!user || !school) return;
     setPaymentLoadingMethod('upi');
     try {
-      const studentCount = Math.max(students, 10);
       await openRazorpayCheckout({
         schoolId: school.id,
         userId: user.id,
         plan: selectedPlan,
         billingCycle,
-        studentCount,
+        studentCount: billableStudents,
         customerEmail: user.email || undefined,
         onSuccess: () => {
           setPaymentDialogOpen(false);
@@ -149,11 +163,10 @@ export default function Pricing() {
     if (!user || !school) return;
     setPaymentLoadingMethod('card');
     try {
-      const studentCount = Math.max(students, 10);
       const priceId = getPriceId(selectedPlan, billingCycle);
       await openPaddleCheckout({
         priceId,
-        quantity: studentCount,
+        quantity: billableStudents,
         customerEmail: user.email || undefined,
         customData: {
           userId: user.id,
@@ -170,7 +183,7 @@ export default function Pricing() {
   };
 
   // Determine if the logged-in user can directly checkout (has school, not already subscribed)
-  const canDirectCheckout = !!user && !!school && effectiveState !== 'subscription_active';
+  const canDirectCheckout = !!user && !!school && effectiveState !== 'subscription_active' && !hasNoStudents;
 
   return (
     <div className="min-h-[100dvh] bg-background">
