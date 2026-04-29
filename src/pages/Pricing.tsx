@@ -64,6 +64,7 @@ export default function Pricing() {
   const { effectiveState } = useSubscriptionStatus();
   const { data: school } = useSchool();
   const { data: studentsList } = useStudents();
+  const { count: rosterCount, isLoading: rosterLoading } = useSchoolStudentCount();
   const { openCheckout: openPaddleCheckout, loading: paddleLoading } = usePaddleCheckout();
   const { openCheckout: openRazorpayCheckout, loading: razorpayLoading } = useRazorpayCheckout();
   const navigate = useNavigate();
@@ -75,15 +76,31 @@ export default function Pricing() {
     effectiveState === 'subscription_active'
   );
 
+  // Logged-in school context: use real roster as the source of truth.
+  const isLoggedInSchool = !!user && !!school;
+  // Slider/input lower bound. For schools, you can never bill for fewer
+  // students than you actually have on file.
+  const minStudents = isLoggedInSchool ? Math.max(1, rosterCount) : 1;
+
+  // When the real roster loads (or changes), snap the slider up to it so the
+  // displayed monthly fee always matches Settings → Subscription.
+  useEffect(() => {
+    if (isLoggedInSchool && !rosterLoading && rosterCount > 0) {
+      setStudents((prev) => (prev < rosterCount ? rosterCount : prev));
+    }
+  }, [isLoggedInSchool, rosterLoading, rosterCount]);
+
   const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? DEFAULT_STARTER_RATE;
   const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? DEFAULT_PRO_RATE;
   const discountPct = getApplicableDiscount(students, tiers);
 
-  const handleSlider = (v: number[]) => setStudents(v[0]);
+  const handleSlider = (v: number[]) => {
+    setStudents(Math.max(minStudents, v[0]));
+  };
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = parseInt(e.target.value, 10);
-    if (!isNaN(v) && v >= 1 && v <= 7000) setStudents(v);
-    if (e.target.value === "") setStudents(1);
+    if (!isNaN(v) && v >= 1 && v <= 7000) setStudents(Math.max(minStudents, v));
+    if (e.target.value === "") setStudents(minStudents);
   };
 
   const applyDiscount = (total: number) => Math.max(0, total - total * (discountPct / 100));
