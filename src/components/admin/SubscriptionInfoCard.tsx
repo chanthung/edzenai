@@ -5,9 +5,8 @@ import { IndianRupee, Users, Calendar, Crown } from "lucide-react";
 import { useSchool } from "@/hooks/useSchool";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useSubscriptionPricing, calculateMonthlyFee, getDefaultRate } from "@/hooks/useSubscriptionPricing";
+import { useSchoolStudentCount } from "@/hooks/useSchoolStudentCount";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -15,19 +14,7 @@ export function SubscriptionInfoCard() {
   const { data: school, isLoading: schoolLoading } = useSchool();
   const { effectiveState, daysRemaining } = useSubscriptionStatus();
   const { data: pricing, isLoading: pricingLoading } = useSubscriptionPricing();
-
-  const { data: studentCount = 0 } = useQuery({
-    queryKey: ['student-count', school?.id],
-    queryFn: async () => {
-      if (!school?.id) return 0;
-      const { count } = await supabase
-        .from('students')
-        .select('id', { count: 'exact', head: true })
-        .eq('school_id', school.id);
-      return count || 0;
-    },
-    enabled: !!school?.id,
-  });
+  const { count: studentCount } = useSchoolStudentCount();
 
   if (schoolLoading || pricingLoading) {
     return (

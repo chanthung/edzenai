@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link, useNavigate } from "react-router-dom";
-import { Check, Star, Users, ShieldCheck, Clock, BadgePercent, CalendarDays, Loader2 } from "lucide-react";
+import { Check, Star, Users, ShieldCheck, Clock, BadgePercent, CalendarDays, Loader2, Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "
 import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
 import { useSchool } from "@/hooks/useSchool";
 import { useStudents } from "@/hooks/useStudents";
+import { useSchoolStudentCount } from "@/hooks/useSchoolStudentCount";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
@@ -63,6 +64,7 @@ export default function Pricing() {
   const { effectiveState } = useSubscriptionStatus();
   const { data: school } = useSchool();
   const { data: studentsList } = useStudents();
+  const { count: rosterCount, isLoading: rosterLoading } = useSchoolStudentCount();
   const { openCheckout: openPaddleCheckout, loading: paddleLoading } = usePaddleCheckout();
   const { openCheckout: openRazorpayCheckout, loading: razorpayLoading } = useRazorpayCheckout();
   const navigate = useNavigate();
@@ -74,15 +76,31 @@ export default function Pricing() {
     effectiveState === 'subscription_active'
   );
 
+  // Logged-in school context: use real roster as the source of truth.
+  const isLoggedInSchool = !!user && !!school;
+  // Slider/input lower bound. For schools, you can never bill for fewer
+  // students than you actually have on file.
+  const minStudents = isLoggedInSchool ? Math.max(1, rosterCount) : 1;
+
+  // When the real roster loads (or changes), snap the slider up to it so the
+  // displayed monthly fee always matches Settings → Subscription.
+  useEffect(() => {
+    if (isLoggedInSchool && !rosterLoading && rosterCount > 0) {
+      setStudents((prev) => (prev < rosterCount ? rosterCount : prev));
+    }
+  }, [isLoggedInSchool, rosterLoading, rosterCount]);
+
   const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? DEFAULT_STARTER_RATE;
   const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? DEFAULT_PRO_RATE;
   const discountPct = getApplicableDiscount(students, tiers);
 
-  const handleSlider = (v: number[]) => setStudents(v[0]);
+  const handleSlider = (v: number[]) => {
+    setStudents(Math.max(minStudents, v[0]));
+  };
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = parseInt(e.target.value, 10);
-    if (!isNaN(v) && v >= 1 && v <= 7000) setStudents(v);
-    if (e.target.value === "") setStudents(1);
+    if (!isNaN(v) && v >= 1 && v <= 7000) setStudents(Math.max(minStudents, v));
+    if (e.target.value === "") setStudents(minStudents);
   };
 
   const applyDiscount = (total: number) => Math.max(0, total - total * (discountPct / 100));
@@ -93,10 +111,25 @@ export default function Pricing() {
 
   const signupUrl = (plan: 'starter' | 'pro') => `/signup?plan=${plan}&billing=${billingCycle}`;
 
+  // Gateway minimum billable quantity (volume-pricing floor in Paddle/Razorpay).
+  const GATEWAY_MIN_QTY = 10;
+  // What we will actually bill for: the displayed slider value, but never
+  // below the real roster (already enforced by minStudents) and never below
+  // the gateway minimum.
+  const billableStudents = Math.max(students, GATEWAY_MIN_QTY);
+  const isBelowGatewayMin = isLoggedInSchool && rosterCount > 0 && rosterCount < GATEWAY_MIN_QTY;
+  const hasNoStudents = isLoggedInSchool && rosterCount === 0;
+
   // For logged-in users: show payment method dialog
   const handleCheckout = (plan: 'starter' | 'pro') => {
     if (!user || !school) {
       toast.error("Please log in and set up your school first");
+      return;
+    }
+    if (hasNoStudents) {
+      toast.error("Add students before subscribing", {
+        description: "Your subscription is billed per student. Add students first.",
+      });
       return;
     }
     setSelectedPlan(plan);
@@ -107,13 +140,12 @@ export default function Pricing() {
     if (!user || !school) return;
     setPaymentLoadingMethod('upi');
     try {
-      const studentCount = Math.max(students, 10);
       await openRazorpayCheckout({
         schoolId: school.id,
         userId: user.id,
         plan: selectedPlan,
         billingCycle,
-        studentCount,
+        studentCount: billableStudents,
         customerEmail: user.email || undefined,
         onSuccess: () => {
           setPaymentDialogOpen(false);
@@ -131,11 +163,10 @@ export default function Pricing() {
     if (!user || !school) return;
     setPaymentLoadingMethod('card');
     try {
-      const studentCount = Math.max(students, 10);
       const priceId = getPriceId(selectedPlan, billingCycle);
       await openPaddleCheckout({
         priceId,
-        quantity: studentCount,
+        quantity: billableStudents,
         customerEmail: user.email || undefined,
         customData: {
           userId: user.id,
@@ -152,7 +183,7 @@ export default function Pricing() {
   };
 
   // Determine if the logged-in user can directly checkout (has school, not already subscribed)
-  const canDirectCheckout = !!user && !!school && effectiveState !== 'subscription_active';
+  const canDirectCheckout = !!user && !!school && effectiveState !== 'subscription_active' && !hasNoStudents;
 
   return (
     <div className="min-h-[100dvh] bg-background">
@@ -204,7 +235,7 @@ export default function Pricing() {
             <Slider
               value={[students]}
               onValueChange={handleSlider}
-              min={10}
+              min={Math.max(10, minStudents)}
               max={7000}
               step={10}
               className="flex-1"
@@ -213,14 +244,44 @@ export default function Pricing() {
               type="number"
               value={students}
               onChange={handleInput}
-              min={1}
+              min={minStudents}
               max={7000}
               className="w-24 text-center tabular-nums font-semibold"
             />
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Drag or type to see your monthly cost
-          </p>
+          {isLoggedInSchool ? (
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground text-center">
+                Auto-filled from your{" "}
+                <Link to="/admin/students" className="text-primary hover:underline font-medium">
+                  Students module
+                </Link>
+                : <span className="font-semibold text-foreground tabular-nums">{rosterCount}</span> on roster.
+                You can bill for more, but not fewer.
+              </p>
+              {isBelowGatewayMin && (
+                <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40 rounded-md px-2.5 py-1.5">
+                  <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    Minimum billable quantity is {GATEWAY_MIN_QTY} students. You'll be charged for {GATEWAY_MIN_QTY}.
+                  </span>
+                </div>
+              )}
+              {hasNoStudents && (
+                <div className="flex items-start gap-1.5 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-2.5 py-1.5">
+                  <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    Add students before subscribing.{" "}
+                    <Link to="/admin/students" className="underline font-medium">Go to Students →</Link>
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center">
+              Drag or type to see your monthly cost
+            </p>
+          )}
           {discountPct > 0 && (
             <p className="text-center mt-2">
               <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200">
