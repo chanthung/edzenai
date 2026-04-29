@@ -14,6 +14,7 @@ import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "
 import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
 import { useSchool } from "@/hooks/useSchool";
 import { useStudents } from "@/hooks/useStudents";
+import { useSchoolStudentCount } from "@/hooks/useSchoolStudentCount";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
