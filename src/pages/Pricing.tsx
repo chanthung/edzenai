@@ -235,7 +235,7 @@ export default function Pricing() {
             <Slider
               value={[students]}
               onValueChange={handleSlider}
-              min={10}
+              min={Math.max(10, minStudents)}
               max={7000}
               step={10}
               className="flex-1"
@@ -244,14 +244,44 @@ export default function Pricing() {
               type="number"
               value={students}
               onChange={handleInput}
-              min={1}
+              min={minStudents}
               max={7000}
               className="w-24 text-center tabular-nums font-semibold"
             />
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Drag or type to see your monthly cost
-          </p>
+          {isLoggedInSchool ? (
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground text-center">
+                Auto-filled from your{" "}
+                <Link to="/admin/students" className="text-primary hover:underline font-medium">
+                  Students module
+                </Link>
+                : <span className="font-semibold text-foreground tabular-nums">{rosterCount}</span> on roster.
+                You can bill for more, but not fewer.
+              </p>
+              {isBelowGatewayMin && (
+                <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40 rounded-md px-2.5 py-1.5">
+                  <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    Minimum billable quantity is {GATEWAY_MIN_QTY} students. You'll be charged for {GATEWAY_MIN_QTY}.
+                  </span>
+                </div>
+              )}
+              {hasNoStudents && (
+                <div className="flex items-start gap-1.5 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-2.5 py-1.5">
+                  <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    Add students before subscribing.{" "}
+                    <Link to="/admin/students" className="underline font-medium">Go to Students →</Link>
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center">
+              Drag or type to see your monthly cost
+            </p>
+          )}
           {discountPct > 0 && (
             <p className="text-center mt-2">
               <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200">
