@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { BuildBadge } from "@/components/BuildBadge";
 
 // Parent view: keep on its own chunk, prioritized for low-bandwidth parents
 const ParentView = lazy(() => import("./pages/parent/ParentView"));
@@ -128,6 +129,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          <BuildBadge />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

@@ -13,6 +13,12 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  define: {
+    "import.meta.env.VITE_BUILD_ID": JSON.stringify(
+      process.env.VITE_BUILD_ID || Date.now().toString(36)
+    ),
+    "import.meta.env.VITE_BUILD_TIME": JSON.stringify(new Date().toISOString()),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
