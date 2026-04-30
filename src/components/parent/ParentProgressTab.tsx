@@ -142,26 +142,32 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
       {/* Charts Section */}
       <div className="space-y-4">
         {trendChartData.length > 1 && (
-          <PerformanceTrendChart 
-            data={trendChartData} 
-            title="Performance Over Time"
-          />
+          <Suspense fallback={<ChartFallback />}>
+            <PerformanceTrendChart
+              data={trendChartData}
+              title="Performance Over Time"
+            />
+          </Suspense>
         )}
-        
+
         {subjectBreakdown.length >= 3 ? (
-          <SubjectRadarChart 
-            data={radarChartData} 
-            title="Subject Strengths"
-            studentName={studentName}
-          />
+          <Suspense fallback={<ChartFallback />}>
+            <SubjectRadarChart
+              data={radarChartData}
+              title="Subject Strengths"
+              studentName={studentName}
+            />
+          </Suspense>
         ) : subjectBreakdown.length > 0 ? (
-          <SubjectComparisonChart 
-            data={subjectBreakdown.map(s => ({
-              subject: s.name,
-              percentage: s.averagePercentage,
-            }))}
-            title="Subject Performance"
-          />
+          <Suspense fallback={<ChartFallback />}>
+            <SubjectComparisonChart
+              data={subjectBreakdown.map(s => ({
+                subject: s.name,
+                percentage: s.averagePercentage,
+              }))}
+              title="Subject Performance"
+            />
+          </Suspense>
         ) : null}
       </div>
 

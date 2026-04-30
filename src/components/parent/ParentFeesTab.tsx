@@ -140,6 +140,8 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                   <img 
                     src={school.qr_code_url} 
                     alt="Payment QR Code - Tap to Pay"
+                    loading="lazy"
+                    decoding="async"
                     className="w-24 h-24 object-contain rounded-lg pointer-events-none"
                   />
                   <span className="text-xs text-primary mt-1 font-medium">📱 Tap to Pay</span>
@@ -149,6 +151,8 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                   <img 
                     src={school.qr_code_url} 
                     alt="Payment QR Code"
+                    loading="lazy"
+                    decoding="async"
                     className="w-24 h-24 object-contain rounded-lg"
                   />
                 </div>
