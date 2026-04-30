@@ -206,7 +206,28 @@ interface PreviewRow {
   marksObtained: number | null;
   maxMarks: number | null;
   ocrConfidence?: "high" | "medium" | "low";
+  rawText?: string;          // raw OCR token (for ambiguous-char hints)
+  reportedTotal?: number | null;     // Excel: parsed Total/Percentage value if present
+  recomputedTotal?: number | null;   // Excel: sum of subject cells for the same row
   issues: string[];
+  confidenceScore: number;   // 0-100
+}
+
+// Compute a 0-100 confidence score for a row given its issues + assessment max.
+function scoreRow(r: Omit<PreviewRow, "confidenceScore">, assessmentMax: number | null): number {
+  let s = 100;
+  if (!r.studentId) s -= 30;
+  else if (r.studentMatchConfidence === "fuzzy") s -= 15;
+  if (!r.subjectId) s -= 30;
+  if (r.ocrConfidence === "low") s -= 25;
+  else if (r.ocrConfidence === "medium") s -= 10;
+  // marks vs assessment max
+  if (assessmentMax != null && r.marksObtained != null && r.marksObtained > assessmentMax) s -= 20;
+  // marks vs reported max in file
+  if (r.maxMarks != null && r.marksObtained != null && r.marksObtained > r.maxMarks) s -= 20;
+  // Total cross-check mismatch
+  if (r.reportedTotal != null && r.recomputedTotal != null && Math.abs(r.reportedTotal - r.recomputedTotal) > 1) s -= 5;
+  return Math.max(0, Math.min(100, s));
 }
 
 // ── Excel mode ─────────────────────────────────────────────────────────
@@ -216,6 +237,7 @@ function processExcel(
   fileName: string,
   knownSubjects: KnownSubject[],
   knownStudents: KnownStudent[],
+  assessmentMaxBySubject: Record<string, number>,
 ): { rows: PreviewRow[]; detectedHeaders: string[]; ignoredColumns: string[] } {
   const { headers, rows } = parseSpreadsheet(b64, fileName);
 
@@ -226,12 +248,14 @@ function processExcel(
   const subjectCol = findColumn(headers, ["subject", "subject name"]);
   const marksCol = findColumn(headers, ["marks", "score", "marks obtained", "obtained"]);
   const maxCol = findColumn(headers, ["max", "max marks", "out of", "total marks"]);
+  // Wide-layout total/percentage columns (used for cross-check, not import)
+  const totalCol = findColumn(headers, ["total", "grand total"]);
+  const pctCol = findColumn(headers, ["percentage", "percent", "%"]);
 
   const ignoredColumns: string[] = [];
   const out: PreviewRow[] = [];
 
   if (subjectCol && marksCol) {
-    // LONG LAYOUT: one row per (student × subject)
     const usedHeaders = new Set([nameCol, rollCol, subjectCol, marksCol, maxCol].filter(Boolean) as string[]);
     headers.forEach((h) => { if (!usedHeaders.has(h)) ignoredColumns.push(h); });
 
@@ -246,14 +270,17 @@ function processExcel(
       const subm = matchSubject(rawSubject, knownSubjects);
       const marks = marksRaw === "" || marksRaw == null ? null : Number(marksRaw);
       const max = maxRaw === "" || maxRaw == null ? null : Number(maxRaw);
+      const aMax = subm.subjectId ? assessmentMaxBySubject[subm.subjectId] ?? null : null;
 
       const issues: string[] = [];
       if (!sm.studentId) issues.push("unmatched_student");
       else if (sm.confidence === "fuzzy") issues.push("fuzzy_student");
       if (!subm.subjectId) issues.push("unmatched_subject");
       if (marks == null || isNaN(marks)) issues.push("invalid_marks");
+      if (aMax != null && marks != null && !isNaN(marks) && marks > aMax) issues.push("marks_exceed_assessment_max");
+      if (max != null && marks != null && !isNaN(marks) && marks > max) issues.push("marks_exceed_max");
 
-      out.push({
+      const base = {
         rowIndex: idx + 2,
         rawStudent, rawRoll,
         studentId: sm.studentId, matchedStudentName: sm.matchedName, studentMatchConfidence: sm.confidence,
@@ -262,16 +289,17 @@ function processExcel(
         marksObtained: marks != null && !isNaN(marks) ? marks : null,
         maxMarks: max != null && !isNaN(max) ? max : null,
         issues,
-      });
+      };
+      out.push({ ...base, confidenceScore: scoreRow(base, aMax) });
     });
     return { rows: out, detectedHeaders: headers, ignoredColumns };
   }
 
-  // WIDE LAYOUT: each non-meta column is a subject
+  // WIDE LAYOUT
   const knownIdx = new Map<string, ReturnType<typeof matchSubject>>();
   const subjectColumns: string[] = [];
   for (const h of headers) {
-    if ([nameCol, rollCol].includes(h)) continue;
+    if ([nameCol, rollCol, totalCol, pctCol].includes(h)) continue;
     if (NON_SUBJECT_HEADERS.has(n(h))) { ignoredColumns.push(h); continue; }
     const m = matchSubject(h, knownSubjects);
     if (m.subjectId) { subjectColumns.push(h); knownIdx.set(h, m); }
@@ -283,26 +311,43 @@ function processExcel(
     const rawRoll = rollCol ? row[rollCol] : "";
     const sm = matchStudent(rawStudent, rawRoll, knownStudents);
 
+    // Reported total + recomputed sum (for cross-check)
+    const reportedRaw = totalCol && row[totalCol] !== "" && row[totalCol] != null ? Number(row[totalCol]) : null;
+    const reportedTotal = reportedRaw != null && !isNaN(reportedRaw) ? reportedRaw : null;
+    let sum = 0;
+    let hasAny = false;
+    for (const subjHeader of subjectColumns) {
+      const v = Number(row[subjHeader]);
+      if (!isNaN(v)) { sum += v; hasAny = true; }
+    }
+    const recomputed = hasAny ? sum : null;
+
     for (const subjHeader of subjectColumns) {
       const cell = row[subjHeader];
       if (cell === "" || cell == null) continue;
       const marks = Number(cell);
       const subm = knownIdx.get(subjHeader)!;
+      const aMax = subm.subjectId ? assessmentMaxBySubject[subm.subjectId] ?? null : null;
       const issues: string[] = [];
       if (!sm.studentId) issues.push("unmatched_student");
       else if (sm.confidence === "fuzzy") issues.push("fuzzy_student");
       if (isNaN(marks)) issues.push("invalid_marks");
+      if (aMax != null && !isNaN(marks) && marks > aMax) issues.push("marks_exceed_assessment_max");
+      if (reportedTotal != null && recomputed != null && Math.abs(reportedTotal - recomputed) > 1) issues.push("total_mismatch");
 
-      out.push({
+      const base = {
         rowIndex: idx + 2,
         rawStudent, rawRoll,
         studentId: sm.studentId, matchedStudentName: sm.matchedName, studentMatchConfidence: sm.confidence,
         rawSubject: subjHeader,
         subjectId: subm.subjectId, matchedSubjectName: subm.matchedName, subjectMatchConfidence: subm.confidence,
         marksObtained: isNaN(marks) ? null : marks,
-        maxMarks: null,
+        maxMarks: null as number | null,
+        reportedTotal,
+        recomputedTotal: recomputed,
         issues,
-      });
+      };
+      out.push({ ...base, confidenceScore: scoreRow(base, aMax) });
     }
   });
 
@@ -317,9 +362,9 @@ async function processVision(
   mimeType: string,
   knownSubjects: KnownSubject[],
   knownStudents: KnownStudent[],
+  assessmentMaxBySubject: Record<string, number>,
   apiKey: string,
 ): Promise<{ rows: PreviewRow[]; detectedHeaders: string[]; ignoredColumns: string[] }> {
-  // Limit to images for now. PDFs would need rendering — out of scope this iteration.
   if (!mimeType.startsWith("image/")) {
     throw new Error("PDF support coming soon. Please upload a JPG/PNG photo of the marksheet for now.");
   }
@@ -334,7 +379,7 @@ async function processVision(
 
 Known subjects in the school: ${subjectsList || "(unknown)"}.
 
-Return one row per (student, subject, marks) cell using the provided tool. For each cell estimate confidence ('high' | 'medium' | 'low'). Skip cells that are blank or unreadable. Do not invent data.`;
+Return one row per (student, subject, marks) cell using the provided tool. For each cell estimate confidence ('high' | 'medium' | 'low') AND return the raw_text exactly as you see it on the page (so we can flag character ambiguity like 8 vs B). Skip cells that are blank or unreadable. Do not invent data.`;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -366,6 +411,7 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
                     roll_number: { type: ["string", "null"] },
                     subject: { type: "string" },
                     marks: { type: ["number", "null"] },
+                    raw_text: { type: ["string", "null"], description: "Exact characters as printed/written in the cell." },
                     confidence: { type: "string", enum: ["high", "medium", "low"] },
                   },
                   required: ["student_name", "subject", "marks", "confidence"],
@@ -393,7 +439,7 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
   const j = await resp.json();
   const args = j?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
   if (!args) throw new Error("AI returned no structured data");
-  let parsed: { entries: Array<{ student_name: string; roll_number: string | null; subject: string; marks: number | null; confidence: "high" | "medium" | "low" }>; max_marks: number | null };
+  let parsed: { entries: Array<{ student_name: string; roll_number: string | null; subject: string; marks: number | null; raw_text?: string | null; confidence: "high" | "medium" | "low" }>; max_marks: number | null };
   try { parsed = JSON.parse(args); } catch { throw new Error("AI returned bad JSON"); }
 
   const sharedMax = parsed.max_marks;
@@ -401,7 +447,8 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
     const sm = matchStudent(e.student_name, e.roll_number || "", knownStudents);
     const subm = matchSubject(e.subject, knownSubjects);
     let conf = e.confidence;
-    if (isHand && conf === "high") conf = "medium"; // never trust handwriting blindly
+    if (isHand && conf === "high") conf = "medium";
+    const aMax = subm.subjectId ? assessmentMaxBySubject[subm.subjectId] ?? null : null;
 
     const issues: string[] = [];
     if (!sm.studentId) issues.push("unmatched_student");
@@ -409,8 +456,12 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
     if (!subm.subjectId) issues.push("unmatched_subject");
     if (e.marks == null || isNaN(e.marks)) issues.push("invalid_marks");
     if (conf === "low") issues.push("low_confidence");
+    if (aMax != null && e.marks != null && !isNaN(e.marks) && e.marks > aMax) issues.push("marks_exceed_assessment_max");
+    if (sharedMax != null && e.marks != null && !isNaN(e.marks) && e.marks > sharedMax) issues.push("marks_exceed_max");
+    // Ambiguous-character hint (only for non-high OCR)
+    if (conf !== "high" && e.raw_text && /[B8O0SZ5]/i.test(e.raw_text)) issues.push("ambiguous_chars");
 
-    return {
+    const base = {
       rowIndex: idx + 1,
       rawStudent: e.student_name,
       rawRoll: e.roll_number || "",
@@ -419,9 +470,11 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
       subjectId: subm.subjectId, matchedSubjectName: subm.matchedName, subjectMatchConfidence: subm.confidence,
       marksObtained: e.marks,
       maxMarks: sharedMax,
-      ocrConfidence: conf,
+      ocrConfidence: conf as "high" | "medium" | "low",
+      rawText: e.raw_text || undefined,
       issues,
     };
+    return { ...base, confidenceScore: scoreRow(base, aMax) };
   });
 
   return { rows, detectedHeaders: ["student", "roll", "subject", "marks"], ignoredColumns: [] };
@@ -441,6 +494,7 @@ serve(async (req) => {
       mimeType,
       knownSubjects = [],
       knownStudents = [],
+      assessmentMaxBySubject = {},
     }: {
       mode: "excel" | "printed" | "handwritten";
       fileBase64: string;
@@ -448,6 +502,7 @@ serve(async (req) => {
       mimeType?: string;
       knownSubjects: KnownSubject[];
       knownStudents: KnownStudent[];
+      assessmentMaxBySubject?: Record<string, number>;
     } = body;
 
     if (!mode || !fileBase64) {
@@ -458,7 +513,7 @@ serve(async (req) => {
 
     let result;
     if (mode === "excel") {
-      result = processExcel(fileBase64, fileName || "upload.xlsx", knownSubjects, knownStudents);
+      result = processExcel(fileBase64, fileName || "upload.xlsx", knownSubjects, knownStudents, assessmentMaxBySubject);
     } else if (mode === "printed" || mode === "handwritten") {
       const apiKey = Deno.env.get("LOVABLE_API_KEY");
       if (!apiKey) {
@@ -466,7 +521,7 @@ serve(async (req) => {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      result = await processVision(mode, fileBase64, mimeType || "image/jpeg", knownSubjects, knownStudents, apiKey);
+      result = await processVision(mode, fileBase64, mimeType || "image/jpeg", knownSubjects, knownStudents, assessmentMaxBySubject, apiKey);
     } else {
       return new Response(JSON.stringify({ error: "Unknown mode" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -480,6 +535,10 @@ serve(async (req) => {
       unmatchedStudents: result.rows.filter((r) => !r.studentId).length,
       unmatchedSubjects: result.rows.filter((r) => !r.subjectId).length,
       lowConfidence: result.rows.filter((r) => r.ocrConfidence === "low").length,
+      avgConfidence: result.rows.length
+        ? Math.round(result.rows.reduce((a, r) => a + r.confidenceScore, 0) / result.rows.length)
+        : 100,
+      exceedsMax: result.rows.filter((r) => r.issues.includes("marks_exceed_assessment_max") || r.issues.includes("marks_exceed_max")).length,
     };
 
     return new Response(JSON.stringify({ ...result, summary, mode }), {
