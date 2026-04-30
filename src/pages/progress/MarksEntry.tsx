@@ -30,7 +30,8 @@ import {
 } from "@/hooks/progress/useAssessmentTemplates";
 import { useComponentMarks } from "@/hooks/progress/useComponentMarks";
 import { computeStudentResult } from "@/lib/marks-engine";
-import { PenLine, Save, Loader2 } from "lucide-react";
+import { PenLine, Save, Loader2, Upload } from "lucide-react";
+import { MarksImportDialog } from "@/components/progress/marks-import/MarksImportDialog";
 import { useToast } from "@/hooks/use-toast";
 import { CompetencyScoring } from "@/components/progress/CompetencyScoring";
 import { sortClassNames } from "@/lib/class-sort";
@@ -76,6 +77,7 @@ export default function MarksEntry() {
   const [componentMarksInput, setComponentMarksInput] = useState<ComponentMarksMap>({});
   const [validationErrors, setValidationErrors] = useState<ValidationErrorsMap>({});
   const [hasUserEditedMarks, setHasUserEditedMarks] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Fetch template assignment for selected class + year
   const { data: classAssignments = [] } = useClassTemplateAssignments(effectiveYearId || null);
@@ -515,11 +517,22 @@ export default function MarksEntry() {
         <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Enter Marks</CardTitle>
-            <div className="flex flex-col items-end">
-              <Button onClick={handleSave} disabled={!canSave || saveMarks.isPending}>
-                {saveMarks.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                Save Marks
-              </Button>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setImportOpen(true)}
+                  disabled={!selectedAssessmentId}
+                  title={!selectedAssessmentId ? "Select an assessment first" : "Import marks from Excel, printed, or handwritten sheet"}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import Marks
+                </Button>
+                <Button onClick={handleSave} disabled={!canSave || saveMarks.isPending}>
+                  {saveMarks.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  Save Marks
+                </Button>
+              </div>
               <LastSavedLabel lastSavedAt={autoSave.lastSavedAt} />
             </div>
           </CardHeader>
@@ -652,6 +665,14 @@ export default function MarksEntry() {
             })()}
           </CardContent>
         </Card>
+
+        <MarksImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          assessmentId={selectedAssessmentId}
+          knownStudents={filteredStudents.map(s => ({ id: s.id, name: s.name, roll_number: s.roll_number ?? null }))}
+          knownSubjects={subjects.map(s => ({ id: s.id, name: s.name, code: s.code }))}
+        />
 
         {/* Competency Scoring Section */}
         {selectedSubjectId && selectedAssessmentId && filteredStudents.length > 0 && (
