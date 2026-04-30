@@ -1,9 +1,20 @@
 import { useParentProgress } from '@/hooks/useParentProgress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PerformanceTrendChart } from '@/components/progress/charts/PerformanceTrendChart';
-import { SubjectRadarChart } from '@/components/progress/charts/SubjectRadarChart';
-import { SubjectComparisonChart } from '@/components/progress/charts/SubjectComparisonChart';
+import { lazy, Suspense } from 'react';
+
+// Charts pull in recharts (~400 KB). Keep them out of the parent bundle until needed.
+const PerformanceTrendChart = lazy(() =>
+  import('@/components/progress/charts/PerformanceTrendChart').then(m => ({ default: m.PerformanceTrendChart }))
+);
+const SubjectRadarChart = lazy(() =>
+  import('@/components/progress/charts/SubjectRadarChart').then(m => ({ default: m.SubjectRadarChart }))
+);
+const SubjectComparisonChart = lazy(() =>
+  import('@/components/progress/charts/SubjectComparisonChart').then(m => ({ default: m.SubjectComparisonChart }))
+);
+
+const ChartFallback = () => <Skeleton className="h-[220px] w-full" />;
 import { 
   TrendingUp, 
   TrendingDown, 

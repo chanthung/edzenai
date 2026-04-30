@@ -104,11 +104,15 @@ export default function ParentView() {
           </TabsContent>
           
           <TabsContent value="progress" className="mt-0">
-            <ParentProgressTab accessToken={token!} studentName={student.name} />
+            <Suspense fallback={<TabFallback />}>
+              <ParentProgressTab accessToken={token!} studentName={student.name} />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="attendance" className="mt-0">
-            <ParentAttendanceTab accessToken={token!} studentName={student.name} />
+            <Suspense fallback={<TabFallback />}>
+              <ParentAttendanceTab accessToken={token!} studentName={student.name} />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </div>
