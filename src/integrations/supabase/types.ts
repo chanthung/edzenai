@@ -712,6 +712,7 @@ export type Database = {
           file_name: string
           id: string
           ignored_columns: Json | null
+          import_type: string
           imported_at: string
           imported_count: number
           issue_rows: Json | null
@@ -724,6 +725,7 @@ export type Database = {
           file_name: string
           id?: string
           ignored_columns?: Json | null
+          import_type?: string
           imported_at?: string
           imported_count?: number
           issue_rows?: Json | null
@@ -736,6 +738,7 @@ export type Database = {
           file_name?: string
           id?: string
           ignored_columns?: Json | null
+          import_type?: string
           imported_at?: string
           imported_count?: number
           issue_rows?: Json | null
