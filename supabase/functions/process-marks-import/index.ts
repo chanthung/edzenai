@@ -237,6 +237,7 @@ function processExcel(
   fileName: string,
   knownSubjects: KnownSubject[],
   knownStudents: KnownStudent[],
+  assessmentMaxBySubject: Record<string, number>,
 ): { rows: PreviewRow[]; detectedHeaders: string[]; ignoredColumns: string[] } {
   const { headers, rows } = parseSpreadsheet(b64, fileName);
 
@@ -247,12 +248,14 @@ function processExcel(
   const subjectCol = findColumn(headers, ["subject", "subject name"]);
   const marksCol = findColumn(headers, ["marks", "score", "marks obtained", "obtained"]);
   const maxCol = findColumn(headers, ["max", "max marks", "out of", "total marks"]);
+  // Wide-layout total/percentage columns (used for cross-check, not import)
+  const totalCol = findColumn(headers, ["total", "grand total"]);
+  const pctCol = findColumn(headers, ["percentage", "percent", "%"]);
 
   const ignoredColumns: string[] = [];
   const out: PreviewRow[] = [];
 
   if (subjectCol && marksCol) {
-    // LONG LAYOUT: one row per (student × subject)
     const usedHeaders = new Set([nameCol, rollCol, subjectCol, marksCol, maxCol].filter(Boolean) as string[]);
     headers.forEach((h) => { if (!usedHeaders.has(h)) ignoredColumns.push(h); });
 
@@ -267,14 +270,17 @@ function processExcel(
       const subm = matchSubject(rawSubject, knownSubjects);
       const marks = marksRaw === "" || marksRaw == null ? null : Number(marksRaw);
       const max = maxRaw === "" || maxRaw == null ? null : Number(maxRaw);
+      const aMax = subm.subjectId ? assessmentMaxBySubject[subm.subjectId] ?? null : null;
 
       const issues: string[] = [];
       if (!sm.studentId) issues.push("unmatched_student");
       else if (sm.confidence === "fuzzy") issues.push("fuzzy_student");
       if (!subm.subjectId) issues.push("unmatched_subject");
       if (marks == null || isNaN(marks)) issues.push("invalid_marks");
+      if (aMax != null && marks != null && !isNaN(marks) && marks > aMax) issues.push("marks_exceed_assessment_max");
+      if (max != null && marks != null && !isNaN(marks) && marks > max) issues.push("marks_exceed_max");
 
-      out.push({
+      const base = {
         rowIndex: idx + 2,
         rawStudent, rawRoll,
         studentId: sm.studentId, matchedStudentName: sm.matchedName, studentMatchConfidence: sm.confidence,
@@ -283,16 +289,17 @@ function processExcel(
         marksObtained: marks != null && !isNaN(marks) ? marks : null,
         maxMarks: max != null && !isNaN(max) ? max : null,
         issues,
-      });
+      };
+      out.push({ ...base, confidenceScore: scoreRow(base, aMax) });
     });
     return { rows: out, detectedHeaders: headers, ignoredColumns };
   }
 
-  // WIDE LAYOUT: each non-meta column is a subject
+  // WIDE LAYOUT
   const knownIdx = new Map<string, ReturnType<typeof matchSubject>>();
   const subjectColumns: string[] = [];
   for (const h of headers) {
-    if ([nameCol, rollCol].includes(h)) continue;
+    if ([nameCol, rollCol, totalCol, pctCol].includes(h)) continue;
     if (NON_SUBJECT_HEADERS.has(n(h))) { ignoredColumns.push(h); continue; }
     const m = matchSubject(h, knownSubjects);
     if (m.subjectId) { subjectColumns.push(h); knownIdx.set(h, m); }
@@ -304,26 +311,43 @@ function processExcel(
     const rawRoll = rollCol ? row[rollCol] : "";
     const sm = matchStudent(rawStudent, rawRoll, knownStudents);
 
+    // Reported total + recomputed sum (for cross-check)
+    const reportedRaw = totalCol && row[totalCol] !== "" && row[totalCol] != null ? Number(row[totalCol]) : null;
+    const reportedTotal = reportedRaw != null && !isNaN(reportedRaw) ? reportedRaw : null;
+    let sum = 0;
+    let hasAny = false;
+    for (const subjHeader of subjectColumns) {
+      const v = Number(row[subjHeader]);
+      if (!isNaN(v)) { sum += v; hasAny = true; }
+    }
+    const recomputed = hasAny ? sum : null;
+
     for (const subjHeader of subjectColumns) {
       const cell = row[subjHeader];
       if (cell === "" || cell == null) continue;
       const marks = Number(cell);
       const subm = knownIdx.get(subjHeader)!;
+      const aMax = subm.subjectId ? assessmentMaxBySubject[subm.subjectId] ?? null : null;
       const issues: string[] = [];
       if (!sm.studentId) issues.push("unmatched_student");
       else if (sm.confidence === "fuzzy") issues.push("fuzzy_student");
       if (isNaN(marks)) issues.push("invalid_marks");
+      if (aMax != null && !isNaN(marks) && marks > aMax) issues.push("marks_exceed_assessment_max");
+      if (reportedTotal != null && recomputed != null && Math.abs(reportedTotal - recomputed) > 1) issues.push("total_mismatch");
 
-      out.push({
+      const base = {
         rowIndex: idx + 2,
         rawStudent, rawRoll,
         studentId: sm.studentId, matchedStudentName: sm.matchedName, studentMatchConfidence: sm.confidence,
         rawSubject: subjHeader,
         subjectId: subm.subjectId, matchedSubjectName: subm.matchedName, subjectMatchConfidence: subm.confidence,
         marksObtained: isNaN(marks) ? null : marks,
-        maxMarks: null,
+        maxMarks: null as number | null,
+        reportedTotal,
+        recomputedTotal: recomputed,
         issues,
-      });
+      };
+      out.push({ ...base, confidenceScore: scoreRow(base, aMax) });
     }
   });
 
