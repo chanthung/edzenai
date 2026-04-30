@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useResolvedSchoolId } from './useResolvedSchoolId';
@@ -19,7 +19,11 @@ export interface PreviewRow {
   marksObtained: number | null;
   maxMarks: number | null;
   ocrConfidence?: 'high' | 'medium' | 'low';
+  rawText?: string;
+  reportedTotal?: number | null;
+  recomputedTotal?: number | null;
   issues: string[];
+  confidenceScore: number;
 }
 
 export interface PreviewResponse {
@@ -33,6 +37,8 @@ export interface PreviewResponse {
     unmatchedStudents: number;
     unmatchedSubjects: number;
     lowConfidence: number;
+    avgConfidence: number;
+    exceedsMax: number;
   };
   mode: ImportMode;
 }
@@ -45,7 +51,6 @@ async function fileToBase64(file: File): Promise<string> {
     const r = new FileReader();
     r.onload = () => {
       const result = r.result as string;
-      // strip "data:...;base64,"
       const idx = result.indexOf(',');
       resolve(idx >= 0 ? result.slice(idx + 1) : result);
     };
@@ -62,6 +67,7 @@ export function useParseMarksImport() {
       file: File;
       knownSubjects: KnownSubject[];
       knownStudents: KnownStudent[];
+      assessmentMaxBySubject?: Record<string, number>;
     }): Promise<PreviewResponse> => {
       const fileBase64 = await fileToBase64(input.file);
       const { data, error } = await supabase.functions.invoke('process-marks-import', {
@@ -72,6 +78,7 @@ export function useParseMarksImport() {
           mimeType: input.file.type,
           knownSubjects: input.knownSubjects,
           knownStudents: input.knownStudents,
+          assessmentMaxBySubject: input.assessmentMaxBySubject ?? {},
         },
       });
       if (error) throw new Error(error.message || 'Failed to parse file');
@@ -84,9 +91,28 @@ export function useParseMarksImport() {
   });
 }
 
-/**
- * Persist an import_logs row after successful save.
- */
+/** Look up existing marks for an assessment to detect duplicates pre-save. */
+export function useExistingMarksForAssessment(assessmentId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['existing-marks-for-import', assessmentId],
+    queryFn: async () => {
+      if (!assessmentId) return new Map<string, number>();
+      const { data, error } = await supabase
+        .from('student_marks')
+        .select('student_id, subject_id, marks_obtained')
+        .eq('assessment_id', assessmentId);
+      if (error) throw error;
+      const m = new Map<string, number>();
+      for (const r of data || []) {
+        m.set(`${r.student_id}_${r.subject_id}`, Number(r.marks_obtained));
+      }
+      return m;
+    },
+    enabled: !!assessmentId,
+    staleTime: 30_000,
+  });
+}
+
 export function useLogMarksImport() {
   const { data: schoolId } = useResolvedSchoolId();
   return useMutation({
