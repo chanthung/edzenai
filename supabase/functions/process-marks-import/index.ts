@@ -206,7 +206,28 @@ interface PreviewRow {
   marksObtained: number | null;
   maxMarks: number | null;
   ocrConfidence?: "high" | "medium" | "low";
+  rawText?: string;          // raw OCR token (for ambiguous-char hints)
+  reportedTotal?: number | null;     // Excel: parsed Total/Percentage value if present
+  recomputedTotal?: number | null;   // Excel: sum of subject cells for the same row
   issues: string[];
+  confidenceScore: number;   // 0-100
+}
+
+// Compute a 0-100 confidence score for a row given its issues + assessment max.
+function scoreRow(r: Omit<PreviewRow, "confidenceScore">, assessmentMax: number | null): number {
+  let s = 100;
+  if (!r.studentId) s -= 30;
+  else if (r.studentMatchConfidence === "fuzzy") s -= 15;
+  if (!r.subjectId) s -= 30;
+  if (r.ocrConfidence === "low") s -= 25;
+  else if (r.ocrConfidence === "medium") s -= 10;
+  // marks vs assessment max
+  if (assessmentMax != null && r.marksObtained != null && r.marksObtained > assessmentMax) s -= 20;
+  // marks vs reported max in file
+  if (r.maxMarks != null && r.marksObtained != null && r.marksObtained > r.maxMarks) s -= 20;
+  // Total cross-check mismatch
+  if (r.reportedTotal != null && r.recomputedTotal != null && Math.abs(r.reportedTotal - r.recomputedTotal) > 1) s -= 5;
+  return Math.max(0, Math.min(100, s));
 }
 
 // ── Excel mode ─────────────────────────────────────────────────────────
