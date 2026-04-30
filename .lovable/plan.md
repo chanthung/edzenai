@@ -1,97 +1,174 @@
-## Goal
+## Analysis of the request
 
-Make `/view/:name/:token` (the parent portal) load reliably on 3G/4G in low-coverage areas by drastically cutting initial JavaScript and reducing network round-trips.
+Your prompt covers a lot. Here is an honest read on each part before we build:
 
-## Current situation (analysis)
 
-The parent page is **not light** today. It works on good networks but is heavy for rural 3G.
+| Your ask                                      | Verdict                                         | Reasoning                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Excel upload + AI column mapping           | **Strongly recommended**                        | You already have this exact pattern working for students (`process-student-excel` — rule-based map + Gemini fallback + preview). Mirroring it for marks is fast, reliable, and consistent UX.                                                                                                                                                              |
+| 2. Printed marksheet (PDF/image) OCR          | **Recommended**                                 | Gemini 2.5 Flash already does vision OCR in your codebase (`ocr-payment-proof`). It can return a structured table from a clear photo of a marksheet.                                                                                                                                                                                                       |
+| 3. Handwritten scan (assistive)               | **Recommended but with realistic expectations** | Same vision model. Handwriting accuracy is 60–85% in good lighting — that's why your "low-confidence highlight + manual correction" requirement is the right design. We will not auto-save these. Open to Edit by Admins/teachers later for correction                                                                                                     |
+| 4. Staging table                              | **Yes, but lightweight**                        | A staging table that survives a page reload would be over-engineering. The existing student importer keeps staged rows in client state until confirmed, then writes once. We'll do the same for marks. We *will* add an `import_logs`-style row per import for auditability (matches what students already have).                                          |
+| 5. Subject normalization layer                | **Yes**                                         | "Maths/Math/Mathematics", "EVS/Environmental Studies", "SST/Social Studies" etc. — needed regardless of input mode.                                                                                                                                                                                                                                        |
+| 6. UI: Import button + method modal + preview | **Yes**                                         | Fits the existing Marks Entry page perfectly.                                                                                                                                                                                                                                                                                                              |
+| 7. Save → trigger AI analysis                 | **Defer**                                       | AI analysis already runs on demand in Progress Dashboard via `useAIAnalysis`. Auto-firing it on every import would burn AI credits. We'll add a "Run AI Analysis" CTA on the post-import success screen instead. * Some schools may be depending on Excel sheets for marks entry and still want to use the AI feature for Student/Class progress analysis. |
 
-**Bundle issues** (every parent currently downloads all of this on first visit):
-- `src/App.tsx` statically imports **every page** in the app — admin dashboard, platform admin, partner portal, all progress module pages, report card editor, settings, etc. With no code splitting, a parent gets the whole SPA.
-- Heavy libraries pulled into the main bundle that a parent never needs:
-  - `xlsx` (~900 KB) — only used by admin Excel import/export
-  - `@huggingface/transformers` (multi-MB) — only used by `lib/bg-remove.ts` for QR background removal in admin
-  - `jspdf` + `html2canvas` (~550 KB) — only used in report cards / template export
-  - `@googlemaps/js-api-loader` — only used in admin school profile
-  - `recharts` (~400 KB) — only needed on Progress tab
-  - `embla-carousel`, `react-markdown`, `react-day-picker`, `cmdk`, `vaul`, `input-otp`, full Radix set
-- `vite.config.ts` has no `build.rollupOptions.output.manualChunks`, so everything ships as one big vendor chunk.
-- No preconnect / DNS-prefetch hints to the Supabase host in `index.html`.
 
-**Network issues on the parent page itself**:
-- `useParentView` fires **4 sequential** Supabase queries (student RPC → school → student_fees → payments → payment_proofs). On 300ms RTT 3G that's ~1.5s just in serial waits.
-- Progress and Attendance hooks fire on tab mount even though parents land on Fees tab — but their *code* is loaded up-front because `ParentView.tsx` statically imports `ParentProgressTab` and `ParentAttendanceTab`, dragging recharts into the initial bundle.
-- School QR code image is rendered at original upload size (could be a 1–2 MB photo) with no width/quality cap.
+**One important correction to the spec:** "Match students using name + class" alone is fragile (duplicate names, transliteration, "Aman" vs "Aman Kumar"). We'll match on **roll number first, then name+class+section** as a fallback, and any unmatched rows go into the preview as "needs manual student selection" — never silently dropped.
 
-**Estimated impact**: initial JS for `/view/...` is likely 1.5–3 MB uncompressed (~500–900 KB gzipped). On a real 3G connection (~400 Kbps effective) that is 10–20 seconds before anything is interactive — exactly what you want to avoid.
+## Scope (this plan)
 
-## Plan
+We're adding a **Marks Import system to `Student Progress > Marks Entry**` — not changing the existing manual entry flow. After Year + Class + Section + Assessment are selected, an "Import Marks" button appears. The Subject selector becomes optional in import mode because the Excel/scan can carry multiple subjects at once.
 
-### 1. Route-level code splitting (biggest win)
+## How it will work (user flow)
 
-In `src/App.tsx`, convert all route components to `React.lazy(() => import(...))` and wrap `<Routes>` in a `<Suspense fallback={...}>`. Keep `ParentView`, `Login`, `Index` lazy too. Result: a parent only downloads the parent route's JS, not the admin/platform/partner/progress code.
-
-### 2. Lazy-load tabs inside ParentView
-
-In `src/pages/parent/ParentView.tsx`:
-- `ParentFeesTab` stays eager (default tab).
-- `ParentProgressTab` and `ParentAttendanceTab` become `React.lazy` and wrapped in `<Suspense>` inside their `<TabsContent>`. This pulls **recharts out of the initial parent bundle entirely** — it only loads if the parent actually taps Progress.
-
-### 3. Lazy-load charts inside ParentProgressTab
-
-Even within Progress, `PerformanceTrendChart`, `SubjectRadarChart`, and `SubjectComparisonChart` become `React.lazy`. Each chart only downloads when it actually has data to render.
-
-### 4. Vite chunk strategy
-
-Add `build.rollupOptions.output.manualChunks` to `vite.config.ts` to split:
-- `react-vendor`: react, react-dom, react-router-dom
-- `radix`: all `@radix-ui/*`
-- `charts`: recharts (so it's a separate cacheable chunk)
-- `heavy`: xlsx, jspdf, html2canvas, @huggingface/transformers, @googlemaps/js-api-loader (parent never touches this chunk)
-- `supabase`: @supabase/supabase-js, @tanstack/react-query
-
-This guarantees the heavy admin-only libs cannot leak into the parent bundle.
-
-### 5. Parallelize parent data fetch
-
-Refactor `src/hooks/useParentView.ts`: after the access-token RPC resolves the student, run `school`, `student_fees`, `payments`, and `payment_proofs` in `Promise.all`. Cuts ~3 RTTs down to 1 — saves roughly 1 second on a 300ms-RTT link.
-
-### 6. Network hints in `index.html`
-
-Add to `<head>`:
+```text
+Marks Entry page
+├─ Select Year, Class, Section, Assessment (existing flow)
+├─ [Manual Entry] (existing)              [Import Marks] ← NEW
+│
+└─ Import Marks → Method modal
+   ├─ Excel / CSV
+   ├─ Printed marksheet (PDF or photo)
+   └─ Handwritten marksheet (assistive)
+        │
+        ▼
+   Upload + parse (edge function)
+        │
+        ▼
+   Preview table:
+   - Rows: each parsed (Student × Subject) row
+   - Inline edit on every cell
+   - Match status badge: ✓ matched / ⚠ fuzzy / ✗ unmatched (dropdown picker)
+   - Subject mapping: detected → system subject (dropdown if uncertain)
+   - Confidence column (only for OCR/handwritten): green ≥0.85, amber 0.6–0.85, red <0.6
+   - Validation: marks must be ≤ max for selected assessment template
+   - "Confirm & Save" disabled until all unmatched/invalid rows are resolved
+        │
+        ▼
+   Save (uses existing useSaveMarks → upserts student_marks
+        + component_marks if a template is assigned)
+        │
+        ▼
+   Success screen:
+   - "Imported X marks across Y students, Z subjects"
+   - [Run AI Analysis] CTA (optional, doesn't auto-fire)
+   - [View Import History] link
 ```
-<link rel="preconnect" href="https://fwnvfkaihuqdfdcwkakj.supabase.co" crossorigin>
-<link rel="dns-prefetch" href="https://fwnvfkaihuqdfdcwkakj.supabase.co">
+
+## Technical design
+
+### 1. New edge function: `process-marks-import`
+
+Single endpoint, three modes (`excel` | `printed` | `handwritten`). Returns a normalized preview payload — never writes to DB.
+
+```text
+POST /functions/v1/process-marks-import
+Body: { mode, fileBase64, fileName, mimeType,
+        context: { schoolId, classId, sectionId, assessmentId, knownSubjects[], knownStudents[] } }
+
+Response: {
+  rows: [{
+    rowIndex, rawStudentName, matchedStudentId|null, matchConfidence,
+    rawSubject, matchedSubjectId|null,
+    marksObtained, maxMarks, confidence,    // confidence only for OCR modes
+    issues: ["unmatched_student", "subject_ambiguous", ...]
+  }],
+  ignoredColumns: [], detectedHeaders: [],
+  summary: { totalRows, matched, unmatched, lowConfidence }
+}
 ```
-Lets the TLS handshake to the backend happen in parallel with the JS download.
 
-### 7. Cap the QR image size
+- **Excel/CSV**: reuse `xlsx` parsing pattern from `process-student-excel`. Hybrid mapping — rule dictionary for common headers (`Name`, `Roll No`, subject names, `Marks`, `Total`, `MM`) then Gemini for anything left. Two layouts supported:
+  - **Wide**: one row per student, one column per subject (most common).
+  - **Long**: `Student | Subject | Marks` rows.
+- **Printed PDF/image**: Gemini 2.5 Pro vision (better than Flash for tables) with structured tool-call output → `{ headers, rows, perCellConfidence }`.
+- **Handwritten**: same model, but we force `low|medium|high` confidence per cell and never set `confidence: high` for handwriting.
 
-In `ParentFeesTab.tsx`, add `loading="lazy"` and `decoding="async"` to the QR `<img>`. The image is already constrained to `w-24 h-24` visually but the file itself can be huge — also add a `max-width: 200px` style cap so browsers can opt into responsive scaling, and document that admins should upload QR images ≤100 KB (no code change required for the admin upload, just a follow-up note).
+### 2. Subject normalization layer
 
-### 8. React Query cache tuning for parent
+`supabase/functions/_shared/subject-normalize.ts`:
 
-In `useParentView`, set `staleTime: 60_000` and `gcTime: 5 * 60_000` so a parent who taps between tabs doesn't refetch.
+```ts
+const SUBJECT_ALIASES: Record<string, string[]> = {
+  Mathematics: ["math", "maths", "mathematic"],
+  English:    ["eng", "english language", "language - english"],
+  Hindi:      ["hin", "हिंदी"],
+  Science:    ["sci", "general science"],
+  EVS:        ["evs", "environmental studies", "env. studies"],
+  "Social Studies": ["sst", "soc. studies", "social science"],
+  // …
+};
+// Match against the school's actual subjects table first;
+// only suggest from aliases when no exact match found.
+```
+
+### 3. Student matching
+
+In order of preference:
+
+1. Exact `roll_number` match within selected class+section
+2. Exact normalized name match (lowercase, collapsed whitespace) within class+section
+3. Fuzzy name match (Levenshtein ≤2 OR token-set ratio ≥0.85) → marked as `match_confidence: medium`, requires user confirmation
+4. No match → user must pick from dropdown in preview
+
+### 4. Preview UI
+
+New component tree under `src/components/progress/marks-import/`:
+
+- `MarksImportButton.tsx` — button shown on Marks Entry page
+- `MarksImportMethodDialog.tsx` — three-card method picker
+- `MarksImportUploader.tsx` — file picker, calls edge function, shows progress
+- `MarksImportPreview.tsx` — editable table with student/subject pickers, confidence badges, validation
+- `MarksImportSuccess.tsx` — summary + "Run AI Analysis" CTA
+
+Hook: `src/hooks/progress/useMarksImport.ts` (handles edge function call + final save via existing `useSaveMarks`).
+
+### 5. Import history (audit)
+
+Reuse the existing `import_logs` table — add `import_type` column (`students` | `marks`) via a small migration. Each import row stores: file name, mode, total/matched/saved counts, low-confidence count, issue rows JSON. Surfaces in a small `MarksImportHistoryCard` on the Marks Entry page.
+
+### 6. Safety guarantees (matching your spec)
+
+- **No DB writes without preview confirmation** — edge function only parses; save is a separate client-side action.
+- **No silent drops** — every parsed row appears in the preview, even invalid ones.
+- **Per-cell validation** before save (marks ≤ max, numeric, ≥0) — same rules as manual entry.
+- **Atomic save**: uses existing `useSaveMarks` upsert (already idempotent on `student_id+assessment_id+subject_id`), so re-running an import is safe.
+
+## Files to create / change
+
+**New:**
+
+- `supabase/functions/process-marks-import/index.ts`
+- `supabase/functions/_shared/subject-normalize.ts`
+- `src/hooks/progress/useMarksImport.ts`
+- `src/components/progress/marks-import/MarksImportButton.tsx`
+- `src/components/progress/marks-import/MarksImportMethodDialog.tsx`
+- `src/components/progress/marks-import/MarksImportUploader.tsx`
+- `src/components/progress/marks-import/MarksImportPreview.tsx`
+- `src/components/progress/marks-import/MarksImportSuccess.tsx`
+- `src/components/progress/marks-import/MarksImportHistoryCard.tsx`
+- `src/lib/student-match.ts` (fuzzy match helper, reusable)
+
+**Edit:**
+
+- `src/pages/progress/MarksEntry.tsx` — wire in the import button + dialogs, allow subject to be optional in import mode
+- `supabase/config.toml` — register new edge function (no `verify_jwt` override needed; Lovable default is fine)
+
+**Migration (one small one):**
+
+- `import_logs.import_type text not null default 'students'` — adds type discriminator, no breakage to existing rows
+
+## Out of scope (deliberate)
+
+- **Auto-trigger AI analysis on import** — costs credits, user can run manually from Progress Dashboard.
+- **Persistent staging table** — client-side preview is sufficient; staging in DB adds complexity without clear UX win for a single-session import.
+- **Bulk editing across imports** — one import session at a time.
+- **Mobile camera capture** — file upload covers it; native camera flow can be a follow-up.
 
 ## Expected outcome
 
-- Initial JS for `/view/:name/:token` drops from ~500–900 KB gzipped to roughly **120–180 KB gzipped** (React + Router + Radix Tabs + Supabase + Fees tab only).
-- Time-to-interactive on a real 3G connection (~400 Kbps, 300 ms RTT): from ~10–20 s down to ~3–5 s.
-- Progress tab still works — it just downloads recharts on demand (one-time, then cached).
-- No visible UI change for parents on good networks.
-
-## Files to change
-
-- `src/App.tsx` — convert all routes to `React.lazy` + add `<Suspense>`
-- `src/pages/parent/ParentView.tsx` — lazy Progress and Attendance tabs
-- `src/components/parent/ParentProgressTab.tsx` — lazy chart imports
-- `src/components/parent/ParentFeesTab.tsx` — `loading="lazy"` on QR `<img>`
-- `src/hooks/useParentView.ts` — parallelize queries + cache tuning
-- `vite.config.ts` — add `manualChunks`
-- `index.html` — add preconnect/dns-prefetch to Supabase host
-
-## Out of scope (can be follow-ups)
-
-- Service worker / offline cache for repeat parent visits.
-- Server-side compression of uploaded QR images on the admin side.
-- Replacing recharts with a lighter chart lib for the parent view.
+- Teachers can paste a class's worth of marks from Excel in ~30 seconds instead of typing 30 cells.
+- Printed marksheets from a phone photo work in 1 upload + a quick correction pass.
+- Handwritten scans work as an assistive shortcut, not a replacement for review.
+- Zero risk of bad data: nothing saves without explicit "Confirm & Save".
