@@ -672,6 +672,10 @@ export default function MarksEntry() {
           assessmentId={selectedAssessmentId}
           knownStudents={filteredStudents.map(s => ({ id: s.id, name: s.name, roll_number: s.roll_number ?? null }))}
           knownSubjects={subjects.map(s => ({ id: s.id, name: s.name, code: s.code }))}
+          assessmentMaxBySubject={subjects.reduce((acc, s) => {
+            acc[s.id] = totalMaxMarks > 0 ? totalMaxMarks : 100;
+            return acc;
+          }, {} as Record<string, number>)}
         />
 
         {/* Competency Scoring Section */}
