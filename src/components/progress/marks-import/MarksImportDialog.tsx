@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Sparkles } from 'lucide-react';
 import { MarksImportMethodDialog, METHOD_ACCEPT } from './MarksImportMethodDialog';
 import { MarksImportUploader } from './MarksImportUploader';
-import { MarksImportPreview } from './MarksImportPreview';
+import { MarksImportPreview, type DuplicateStrategy } from './MarksImportPreview';
 import {
-  useParseMarksImport, useLogMarksImport,
+  useParseMarksImport, useLogMarksImport, useExistingMarksForAssessment,
   type ImportMode, type PreviewResponse, type PreviewRow, type KnownStudent, type KnownSubject,
 } from '@/hooks/progress/useMarksImport';
 import { useSaveMarks } from '@/hooks/progress/useStudentMarks';
@@ -18,20 +18,27 @@ interface Props {
   assessmentId: string;
   knownStudents: KnownStudent[];
   knownSubjects: KnownSubject[];
+  /** Resolved max marks per subject for THIS assessment. */
+  assessmentMaxBySubject: Record<string, number>;
 }
 
 type Step = 'method' | 'upload' | 'preview' | 'success';
 
-export function MarksImportDialog({ open, onOpenChange, assessmentId, knownStudents, knownSubjects }: Props) {
+export function MarksImportDialog({
+  open, onOpenChange, assessmentId, knownStudents, knownSubjects, assessmentMaxBySubject,
+}: Props) {
   const [step, setStep] = useState<Step>('method');
   const [mode, setMode] = useState<ImportMode>('excel');
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [savedCount, setSavedCount] = useState(0);
+  const [savedAvgConf, setSavedAvgConf] = useState(100);
+  const [savedExceedsMax, setSavedExceedsMax] = useState(0);
   const [fileName, setFileName] = useState('');
 
   const parse = useParseMarksImport();
   const saveMarks = useSaveMarks();
   const logImport = useLogMarksImport();
+  const { data: existingMarks = new Map<string, number>() } = useExistingMarksForAssessment(assessmentId);
   const { toast } = useToast();
 
   const reset = () => {
@@ -45,12 +52,12 @@ export function MarksImportDialog({ open, onOpenChange, assessmentId, knownStude
 
   const handleFile = async (file: File) => {
     setFileName(file.name);
-    const res = await parse.mutateAsync({ mode, file, knownSubjects, knownStudents });
+    const res = await parse.mutateAsync({ mode, file, knownSubjects, knownStudents, assessmentMaxBySubject });
     setPreview(res);
     setStep('preview');
   };
 
-  const handleSave = async (rows: PreviewRow[]) => {
+  const handleSave = async (rows: PreviewRow[], _strategy: DuplicateStrategy) => {
     if (!assessmentId) {
       toast({ title: 'Select an assessment first', variant: 'destructive' });
       return;
@@ -62,7 +69,7 @@ export function MarksImportDialog({ open, onOpenChange, assessmentId, knownStude
         assessment_id: assessmentId,
         subject_id: r.subjectId!,
         marks_obtained: r.marksObtained!,
-        max_marks: r.maxMarks ?? 100,
+        max_marks: r.maxMarks ?? (r.subjectId ? assessmentMaxBySubject[r.subjectId] ?? 100 : 100),
       }));
     if (marks.length === 0) {
       toast({ title: 'No valid rows to save', variant: 'destructive' });
@@ -71,6 +78,8 @@ export function MarksImportDialog({ open, onOpenChange, assessmentId, knownStude
     try {
       await saveMarks.mutateAsync(marks);
       setSavedCount(marks.length);
+      setSavedAvgConf(preview?.summary.avgConfidence ?? 100);
+      setSavedExceedsMax(preview?.summary.exceedsMax ?? 0);
       logImport.mutate({
         fileName, mode,
         total: preview?.summary.totalRows ?? marks.length,
@@ -81,9 +90,11 @@ export function MarksImportDialog({ open, onOpenChange, assessmentId, knownStude
       });
       setStep('success');
     } catch (e) {
-      // toast already handled by useSaveMarks
+      // toast handled by useSaveMarks
     }
   };
+
+  const aiAnalysisOk = savedAvgConf >= 70 && savedExceedsMax === 0;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -122,6 +133,8 @@ export function MarksImportDialog({ open, onOpenChange, assessmentId, knownStude
             mode={mode}
             knownStudents={knownStudents}
             knownSubjects={knownSubjects}
+            assessmentMaxBySubject={assessmentMaxBySubject}
+            existingMarks={existingMarks}
             isSaving={saveMarks.isPending}
             onSave={handleSave}
             onBack={() => setStep('upload')}
@@ -135,9 +148,15 @@ export function MarksImportDialog({ open, onOpenChange, assessmentId, knownStude
             </div>
             <div>
               <div className="text-lg font-semibold">Imported {savedCount} mark{savedCount === 1 ? '' : 's'}</div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                You can run AI analysis from the Progress Dashboard to see insights for this class.
-              </p>
+              {aiAnalysisOk ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Confidence is high — you can run AI analysis from the Progress Dashboard.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-amber-700">
+                  Average confidence below 70% or some marks exceeded the max. Re-check the entries before running AI analysis.
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => { reset(); }}>Import another</Button>
