@@ -1,57 +1,97 @@
-# Fix Plan-Banner Mismatch on Dashboard
+## Goal
 
-## Root Cause
+Make `/view/:name/:token` (the parent portal) load reliably on 3G/4G in low-coverage areas by drastically cutting initial JavaScript and reducing network round-trips.
 
-The Settings page (₹7/student), Platform Admin (Starter badge), and the `Starter Plan` chip on the dashboard banner are all **correct** — Delhi Public School is genuinely on the Starter plan in the database:
+## Current situation (analysis)
 
+The parent page is **not light** today. It works on good networks but is heavy for rural 3G.
+
+**Bundle issues** (every parent currently downloads all of this on first visit):
+- `src/App.tsx` statically imports **every page** in the app — admin dashboard, platform admin, partner portal, all progress module pages, report card editor, settings, etc. With no code splitting, a parent gets the whole SPA.
+- Heavy libraries pulled into the main bundle that a parent never needs:
+  - `xlsx` (~900 KB) — only used by admin Excel import/export
+  - `@huggingface/transformers` (multi-MB) — only used by `lib/bg-remove.ts` for QR background removal in admin
+  - `jspdf` + `html2canvas` (~550 KB) — only used in report cards / template export
+  - `@googlemaps/js-api-loader` — only used in admin school profile
+  - `recharts` (~400 KB) — only needed on Progress tab
+  - `embla-carousel`, `react-markdown`, `react-day-picker`, `cmdk`, `vaul`, `input-otp`, full Radix set
+- `vite.config.ts` has no `build.rollupOptions.output.manualChunks`, so everything ships as one big vendor chunk.
+- No preconnect / DNS-prefetch hints to the Supabase host in `index.html`.
+
+**Network issues on the parent page itself**:
+- `useParentView` fires **4 sequential** Supabase queries (student RPC → school → student_fees → payments → payment_proofs). On 300ms RTT 3G that's ~1.5s just in serial waits.
+- Progress and Attendance hooks fire on tab mount even though parents land on Fees tab — but their *code* is loaded up-front because `ParentView.tsx` statically imports `ParentProgressTab` and `ParentAttendanceTab`, dragging recharts into the initial bundle.
+- School QR code image is rendered at original upload size (could be a 1–2 MB photo) with no width/quality cap.
+
+**Estimated impact**: initial JS for `/view/...` is likely 1.5–3 MB uncompressed (~500–900 KB gzipped). On a real 3G connection (~400 Kbps effective) that is 10–20 seconds before anything is interactive — exactly what you want to avoid.
+
+## Plan
+
+### 1. Route-level code splitting (biggest win)
+
+In `src/App.tsx`, convert all route components to `React.lazy(() => import(...))` and wrap `<Routes>` in a `<Suspense fallback={...}>`. Keep `ParentView`, `Login`, `Index` lazy too. Result: a parent only downloads the parent route's JS, not the admin/platform/partner/progress code.
+
+### 2. Lazy-load tabs inside ParentView
+
+In `src/pages/parent/ParentView.tsx`:
+- `ParentFeesTab` stays eager (default tab).
+- `ParentProgressTab` and `ParentAttendanceTab` become `React.lazy` and wrapped in `<Suspense>` inside their `<TabsContent>`. This pulls **recharts out of the initial parent bundle entirely** — it only loads if the parent actually taps Progress.
+
+### 3. Lazy-load charts inside ParentProgressTab
+
+Even within Progress, `PerformanceTrendChart`, `SubjectRadarChart`, and `SubjectComparisonChart` become `React.lazy`. Each chart only downloads when it actually has data to render.
+
+### 4. Vite chunk strategy
+
+Add `build.rollupOptions.output.manualChunks` to `vite.config.ts` to split:
+- `react-vendor`: react, react-dom, react-router-dom
+- `radix`: all `@radix-ui/*`
+- `charts`: recharts (so it's a separate cacheable chunk)
+- `heavy`: xlsx, jspdf, html2canvas, @huggingface/transformers, @googlemaps/js-api-loader (parent never touches this chunk)
+- `supabase`: @supabase/supabase-js, @tanstack/react-query
+
+This guarantees the heavy admin-only libs cannot leak into the parent bundle.
+
+### 5. Parallelize parent data fetch
+
+Refactor `src/hooks/useParentView.ts`: after the access-token RPC resolves the student, run `school`, `student_fees`, `payments`, and `payment_proofs` in `Promise.all`. Cuts ~3 RTTs down to 1 — saves roughly 1 second on a 300ms-RTT link.
+
+### 6. Network hints in `index.html`
+
+Add to `<head>`:
 ```
-subscription_plan: starter
-system_state:     trial_active
-trial_end_date:   null
-payment_verified: false
+<link rel="preconnect" href="https://fwnvfkaihuqdfdcwkakj.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="https://fwnvfkaihuqdfdcwkakj.supabase.co">
 ```
+Lets the TLS handshake to the backend happen in parallel with the JS download.
 
-The lie is in **one component**: `src/components/admin/TrialBanner.tsx`. Lines 46–50 hardcode the headline to:
+### 7. Cap the QR image size
 
-> "🚀 You are on Pro Trial (Expires today)"
+In `ParentFeesTab.tsx`, add `loading="lazy"` and `decoding="async"` to the QR `<img>`. The image is already constrained to `w-24 h-24` visually but the file itself can be huge — also add a `max-width: 200px` style cap so browsers can opt into responsive scaling, and document that admins should upload QR images ≤100 KB (no code change required for the admin upload, just a follow-up note).
 
-…regardless of `currentPlan`. So a Starter school in `trial_active` state sees a "Pro Trial" headline, while every other surface correctly shows Starter / ₹7. There is no data desync — only a copy bug in the banner.
+### 8. React Query cache tuning for parent
 
-A secondary issue: when `trial_end_date` is `null` the banner falls back to "(Expires today)", which is misleading. Starter has no trial concept at all (per `Onboard.tsx`: "Your Starter plan is active"), so for Starter schools the banner should not present itself as a countdown at all.
+In `useParentView`, set `staleTime: 60_000` and `gcTime: 5 * 60_000` so a parent who taps between tabs doesn't refetch.
 
-## What to Change
+## Expected outcome
 
-**Single file edit:** `src/components/admin/TrialBanner.tsx`
+- Initial JS for `/view/:name/:token` drops from ~500–900 KB gzipped to roughly **120–180 KB gzipped** (React + Router + Radix Tabs + Supabase + Fees tab only).
+- Time-to-interactive on a real 3G connection (~400 Kbps, 300 ms RTT): from ~10–20 s down to ~3–5 s.
+- Progress tab still works — it just downloads recharts on demand (one-time, then cached).
+- No visible UI change for parents on good networks.
 
-Branch the headline + sub-copy + CTA on `currentPlan`:
+## Files to change
 
-1. **Pro plan, trial active** → keep current copy:
-   - "🚀 You are on Pro Trial (N days left / Expires today)"
-   - Sub-line: "Full Pro access included" + plan badge
-   - CTA: `Upgrade Now` → `/pricing`
+- `src/App.tsx` — convert all routes to `React.lazy` + add `<Suspense>`
+- `src/pages/parent/ParentView.tsx` — lazy Progress and Attendance tabs
+- `src/components/parent/ParentProgressTab.tsx` — lazy chart imports
+- `src/components/parent/ParentFeesTab.tsx` — `loading="lazy"` on QR `<img>`
+- `src/hooks/useParentView.ts` — parallelize queries + cache tuning
+- `vite.config.ts` — add `manualChunks`
+- `index.html` — add preconnect/dns-prefetch to Supabase host
 
-2. **Starter plan, trial active** → new copy:
-   - "✨ You're on the Starter plan"
-   - Sub-line: "Upgrade to Pro to unlock AI insights, report cards, and advanced analytics."
-   - CTA: `Upgrade to Pro` → `/pricing`
-   - No "expires today" / countdown text (Starter has no trial expiry).
+## Out of scope (can be follow-ups)
 
-3. **Trial expired / restricted** (existing branch) → leave logic as-is, it already reads `currentPlan` correctly.
-
-4. **Edge case** — if `currentPlan === 'pro'` but `daysRemaining` is `null` (no trial_end_date set), render "Pro Trial Active" without the misleading "(Expires today)" suffix.
-
-## Files Touched
-
-- Edit: `src/components/admin/TrialBanner.tsx` (only)
-
-## What Stays the Same
-
-- `useSubscriptionStatus` — already returns `currentPlan` correctly.
-- `SubscriptionInfoCard` (Settings) — already correct.
-- Platform Admin Edit dialog — already correct.
-- Pricing page — already aligned (previous task).
-- DB schema and `schools` row — no migration needed.
-
-## Out of Scope
-
-Not changing trial-state semantics in the DB or hook. The bug is purely cosmetic copy in one banner; everything downstream already agrees on Starter / ₹7.
+- Service worker / offline cache for repeat parent visits.
+- Server-side compression of uploaded QR images on the admin side.
+- Replacing recharts with a lighter chart lib for the parent view.

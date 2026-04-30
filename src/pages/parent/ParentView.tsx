@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { useParentView } from "@/hooks/useParentView";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,8 +7,20 @@ import { GraduationCap, AlertCircle, IndianRupee, BarChart3, CalendarCheck } fro
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ParentFeesTab } from "@/components/parent/ParentFeesTab";
-import { ParentProgressTab } from "@/components/parent/ParentProgressTab";
-import { ParentAttendanceTab } from "@/components/parent/ParentAttendanceTab";
+
+// Lazy: keeps recharts and attendance UI out of the initial parent bundle
+const ParentProgressTab = lazy(() =>
+  import("@/components/parent/ParentProgressTab").then(m => ({ default: m.ParentProgressTab }))
+);
+const ParentAttendanceTab = lazy(() =>
+  import("@/components/parent/ParentAttendanceTab").then(m => ({ default: m.ParentAttendanceTab }))
+);
+
+const TabFallback = () => (
+  <div className="flex items-center justify-center py-12">
+    <div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+  </div>
+);
 
 export default function ParentView() {
   const { token } = useParams<{ name: string; token: string }>();
@@ -91,11 +104,15 @@ export default function ParentView() {
           </TabsContent>
           
           <TabsContent value="progress" className="mt-0">
-            <ParentProgressTab accessToken={token!} studentName={student.name} />
+            <Suspense fallback={<TabFallback />}>
+              <ParentProgressTab accessToken={token!} studentName={student.name} />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="attendance" className="mt-0">
-            <ParentAttendanceTab accessToken={token!} studentName={student.name} />
+            <Suspense fallback={<TabFallback />}>
+              <ParentAttendanceTab accessToken={token!} studentName={student.name} />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </div>

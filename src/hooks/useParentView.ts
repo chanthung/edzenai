@@ -58,49 +58,47 @@ export function useParentView(accessToken: string | undefined) {
 
       const student = studentData[0];
 
-      // Get school info (public access is allowed)
-      const { data: school, error: schoolError } = await supabase
-        .from('schools')
-        .select('id, name, upi_id, qr_code_url, phone, email')
-        .eq('id', student.school_id)
-        .single();
+      // Parallelize all student-scoped queries — saves ~3 RTTs on slow networks
+      const [schoolRes, feesRes, paymentsRes, proofsRes] = await Promise.all([
+        supabase
+          .from('schools')
+          .select('id, name, upi_id, qr_code_url, phone, email')
+          .eq('id', student.school_id)
+          .single(),
+        supabase
+          .from('student_fees')
+          .select(`
+            fee_structure:fee_structures(
+              id,
+              total_amount,
+              fee_category:fee_categories(id, name, is_mandatory),
+              installments(id, name, amount, due_date, display_order)
+            )
+          `)
+          .eq('student_id', student.id),
+        supabase
+          .from('payments')
+          .select('installment_id, amount_paid, payment_date')
+          .eq('student_id', student.id)
+          .order('payment_date', { ascending: false }),
+        supabase
+          .from('payment_proofs')
+          .select('*')
+          .eq('student_id', student.id)
+          .order('created_at', { ascending: false }),
+      ]);
 
-      if (schoolError || !school) {
+      if (schoolRes.error || !schoolRes.data) {
         throw new Error('School not found');
       }
+      if (feesRes.error) throw feesRes.error;
+      if (paymentsRes.error) throw paymentsRes.error;
+      if (proofsRes.error) throw proofsRes.error;
 
-      // Get student's fee assignments (public access allowed via RLS)
-      const { data: studentFees, error: feesError } = await supabase
-        .from('student_fees')
-        .select(`
-          fee_structure:fee_structures(
-            id,
-            total_amount,
-            fee_category:fee_categories(id, name, is_mandatory),
-            installments(id, name, amount, due_date, display_order)
-          )
-        `)
-        .eq('student_id', student.id);
-
-      if (feesError) throw feesError;
-
-      // Get all payments for this student with payment_date (public access allowed via RLS)
-      const { data: payments, error: paymentsError } = await supabase
-        .from('payments')
-        .select('installment_id, amount_paid, payment_date')
-        .eq('student_id', student.id)
-        .order('payment_date', { ascending: false });
-
-      if (paymentsError) throw paymentsError;
-
-      // Get all payment proofs for this student
-      const { data: proofs, error: proofsError } = await supabase
-        .from('payment_proofs')
-        .select('*')
-        .eq('student_id', student.id)
-        .order('created_at', { ascending: false });
-
-      if (proofsError) throw proofsError;
+      const school = schoolRes.data;
+      const studentFees = feesRes.data;
+      const payments = paymentsRes.data;
+      const proofs = proofsRes.data;
 
       // Create proof lookup by installment (latest proof per installment)
       const proofsByInstallment = (proofs ?? []).reduce((acc, proof) => {
@@ -183,5 +181,7 @@ export function useParentView(accessToken: string | undefined) {
       };
     },
     enabled: !!accessToken,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   });
 }
