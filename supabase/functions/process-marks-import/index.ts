@@ -362,9 +362,9 @@ async function processVision(
   mimeType: string,
   knownSubjects: KnownSubject[],
   knownStudents: KnownStudent[],
+  assessmentMaxBySubject: Record<string, number>,
   apiKey: string,
 ): Promise<{ rows: PreviewRow[]; detectedHeaders: string[]; ignoredColumns: string[] }> {
-  // Limit to images for now. PDFs would need rendering — out of scope this iteration.
   if (!mimeType.startsWith("image/")) {
     throw new Error("PDF support coming soon. Please upload a JPG/PNG photo of the marksheet for now.");
   }
@@ -379,7 +379,7 @@ async function processVision(
 
 Known subjects in the school: ${subjectsList || "(unknown)"}.
 
-Return one row per (student, subject, marks) cell using the provided tool. For each cell estimate confidence ('high' | 'medium' | 'low'). Skip cells that are blank or unreadable. Do not invent data.`;
+Return one row per (student, subject, marks) cell using the provided tool. For each cell estimate confidence ('high' | 'medium' | 'low') AND return the raw_text exactly as you see it on the page (so we can flag character ambiguity like 8 vs B). Skip cells that are blank or unreadable. Do not invent data.`;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -411,6 +411,7 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
                     roll_number: { type: ["string", "null"] },
                     subject: { type: "string" },
                     marks: { type: ["number", "null"] },
+                    raw_text: { type: ["string", "null"], description: "Exact characters as printed/written in the cell." },
                     confidence: { type: "string", enum: ["high", "medium", "low"] },
                   },
                   required: ["student_name", "subject", "marks", "confidence"],
@@ -438,7 +439,7 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
   const j = await resp.json();
   const args = j?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
   if (!args) throw new Error("AI returned no structured data");
-  let parsed: { entries: Array<{ student_name: string; roll_number: string | null; subject: string; marks: number | null; confidence: "high" | "medium" | "low" }>; max_marks: number | null };
+  let parsed: { entries: Array<{ student_name: string; roll_number: string | null; subject: string; marks: number | null; raw_text?: string | null; confidence: "high" | "medium" | "low" }>; max_marks: number | null };
   try { parsed = JSON.parse(args); } catch { throw new Error("AI returned bad JSON"); }
 
   const sharedMax = parsed.max_marks;
@@ -446,7 +447,8 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
     const sm = matchStudent(e.student_name, e.roll_number || "", knownStudents);
     const subm = matchSubject(e.subject, knownSubjects);
     let conf = e.confidence;
-    if (isHand && conf === "high") conf = "medium"; // never trust handwriting blindly
+    if (isHand && conf === "high") conf = "medium";
+    const aMax = subm.subjectId ? assessmentMaxBySubject[subm.subjectId] ?? null : null;
 
     const issues: string[] = [];
     if (!sm.studentId) issues.push("unmatched_student");
@@ -454,8 +456,12 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
     if (!subm.subjectId) issues.push("unmatched_subject");
     if (e.marks == null || isNaN(e.marks)) issues.push("invalid_marks");
     if (conf === "low") issues.push("low_confidence");
+    if (aMax != null && e.marks != null && !isNaN(e.marks) && e.marks > aMax) issues.push("marks_exceed_assessment_max");
+    if (sharedMax != null && e.marks != null && !isNaN(e.marks) && e.marks > sharedMax) issues.push("marks_exceed_max");
+    // Ambiguous-character hint (only for non-high OCR)
+    if (conf !== "high" && e.raw_text && /[B8O0SZ5]/i.test(e.raw_text)) issues.push("ambiguous_chars");
 
-    return {
+    const base = {
       rowIndex: idx + 1,
       rawStudent: e.student_name,
       rawRoll: e.roll_number || "",
@@ -464,9 +470,11 @@ Return one row per (student, subject, marks) cell using the provided tool. For e
       subjectId: subm.subjectId, matchedSubjectName: subm.matchedName, subjectMatchConfidence: subm.confidence,
       marksObtained: e.marks,
       maxMarks: sharedMax,
-      ocrConfidence: conf,
+      ocrConfidence: conf as "high" | "medium" | "low",
+      rawText: e.raw_text || undefined,
       issues,
     };
+    return { ...base, confidenceScore: scoreRow(base, aMax) };
   });
 
   return { rows, detectedHeaders: ["student", "roll", "subject", "marks"], ignoredColumns: [] };
@@ -486,6 +494,7 @@ serve(async (req) => {
       mimeType,
       knownSubjects = [],
       knownStudents = [],
+      assessmentMaxBySubject = {},
     }: {
       mode: "excel" | "printed" | "handwritten";
       fileBase64: string;
@@ -493,6 +502,7 @@ serve(async (req) => {
       mimeType?: string;
       knownSubjects: KnownSubject[];
       knownStudents: KnownStudent[];
+      assessmentMaxBySubject?: Record<string, number>;
     } = body;
 
     if (!mode || !fileBase64) {
@@ -503,7 +513,7 @@ serve(async (req) => {
 
     let result;
     if (mode === "excel") {
-      result = processExcel(fileBase64, fileName || "upload.xlsx", knownSubjects, knownStudents);
+      result = processExcel(fileBase64, fileName || "upload.xlsx", knownSubjects, knownStudents, assessmentMaxBySubject);
     } else if (mode === "printed" || mode === "handwritten") {
       const apiKey = Deno.env.get("LOVABLE_API_KEY");
       if (!apiKey) {
@@ -511,7 +521,7 @@ serve(async (req) => {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      result = await processVision(mode, fileBase64, mimeType || "image/jpeg", knownSubjects, knownStudents, apiKey);
+      result = await processVision(mode, fileBase64, mimeType || "image/jpeg", knownSubjects, knownStudents, assessmentMaxBySubject, apiKey);
     } else {
       return new Response(JSON.stringify({ error: "Unknown mode" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -525,6 +535,10 @@ serve(async (req) => {
       unmatchedStudents: result.rows.filter((r) => !r.studentId).length,
       unmatchedSubjects: result.rows.filter((r) => !r.subjectId).length,
       lowConfidence: result.rows.filter((r) => r.ocrConfidence === "low").length,
+      avgConfidence: result.rows.length
+        ? Math.round(result.rows.reduce((a, r) => a + r.confidenceScore, 0) / result.rows.length)
+        : 100,
+      exceedsMax: result.rows.filter((r) => r.issues.includes("marks_exceed_assessment_max") || r.issues.includes("marks_exceed_max")).length,
     };
 
     return new Response(JSON.stringify({ ...result, summary, mode }), {
