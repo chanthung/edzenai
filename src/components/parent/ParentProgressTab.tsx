@@ -178,7 +178,7 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Assessment History</CardTitle>
+            <CardTitle className="text-base">{t('progress.assessmentHistory')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
