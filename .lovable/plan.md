@@ -1,59 +1,128 @@
-# Stale-Cache Self-Healing: Kill-Switch + Build Banner
+# Multilingual Parent Portal
 
-## Why
-edzenai.com is healthy server-side (returns 200 OK), but users can hit a blank/stuck page when their browser holds an old service worker, cached HTML shell, or stale JS chunk pointing at deleted hashed files. This plan ships two small, safe mechanisms so this self-resolves without user action.
+Lightweight, fast multi-language support for the parent link experience (`/view/:name/:token`) with optional geo-based language suggestion. No new heavy libraries.
 
-## What we'll add
+## Scope decisions
 
-### 1. Service-worker kill-switch (`public/sw-killswitch.js`)
-A tiny script loaded from `index.html` that runs on every page load and:
-- Calls `navigator.serviceWorker.getRegistrations()` and unregisters any SW found (we don't ship one, but past deploys or third-party tools may have registered one).
-- Iterates `caches.keys()` and deletes every Cache Storage entry.
-- Runs once per session (guarded by `sessionStorage` flag) so it's a no-op after the first load.
-- Wrapped in `try/catch` and feature-detected — safe on every browser.
+- **Languages (v1):** English, Hindi, Assamese, Bengali — exactly as you listed. The state-language map will reference Tamil/Kannada/etc., but only EN/HI/AS/BN strings ship in v1. Other languages fall back to English with a "coming soon" note in the suggestion banner so we don't ship empty translation files.
+- **Scope of UI:** Parent portal only (`ParentView`, `ParentFeesTab`, `ParentProgressTab`, `ParentAttendanceTab`, `PaymentProofUploader`, empty/error states). Admin/teacher dashboards stay English.
+- **Don't translate:** student/parent/school names, class labels (e.g. "Class 5"), amounts, dates (numeric format), roll numbers, phone numbers — exactly as requested.
+- **No external i18n library.** Custom ~30-line context + JSON dictionaries → keeps bundle tiny (<5 KB gzipped per language, lazy-loaded).
 
-### 2. Chunk-load failure auto-recovery (in `src/main.tsx`)
-React's lazy chunks fail with `ChunkLoadError` / `Failed to fetch dynamically imported module` when an old `index.html` references a hashed JS file that no longer exists after a redeploy. We add a global `window` listener:
-- On `error` or `unhandledrejection` matching that pattern, set a `sessionStorage` flag and `location.reload()` once.
-- The flag prevents reload loops (only one auto-reload per session).
+## Stability safeguards (so it doesn't break the site like before)
 
-### 3. Build version banner (bottom-right corner)
-A tiny `<BuildBadge />` component rendered inside `App.tsx`:
-- Shows `v{shortHash} · {buildDate}` in 10px muted text, fixed bottom-right, `pointer-events: none` except for a copy button on hover.
-- Reads from `import.meta.env.VITE_BUILD_ID` and `VITE_BUILD_TIME`.
-- Hidden on the parent view (`/view/:name/:token`) to keep that screen clean for parents.
+- No changes to `vite.config.ts` chunking.
+- No new top-level imports in `App.tsx` or `main.tsx`. The i18n provider is mounted only inside the `ParentView` route subtree, so the rest of the app is untouched.
+- Geo lookup is `fetch()` with a 1.5 s timeout + try/catch; failure is silent (no banner). Never blocks render.
+- Translation files are imported statically (small) so there are no dynamic-import edge cases in production.
 
-### 4. Vite config — inject build metadata
-In `vite.config.ts`, add a `define` block:
-```ts
-define: {
-  'import.meta.env.VITE_BUILD_ID': JSON.stringify(
-    process.env.VITE_BUILD_ID || Date.now().toString(36)
-  ),
-  'import.meta.env.VITE_BUILD_TIME': JSON.stringify(new Date().toISOString()),
-}
+## Architecture
+
+```text
+src/i18n/parent/
+  index.ts              # ParentI18nProvider, useT(), Lang type
+  detect.ts             # resolvePreferredLanguage(), state→langs map
+  geo.ts                # fetchGeoState() with timeout + abort
+  locales/
+    en.json
+    hi.json
+    as.json
+    bn.json
+
+src/components/parent/
+  LanguageSwitcher.tsx  # top-bar dropdown (4 options)
+  LanguageSuggestionBanner.tsx
 ```
-This guarantees every build has a unique ID even without CI env vars.
 
-### 5. Cache-busting headers for `index.html`
-Already correct on Lovable hosting (`cache-control: no-cache, must-revalidate, max-age=0` confirmed in earlier curl). No change needed — just noting it as the foundation that makes the above work.
+### Preference resolution order
 
-## Files touched
-- `public/sw-killswitch.js` — new
-- `index.html` — add `<script src="/sw-killswitch.js"></script>` in `<head>` (synchronous, ~20 lines, runs before app boots)
-- `src/main.tsx` — add chunk-error auto-reload listener
-- `src/components/BuildBadge.tsx` — new, ~25 lines
-- `src/App.tsx` — render `<BuildBadge />` once, route-aware
-- `vite.config.ts` — add `define` block
+1. `parents.preferred_language` from DB (loaded with `useParentView`)
+2. `localStorage["parent_lang_<token>"]`
+3. `navigator.language` (if `hi/as/bn/en`)
+4. Geo state → first language in map (suggestion banner only — not auto-applied)
+5. Default: `en`
 
-## What this does NOT do
-- Does not register a new service worker (we stay SW-free).
-- Does not change any backend, RLS, or edge function.
-- Does not affect the parent view layout.
-- Does not break offline behavior (we have none today).
+### Persistence
 
-## Result
-Next time a user hits a stale shell:
-1. Kill-switch wipes any rogue SW + caches on first load.
-2. If a chunk 404s mid-session, the page silently reloads once and recovers.
-3. The version badge lets you (and support) instantly verify which build a user is on when they report an issue — just ask "what does the bottom-right say?"
+- Instant: `localStorage` on every switch.
+- DB: new column `students.preferred_language text` (we store on the student row since there's no `parents` table; one student = one parent contact in this schema). Saved via a tiny edge function `set-parent-language` that authorizes by `access_token` (no login). Best-effort, fire-and-forget — UI never waits.
+
+### Geo flow
+
+1. Render UI in resolved language immediately (steps 1-3 above).
+2. After mount, if no DB/localStorage preference exists, call `https://ipapi.co/json/` with 1.5 s timeout.
+3. Map `region` (state) → candidate languages via `STATE_LANGUAGE_MAP`.
+4. If candidates include a supported language and current lang is `en`, show the dismissible banner once (flag stored in `localStorage["parent_lang_suggested_<token>"] = "1"`).
+5. Banner buttons: switch to suggested language(s), or "Keep English". All dismiss the banner permanently for that token.
+
+### State → language map (covers all 28 states + 8 UTs)
+
+Full mapping in `detect.ts`. Examples:
+
+- Assam → `[as, bn]`
+- West Bengal, Tripura → `[bn, hi]`
+- Tamil Nadu → `[ta]` (falls back to EN in v1)
+- Karnataka → `[kn]` (falls back to EN in v1)
+- Hindi belt (UP, MP, Bihar, Rajasthan, Haryana, Delhi, Uttarakhand, HP, Jharkhand, Chhattisgarh) → `[hi]`
+- Default / unmapped → `[]` (no banner)
+
+### Translation keys (initial set, ~50 keys)
+
+Grouped: `common.*` (loading, error, retry), `header.*`, `tabs.*` (fees/progress/attendance), `fees.*` (status: paid/pending/overdue/partial, dueDate, amount, payNow, uploadProof, selectAll, total), `progress.*`, `attendance.*` (present/absent/late/holiday), `proof.*` (upload dialog text), `errors.*`, `banner.*`.
+
+Format: flat dotted keys, simple `{name}` interpolation. `useT()` returns `(key, vars?) => string`.
+
+## WhatsApp language support (Part 8)
+
+- `send-parent-link` reads `students.preferred_language`. If set and ≠ `en`, picks a localized template from a new `supabase/functions/_shared/parent-link-templates.ts` (4 plain-text variants — same content, translated). Mayavi sends free-text, no template approval needed.
+- `send-fee-reminders` and `send-test-fee-reminder` use the same helper. The templates the admin configures stay English (admin UI), but auto-reminders use the parent's preferred language when available; fall back to admin template otherwise.
+- Phone normalization, retry logic, and `parent_link_dispatches` logging unchanged.
+
+## Performance
+
+- 4 JSON files, ~2 KB each → bundled with the parent route (already lazy via `ParentView`'s lazy children pattern). No extra network hop.
+- Geo call is non-blocking, timeout 1.5 s, aborted on unmount.
+- No new dependencies in `package.json`.
+- Switcher = pure React state, no reload.
+
+## Database change
+
+One migration:
+
+```sql
+ALTER TABLE public.students
+  ADD COLUMN IF NOT EXISTS preferred_language text;
+-- short check: only allow supported codes or null
+ALTER TABLE public.students
+  ADD CONSTRAINT students_preferred_language_chk
+  CHECK (preferred_language IS NULL OR preferred_language IN ('en','hi','as','bn'));
+```
+
+RLS already covers students; the new edge function uses service role + access_token verification, so no policy change needed.
+
+## Files to create
+
+- `src/i18n/parent/index.tsx`
+- `src/i18n/parent/detect.ts`
+- `src/i18n/parent/geo.ts`
+- `src/i18n/parent/locales/{en,hi,as,bn}.json`
+- `src/components/parent/LanguageSwitcher.tsx`
+- `src/components/parent/LanguageSuggestionBanner.tsx`
+- `supabase/functions/set-parent-language/index.ts` (+ `verify_jwt = false` in `config.toml`)
+- `supabase/functions/_shared/parent-link-templates.ts`
+- DB migration
+
+## Files to edit
+
+- `src/pages/parent/ParentView.tsx` — wrap subtree in `ParentI18nProvider`, render switcher + banner, replace hard-coded strings with `t(...)`.
+- `src/components/parent/ParentFeesTab.tsx`, `ParentProgressTab.tsx`, `ParentAttendanceTab.tsx`, `PaymentProofUploader.tsx` — replace user-facing strings with `t(...)`.
+- `src/hooks/useParentView.ts` — also return `preferred_language`.
+- `supabase/functions/send-parent-link/index.ts`, `send-fee-reminders/index.ts`, `send-test-fee-reminder/index.ts` — use language-aware templates.
+
+## Failsafe / acceptance
+
+- Geo fails or times out → no banner, English UI, manual switcher still works.
+- Switcher always visible in header. Can users fall back to En if they want later?
+- Choice persists across reloads (localStorage) and across devices (DB).
+- Names/amounts/dates remain unchanged in any language.
+- No changes to vite chunking, `App.tsx`, `main.tsx`, or auth flow → publish stability preserved.
