@@ -329,18 +329,18 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                           <p className="text-sm text-muted-foreground">
                             {isPaid || proofVerified ? (
                               inst.payment_date 
-                                ? `Paid on ${format(parseISO(inst.payment_date), 'dd MMM yyyy')}`
-                                : 'Paid'
+                                ? t('fees.paidOn', { date: format(parseISO(inst.payment_date), 'dd MMM yyyy') })
+                                : t('fees.paid')
                             ) : proofPending ? (
                               <span className="text-blue-600 dark:text-blue-400">
-                                Awaiting verification
+                                {t('fees.awaitingVerification')}
                               </span>
                             ) : isMonthlyFee ? (
                               <span className="font-medium text-amber-700 dark:text-amber-400">
-                                Due by 10th of the month
+                                {t('fees.dueBy10th')}
                               </span>
                             ) : (
-                              `Due: ${format(dueDate, 'dd MMM yyyy')}`
+                              t('fees.due', { date: format(dueDate, 'dd MMM yyyy') })
                             )}
                           </p>
                         </div>
@@ -351,7 +351,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                             </p>
                             {inst.paid_amount > 0 && inst.paid_amount < inst.amount && (
                               <p className="text-xs text-green-600">
-                                Paid: {formatCurrency(inst.paid_amount)}
+                                {t('fees.paidLabel', { amount: formatCurrency(inst.paid_amount) })}
                               </p>
                             )}
                           </div>
