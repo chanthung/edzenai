@@ -108,7 +108,8 @@ Deno.serve(async (req) => {
     const schoolName = school?.name ?? 'Your School';
     const firstName = student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
     const parentLink = `https://www.edzenai.com/view/${firstName}/${student.access_token}`;
-    const message = `Hello,\n\n${student.name}'s parent portal is ready. View fees, attendance & progress here:\n${parentLink}\n\n- ${schoolName}`;
+    const lang: ParentLang = isSupportedParentLang(student.preferred_language) ? student.preferred_language : 'en';
+    const message = parentLinkMessage(lang, { studentName: student.name, parentLink, schoolName });
 
     const result = await sendWhatsApp({
       toRaw: normalizedPhone,
