@@ -7,6 +7,7 @@ import { format, parseISO, isBefore, startOfDay } from 'date-fns';
 import { PaymentProofUploader } from '@/components/parent/PaymentProofUploader';
 import { useState, useMemo } from 'react';
 import { ParentViewData } from '@/hooks/useParentView';
+import { useT } from '@/i18n/parent';
 
 interface ParentFeesTabProps {
   data: ParentViewData;
@@ -14,6 +15,7 @@ interface ParentFeesTabProps {
 }
 
 export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
+  const { t } = useT();
   const [expandedInstallment, setExpandedInstallment] = useState<string | null>(null);
   const [selectedInstallments, setSelectedInstallments] = useState<Set<string>>(new Set());
   const { student, school, fees, summary } = data;
