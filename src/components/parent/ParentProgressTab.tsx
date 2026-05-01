@@ -49,7 +49,7 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <p className="text-muted-foreground">Unable to load progress data.</p>
+          <p className="text-muted-foreground">{t('progress.unable')}</p>
         </CardContent>
       </Card>
     );
@@ -60,9 +60,9 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
       <Card>
         <CardContent className="py-12 text-center">
           <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold mb-2">No Academic Records Yet</h3>
+          <h3 className="font-semibold mb-2">{t('progress.noRecordsTitle')}</h3>
           <p className="text-muted-foreground text-sm">
-            Marks will appear here once assessments are recorded by the school.
+            {t('progress.noRecordsDesc')}
           </p>
         </CardContent>
       </Card>
@@ -85,13 +85,13 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
   const getStatusLabel = () => {
     switch (summary.status) {
       case 'improving':
-        return 'Improving';
+        return t('progress.improving');
       case 'declining':
-        return 'Needs Attention';
+        return t('progress.needsAttention');
       case 'stable':
-        return 'Stable';
+        return t('progress.stable');
       default:
-        return 'New';
+        return t('progress.new');
     }
   };
 
@@ -101,28 +101,28 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
       <div className="grid grid-cols-2 gap-3">
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Overall Average</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('progress.overallAverage')}</p>
             <p className="text-2xl font-bold text-primary">{summary.overallAverage}%</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Assessments</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('progress.assessments')}</p>
             <p className="text-2xl font-bold">{summary.assessmentCount}</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground mb-1">Trend</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('progress.trend')}</p>
             <div className="flex items-center gap-2">
               {getTrendIcon()}
               <span className="font-semibold">{getStatusLabel()}</span>
             </div>
             {summary.trend !== 0 && summary.status !== 'new' && (
               <p className={`text-xs mt-1 ${summary.trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {summary.trend > 0 ? '+' : ''}{summary.trend}% from last
+                {summary.trend > 0 ? '+' : ''}{summary.trend}% {t('progress.fromLast')}
               </p>
             )}
           </CardContent>
@@ -131,7 +131,7 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
         {summary.bestSubject && (
           <Card>
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground mb-1">Best Subject</p>
+              <p className="text-sm text-muted-foreground mb-1">{t('progress.bestSubject')}</p>
               <div className="flex items-center gap-2">
                 <Award className="h-5 w-5 text-amber-500" />
                 <span className="font-semibold text-sm truncate">{summary.bestSubject}</span>
@@ -147,7 +147,7 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
           <Suspense fallback={<ChartFallback />}>
             <PerformanceTrendChart
               data={trendChartData}
-              title="Performance Over Time"
+              title={t('progress.performanceOverTime')}
             />
           </Suspense>
         )}
@@ -156,7 +156,7 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
           <Suspense fallback={<ChartFallback />}>
             <SubjectRadarChart
               data={radarChartData}
-              title="Subject Strengths"
+              title={t('progress.subjectStrengths')}
               studentName={studentName}
             />
           </Suspense>
@@ -167,7 +167,7 @@ export function ParentProgressTab({ accessToken, studentName }: ParentProgressTa
                 subject: s.name,
                 percentage: s.averagePercentage,
               }))}
-              title="Subject Performance"
+              title={t('progress.subjectPerformance')}
             />
           </Suspense>
         ) : null}
