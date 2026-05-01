@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendWhatsApp, normalizeIndianPhone } from '../_shared/whatsapp.ts';
+import { isSupportedParentLang, parentLinkMessage, type ParentLang } from '../_shared/parent-link-templates.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
     // Fetch student via user-scoped client (enforces RLS)
     const { data: student, error: studentError } = await userClient
       .from('students')
-      .select('id, name, parent_phone, access_token, school_id')
+      .select('id, name, parent_phone, access_token, school_id, preferred_language')
       .eq('id', studentId)
       .single();
 
