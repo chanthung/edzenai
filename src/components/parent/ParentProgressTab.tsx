@@ -2,6 +2,7 @@ import { useParentProgress } from '@/hooks/useParentProgress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { lazy, Suspense } from 'react';
+import { useT } from '@/i18n/parent';
 
 // Charts pull in recharts (~400 KB). Keep them out of the parent bundle until needed.
 const PerformanceTrendChart = lazy(() =>
@@ -36,6 +37,7 @@ interface ParentProgressTabProps {
 }
 
 export function ParentProgressTab({ accessToken, studentName }: ParentProgressTabProps) {
+  const { t } = useT();
   const { data, isLoading, error } = useParentProgress(accessToken);
   const [expandedAssessment, setExpandedAssessment] = useState<string | null>(null);
 
