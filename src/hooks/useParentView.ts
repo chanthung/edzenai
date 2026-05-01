@@ -10,6 +10,7 @@ export interface ParentViewData {
     class_name: string | null;
     section: string | null;
     roll_number: string | null;
+    preferred_language: 'en' | 'hi' | 'as' | 'bn' | null;
   };
   school: {
     id: string;
@@ -59,7 +60,7 @@ export function useParentView(accessToken: string | undefined) {
       const student = studentData[0];
 
       // Parallelize all student-scoped queries — saves ~3 RTTs on slow networks
-      const [schoolRes, feesRes, paymentsRes, proofsRes] = await Promise.all([
+      const [schoolRes, feesRes, paymentsRes, proofsRes, prefRes] = await Promise.all([
         supabase
           .from('schools')
           .select('id, name, upi_id, qr_code_url, phone, email')
@@ -86,6 +87,11 @@ export function useParentView(accessToken: string | undefined) {
           .select('*')
           .eq('student_id', student.id)
           .order('created_at', { ascending: false }),
+        supabase
+          .from('students')
+          .select('preferred_language')
+          .eq('id', student.id)
+          .maybeSingle(),
       ]);
 
       if (schoolRes.error || !schoolRes.data) {
@@ -167,6 +173,9 @@ export function useParentView(accessToken: string | undefined) {
         { total_fee: 0, total_paid: 0, total_pending: 0 }
       );
 
+      const prefLang = (prefRes?.data?.preferred_language ?? null) as
+        | 'en' | 'hi' | 'as' | 'bn' | null;
+
       return {
         student: {
           id: student.id,
@@ -174,6 +183,7 @@ export function useParentView(accessToken: string | undefined) {
           class_name: student.class_name,
           section: student.section,
           roll_number: student.roll_number,
+          preferred_language: prefLang,
         },
         school,
         fees,

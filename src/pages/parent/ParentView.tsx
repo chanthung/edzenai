@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useParentView } from "@/hooks/useParentView";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +7,10 @@ import { GraduationCap, AlertCircle, IndianRupee, BarChart3, CalendarCheck } fro
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ParentFeesTab } from "@/components/parent/ParentFeesTab";
+import { ParentI18nProvider, useT, type Lang } from "@/i18n/parent";
+import { LanguageSwitcher } from "@/components/parent/LanguageSwitcher";
+import { LanguageSuggestionBanner } from "@/components/parent/LanguageSuggestionBanner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Lazy: keeps recharts and attendance UI out of the initial parent bundle
 const ParentProgressTab = lazy(() =>
@@ -25,32 +29,72 @@ const TabFallback = () => (
 export default function ParentView() {
   const { token } = useParams<{ name: string; token: string }>();
   const { data, isLoading, error } = useParentView(token);
-  const queryClient = useQueryClient();
+
+  // Persist the picked language to DB (best-effort, fire-and-forget).
+  const persistLang = useCallback(
+    (lang: Lang) => {
+      if (!token) return;
+      void supabase.functions
+        .invoke("set-parent-language", { body: { access_token: token, language: lang } })
+        .catch(() => {
+          /* ignore — localStorage is the source of truth on this device */
+        });
+    },
+    [token]
+  );
 
   if (isLoading) {
-    return <ParentViewSkeleton />;
+    return (
+      <ParentI18nProvider token={token ?? ""} initialLangFromDb={null}>
+        <ParentViewSkeleton />
+      </ParentI18nProvider>
+    );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Link Not Found</h2>
-            <p className="text-muted-foreground">
-              This link is invalid or has expired. Please contact your school for a new link.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <ParentI18nProvider token={token ?? ""} initialLangFromDb={null}>
+        <ErrorState />
+      </ParentI18nProvider>
     );
   }
 
+  return (
+    <ParentI18nProvider
+      token={token ?? ""}
+      initialLangFromDb={data.student.preferred_language}
+      onPersist={persistLang}
+    >
+      <ParentViewInner accessToken={token!} />
+    </ParentI18nProvider>
+  );
+}
+
+function ErrorState() {
+  const { t } = useT();
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <Card className="max-w-md w-full">
+        <CardContent className="pt-6 text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">{t("errors.linkNotFound")}</h2>
+          <p className="text-muted-foreground">{t("errors.linkInvalid")}</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ParentViewInner({ accessToken }: { accessToken: string }) {
+  const { t } = useT();
+  const { data } = useParentView(accessToken);
+  const queryClient = useQueryClient();
+
+  if (!data) return null;
   const { student, school } = data;
 
   const handleProofSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['parent-view', token] });
+    queryClient.invalidateQueries({ queryKey: ["parent-view", accessToken] });
   };
 
   return (
@@ -58,60 +102,67 @@ export default function ParentView() {
       {/* Header */}
       <header className="bg-gradient-to-br from-primary to-primary/85 text-primary-foreground">
         <div className="max-w-2xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-primary-foreground/20 flex items-center justify-center backdrop-blur-sm">
-              <GraduationCap className="h-6 w-6" />
+          <div className="flex items-start justify-between gap-3 mb-5">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-12 h-12 rounded-2xl bg-primary-foreground/20 flex items-center justify-center backdrop-blur-sm shrink-0">
+                <GraduationCap className="h-6 w-6" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-semibold text-lg truncate">{school.name}</h1>
+                <p className="text-primary-foreground/80 text-sm">{t("header.studentPortal")}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-semibold text-lg">{school.name}</h1>
-              <p className="text-primary-foreground/80 text-sm">Student Portal</p>
-            </div>
+            <LanguageSwitcher />
           </div>
-          
+
           <div className="bg-primary-foreground/10 rounded-2xl p-5 backdrop-blur-sm">
-            <p className="text-primary-foreground/80 text-sm mb-1">Student</p>
+            <p className="text-primary-foreground/80 text-sm mb-1">{t("header.student")}</p>
             <p className="font-semibold text-xl">{student.name}</p>
             {student.class_name && (
               <p className="text-primary-foreground/80 text-sm mt-1">
-                Class {student.class_name}{student.section && `-${student.section}`}
-                {student.roll_number && ` • Roll: ${student.roll_number}`}
+                {student.class_name}
+                {student.section && `-${student.section}`}
+                {student.roll_number && ` • ${t("header.roll")}: ${student.roll_number}`}
               </p>
             )}
           </div>
         </div>
       </header>
 
+      {/* Geo language suggestion banner (shown only on first visit if relevant) */}
+      <LanguageSuggestionBanner />
+
       {/* Tab Navigation */}
-      <div className="max-w-2xl mx-auto px-4 -mt-2">
+      <div className="max-w-2xl mx-auto px-4 mt-3">
         <Tabs defaultValue="fees" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="fees" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <IndianRupee className="h-3.5 w-3.5" />
-              Fees
+              {t("tabs.fees")}
             </TabsTrigger>
             <TabsTrigger value="progress" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <BarChart3 className="h-3.5 w-3.5" />
-              Progress
+              {t("tabs.progress")}
             </TabsTrigger>
             <TabsTrigger value="attendance" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <CalendarCheck className="h-3.5 w-3.5" />
-              Attendance
+              {t("tabs.attendance")}
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="fees" className="mt-0">
             <ParentFeesTab data={data} onProofSuccess={handleProofSuccess} />
           </TabsContent>
-          
+
           <TabsContent value="progress" className="mt-0">
             <Suspense fallback={<TabFallback />}>
-              <ParentProgressTab accessToken={token!} studentName={student.name} />
+              <ParentProgressTab accessToken={accessToken} studentName={student.name} />
             </Suspense>
           </TabsContent>
 
           <TabsContent value="attendance" className="mt-0">
             <Suspense fallback={<TabFallback />}>
-              <ParentAttendanceTab accessToken={token!} studentName={student.name} />
+              <ParentAttendanceTab accessToken={accessToken} studentName={student.name} />
             </Suspense>
           </TabsContent>
         </Tabs>
@@ -119,9 +170,7 @@ export default function ParentView() {
 
       {/* Footer */}
       <footer className="max-w-2xl mx-auto px-4 py-8 text-center">
-        <p className="text-xs text-muted-foreground">
-          This is a secure link for viewing your child's information.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("footer.note")}</p>
       </footer>
     </div>
   );

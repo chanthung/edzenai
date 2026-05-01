@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendWhatsApp, normalizeIndianPhone } from '../_shared/whatsapp.ts';
+import { isSupportedParentLang, parentLinkMessage, type ParentLang } from '../_shared/parent-link-templates.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
     // Fetch student via user-scoped client (enforces RLS)
     const { data: student, error: studentError } = await userClient
       .from('students')
-      .select('id, name, parent_phone, access_token, school_id')
+      .select('id, name, parent_phone, access_token, school_id, preferred_language')
       .eq('id', studentId)
       .single();
 
@@ -107,7 +108,8 @@ Deno.serve(async (req) => {
     const schoolName = school?.name ?? 'Your School';
     const firstName = student.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
     const parentLink = `https://www.edzenai.com/view/${firstName}/${student.access_token}`;
-    const message = `Hello,\n\n${student.name}'s parent portal is ready. View fees, attendance & progress here:\n${parentLink}\n\n- ${schoolName}`;
+    const lang: ParentLang = isSupportedParentLang(student.preferred_language) ? student.preferred_language : 'en';
+    const message = parentLinkMessage(lang, { studentName: student.name, parentLink, schoolName });
 
     const result = await sendWhatsApp({
       toRaw: normalizedPhone,

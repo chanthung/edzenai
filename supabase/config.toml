@@ -57,3 +57,5 @@ project_id = "fwnvfkaihuqdfdcwkakj"
     verify_jwt = false
   [functions.accept-partner-invite]
     verify_jwt = false
+  [functions.set-parent-language]
+    verify_jwt = false

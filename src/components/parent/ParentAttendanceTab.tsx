@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, X, Clock, CalendarDays, CalendarOff } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { useT } from "@/i18n/parent";
 
 interface ParentAttendanceTabProps {
   accessToken: string;
@@ -11,6 +12,7 @@ interface ParentAttendanceTabProps {
 }
 
 export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendanceTabProps) {
+  const { t } = useT();
   const { data, isLoading } = useStudentAttendanceSummary(accessToken);
 
   if (isLoading) {
@@ -27,7 +29,7 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
       <Card>
         <CardContent className="py-12 text-center">
           <CalendarDays className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">No attendance records available yet.</p>
+          <p className="text-muted-foreground">{t('attendance.noRecords')}</p>
         </CardContent>
       </Card>
     );
@@ -40,7 +42,7 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
       {/* Overall summary */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Attendance Summary</CardTitle>
+          <CardTitle className="text-base">{t('attendance.summary')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center mb-4">
@@ -73,28 +75,28 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
                 <Check className="h-3.5 w-3.5" />
                 <span className="text-sm font-bold">{summary.present}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Present</p>
+              <p className="text-xs text-muted-foreground">{t('attendance.present')}</p>
             </div>
             <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-2">
               <div className="flex items-center justify-center gap-1 text-red-600 mb-1">
                 <X className="h-3.5 w-3.5" />
                 <span className="text-sm font-bold">{summary.absent}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Absent</p>
+              <p className="text-xs text-muted-foreground">{t('attendance.absent')}</p>
             </div>
             <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-2">
               <div className="flex items-center justify-center gap-1 text-amber-600 mb-1">
                 <Clock className="h-3.5 w-3.5" />
                 <span className="text-sm font-bold">{summary.late}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Late</p>
+              <p className="text-xs text-muted-foreground">{t('attendance.late')}</p>
             </div>
             <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2">
               <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
                 <CalendarOff className="h-3.5 w-3.5" />
                 <span className="text-sm font-bold">{summary.leave ?? 0}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Leave</p>
+              <p className="text-xs text-muted-foreground">{t('attendance.leave')}</p>
             </div>
           </div>
         </CardContent>
@@ -103,7 +105,7 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
       {/* Month-wise breakdown */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Monthly Breakdown</CardTitle>
+          <CardTitle className="text-base">{t('attendance.monthlyBreakdown')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -136,7 +138,7 @@ export function ParentAttendanceTab({ accessToken, studentName }: ParentAttendan
       {/* Recent records */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Recent Records</CardTitle>
+          <CardTitle className="text-base">{t('attendance.recentRecords')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-1 max-h-64 overflow-y-auto">
