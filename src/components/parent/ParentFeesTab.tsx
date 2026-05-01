@@ -75,9 +75,9 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
       <Card className="card-elevated">
         <CardContent className="py-12 text-center">
           <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Fees Assigned</h3>
+          <h3 className="text-lg font-semibold mb-2">{t('fees.noFeesTitle')}</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            No fees have been assigned yet. Please contact your school for more information.
+            {t('fees.noFeesDesc')}
           </p>
         </CardContent>
       </Card>
@@ -91,15 +91,15 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
         <CardContent className="p-6">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Total Fee</p>
+              <p className="text-sm text-muted-foreground mb-1">{t('fees.totalFee')}</p>
               <p className="text-xl font-bold">{formatCurrency(summary.total_fee)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Paid</p>
+              <p className="text-sm text-muted-foreground mb-1">{t('fees.paid')}</p>
               <p className="text-xl font-bold text-status-paid">{formatCurrency(summary.total_paid)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Pending</p>
+              <p className="text-sm text-muted-foreground mb-1">{t('fees.pending')}</p>
               <p className="text-xl font-bold text-status-overdue">{formatCurrency(summary.total_pending)}</p>
             </div>
           </div>
@@ -107,7 +107,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
           {/* Progress bar */}
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-muted-foreground">Payment Progress</span>
+              <span className="text-muted-foreground">{t('fees.paymentProgress')}</span>
               <span className="font-medium">{paidPercentage}%</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -163,26 +163,26 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                 <div className="flex items-center gap-2 mb-1">
                   <QrCode className={`h-4 w-4 ${summary.total_pending > 0 ? 'text-primary' : 'text-green-600'}`} />
                   <p className={`font-semibold ${summary.total_pending > 0 ? 'text-primary' : 'text-green-700 dark:text-green-400'}`}>
-                    {summary.total_pending > 0 ? 'Scan to Pay School Fees' : 'All Fees Cleared!'}
+                    {summary.total_pending > 0 ? t('fees.scanToPay') : t('fees.allCleared')}
                   </p>
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">
-                  {selectedTotal > 0 
-                    ? `Selected: ${formatCurrency(selectedTotal)}`
-                    : summary.total_pending > 0 
-                      ? `Pending: ${formatCurrency(summary.total_pending)}`
-                      : 'Save this QR for future payments'
+                  {selectedTotal > 0
+                    ? t('fees.selected', { amount: formatCurrency(selectedTotal) })
+                    : summary.total_pending > 0
+                      ? t('fees.pendingAmount', { amount: formatCurrency(summary.total_pending) })
+                      : t('fees.saveQr')
                   }
                 </p>
                 {selectedTotal > 0 && (
                   <p className="text-xs text-primary font-medium mb-2">
-                    ✓ Amount will be pre-filled in UPI app
+                    {t('fees.amountPrefilled')}
                   </p>
                 )}
                 {school.upi_id && summary.total_pending > 0 && (
                   <Button variant="outline" size="sm" asChild>
                     <a href={upiPayUrl!}>
-                      Open UPI App {selectedTotal > 0 ? `• ${formatCurrency(selectedTotal)}` : ''}
+                      {t('fees.openUpi')} {selectedTotal > 0 ? `• ${formatCurrency(selectedTotal)}` : ''}
                     </a>
                   </Button>
                 )}
@@ -190,7 +190,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
             </div>
             {school.upi_id && (
               <p className="text-xs text-muted-foreground text-center mt-3 border-t pt-2">
-                UPI ID: {school.upi_id}
+                {t('fees.upiId')}: {school.upi_id}
               </p>
             )}
           </CardContent>
@@ -202,7 +202,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
       {unpaidInstallments.size > 0 && (
         <div className="flex items-center justify-between px-1">
           <p className="text-sm text-muted-foreground">
-            Select installments to pay together
+            {t('fees.selectInstallments')}
           </p>
           <Button
             variant="link"
@@ -210,7 +210,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
             className="text-xs h-auto p-0"
             onClick={selectedInstallments.size === unpaidInstallments.size ? deselectAll : selectAll}
           >
-            {selectedInstallments.size === unpaidInstallments.size ? 'Deselect All' : 'Select All'}
+            {selectedInstallments.size === unpaidInstallments.size ? t('fees.deselectAll') : t('fees.selectAll')}
           </Button>
         </div>
       )}
@@ -232,16 +232,16 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                 <div>
                   <CardTitle className="text-lg">{fee.category}</CardTitle>
                   <CardDescription>
-                    {fee.is_mandatory ? "Mandatory" : "Optional"} • 
-                    Total: {formatCurrency(fee.total_amount)}
+                    {fee.is_mandatory ? t('fees.mandatory') : t('fees.optional')} • 
+                    {t('fees.total')}: {formatCurrency(fee.total_amount)}
                   </CardDescription>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <p className="text-sm text-muted-foreground">{t('fees.pending')}</p>
                   <p className="font-semibold text-lg">
                     {fee.pending_amount > 0 
                       ? formatCurrency(fee.pending_amount) 
-                      : <span className="text-status-paid">Paid</span>
+                      : <span className="text-status-paid">{t('fees.paid')}</span>
                     }
                   </p>
                 </div>
@@ -316,14 +316,14 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                                       : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
                             }`}>
                               {isPaid || proofVerified 
-                                ? 'Cleared' 
+                                ? t('status.cleared') 
                                 : proofPending 
-                                  ? 'Proof Submitted'
+                                  ? t('status.proofSubmitted')
                                   : proofRejected
-                                    ? 'Proof Rejected'
+                                    ? t('status.proofRejected')
                                     : isOverdue 
-                                      ? 'Overdue' 
-                                      : 'Pending'}
+                                      ? t('status.overdue') 
+                                      : t('status.pending')}
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground">
