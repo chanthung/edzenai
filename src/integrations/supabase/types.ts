@@ -1888,6 +1888,7 @@ export type Database = {
           parent_email: string | null
           parent_name: string | null
           parent_phone: string | null
+          preferred_language: string | null
           religion: string | null
           roll_number: string | null
           school_id: string
@@ -1910,6 +1911,7 @@ export type Database = {
           parent_email?: string | null
           parent_name?: string | null
           parent_phone?: string | null
+          preferred_language?: string | null
           religion?: string | null
           roll_number?: string | null
           school_id: string
@@ -1932,6 +1934,7 @@ export type Database = {
           parent_email?: string | null
           parent_name?: string | null
           parent_phone?: string | null
+          preferred_language?: string | null
           religion?: string | null
           roll_number?: string | null
           school_id?: string
