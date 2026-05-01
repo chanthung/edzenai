@@ -408,16 +408,16 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
           <CardHeader>
             <div className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">Payment Options</CardTitle>
+              <CardTitle className="text-lg">{t('fees.paymentOptions')}</CardTitle>
             </div>
             <CardDescription>
-              After payment, upload proof for each installment above for faster verification
+              {t('fees.paymentOptionsDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {school.qr_code_url && (
               <div className="flex flex-col items-center p-4 bg-muted/50 rounded-xl">
-                <p className="text-sm font-medium mb-3">Scan to Pay</p>
+                <p className="text-sm font-medium mb-3">{t('fees.scanToPay')}</p>
                 <img 
                   src={school.qr_code_url} 
                   alt="Payment QR Code"
@@ -428,17 +428,16 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
             
             {school.upi_id && (
               <div className="space-y-3">
-                <p className="text-sm font-medium">Or pay via UPI</p>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" asChild className="flex-1">
                     <a href={upiPayUrl!}>
                       <QrCode className="h-4 w-4 mr-2" />
-                      Open UPI App {selectedTotal > 0 ? `• ${formatCurrency(selectedTotal)}` : ''}
+                      {t('fees.openUpi')} {selectedTotal > 0 ? `• ${formatCurrency(selectedTotal)}` : ''}
                     </a>
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  UPI ID: {school.upi_id}
+                  {t('fees.upiId')}: {school.upi_id}
                 </p>
               </div>
             )}
