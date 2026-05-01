@@ -3,9 +3,12 @@ import en from './locales/en.json';
 import hi from './locales/hi.json';
 import as from './locales/as.json';
 import bn from './locales/bn.json';
+import ta from './locales/ta.json';
+import kn from './locales/kn.json';
+import mr from './locales/mr.json';
 import { resolveInitialLanguage, SUPPORTED_LANGS, storageKey, suggestionFlagKey, type Lang } from './detect';
 
-const DICTIONARIES: Record<Lang, Record<string, string>> = { en, hi, as, bn };
+const DICTIONARIES: Record<Lang, Record<string, string>> = { en, hi, as, bn, ta, kn, mr };
 
 interface I18nCtx {
   lang: Lang;

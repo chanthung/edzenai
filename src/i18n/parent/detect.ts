@@ -38,10 +38,10 @@ export const STATE_LANGUAGE_MAP: Record<string, Lang[]> = {
   Jharkhand: ['hi'],
   Chhattisgarh: ['hi'],
   // Other states (no v1 native language → no banner)
-  Maharashtra: [],
+  Maharashtra: ['mr', 'hi'],
   Gujarat: [],
   Punjab: [],
-  Goa: [],
+  Goa: ['mr'],
   Odisha: [],
   Sikkim: [],
   'Arunachal Pradesh': [],
@@ -49,8 +49,8 @@ export const STATE_LANGUAGE_MAP: Record<string, Lang[]> = {
   Meghalaya: [],
   Mizoram: [],
   Nagaland: [],
-  'Tamil Nadu': [],
-  Karnataka: [],
+  'Tamil Nadu': ['ta'],
+  Karnataka: ['kn'],
   Kerala: [],
   'Andhra Pradesh': [],
   Telangana: [],
@@ -75,6 +75,9 @@ function fromBrowser(): Lang | null {
     if (raw.startsWith('hi')) return 'hi';
     if (raw.startsWith('as')) return 'as';
     if (raw.startsWith('bn')) return 'bn';
+    if (raw.startsWith('ta')) return 'ta';
+    if (raw.startsWith('kn')) return 'kn';
+    if (raw.startsWith('mr')) return 'mr';
     if (raw.startsWith('en')) return 'en';
   } catch {
     /* ignore */
