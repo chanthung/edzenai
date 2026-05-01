@@ -1,6 +1,6 @@
-export type Lang = 'en' | 'hi' | 'as' | 'bn';
+export type Lang = 'en' | 'hi' | 'as' | 'bn' | 'ta' | 'kn' | 'mr';
 
-export const SUPPORTED_LANGS: Lang[] = ['en', 'hi', 'as', 'bn'];
+export const SUPPORTED_LANGS: Lang[] = ['en', 'hi', 'as', 'bn', 'ta', 'kn', 'mr'];
 
 export const LANG_LABELS: Record<Lang, string> = {
   en: 'English',
