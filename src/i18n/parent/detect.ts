@@ -7,6 +7,9 @@ export const LANG_LABELS: Record<Lang, string> = {
   hi: 'हिन्दी',
   as: 'অসমীয়া',
   bn: 'বাংলা',
+  ta: 'தமிழ்',
+  kn: 'ಕನ್ನಡ',
+  mr: 'मराठी',
 };
 
 export const storageKey = (token: string) => `parent_lang_${token}`;
