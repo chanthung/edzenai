@@ -6,7 +6,8 @@ import bn from './locales/bn.json';
 import ta from './locales/ta.json';
 import kn from './locales/kn.json';
 import mr from './locales/mr.json';
-import { resolveInitialLanguage, SUPPORTED_LANGS, storageKey, suggestionFlagKey, type Lang } from './detect';
+import { resolveInitialLanguage, SUPPORTED_LANGS, storageKey, suggestionFlagKey, suggestedLanguagesForState, type Lang } from './detect';
+import { fetchGeoState } from './geo';
 
 const DICTIONARIES: Record<Lang, Record<string, string>> = { en, hi, as, bn, ta, kn, mr };
 
@@ -16,6 +17,12 @@ interface I18nCtx {
   t: (key: string, vars?: Record<string, string | number>) => string;
   token: string;
   hasUserChosen: boolean;
+  /** Detected Indian state from IP geolocation (null until resolved) */
+  detectedState: string | null;
+  /** Languages suggested for the detected state */
+  suggestedLangs: Lang[];
+  /** Whether geo auto-set has been applied */
+  geoApplied: boolean;
 }
 
 const Ctx = createContext<I18nCtx | null>(null);
@@ -24,7 +31,6 @@ interface ProviderProps {
   token: string;
   initialLangFromDb?: Lang | null;
   children: ReactNode;
-  /** Called when the user explicitly picks a language (best-effort persist to DB). */
   onPersist?: (lang: Lang) => void;
 }
 
@@ -32,7 +38,6 @@ export function ParentI18nProvider({ token, initialLangFromDb, children, onPersi
   const [lang, setLangState] = useState<Lang>(() =>
     resolveInitialLanguage({ token, dbLang: initialLangFromDb ?? null })
   );
-  // Track whether user has explicitly picked (to gate banner)
   const [hasUserChosen, setHasUserChosen] = useState<boolean>(() => {
     if (initialLangFromDb && SUPPORTED_LANGS.includes(initialLangFromDb)) return true;
     try {
@@ -41,6 +46,10 @@ export function ParentI18nProvider({ token, initialLangFromDb, children, onPersi
       return false;
     }
   });
+  const [detectedState, setDetectedState] = useState<string | null>(null);
+  const [suggestedLangs, setSuggestedLangs] = useState<Lang[]>([]);
+  const [geoApplied, setGeoApplied] = useState(false);
+
   const onPersistRef = useRef(onPersist);
   onPersistRef.current = onPersist;
 
@@ -58,14 +67,38 @@ export function ParentI18nProvider({ token, initialLangFromDb, children, onPersi
     }
   }, [initialLangFromDb, token]);
 
+  // Geo auto-detect: run once on mount if user hasn't chosen
+  useEffect(() => {
+    if (hasUserChosen) return;
+    // Also skip if DB lang was set
+    if (initialLangFromDb && SUPPORTED_LANGS.includes(initialLangFromDb)) return;
+
+    const ctrl = new AbortController();
+    fetchGeoState(ctrl.signal).then((res) => {
+      if (!res || !res.state) return;
+      const langs = suggestedLanguagesForState(res.state);
+      setDetectedState(res.state);
+      setSuggestedLangs(langs);
+
+      // Auto-set to the first suggested language (if not English)
+      if (langs.length > 0) {
+        const autoLang = langs[0];
+        setLangState(autoLang);
+        setGeoApplied(true);
+        // Don't mark hasUserChosen — let banner offer alternatives
+      }
+    });
+    return () => ctrl.abort();
+  }, [hasUserChosen, initialLangFromDb, token]);
+
   const setLang = useCallback(
     (l: Lang, opts?: { persist?: boolean }) => {
       if (!SUPPORTED_LANGS.includes(l)) return;
       setLangState(l);
       setHasUserChosen(true);
+      setGeoApplied(false);
       try {
         localStorage.setItem(storageKey(token), l);
-        // Also dismiss the suggestion banner forever once user picks
         localStorage.setItem(suggestionFlagKey(token), '1');
       } catch {
         /* ignore */
@@ -95,7 +128,10 @@ export function ParentI18nProvider({ token, initialLangFromDb, children, onPersi
     [lang]
   );
 
-  const value = useMemo<I18nCtx>(() => ({ lang, setLang, t, token, hasUserChosen }), [lang, setLang, t, token, hasUserChosen]);
+  const value = useMemo<I18nCtx>(
+    () => ({ lang, setLang, t, token, hasUserChosen, detectedState, suggestedLangs, geoApplied }),
+    [lang, setLang, t, token, hasUserChosen, detectedState, suggestedLangs, geoApplied]
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -103,13 +139,15 @@ export function ParentI18nProvider({ token, initialLangFromDb, children, onPersi
 export function useT() {
   const ctx = useContext(Ctx);
   if (!ctx) {
-    // Safe fallback: identity translator if used outside provider (shouldn't happen)
     return {
       lang: 'en' as Lang,
       setLang: () => {},
       t: (k: string) => k,
       token: '',
       hasUserChosen: false,
+      detectedState: null,
+      suggestedLangs: [],
+      geoApplied: false,
     } satisfies I18nCtx;
   }
   return ctx;
