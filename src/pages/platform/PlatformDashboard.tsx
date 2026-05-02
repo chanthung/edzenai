@@ -15,6 +15,9 @@ import { ActivateSchoolDialog } from "@/components/platform/ActivateSchoolDialog
 import { InvoiceModal } from "@/components/platform/InvoiceModal";
 import { RecordPaymentDialog } from "@/components/platform/RecordPaymentDialog";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
+import { DeleteSchoolDialog } from "@/components/platform/DeleteSchoolDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePartners } from "@/hooks/usePartners";
 import { format, differenceInDays } from "date-fns";
 import { useSubscriptionPricing, calculateMonthlyFee, getDefaultRate } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
