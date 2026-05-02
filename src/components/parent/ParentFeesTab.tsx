@@ -126,7 +126,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
 
       {/* Payment QR Code */}
       {school.qr_code_url && (
-        <Card className={`card-elevated ${summary.total_pending > 0 ? 'border-primary/20 bg-primary/5' : 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'}`}>
+        <Card className={`card-elevated ${displayPending > 0 ? 'border-primary/20 bg-primary/5' : 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'}`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               {school.upi_id ? (
@@ -165,16 +165,16 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
               )}
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <QrCode className={`h-4 w-4 ${summary.total_pending > 0 ? 'text-primary' : 'text-green-600'}`} />
-                  <p className={`font-semibold ${summary.total_pending > 0 ? 'text-primary' : 'text-green-700 dark:text-green-400'}`}>
-                    {summary.total_pending > 0 ? t('fees.scanToPay') : t('fees.allCleared')}
+                  <QrCode className={`h-4 w-4 ${displayPending > 0 ? 'text-primary' : 'text-green-600'}`} />
+                  <p className={`font-semibold ${displayPending > 0 ? 'text-primary' : 'text-green-700 dark:text-green-400'}`}>
+                    {displayPending > 0 ? t('fees.scanToPay') : t('fees.allCleared')}
                   </p>
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">
                   {selectedTotal > 0
                     ? t('fees.selected', { amount: formatCurrency(selectedTotal) })
-                    : summary.total_pending > 0
-                      ? t('fees.pendingAmount', { amount: formatCurrency(summary.total_pending) })
+                    : displayPending > 0
+                      ? t('fees.pendingAmount', { amount: formatCurrency(displayPending) })
                       : t('fees.saveQr')
                   }
                 </p>
@@ -183,7 +183,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                     {t('fees.amountPrefilled')}
                   </p>
                 )}
-                {school.upi_id && summary.total_pending > 0 && (
+                {school.upi_id && displayPending > 0 && (
                   <Button variant="outline" size="sm" asChild>
                     <a href={upiPayUrl!}>
                       {t('fees.openUpi')} {selectedTotal > 0 ? `• ${formatCurrency(selectedTotal)}` : ''}
@@ -407,7 +407,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
       )}
 
       {/* Payment Options */}
-      {(school.upi_id || school.qr_code_url) && summary.total_pending > 0 && (
+      {(school.upi_id || school.qr_code_url) && displayPending > 0 && (
         <Card className="card-elevated">
           <CardHeader>
             <div className="flex items-center gap-2">
