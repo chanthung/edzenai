@@ -66,9 +66,13 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
     ? `upi://pay?pa=${school.upi_id}&pn=${encodeURIComponent(school.name)}${selectedTotal > 0 ? `&am=${selectedTotal}` : ''}`
     : null;
 
+  // Clamp paid to total_fee so overpayments don't inflate beyond 100 %
+  const clampedPaid = Math.min(summary.total_paid, summary.total_fee);
   const paidPercentage = summary.total_fee > 0 
-    ? Math.min(100, Math.round((summary.total_paid / summary.total_fee) * 100)) 
+    ? Math.round((clampedPaid / summary.total_fee) * 100) 
     : 0;
+  // Display-friendly pending: never show negative
+  const displayPending = Math.max(0, summary.total_pending);
 
   if (!fees || fees.length === 0) {
     return (
