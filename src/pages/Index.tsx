@@ -696,6 +696,10 @@ export default function Index() {
           </div>
         </div>
       </footer>
+
+      <Suspense fallback={null}>
+        <LandingChatbot />
+      </Suspense>
     </div>
   );
 }
