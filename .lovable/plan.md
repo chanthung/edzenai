@@ -1,48 +1,52 @@
 
-# Landing Page Chatbot Widget
+## Plan: Partner & School Management Enhancements
 
-Build a new `LandingChatbot` component for the EdZen AI landing page, matching the uploaded design. This is separate from the existing admin `HelpChatbot`.
+### 1. Resend Verification Email button (Partner Detail page)
 
-## What Gets Built
+- Create a new edge function `resend-partner-invite` that:
+  - Validates the caller is a platform admin
+  - Looks up the partner's invite from `partner_invites` (most recent, non-accepted)
+  - If expired, generates a new token/invite row
+  - Re-sends the invite email via `send-transactional-email`
+- Add a "Resend Invite" button in `PartnerDetail.tsx` header (visible only if partner has no `user_id`, i.e. invite not yet accepted)
 
-### 1. New Component: `src/components/landing/LandingChatbot.tsx`
+### 2. Edit Partner button (Partner Detail page)
 
-**UI (matching the design):**
-- Floating purple/blue button (bottom-right corner)
-- Chat modal with gradient header: "EdZen AI Assistant" + "Online -- here to help" status
-- Auto-greeting message on first open
-- 6 quick-action chips: "What is EdZen AI?", "How does fee collection work?", "Pricing?", "Free trial?", "WhatsApp integration?", "CBSE/ICSE support?"
-- Input box with placeholder "Ask about EdZen AI..." and send icon
-- Close (X) button in header
+- Create an `EditPartnerDialog` component with fields: Name, Email, Phone, Referral Code, Commission %
+- Wire it to update the `partners` table via Supabase client
+- Add an "Edit" button in the `PartnerDetail.tsx` header
 
-**Behavior:**
-- **Predefined responses first** -- instant replies for the 6 FAQ topics from a hardcoded knowledge base (no network call needed)
-- **AI fallback** -- if no FAQ match, call the existing `help-assistant` edge function with a landing-page-specific system prompt
-- **CTA injection** -- after 2-3 exchanges, append actionable buttons: "Book Demo" (links to `/book-demo`), "Start Free Trial" (links to `/signup`), "Talk to Sales" (WhatsApp click-to-chat)
-- **Lazy load** -- component renders only after page idle (`requestIdleCallback`)
-- **Session persistence** -- chat history in `sessionStorage`
+### 3. School list inside Partner Detail page
 
-### 2. Update Edge Function: `supabase/functions/help-assistant/index.ts`
+- The `usePartnerSchools` hook already fetches schools referred by the partner
+- Add a "Referred Schools" card in `PartnerDetail.tsx` showing a table with: School Name, Plan, Students, State, Created date
+- This gives the admin visibility into which schools came from each partner
 
-Add a `context` field to the request body. When `context === "landing"`, prepend a landing-page-specific system prompt that keeps answers short, avoids mentioning internal admin features, and guides toward demo booking.
+### 4. Partner referral indicator on Platform Admin Schools table
 
-### 3. Add to Landing Page: `src/pages/Index.tsx`
+- Fetch all partners (name + id) alongside schools in `PlatformDashboard.tsx`
+- For each school row, if `referred_by` is set, show a small colored badge/tooltip with the partner's name next to the school name
+- Use a distinct color (e.g., indigo badge) so referred schools are visually identifiable
 
-Lazy-import and render `<LandingChatbot />` at the bottom of the page.
+### 5. Delete School (with confirmation dialog)
 
-## Technical Details
+- Add a delete (Trash) icon button in the Actions column of the Schools table
+- Create a `DeleteSchoolDialog` component with:
+  - Warning text explaining consequences (all students, fees, data will be deleted)
+  - Require the user to type the school name to confirm (similar to bulk student delete pattern)
+  - On confirm, delete the school from the `schools` table via Supabase
+- Add RLS policy or use service role if needed (platform admin should already have delete access)
 
-- Predefined FAQ matching uses simple keyword/intent matching (e.g., "pricing" or "cost" triggers the pricing response)
-- Quick-action chips auto-send the mapped question text
-- CTA buttons rendered as styled links, not chat messages
-- Response caching: predefined answers are instant; AI responses cached in a Map for the session
-- Bundle: no new dependencies needed -- reuses existing `react-markdown`, `lucide-react`, UI primitives
-- The component will be wrapped in `React.lazy()` + `Suspense` in Index.tsx
+### Technical Details
 
-## Files Changed
+**New files:**
+- `supabase/functions/resend-partner-invite/index.ts`
+- `src/components/platform/EditPartnerDialog.tsx`
+- `src/components/platform/DeleteSchoolDialog.tsx`
 
-| File | Action |
-|------|--------|
-| `src/components/landing/LandingChatbot.tsx` | Create |
-| `src/pages/Index.tsx` | Edit (add lazy import + render) |
-| `supabase/functions/help-assistant/index.ts` | Edit (add landing context prompt) |
+**Modified files:**
+- `src/pages/platform/PartnerDetail.tsx` - Add resend button, edit button, schools card
+- `src/pages/platform/PlatformDashboard.tsx` - Add partner referral badges, delete button
+- `src/hooks/usePartners.ts` - Expose partner map for school referral lookup
+
+**Database:** No schema changes needed. The `schools.referred_by` FK to `partners.id` already exists. RLS policies for delete on schools may need a migration if platform admins cannot currently delete schools.

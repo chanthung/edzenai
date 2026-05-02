@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard, Handshake } from "lucide-react";
+import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard, Handshake, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CreateSchoolDialog } from "@/components/platform/CreateSchoolDialog";
 import { EditSchoolDialog } from "@/components/platform/EditSchoolDialog";
@@ -15,6 +15,9 @@ import { ActivateSchoolDialog } from "@/components/platform/ActivateSchoolDialog
 import { InvoiceModal } from "@/components/platform/InvoiceModal";
 import { RecordPaymentDialog } from "@/components/platform/RecordPaymentDialog";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
+import { DeleteSchoolDialog } from "@/components/platform/DeleteSchoolDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePartners } from "@/hooks/usePartners";
 import { format, differenceInDays } from "date-fns";
 import { useSubscriptionPricing, calculateMonthlyFee, getDefaultRate } from "@/hooks/useSubscriptionPricing";
 import { useVolumeDiscounts, getApplicableDiscount } from "@/hooks/useVolumeDiscounts";
@@ -70,8 +73,17 @@ export default function PlatformDashboard() {
   const [invoiceSchool, setInvoiceSchool] = useState<School | null>(null);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [paymentSchool, setPaymentSchool] = useState<School | null>(null);
+  const [deletingSchool, setDeletingSchool] = useState<School | null>(null);
   const { data: pricing } = useSubscriptionPricing();
   const { data: volumeTiers } = useVolumeDiscounts();
+  const { data: allPartners = [] } = usePartners();
+
+  // Build partner lookup map
+  const partnerMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    allPartners.forEach((p: any) => { map[p.id] = p.name; });
+    return map;
+  }, [allPartners]);
 
   // Collection this month
   const [collectionThisMonth, setCollectionThisMonth] = useState(0);
@@ -376,6 +388,19 @@ export default function PlatformDashboard() {
                             <div>
                               <p className="font-medium">{school.name}</p>
                               <p className="text-xs text-muted-foreground">{school.email || "-"}</p>
+                              {(school as any).referred_by && partnerMap[(school as any).referred_by] && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge variant="outline" className="mt-1 text-[10px] bg-indigo-500/10 text-indigo-600 border-indigo-500/20 cursor-default">
+                                        <Handshake className="h-3 w-3 mr-1" />
+                                        {partnerMap[(school as any).referred_by]}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Referred by partner: {partnerMap[(school as any).referred_by]}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -438,6 +463,9 @@ export default function PlatformDashboard() {
                               <Button variant="ghost" size="sm" onClick={() => setPaymentSchool(school)} title="Record Payment">
                                 <CreditCard className="h-4 w-4" />
                               </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setDeletingSchool(school)} title="Delete School" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                               {needsActivation && (
                                 <Button variant="default" size="sm" onClick={() => setActivatingSchool(school)}>
                                   <Zap className="h-4 w-4 mr-1" />Activate
@@ -461,6 +489,7 @@ export default function PlatformDashboard() {
       <ActivateSchoolDialog school={activatingSchool} open={!!activatingSchool} onOpenChange={(open) => !open && setActivatingSchool(null)} onSuccess={fetchSchools} />
       <InvoiceModal school={invoiceSchool} invoiceData={invoiceData} open={!!invoiceSchool} onOpenChange={(open) => { if (!open) { setInvoiceSchool(null); setInvoiceData(null); } }} onPaid={() => { fetchSchools(); fetchCollectionThisMonth(); }} />
       <RecordPaymentDialog school={paymentSchool} open={!!paymentSchool} onOpenChange={(open) => { if (!open) setPaymentSchool(null); }} onSuccess={() => { fetchSchools(); fetchCollectionThisMonth(); }} />
+      <DeleteSchoolDialog school={deletingSchool} open={!!deletingSchool} onOpenChange={(open) => { if (!open) setDeletingSchool(null); }} onSuccess={fetchSchools} />
     </div>
   );
 }

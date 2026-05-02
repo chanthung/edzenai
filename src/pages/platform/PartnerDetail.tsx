@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, IndianRupee, Banknote, Wallet, Building2, Copy } from "lucide-react";
+import { Loader2, ArrowLeft, IndianRupee, Banknote, Wallet, Building2, Copy, Pencil, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { RecordPayoutDialog } from "@/components/platform/RecordPayoutDialog";
+import { EditPartnerDialog } from "@/components/platform/EditPartnerDialog";
 import { usePartnerById } from "@/hooks/usePartners";
 import { usePartnerSchools, usePartnerCommissions, usePartnerPayouts } from "@/hooks/usePartner";
+import { SystemStateBadge } from "@/components/ui/system-state-badge";
 
 export default function PartnerDetail() {
   const { id } = useParams();
@@ -22,8 +24,10 @@ export default function PartnerDetail() {
   const qc = useQueryClient();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [showPayout, setShowPayout] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [resending, setResending] = useState(false);
 
-  const { data: partner } = usePartnerById(id);
+  const { data: partner, refetch: refetchPartner } = usePartnerById(id);
   const { data: schools = [] } = usePartnerSchools(id);
   const { data: commissions = [] } = usePartnerCommissions(id);
   const { data: payouts = [] } = usePartnerPayouts(id);
@@ -53,6 +57,25 @@ export default function PartnerDetail() {
     toast.success("Referral link copied");
   };
 
+  const handleResendInvite = async () => {
+    if (!partner) return;
+    setResending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("resend-partner-invite", {
+        body: { partner_id: partner.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(data.emailSent ? "Invite email resent successfully" : "Invite renewed but email delivery failed — try again or share invite link manually");
+    } catch (err: any) {
+      toast.error("Failed to resend invite", { description: err.message });
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const inviteNotAccepted = partner && !partner.user_id;
+
   if (authLoading || isAdmin === null || !partner) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
@@ -72,6 +95,15 @@ export default function PartnerDetail() {
             </div>
           </div>
           <div className="flex gap-2">
+            {inviteNotAccepted && (
+              <Button variant="outline" onClick={handleResendInvite} disabled={resending}>
+                {resending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+                Resend Invite
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setShowEdit(true)}>
+              <Pencil className="h-4 w-4 mr-2" />Edit
+            </Button>
             <Button variant="outline" onClick={copyLink}><Copy className="h-4 w-4 mr-2" />Copy Link</Button>
             <Button onClick={() => setShowPayout(true)} disabled={pendingCommissions.length === 0}>
               <Banknote className="h-4 w-4 mr-2" />Record Payout
@@ -88,6 +120,47 @@ export default function PartnerDetail() {
           <StatCard icon={Banknote} label="Paid Out" value={`₹${stats.paid.toLocaleString("en-IN")}`} accent="emerald" />
         </div>
 
+        {/* Referred Schools */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Referred Schools</CardTitle>
+            <CardDescription>{schools.length} school{schools.length !== 1 ? "s" : ""} referred by this partner</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {schools.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">No schools referred yet.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>School Name</TableHead>
+                    <TableHead>State</TableHead>
+                    <TableHead>Subscription</TableHead>
+                    <TableHead>Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {schools.map((s: any) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-medium">{s.name}</TableCell>
+                      <TableCell>
+                        <SystemStateBadge state={s.system_state || (s.subscription_status === 'active' ? 'subscription_active' : 'trial_active')} size="sm" />
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={s.subscription_status === 'active' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : ''}>
+                          {s.subscription_status || 'trial'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{format(new Date(s.created_at), "dd MMM yyyy")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Commissions */}
         <Card>
           <CardHeader>
             <CardTitle>Commissions</CardTitle>
@@ -110,7 +183,7 @@ export default function PartnerDetail() {
                 </TableHeader>
                 <TableBody>
                   {commissions.map((c: any) => {
-                    const school = schools.find(s => s.id === c.school_id);
+                    const school = schools.find((s: any) => s.id === c.school_id);
                     return (
                       <TableRow key={c.id}>
                         <TableCell className="text-sm">{format(new Date(c.created_at), "dd MMM yyyy")}</TableCell>
@@ -132,6 +205,7 @@ export default function PartnerDetail() {
           </CardContent>
         </Card>
 
+        {/* Payout History */}
         <Card>
           <CardHeader>
             <CardTitle>Payout History</CardTitle>
@@ -172,6 +246,16 @@ export default function PartnerDetail() {
         open={showPayout}
         onOpenChange={setShowPayout}
         onSuccess={refresh}
+      />
+
+      <EditPartnerDialog
+        partner={partner}
+        open={showEdit}
+        onOpenChange={setShowEdit}
+        onSuccess={() => {
+          refetchPartner();
+          qc.invalidateQueries({ queryKey: ["partners"] });
+        }}
       />
     </div>
   );
