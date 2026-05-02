@@ -463,6 +463,9 @@ export default function PlatformDashboard() {
                               <Button variant="ghost" size="sm" onClick={() => setPaymentSchool(school)} title="Record Payment">
                                 <CreditCard className="h-4 w-4" />
                               </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setDeletingSchool(school)} title="Delete School" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                               {needsActivation && (
                                 <Button variant="default" size="sm" onClick={() => setActivatingSchool(school)}>
                                   <Zap className="h-4 w-4 mr-1" />Activate
