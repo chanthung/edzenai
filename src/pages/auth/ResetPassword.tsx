@@ -19,6 +19,8 @@ export default function ResetPassword() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let cancelled = false;
+
     // Listen for PASSWORD_RECOVERY event from the reset link
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
@@ -37,11 +39,20 @@ export default function ResetPassword() {
     // Check for PKCE flow tokens (?code=... query parameter)
     const params = new URLSearchParams(window.location.search);
     if (params.has("code")) {
-      // PKCE flow: Supabase client will exchange the code automatically
-      // Give it time to process
       setIsRecovery(true);
       setChecking(false);
     }
+
+    // Also check if there's already an active session (PKCE code may have
+    // been exchanged before this component mounted, so the PASSWORD_RECOVERY
+    // event was missed). If we're on /reset-password and a session exists,
+    // treat it as a valid recovery.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!cancelled && session) {
+        setIsRecovery(true);
+        setChecking(false);
+      }
+    });
 
     // Allow up to 3 seconds for the auth client to process the recovery token
     const timeout = setTimeout(() => {
@@ -49,6 +60,7 @@ export default function ResetPassword() {
     }, 3000);
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
