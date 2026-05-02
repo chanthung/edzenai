@@ -104,7 +104,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">{t('fees.pending')}</p>
-              <p className="text-xl font-bold text-status-overdue">{formatCurrency(summary.total_pending)}</p>
+              <p className="text-xl font-bold text-status-overdue">{formatCurrency(displayPending)}</p>
             </div>
           </div>
           
