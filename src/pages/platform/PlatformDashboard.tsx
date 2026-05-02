@@ -388,6 +388,19 @@ export default function PlatformDashboard() {
                             <div>
                               <p className="font-medium">{school.name}</p>
                               <p className="text-xs text-muted-foreground">{school.email || "-"}</p>
+                              {(school as any).referred_by && partnerMap[(school as any).referred_by] && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge variant="outline" className="mt-1 text-[10px] bg-indigo-500/10 text-indigo-600 border-indigo-500/20 cursor-default">
+                                        <Handshake className="h-3 w-3 mr-1" />
+                                        {partnerMap[(school as any).referred_by]}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Referred by partner: {partnerMap[(school as any).referred_by]}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
