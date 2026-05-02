@@ -88,6 +88,8 @@
 
   "banner.detected": "Detected {state}.",
   "banner.prefer": "Would you prefer one of these languages?",
-  "banner.keepEnglish": "Keep English",
+  "banner.autoSet": "ಭಾಷೆ {lang} ಗೆ ಹೊಂದಿಸಲಾಗಿದೆ.",
+  "banner.keep": "{lang} ಇರಿಸಿ",
+  "banner.keepEnglish": "English ಗೆ ಬದಲಾಯಿಸಿ",
   "banner.dismiss": "Dismiss"
 }

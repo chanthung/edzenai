@@ -88,6 +88,8 @@
 
   "banner.detected": "Detected {state}.",
   "banner.prefer": "Would you prefer one of these languages?",
-  "banner.keepEnglish": "Keep English",
+  "banner.autoSet": "Language set to {lang}.",
+  "banner.keep": "Keep {lang}",
+  "banner.keepEnglish": "Switch to English",
   "banner.dismiss": "Dismiss"
 }
