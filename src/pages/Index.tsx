@@ -43,6 +43,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const LandingChatbot = lazy(() => import("@/components/landing/LandingChatbot").then(m => ({ default: m.LandingChatbot })));
+
 export default function Index() {
   usePageMeta({
     title: "EdZen AI – School Fee Management & AI Student Progress Platform",
