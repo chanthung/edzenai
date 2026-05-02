@@ -88,6 +88,8 @@
 
   "banner.detected": "Detected {state}.",
   "banner.prefer": "Would you prefer one of these languages?",
-  "banner.keepEnglish": "Keep English",
+  "banner.autoSet": "மொழி {lang} ஆக அமைக்கப்பட்டது.",
+  "banner.keep": "{lang} வைத்திருக்கவும்",
+  "banner.keepEnglish": "English க்கு மாறவும்",
   "banner.dismiss": "Dismiss"
 }

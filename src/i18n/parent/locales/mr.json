@@ -88,6 +88,8 @@
 
   "banner.detected": "Detected {state}.",
   "banner.prefer": "Would you prefer one of these languages?",
-  "banner.keepEnglish": "Keep English",
+  "banner.autoSet": "भाषा {lang} वर सेट केली.",
+  "banner.keep": "{lang} ठेवा",
+  "banner.keepEnglish": "English वर बदला",
   "banner.dismiss": "Dismiss"
 }
