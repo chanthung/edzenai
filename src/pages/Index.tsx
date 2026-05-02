@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Autoplay from "embla-carousel-autoplay";
@@ -42,6 +42,8 @@ import {
   Quote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const LandingChatbot = lazy(() => import("@/components/landing/LandingChatbot").then(m => ({ default: m.LandingChatbot })));
 
 export default function Index() {
   usePageMeta({
@@ -694,6 +696,10 @@ export default function Index() {
           </div>
         </div>
       </footer>
+
+      <Suspense fallback={null}>
+        <LandingChatbot />
+      </Suspense>
     </div>
   );
 }

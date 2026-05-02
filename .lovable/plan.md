@@ -1,44 +1,48 @@
-## Goal
 
-Make the parent portal automatically detect the user's location and:
+# Landing Page Chatbot Widget
 
-1. **Auto-set** the language based on their state (not just suggest via a banner)
-2. **Prioritize** location-relevant languages in the language switcher dropdown
-3. Keep the suggestion banner as a fallback for cases where geo-detection is slow
+Build a new `LandingChatbot` component for the EdZen AI landing page, matching the uploaded design. This is separate from the existing admin `HelpChatbot`.
 
-## Changes
+## What Gets Built
 
-### 1. Auto-set language from geolocation (`src/i18n/parent/index.tsx`)
+### 1. New Component: `src/components/landing/LandingChatbot.tsx`
 
-When no language is stored in DB or localStorage, trigger the geo lookup and auto-switch to the top suggested language for that state. Currently `resolveInitialLanguage` only checks DB, localStorage, and browser language. We'll add an effect that runs the geo lookup on mount and calls `setLang` (with `persist: false` initially) if the user hasn't chosen yet.
+**UI (matching the design):**
+- Floating purple/blue button (bottom-right corner)
+- Chat modal with gradient header: "EdZen AI Assistant" + "Online -- here to help" status
+- Auto-greeting message on first open
+- 6 quick-action chips: "What is EdZen AI?", "How does fee collection work?", "Pricing?", "Free trial?", "WhatsApp integration?", "CBSE/ICSE support?"
+- Input box with placeholder "Ask about EdZen AI..." and send icon
+- Close (X) button in header
 
-- After provider mounts with default `en`, if `hasUserChosen` is false, run `fetchGeoState()`
-- If a state is detected and has mapped languages, auto-set to the first mapped language
-- This happens silently (no banner needed for this case)
+**Behavior:**
+- **Predefined responses first** -- instant replies for the 6 FAQ topics from a hardcoded knowledge base (no network call needed)
+- **AI fallback** -- if no FAQ match, call the existing `help-assistant` edge function with a landing-page-specific system prompt
+- **CTA injection** -- after 2-3 exchanges, append actionable buttons: "Book Demo" (links to `/book-demo`), "Start Free Trial" (links to `/signup`), "Talk to Sales" (WhatsApp click-to-chat)
+- **Lazy load** -- component renders only after page idle (`requestIdleCallback`)
+- **Session persistence** -- chat history in `sessionStorage`
 
-### 2. Prioritize languages in the switcher (`src/components/parent/LanguageSwitcher.tsx`)
+### 2. Update Edge Function: `supabase/functions/help-assistant/index.ts`
 
-- Accept the detected state as context (via a small state in the i18n provider or a separate hook)
-- Show location-relevant languages first, then a separator, then remaining languages
-- Example for Maharashtra: Marathi, Hindi, English | then Tamil, Kannada, etc.
+Add a `context` field to the request body. When `context === "landing"`, prepend a landing-page-specific system prompt that keeps answers short, avoids mentioning internal admin features, and guides toward demo booking.
 
-### 3. Update the i18n provider to expose detected state
+### 3. Add to Landing Page: `src/pages/Index.tsx`
 
-- Add `detectedState` and `suggestedLangs` to the context so both the banner and switcher can use them
-- Store geo result in provider state after the fetch completes
-
-### 4. Update the edge function (`supabase/functions/set-parent-language/index.ts`)
-
-- Add `ta`, `kn`, `mr` to the `SUPPORTED` set (currently only `en`, `hi`, `as`, `bn`)
-
-### 5. Remove/simplify the suggestion banner
-
-- Since language is now auto-set, the banner becomes a "switch back to English" option
-- Keep it but simplify: show only if geo auto-set a non-English language,But keep English as default with option given to parents to switch to local, whichever auto-set detects 
+Lazy-import and render `<LandingChatbot />` at the bottom of the page.
 
 ## Technical Details
 
-- Geo detection uses the existing `fetchGeoState()` (ipapi.co, 1.5s timeout)
-- Auto-set only fires when: no DB preference, no localStorage, no explicit browser language match
-- The auto-set does NOT persist to DB (avoids false positives from VPNs); it persists to localStorage only after user confirms via banner or switcher
-- `STATE_LANGUAGE_MAP` already has all state mappings from the previous update
+- Predefined FAQ matching uses simple keyword/intent matching (e.g., "pricing" or "cost" triggers the pricing response)
+- Quick-action chips auto-send the mapped question text
+- CTA buttons rendered as styled links, not chat messages
+- Response caching: predefined answers are instant; AI responses cached in a Map for the session
+- Bundle: no new dependencies needed -- reuses existing `react-markdown`, `lucide-react`, UI primitives
+- The component will be wrapped in `React.lazy()` + `Suspense` in Index.tsx
+
+## Files Changed
+
+| File | Action |
+|------|--------|
+| `src/components/landing/LandingChatbot.tsx` | Create |
+| `src/pages/Index.tsx` | Edit (add lazy import + render) |
+| `supabase/functions/help-assistant/index.ts` | Edit (add landing context prompt) |

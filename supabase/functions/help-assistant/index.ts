@@ -127,9 +127,29 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const LANDING_SYSTEM_PROMPT = `You are EdZen AI Assistant on the EdZen AI website. You help school administrators and decision-makers learn about EdZen AI.
+
+Answer ONLY about:
+- School management features (fees, attendance, progress, report cards)
+- EdZen AI pricing and plans
+- Parent communication via WhatsApp
+- Board support (CBSE, CISCE, State Boards)
+- NEP 2020 compliance
+
+Rules:
+- Keep answers SHORT (3-5 sentences max)
+- Be friendly and professional
+- Do NOT mention internal admin features, setup steps, or technical details
+- Do NOT hallucinate features that don't exist
+- Always guide toward booking a demo or starting a free trial
+- If asked about pricing specifics, mention plans start at ₹7/student/month with no setup cost
+- 30-day free Pro trial available, no credit card required`;
+
+    const systemPrompt = context === "landing" ? LANDING_SYSTEM_PROMPT : SYSTEM_PROMPT;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -142,7 +162,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             ...messages,
           ],
           stream: true,
