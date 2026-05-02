@@ -67,7 +67,7 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
     : null;
 
   const paidPercentage = summary.total_fee > 0 
-    ? Math.round((summary.total_paid / summary.total_fee) * 100) 
+    ? Math.min(100, Math.round((summary.total_paid / summary.total_fee) * 100)) 
     : 0;
 
   if (!fees || fees.length === 0) {
