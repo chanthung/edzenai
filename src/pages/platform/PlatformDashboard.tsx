@@ -73,8 +73,17 @@ export default function PlatformDashboard() {
   const [invoiceSchool, setInvoiceSchool] = useState<School | null>(null);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [paymentSchool, setPaymentSchool] = useState<School | null>(null);
+  const [deletingSchool, setDeletingSchool] = useState<School | null>(null);
   const { data: pricing } = useSubscriptionPricing();
   const { data: volumeTiers } = useVolumeDiscounts();
+  const { data: allPartners = [] } = usePartners();
+
+  // Build partner lookup map
+  const partnerMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    allPartners.forEach((p: any) => { map[p.id] = p.name; });
+    return map;
+  }, [allPartners]);
 
   // Collection this month
   const [collectionThisMonth, setCollectionThisMonth] = useState(0);
