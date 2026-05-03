@@ -415,8 +415,8 @@ export default function FeeSetup() {
                       isRestricted={isRestricted}
                       onAddInstallment={() => openAddInstallment(structure.id)}
                       onEditInstallment={(inst) => openEditInstallment(inst, structure.id)}
-                      onDelete={() => deleteStructure.mutate({ id: structure.id, academicYearId: currentYearId! })}
-                      onDeleteInstallment={(id) => deleteInstallment.mutate(id)}
+                      onDelete={() => setDeletingStructure({ id: structure.id, name: structure.fee_category?.name || 'this structure' })}
+                      onDeleteInstallment={(id, name) => setDeletingInstallment({ id, name: name || 'this installment' })}
                     />
                   ))}
                 </div>
