@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -65,6 +66,11 @@ export default function FeeSetup() {
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "", due_date: "" });
   const [defaultDueDate, setDefaultDueDate] = useState("");
   const [newInstallment, setNewInstallment] = useState({ name: "", amount: "", due_date: "" });
+  
+  // Delete confirmation state
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [deletingStructure, setDeletingStructure] = useState<{ id: string; name: string } | null>(null);
+  const [deletingInstallment, setDeletingInstallment] = useState<{ id: string; name: string } | null>(null);
 
   const handleCreateCategory = async () => {
     if (!newCategory.name.trim()) {
@@ -409,8 +415,8 @@ export default function FeeSetup() {
                       isRestricted={isRestricted}
                       onAddInstallment={() => openAddInstallment(structure.id)}
                       onEditInstallment={(inst) => openEditInstallment(inst, structure.id)}
-                      onDelete={() => deleteStructure.mutate({ id: structure.id, academicYearId: currentYearId! })}
-                      onDeleteInstallment={(id) => deleteInstallment.mutate(id)}
+                      onDelete={() => setDeletingStructure({ id: structure.id, name: structure.fee_category?.name || 'this structure' })}
+                      onDeleteInstallment={(id, name) => setDeletingInstallment({ id, name: name || 'this installment' })}
                     />
                   ))}
                 </div>
@@ -550,7 +556,7 @@ export default function FeeSetup() {
                             variant="ghost"
                             size="icon"
                             className="text-muted-foreground hover:text-destructive"
-                            onClick={() => deleteCategory.mutate(category.id)}
+                            onClick={() => setDeletingCategoryId(category.id)}
                             disabled={isRestricted}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -702,6 +708,78 @@ export default function FeeSetup() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Category Confirmation */}
+      <AlertDialog open={!!deletingCategoryId} onOpenChange={(open) => !open && setDeletingCategoryId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fee Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this fee category? This action cannot be undone and will remove all associated fee structures and installments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingCategoryId) deleteCategory.mutate(deletingCategoryId);
+                setDeletingCategoryId(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Fee Structure Confirmation */}
+      <AlertDialog open={!!deletingStructure} onOpenChange={(open) => !open && setDeletingStructure(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fee Structure</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the fee structure for "{deletingStructure?.name}"? This will remove all installments and student fee assignments linked to it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingStructure && currentYearId) deleteStructure.mutate({ id: deletingStructure.id, academicYearId: currentYearId });
+                setDeletingStructure(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Installment Confirmation */}
+      <AlertDialog open={!!deletingInstallment} onOpenChange={(open) => !open && setDeletingInstallment(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Installment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the installment "{deletingInstallment?.name}"? Any payments recorded against it will be orphaned.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingInstallment) deleteInstallment.mutate(deletingInstallment.id);
+                setDeletingInstallment(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
@@ -719,7 +797,7 @@ function FeeStructureCard({
   onAddInstallment: () => void;
   onEditInstallment: (installment: Installment) => void;
   onDelete: () => void;
-  onDeleteInstallment: (id: string) => void;
+  onDeleteInstallment: (id: string, name: string) => void;
 }) {
   const [open, setOpen] = useState(true);
   const installments = structure.installments?.sort((a, b) => a.display_order - b.display_order) || [];
@@ -795,7 +873,7 @@ function FeeStructureCard({
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => onDeleteInstallment(inst.id)}
+                          onClick={() => onDeleteInstallment(inst.id, inst.name)}
                           disabled={isRestricted}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
