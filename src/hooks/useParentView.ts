@@ -26,6 +26,7 @@ export interface ParentViewData {
     total_amount: number;
     paid_amount: number;
     pending_amount: number;
+    overpayment: number;
     installments: {
       id: string;
       name: string;
