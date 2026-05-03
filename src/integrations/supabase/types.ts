@@ -658,6 +658,7 @@ export type Database = {
           academic_year_id: string
           created_at: string
           fee_category_id: string
+          generation_type: string
           id: string
           school_id: string
           total_amount: number
@@ -667,6 +668,7 @@ export type Database = {
           academic_year_id: string
           created_at?: string
           fee_category_id: string
+          generation_type?: string
           id?: string
           school_id: string
           total_amount: number
@@ -676,6 +678,7 @@ export type Database = {
           academic_year_id?: string
           created_at?: string
           fee_category_id?: string
+          generation_type?: string
           id?: string
           school_id?: string
           total_amount?: number
