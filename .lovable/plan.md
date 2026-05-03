@@ -1,52 +1,77 @@
+# Tuition Fee Automation + Financial Integrity Fix
 
-## Plan: Partner & School Management Enhancements
+## What This Solves
 
-### 1. Resend Verification Email button (Partner Detail page)
+1. Admins can set total=₹3,000 but add installments totaling ₹60,000 -- no validation
+2. Overpayment in one category hides real dues in other categories (negative pending)
+3. No way to auto-generate monthly or term-based installments
 
-- Create a new edge function `resend-partner-invite` that:
-  - Validates the caller is a platform admin
-  - Looks up the partner's invite from `partner_invites` (most recent, non-accepted)
-  - If expired, generates a new token/invite row
-  - Re-sends the invite email via `send-transactional-email`
-- Add a "Resend Invite" button in `PartnerDetail.tsx` header (visible only if partner has no `user_id`, i.e. invite not yet accepted)
+## Changes
 
-### 2. Edit Partner button (Partner Detail page)
+### 1. Database Migration
 
-- Create an `EditPartnerDialog` component with fields: Name, Email, Phone, Referral Code, Commission %
-- Wire it to update the `partners` table via Supabase client
-- Add an "Edit" button in the `PartnerDetail.tsx` header
+Add a `generation_type` column to `fee_structures`:
 
-### 3. School list inside Partner Detail page
+```sql
+ALTER TABLE fee_structures ADD COLUMN generation_type text NOT NULL DEFAULT 'manual';
+```
 
-- The `usePartnerSchools` hook already fetches schools referred by the partner
-- Add a "Referred Schools" card in `PartnerDetail.tsx` showing a table with: School Name, Plan, Students, State, Created date
-- This gives the admin visibility into which schools came from each partner
+Values: `manual`, `monthly`, `term`, `full`. Existing rows default to `manual` -- no breaking change.
 
-### 4. Partner referral indicator on Platform Admin Schools table
+### 2. Fee Structure Creation Dialog (FeeSetup.tsx)
 
-- Fetch all partners (name + id) alongside schools in `PlatformDashboard.tsx`
-- For each school row, if `referred_by` is set, show a small colored badge/tooltip with the partner's name next to the school name
-- Use a distinct color (e.g., indigo badge) so referred schools are visually identifiable
+Replace the current "Add Fee Structure" dialog with an enhanced version:
 
-### 5. Delete School (with confirmation dialog)
+- **Fee Type selector** (radio group): Monthly / Term-wise (3 parts) / Full Payment / Custom (manual)
+- When **Monthly** is selected: show academic year start/end date pickers, auto-calculate monthly amount and preview installment count (e.g. "₹5,000 x 12 = ₹60,000") 
+  Eg: out of 60000, 1st installment can be 13000
+  2nd installment = 10000, so now 37000 divided into 12 month. 3,083 becomes monthly fee. With Edit option for school admins
+- When **Term** is selected: auto-split into 3 equal installments
+- When **Full Payment** is selected: single installment = total (current default behavior)
+- When **Custom** is selected: current manual flow (add installments individually)
 
-- Add a delete (Trash) icon button in the Actions column of the Schools table
-- Create a `DeleteSchoolDialog` component with:
-  - Warning text explaining consequences (all students, fees, data will be deleted)
-  - Require the user to type the school name to confirm (similar to bulk student delete pattern)
-  - On confirm, delete the school from the `schools` table via Supabase
-- Add RLS policy or use service role if needed (platform admin should already have delete access)
+On save, auto-generate the installments in the hook (`useCreateFeeStructure`).
 
-### Technical Details
+### 3. Installment Total Validation (FeeSetup.tsx + useFeeStructures.ts)
 
-**New files:**
-- `supabase/functions/resend-partner-invite/index.ts`
-- `src/components/platform/EditPartnerDialog.tsx`
-- `src/components/platform/DeleteSchoolDialog.tsx`
+- In the `FeeStructureCard`, when `generation_type = 'manual'`: show a **red warning** if `SUM(installments) != total_amount` and block adding more installments that would exceed the total
+- In the "Add Installment" dialog: validate that adding this installment won't exceed the structure total
+- For auto-generated types (monthly/term/full): hide the "Add Installment" button since installments are system-controlled
 
-**Modified files:**
-- `src/pages/platform/PartnerDetail.tsx` - Add resend button, edit button, schools card
-- `src/pages/platform/PlatformDashboard.tsx` - Add partner referral badges, delete button
-- `src/hooks/usePartners.ts` - Expose partner map for school referral lookup
+### 4. Mismatch Warning for Existing Data
 
-**Database:** No schema changes needed. The `schools.referred_by` FK to `partners.id` already exists. RLS policies for delete on schools may need a migration if platform admins cannot currently delete schools.
+In `FeeStructureCard`, if `installmentTotal != structure.total_amount`, show:
+
+> "Fee structure total does not match installments. Please review."
+
+This handles legacy data gracefully without breaking anything.
+
+### 5. Payment Calculation Fix (useParentView.ts)
+
+Clamp per-structure amounts so overpayment in one category never hides debt in another:
+
+```typescript
+const clampedPaid = Math.min(totalPaid, Number(structure.total_amount));
+const pendingAmount = Math.max(0, Number(structure.total_amount) - totalPaid);
+```
+
+The summary then sums clamped values, preventing cross-category cancellation.
+
+### 6. Overpayment Display (ParentFeesTab.tsx)
+
+When `rawPaid > total_amount` for a structure, show an "Advance: ₹X" badge so overpayment is visible rather than silently ignored.
+
+## Files Changed
+
+- `src/pages/admin/FeeSetup.tsx` -- enhanced creation dialog, validation warnings, generation type UI
+- `src/hooks/useFeeStructures.ts` -- auto-installment generation logic in `useCreateFeeStructure`, new types
+- `src/hooks/useParentView.ts` -- per-structure clamping fix
+- `src/components/parent/ParentFeesTab.tsx` -- overpayment badge display
+- Database migration: add `generation_type` column
+
+## What Stays the Same
+
+- `total_amount` column untouched
+- Existing manual fee structures continue working identically
+- No changes to payment recording, payment proofs, or RLS policies
+- All existing installment data preserved
