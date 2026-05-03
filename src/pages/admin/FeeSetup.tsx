@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
 import { useFeeCategories, useCreateFeeCategory, useUpdateFeeCategory, useDeleteFeeCategory } from "@/hooks/useFeeCategories";
-import { useFeeStructures, useCreateFeeStructure, useUpdateFeeStructure, useCreateInstallment, useUpdateInstallment, useDeleteFeeStructure, useDeleteInstallment, FeeStructure, Installment } from "@/hooks/useFeeStructures";
+import { useFeeStructures, useCreateFeeStructure, useUpdateFeeStructure, useCreateInstallment, useUpdateInstallment, useDeleteFeeStructure, useDeleteInstallment, FeeStructure, Installment, GenerationType } from "@/hooks/useFeeStructures";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useFeeStructureClasses, useUpdateFeeStructureClasses, useDistinctClasses } from "@/hooks/useFeeStructureClasses";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
