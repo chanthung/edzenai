@@ -708,6 +708,78 @@ export default function FeeSetup() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Category Confirmation */}
+      <AlertDialog open={!!deletingCategoryId} onOpenChange={(open) => !open && setDeletingCategoryId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fee Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this fee category? This action cannot be undone and will remove all associated fee structures and installments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingCategoryId) deleteCategory.mutate(deletingCategoryId);
+                setDeletingCategoryId(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Fee Structure Confirmation */}
+      <AlertDialog open={!!deletingStructure} onOpenChange={(open) => !open && setDeletingStructure(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fee Structure</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the fee structure for "{deletingStructure?.name}"? This will remove all installments and student fee assignments linked to it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingStructure && currentYearId) deleteStructure.mutate({ id: deletingStructure.id, academicYearId: currentYearId });
+                setDeletingStructure(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Installment Confirmation */}
+      <AlertDialog open={!!deletingInstallment} onOpenChange={(open) => !open && setDeletingInstallment(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Installment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the installment "{deletingInstallment?.name}"? Any payments recorded against it will be orphaned.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingInstallment) deleteInstallment.mutate(deletingInstallment.id);
+                setDeletingInstallment(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
