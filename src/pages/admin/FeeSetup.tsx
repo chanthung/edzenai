@@ -725,7 +725,7 @@ function FeeStructureCard({
   onAddInstallment: () => void;
   onEditInstallment: (installment: Installment) => void;
   onDelete: () => void;
-  onDeleteInstallment: (id: string) => void;
+  onDeleteInstallment: (id: string, name: string) => void;
 }) {
   const [open, setOpen] = useState(true);
   const installments = structure.installments?.sort((a, b) => a.display_order - b.display_order) || [];
