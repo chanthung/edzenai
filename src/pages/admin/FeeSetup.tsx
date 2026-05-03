@@ -343,11 +343,11 @@ export default function FeeSetup() {
                           Add Fee
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="max-h-[85vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Add Fee Structure</DialogTitle>
                           <DialogDescription>
-                            Set the total amount for a fee category
+                            Set the total amount and collection type for a fee category
                           </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -378,13 +378,97 @@ export default function FeeSetup() {
                               onChange={(e) => setNewStructure({ ...newStructure, total_amount: e.target.value })}
                             />
                           </div>
-                          {defaultDueDate && (
+
+                          {/* Generation Type */}
+                          <div className="space-y-3">
+                            <Label>How do you want to collect this fee?</Label>
+                            <RadioGroup
+                              value={generationType}
+                              onValueChange={(v) => setGenerationType(v as GenerationType)}
+                              className="grid grid-cols-2 gap-2"
+                            >
+                              {([
+                                ['full', 'Full Payment', 'Single payment'],
+                                ['monthly', 'Monthly', 'Auto-split by months'],
+                                ['term', 'Term-wise', '3 equal installments'],
+                                ['manual', 'Custom', 'Add installments manually'],
+                              ] as const).map(([value, label, desc]) => (
+                                <label
+                                  key={value}
+                                  className={`flex items-start gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${
+                                    generationType === value ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                                  }`}
+                                >
+                                  <RadioGroupItem value={value} className="mt-0.5" />
+                                  <div>
+                                    <p className="font-medium text-sm">{label}</p>
+                                    <p className="text-xs text-muted-foreground">{desc}</p>
+                                  </div>
+                                </label>
+                              ))}
+                            </RadioGroup>
+                          </div>
+
+                          {/* Monthly: show year date pickers and preview */}
+                          {generationType === 'monthly' && (
+                            <div className="space-y-3 p-3 bg-muted/30 rounded-xl border">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Start Date</Label>
+                                  <Input type="date" value={yearStart} onChange={(e) => setYearStart(e.target.value)} />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">End Date</Label>
+                                  <Input type="date" value={yearEnd} onChange={(e) => setYearEnd(e.target.value)} />
+                                </div>
+                              </div>
+                              {yearStart && yearEnd && newStructure.total_amount && (() => {
+                                const s = new Date(yearStart), e = new Date(yearEnd);
+                                const months: string[] = [];
+                                const cursor = new Date(s.getFullYear(), s.getMonth(), 1);
+                                while (cursor <= e) {
+                                  months.push(cursor.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }));
+                                  cursor.setMonth(cursor.getMonth() + 1);
+                                }
+                                const count = months.length || 1;
+                                const monthly = Math.floor(parseFloat(newStructure.total_amount) / count);
+                                return (
+                                  <p className="text-sm font-medium text-primary">
+                                    ₹{monthly.toLocaleString()} × {count} months = ₹{parseFloat(newStructure.total_amount).toLocaleString()}
+                                  </p>
+                                );
+                              })()}
+                            </div>
+                          )}
+
+                          {/* Term: preview */}
+                          {generationType === 'term' && newStructure.total_amount && (() => {
+                            const total = parseFloat(newStructure.total_amount);
+                            const termAmt = Math.floor(total / 3);
+                            const rem = total - termAmt * 3;
+                            return (
+                              <div className="space-y-1 p-3 bg-muted/30 rounded-xl border">
+                                <p className="text-xs font-medium text-muted-foreground mb-2">3 Installments:</p>
+                                <p className="text-sm">Term 1 – ₹{(termAmt + rem).toLocaleString()}</p>
+                                <p className="text-sm">Term 2 – ₹{termAmt.toLocaleString()}</p>
+                                <p className="text-sm">Term 3 – ₹{termAmt.toLocaleString()}</p>
+                              </div>
+                            );
+                          })()}
+
+                          {generationType === 'manual' && (
+                            <p className="text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+                              A default "Full Payment" installment will be created. You can edit or add custom installments after saving.
+                            </p>
+                          )}
+
+                          {defaultDueDate && generationType !== 'monthly' && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
                               <Calendar className="h-4 w-4" />
                               <span>Due date: <span className="font-medium text-foreground">{formatDate(defaultDueDate)}</span></span>
                             </div>
                           )}
-                          {!defaultDueDate && (
+                          {!defaultDueDate && generationType !== 'monthly' && (
                             <p className="text-xs text-amber-600">No default due date set. A date 1 month from today will be used.</p>
                           )}
                         </div>
