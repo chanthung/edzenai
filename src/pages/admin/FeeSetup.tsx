@@ -66,6 +66,11 @@ export default function FeeSetup() {
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "", due_date: "" });
   const [defaultDueDate, setDefaultDueDate] = useState("");
   const [newInstallment, setNewInstallment] = useState({ name: "", amount: "", due_date: "" });
+  
+  // Delete confirmation state
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [deletingStructure, setDeletingStructure] = useState<{ id: string; name: string } | null>(null);
+  const [deletingInstallment, setDeletingInstallment] = useState<{ id: string; name: string } | null>(null);
 
   const handleCreateCategory = async () => {
     if (!newCategory.name.trim()) {
