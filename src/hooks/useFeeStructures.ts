@@ -136,8 +136,7 @@ function generateInstallments(
   return [{ name: 'Full Payment', amount: totalAmount, due_date: fallbackDue }];
 }
 
-
-  const queryClient = useQueryClient();
+export function useCreateFeeStructure() {
   const { data: school } = useSchool();
   const { isRestricted, canPerform } = useSubscriptionStatus();
   
