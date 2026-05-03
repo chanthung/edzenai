@@ -162,6 +162,7 @@ export function useParentView(accessToken: string | undefined) {
           total_amount: Number(structure.total_amount),
           paid_amount: clampedPaid,
           pending_amount: pendingAmount,
+          overpayment: Math.max(0, rawTotalPaid - Number(structure.total_amount)),
           installments,
         };
       });
