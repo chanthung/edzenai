@@ -3,12 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from './useSchool';
 import { useSubscriptionStatus } from './useSubscriptionStatus';
 
+export type GenerationType = 'manual' | 'monthly' | 'term' | 'full';
+
 export interface FeeStructure {
   id: string;
   school_id: string;
   academic_year_id: string;
   fee_category_id: string;
   total_amount: number;
+  generation_type: GenerationType;
   created_at: string;
   updated_at: string;
   fee_category?: {
