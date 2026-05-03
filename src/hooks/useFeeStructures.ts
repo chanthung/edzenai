@@ -38,6 +38,9 @@ export interface FeeStructureInsert {
   fee_category_id: string;
   total_amount: number;
   due_date?: string;
+  generation_type?: GenerationType;
+  year_start?: string;
+  year_end?: string;
 }
 
 export interface InstallmentInsert {
