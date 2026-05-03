@@ -73,8 +73,70 @@ export function useFeeStructures(academicYearId: string | undefined) {
     enabled: !!academicYearId && !!school,
   });
 }
+/** Generate installment rows based on generation type */
+function generateInstallments(
+  type: GenerationType,
+  totalAmount: number,
+  dueDate?: string,
+  yearStart?: string,
+  yearEnd?: string,
+): { name: string; amount: number; due_date: string }[] {
+  const fallbackDue = dueDate || (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    return d.toISOString().split('T')[0];
+  })();
 
-export function useCreateFeeStructure() {
+  if (type === 'full' || type === 'manual') {
+    return [{ name: 'Full Payment', amount: totalAmount, due_date: fallbackDue }];
+  }
+
+  if (type === 'term') {
+    const termAmount = Math.floor(totalAmount / 3);
+    const remainder = totalAmount - termAmount * 3;
+    const start = yearStart ? new Date(yearStart) : new Date();
+    return [1, 2, 3].map((t) => {
+      const d = new Date(start);
+      d.setMonth(d.getMonth() + (t - 1) * 4); // ~4 months apart
+      return {
+        name: `Term ${t}`,
+        amount: t === 1 ? termAmount + remainder : termAmount,
+        due_date: d.toISOString().split('T')[0],
+      };
+    });
+  }
+
+  if (type === 'monthly') {
+    if (!yearStart || !yearEnd) {
+      return [{ name: 'Full Payment', amount: totalAmount, due_date: fallbackDue }];
+    }
+    const start = new Date(yearStart);
+    const end = new Date(yearEnd);
+    const months: Date[] = [];
+    const cursor = new Date(start.getFullYear(), start.getMonth(), 10);
+    while (cursor <= end) {
+      months.push(new Date(cursor));
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    if (months.length === 0) {
+      return [{ name: 'Full Payment', amount: totalAmount, due_date: fallbackDue }];
+    }
+    const monthlyAmount = Math.floor(totalAmount / months.length);
+    const remainder = totalAmount - monthlyAmount * months.length;
+    return months.map((d, i) => {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return {
+        name: `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
+        amount: i === 0 ? monthlyAmount + remainder : monthlyAmount,
+        due_date: d.toISOString().split('T')[0],
+      };
+    });
+  }
+
+  return [{ name: 'Full Payment', amount: totalAmount, due_date: fallbackDue }];
+}
+
+
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
   const { isRestricted, canPerform } = useSubscriptionStatus();
