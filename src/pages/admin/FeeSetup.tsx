@@ -64,6 +64,9 @@ export default function FeeSetup() {
   
   const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "", due_date: "" });
+  const [generationType, setGenerationType] = useState<GenerationType>('full');
+  const [yearStart, setYearStart] = useState("");
+  const [yearEnd, setYearEnd] = useState("");
   const [defaultDueDate, setDefaultDueDate] = useState("");
   const [newInstallment, setNewInstallment] = useState({ name: "", amount: "", due_date: "" });
   
