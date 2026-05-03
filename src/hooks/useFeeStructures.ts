@@ -137,6 +137,7 @@ function generateInstallments(
 }
 
 export function useCreateFeeStructure() {
+  const queryClient = useQueryClient();
   const { data: school } = useSchool();
   const { isRestricted, canPerform } = useSubscriptionStatus();
   
