@@ -84,29 +84,44 @@ export function useCreateFeeStructure() {
       if (isRestricted && !canPerform('add_fee_structure')) {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
+
+      const genType = structure.generation_type || 'full';
       
       const { data: feeStructure, error } = await supabase
         .from('fee_structures')
-        .insert({ ...structure, school_id: school!.id })
+        .insert({
+          academic_year_id: structure.academic_year_id,
+          fee_category_id: structure.fee_category_id,
+          total_amount: structure.total_amount,
+          generation_type: genType,
+          school_id: school!.id,
+        })
         .select()
         .single();
       
       if (error) throw error;
 
-      // Auto-create default installment with full amount
-      const dueDate = structure.due_date || (() => {
-        const d = new Date();
-        d.setMonth(d.getMonth() + 1);
-        return d.toISOString().split('T')[0];
-      })();
-      
-      await supabase.from('installments').insert({
-        fee_structure_id: feeStructure.id,
-        name: 'Full Payment',
-        amount: structure.total_amount,
-        due_date: dueDate,
-        display_order: 1,
-      });
+      // Generate installments based on type
+      const installments = generateInstallments(
+        genType,
+        structure.total_amount,
+        structure.due_date,
+        structure.year_start,
+        structure.year_end,
+      );
+
+      if (installments.length > 0) {
+        const { error: instError } = await supabase.from('installments').insert(
+          installments.map((inst, idx) => ({
+            fee_structure_id: feeStructure.id,
+            name: inst.name,
+            amount: inst.amount,
+            due_date: inst.due_date,
+            display_order: idx + 1,
+          }))
+        );
+        if (instError) throw instError;
+      }
 
       return feeStructure;
     },
