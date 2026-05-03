@@ -131,16 +131,26 @@ export default function FeeSetup() {
       toast.error("Please fill in all fields");
       return;
     }
+    if (generationType === 'monthly' && (!yearStart || !yearEnd)) {
+      toast.error("Please set academic year start and end dates for monthly generation");
+      return;
+    }
     try {
       await createStructure.mutateAsync({
         academic_year_id: currentYearId,
         fee_category_id: newStructure.fee_category_id,
         total_amount: parseFloat(newStructure.total_amount),
         due_date: defaultDueDate || undefined,
+        generation_type: generationType,
+        year_start: yearStart || undefined,
+        year_end: yearEnd || undefined,
       });
       toast.success("Fee structure created");
       setStructureDialogOpen(false);
       setNewStructure({ fee_category_id: "", total_amount: "", due_date: "" });
+      setGenerationType('full');
+      setYearStart("");
+      setYearEnd("");
     } catch (error: any) {
       toast.error("Failed to create structure", { description: error.message });
     }
