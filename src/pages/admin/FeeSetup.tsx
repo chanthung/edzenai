@@ -17,13 +17,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
 import { useFeeCategories, useCreateFeeCategory, useUpdateFeeCategory, useDeleteFeeCategory } from "@/hooks/useFeeCategories";
-import { useFeeStructures, useCreateFeeStructure, useUpdateFeeStructure, useCreateInstallment, useUpdateInstallment, useDeleteFeeStructure, useDeleteInstallment, FeeStructure, Installment } from "@/hooks/useFeeStructures";
+import { useFeeStructures, useCreateFeeStructure, useUpdateFeeStructure, useCreateInstallment, useUpdateInstallment, useDeleteFeeStructure, useDeleteInstallment, FeeStructure, Installment, GenerationType } from "@/hooks/useFeeStructures";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useFeeStructureClasses, useUpdateFeeStructureClasses, useDistinctClasses } from "@/hooks/useFeeStructureClasses";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil, GraduationCap, Upload, Download } from "lucide-react";
+import { Plus, Receipt, Trash2, Loader2, Calendar, ChevronDown, ChevronUp, Pencil, GraduationCap, Upload, Download, AlertCircle } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { exportToXLSX } from "@/lib/export-utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ReminderSettingsCard } from "@/components/admin/fees/ReminderSettingsCard";
@@ -64,6 +65,9 @@ export default function FeeSetup() {
   
   const [newCategory, setNewCategory] = useState({ name: "", description: "", is_mandatory: true, category_group: "" });
   const [newStructure, setNewStructure] = useState({ fee_category_id: "", total_amount: "", due_date: "" });
+  const [generationType, setGenerationType] = useState<GenerationType>('full');
+  const [yearStart, setYearStart] = useState("");
+  const [yearEnd, setYearEnd] = useState("");
   const [defaultDueDate, setDefaultDueDate] = useState("");
   const [newInstallment, setNewInstallment] = useState({ name: "", amount: "", due_date: "" });
   
@@ -128,16 +132,26 @@ export default function FeeSetup() {
       toast.error("Please fill in all fields");
       return;
     }
+    if (generationType === 'monthly' && (!yearStart || !yearEnd)) {
+      toast.error("Please set academic year start and end dates for monthly generation");
+      return;
+    }
     try {
       await createStructure.mutateAsync({
         academic_year_id: currentYearId,
         fee_category_id: newStructure.fee_category_id,
         total_amount: parseFloat(newStructure.total_amount),
         due_date: defaultDueDate || undefined,
+        generation_type: generationType,
+        year_start: yearStart || undefined,
+        year_end: yearEnd || undefined,
       });
       toast.success("Fee structure created");
       setStructureDialogOpen(false);
       setNewStructure({ fee_category_id: "", total_amount: "", due_date: "" });
+      setGenerationType('full');
+      setYearStart("");
+      setYearEnd("");
     } catch (error: any) {
       toast.error("Failed to create structure", { description: error.message });
     }
@@ -329,11 +343,11 @@ export default function FeeSetup() {
                           Add Fee
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="max-h-[85vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Add Fee Structure</DialogTitle>
                           <DialogDescription>
-                            Set the total amount for a fee category
+                            Set the total amount and collection type for a fee category
                           </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -364,13 +378,97 @@ export default function FeeSetup() {
                               onChange={(e) => setNewStructure({ ...newStructure, total_amount: e.target.value })}
                             />
                           </div>
-                          {defaultDueDate && (
+
+                          {/* Generation Type */}
+                          <div className="space-y-3">
+                            <Label>How do you want to collect this fee?</Label>
+                            <RadioGroup
+                              value={generationType}
+                              onValueChange={(v) => setGenerationType(v as GenerationType)}
+                              className="grid grid-cols-2 gap-2"
+                            >
+                              {([
+                                ['full', 'Full Payment', 'Single payment'],
+                                ['monthly', 'Monthly', 'Auto-split by months'],
+                                ['term', 'Term-wise', '3 equal installments'],
+                                ['manual', 'Custom', 'Add installments manually'],
+                              ] as const).map(([value, label, desc]) => (
+                                <label
+                                  key={value}
+                                  className={`flex items-start gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${
+                                    generationType === value ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                                  }`}
+                                >
+                                  <RadioGroupItem value={value} className="mt-0.5" />
+                                  <div>
+                                    <p className="font-medium text-sm">{label}</p>
+                                    <p className="text-xs text-muted-foreground">{desc}</p>
+                                  </div>
+                                </label>
+                              ))}
+                            </RadioGroup>
+                          </div>
+
+                          {/* Monthly: show year date pickers and preview */}
+                          {generationType === 'monthly' && (
+                            <div className="space-y-3 p-3 bg-muted/30 rounded-xl border">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Start Date</Label>
+                                  <Input type="date" value={yearStart} onChange={(e) => setYearStart(e.target.value)} />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">End Date</Label>
+                                  <Input type="date" value={yearEnd} onChange={(e) => setYearEnd(e.target.value)} />
+                                </div>
+                              </div>
+                              {yearStart && yearEnd && newStructure.total_amount && (() => {
+                                const s = new Date(yearStart), e = new Date(yearEnd);
+                                const months: string[] = [];
+                                const cursor = new Date(s.getFullYear(), s.getMonth(), 1);
+                                while (cursor <= e) {
+                                  months.push(cursor.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }));
+                                  cursor.setMonth(cursor.getMonth() + 1);
+                                }
+                                const count = months.length || 1;
+                                const monthly = Math.floor(parseFloat(newStructure.total_amount) / count);
+                                return (
+                                  <p className="text-sm font-medium text-primary">
+                                    ₹{monthly.toLocaleString()} × {count} months = ₹{parseFloat(newStructure.total_amount).toLocaleString()}
+                                  </p>
+                                );
+                              })()}
+                            </div>
+                          )}
+
+                          {/* Term: preview */}
+                          {generationType === 'term' && newStructure.total_amount && (() => {
+                            const total = parseFloat(newStructure.total_amount);
+                            const termAmt = Math.floor(total / 3);
+                            const rem = total - termAmt * 3;
+                            return (
+                              <div className="space-y-1 p-3 bg-muted/30 rounded-xl border">
+                                <p className="text-xs font-medium text-muted-foreground mb-2">3 Installments:</p>
+                                <p className="text-sm">Term 1 – ₹{(termAmt + rem).toLocaleString()}</p>
+                                <p className="text-sm">Term 2 – ₹{termAmt.toLocaleString()}</p>
+                                <p className="text-sm">Term 3 – ₹{termAmt.toLocaleString()}</p>
+                              </div>
+                            );
+                          })()}
+
+                          {generationType === 'manual' && (
+                            <p className="text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+                              A default "Full Payment" installment will be created. You can edit or add custom installments after saving.
+                            </p>
+                          )}
+
+                          {defaultDueDate && generationType !== 'monthly' && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
                               <Calendar className="h-4 w-4" />
                               <span>Due date: <span className="font-medium text-foreground">{formatDate(defaultDueDate)}</span></span>
                             </div>
                           )}
-                          {!defaultDueDate && (
+                          {!defaultDueDate && generationType !== 'monthly' && (
                             <p className="text-xs text-amber-600">No default due date set. A date 1 month from today will be used.</p>
                           )}
                         </div>
@@ -803,10 +901,17 @@ function FeeStructureCard({
   const installments = structure.installments?.sort((a, b) => a.display_order - b.display_order) || [];
   const installmentTotal = installments.reduce((sum, i) => sum + Number(i.amount), 0);
   const remaining = Number(structure.total_amount) - installmentTotal;
+  const isAutoGenerated = structure.generation_type === 'monthly' || structure.generation_type === 'term' || structure.generation_type === 'full';
+  const hasMismatch = Math.abs(installmentTotal - Number(structure.total_amount)) > 0.01 && installments.length > 0;
+
+  const genLabel = structure.generation_type === 'monthly' ? 'Monthly' 
+    : structure.generation_type === 'term' ? 'Term-wise' 
+    : structure.generation_type === 'manual' ? 'Custom'
+    : 'Full Payment';
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="card-elevated">
+      <Card className={`card-elevated ${hasMismatch ? 'border-amber-300' : ''}`}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -821,6 +926,7 @@ function FeeStructureCard({
                   <Badge variant={structure.fee_category?.is_mandatory ? "default" : "secondary"}>
                     {structure.fee_category?.is_mandatory ? "Mandatory" : "Optional"}
                   </Badge>
+                  <Badge variant="outline" className="text-xs">{genLabel}</Badge>
                 </div>
                 <CardDescription>
                   Total: {formatCurrency(Number(structure.total_amount))}
@@ -847,6 +953,16 @@ function FeeStructureCard({
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="pt-0">
+            {/* Mismatch warning */}
+            {hasMismatch && (
+              <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <p className="text-sm">
+                  Fee structure total ({formatCurrency(Number(structure.total_amount))}) does not match installments ({formatCurrency(installmentTotal)}). Please review.
+                </p>
+              </div>
+            )}
+
             {installments.length > 0 && (
               <div className="space-y-2 mb-4">
                 {installments.map((inst) => (
@@ -885,20 +1001,23 @@ function FeeStructureCard({
               </div>
             )}
             
-            {remaining > 0 && (
+            {remaining > 0 && !isAutoGenerated && (
               <p className="text-sm text-amber-600 mb-3">
                 ₹{remaining.toLocaleString()} remaining to be assigned to installments
               </p>
             )}
 
-            <div className="flex items-center gap-2 mb-4">
-              <RestrictedButton isRestricted={isRestricted}>
-                <Button variant="outline" size="sm" onClick={onAddInstallment} disabled={isRestricted}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Installment
-                </Button>
-              </RestrictedButton>
-            </div>
+            {/* Only show Add Installment for manual/custom types */}
+            {(!isAutoGenerated || structure.generation_type === 'full') && (
+              <div className="flex items-center gap-2 mb-4">
+                <RestrictedButton isRestricted={isRestricted}>
+                  <Button variant="outline" size="sm" onClick={onAddInstallment} disabled={isRestricted}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Installment
+                  </Button>
+                </RestrictedButton>
+              </div>
+            )}
 
             {/* Class Assignment Section */}
             <ClassAssignmentSection structureId={structure.id} academicYearId={structure.academic_year_id} isRestricted={isRestricted} />

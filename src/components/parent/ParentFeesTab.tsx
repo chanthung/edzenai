@@ -248,6 +248,11 @@ export function ParentFeesTab({ data, onProofSuccess }: ParentFeesTabProps) {
                       : <span className="text-status-paid">{t('fees.paid')}</span>
                     }
                   </p>
+                  {fee.overpayment > 0 && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+                      Advance: {formatCurrency(fee.overpayment)}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardHeader>
