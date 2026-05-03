@@ -151,14 +151,16 @@ export function useParentView(accessToken: string | undefined) {
             };
           });
 
-        const totalPaid = installments.reduce((sum: number, inst: any) => sum + inst.paid_amount, 0);
+        const rawTotalPaid = installments.reduce((sum: number, inst: any) => sum + inst.paid_amount, 0);
+        const clampedPaid = Math.min(rawTotalPaid, Number(structure.total_amount));
+        const pendingAmount = Math.max(0, Number(structure.total_amount) - rawTotalPaid);
         
         return {
           category: category.name,
           is_mandatory: category.is_mandatory,
           total_amount: Number(structure.total_amount),
-          paid_amount: totalPaid,
-          pending_amount: Number(structure.total_amount) - totalPaid,
+          paid_amount: clampedPaid,
+          pending_amount: pendingAmount,
           installments,
         };
       });
