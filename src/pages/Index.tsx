@@ -716,10 +716,10 @@ function ProblemCard({
   description: string;
 }) {
   return (
-    <Card className="rounded-2xl border-border/50 hover:shadow-md transition-shadow">
+    <Card className="group rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
       <CardContent className="p-6">
-        <div className="w-11 h-11 rounded-2xl bg-destructive/8 flex items-center justify-center mb-4">
-          <Icon className="h-5 w-5 text-destructive/70" />
+        <div className="w-14 h-14 rounded-2xl bg-destructive/8 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+          <Icon className="h-7 w-7 text-destructive/70" />
         </div>
         <h3 className="font-semibold text-base mb-1.5">{title}</h3>
         <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
