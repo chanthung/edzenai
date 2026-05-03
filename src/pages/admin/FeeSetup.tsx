@@ -801,7 +801,7 @@ function FeeStructureCard({
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => onDeleteInstallment(inst.id)}
+                          onClick={() => onDeleteInstallment(inst.id, inst.name)}
                           disabled={isRestricted}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
