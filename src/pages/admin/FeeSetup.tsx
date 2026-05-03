@@ -556,7 +556,7 @@ export default function FeeSetup() {
                             variant="ghost"
                             size="icon"
                             className="text-muted-foreground hover:text-destructive"
-                            onClick={() => deleteCategory.mutate(category.id)}
+                            onClick={() => setDeletingCategoryId(category.id)}
                             disabled={isRestricted}
                           >
                             <Trash2 className="h-4 w-4" />
