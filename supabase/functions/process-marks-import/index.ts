@@ -565,7 +565,7 @@ serve(async (req) => {
 
     let result;
     if (mode === "excel") {
-      result = processExcel(fileBase64, fileName || "upload.xlsx", knownSubjects, knownStudents, assessmentMaxBySubject);
+      result = processExcel(fileBase64, fileName || "upload.xlsx", knownSubjects, knownStudents, assessmentMaxBySubject, className);
     } else if (mode === "printed" || mode === "handwritten") {
       const apiKey = Deno.env.get("LOVABLE_API_KEY");
       if (!apiKey) {
