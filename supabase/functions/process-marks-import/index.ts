@@ -268,6 +268,7 @@ function processExcel(
 
   const nameCol = findColumn(headers, ["name", "student name", "student", "full name", "pupil name", "pupil"]);
   const rollCol = findColumn(headers, ["roll no", "rollno", "roll number", "admission no", "adm no", "sr no", "sl no", "id", "student id"]);
+  const sectionCol = findColumn(headers, ["section", "sec", "div", "division"]);
 
   // Long layout? Has explicit "subject" + "marks" columns
   const subjectCol = findColumn(headers, ["subject", "subject name"]);
