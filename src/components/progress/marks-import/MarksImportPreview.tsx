@@ -182,6 +182,11 @@ export function MarksImportPreview({
             Sections: {Object.entries(preview.summary.sectionBreakdown).sort(([a], [b]) => a.localeCompare(b)).map(([sec, count]) => `${sec} (${count})`).join(' · ')}
           </Badge>
         )}
+        {preview.selectedSheet && (preview.availableSheets?.length ?? 0) > 1 && (
+          <Badge variant="outline" className="text-purple-700 bg-purple-500/10 border-purple-500/30">
+            Source sheet: {preview.selectedSheet} ({preview.availableSheets!.length} tabs detected)
+          </Badge>
+        )}
       </div>
 
       {/* Duplicate strategy */}
