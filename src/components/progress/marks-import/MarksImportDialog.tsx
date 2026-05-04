@@ -43,7 +43,7 @@ export function MarksImportDialog({
   const { toast } = useToast();
 
   const reset = () => {
-    setStep('method'); setPreview(null); setSavedCount(0); setFileName('');
+    setStep('method'); setPreview(null); setSavedCount(0); setSavedSections({}); setFileName('');
   };
 
   const handleClose = (o: boolean) => {
