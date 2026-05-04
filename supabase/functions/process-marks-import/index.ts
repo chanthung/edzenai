@@ -326,7 +326,7 @@ function processExcel(
   const knownIdx = new Map<string, ReturnType<typeof matchSubject>>();
   const subjectColumns: string[] = [];
   for (const h of headers) {
-    if ([nameCol, rollCol, totalCol, pctCol].includes(h)) continue;
+    if ([nameCol, rollCol, sectionCol, totalCol, pctCol].includes(h)) continue;
     if (NON_SUBJECT_HEADERS.has(n(h))) { ignoredColumns.push(h); continue; }
     const m = matchSubject(h, knownSubjects);
     if (m.subjectId) { subjectColumns.push(h); knownIdx.set(h, m); }
@@ -336,7 +336,8 @@ function processExcel(
   rows.forEach((row, idx) => {
     const rawStudent = nameCol ? row[nameCol] : "";
     const rawRoll = rollCol ? row[rollCol] : "";
-    const sm = matchStudent(rawStudent, rawRoll, knownStudents);
+    const rawSection = sectionCol ? row[sectionCol] : "";
+    const sm = matchStudent(rawStudent, rawRoll, knownStudents, rawSection);
 
     // Reported total + recomputed sum (for cross-check)
     const reportedRaw = totalCol && row[totalCol] !== "" && row[totalCol] != null ? Number(row[totalCol]) : null;
@@ -365,7 +366,7 @@ function processExcel(
       const base = {
         rowIndex: idx + 2,
         rawStudent, rawRoll,
-        studentId: sm.studentId, matchedStudentName: sm.matchedName, studentMatchConfidence: sm.confidence,
+        studentId: sm.studentId, matchedStudentName: sm.matchedName, matchedSection: sm.matchedSection, studentMatchConfidence: sm.confidence,
         rawSubject: subjHeader,
         subjectId: subm.subjectId, matchedSubjectName: subm.matchedName, subjectMatchConfidence: subm.confidence,
         marksObtained: isNaN(marks) ? null : marks,
