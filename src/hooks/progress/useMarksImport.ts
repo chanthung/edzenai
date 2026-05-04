@@ -11,6 +11,7 @@ export interface PreviewRow {
   rawRoll: string;
   studentId: string | null;
   matchedStudentName: string | null;
+  matchedSection: string | null;
   studentMatchConfidence: 'exact_roll' | 'exact_name' | 'fuzzy' | null;
   rawSubject: string;
   subjectId: string | null;
@@ -39,12 +40,13 @@ export interface PreviewResponse {
     lowConfidence: number;
     avgConfidence: number;
     exceedsMax: number;
+    sectionBreakdown?: Record<string, number>;
   };
   mode: ImportMode;
 }
 
 export interface KnownSubject { id: string; name: string; code: string | null }
-export interface KnownStudent { id: string; name: string; roll_number: string | null }
+export interface KnownStudent { id: string; name: string; roll_number: string | null; section?: string | null }
 
 async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
