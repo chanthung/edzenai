@@ -20,6 +20,8 @@ interface Props {
   knownSubjects: KnownSubject[];
   /** Resolved max marks per subject for THIS assessment. */
   assessmentMaxBySubject: Record<string, number>;
+  /** Currently selected class name, used for smart tab detection in multi-sheet Excel files. */
+  className?: string;
 }
 
 type Step = 'method' | 'upload' | 'preview' | 'success';
