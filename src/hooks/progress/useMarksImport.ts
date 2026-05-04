@@ -42,6 +42,8 @@ export interface PreviewResponse {
     exceedsMax: number;
     sectionBreakdown?: Record<string, number>;
   };
+  selectedSheet?: string | null;
+  availableSheets?: string[];
   mode: ImportMode;
 }
 
