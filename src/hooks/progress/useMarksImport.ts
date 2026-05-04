@@ -42,6 +42,8 @@ export interface PreviewResponse {
     exceedsMax: number;
     sectionBreakdown?: Record<string, number>;
   };
+  selectedSheet?: string | null;
+  availableSheets?: string[];
   mode: ImportMode;
 }
 
@@ -70,6 +72,7 @@ export function useParseMarksImport() {
       knownSubjects: KnownSubject[];
       knownStudents: KnownStudent[];
       assessmentMaxBySubject?: Record<string, number>;
+      className?: string;
     }): Promise<PreviewResponse> => {
       const fileBase64 = await fileToBase64(input.file);
       const { data, error } = await supabase.functions.invoke('process-marks-import', {
@@ -81,6 +84,7 @@ export function useParseMarksImport() {
           knownSubjects: input.knownSubjects,
           knownStudents: input.knownStudents,
           assessmentMaxBySubject: input.assessmentMaxBySubject ?? {},
+          className: input.className,
         },
       });
       if (error) throw new Error(error.message || 'Failed to parse file');

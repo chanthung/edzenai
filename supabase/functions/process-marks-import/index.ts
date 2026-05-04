@@ -163,7 +163,7 @@ function b64ToBytes(b64: string): Uint8Array {
   return out;
 }
 
-function parseSpreadsheet(b64: string, fileName: string): { headers: string[]; rows: Record<string, string>[] } {
+function parseSpreadsheet(b64: string, fileName: string, className?: string): { headers: string[]; rows: Record<string, string>[]; selectedSheet: string | null; availableSheets: string[] } {
   const bytes = b64ToBytes(b64);
   if (fileName.toLowerCase().endsWith(".csv")) {
     const text = new TextDecoder("utf-8").decode(bytes);
@@ -188,10 +188,31 @@ function parseSpreadsheet(b64: string, fileName: string): { headers: string[]; r
       headers.forEach((h, i) => { o[h] = (v[i] || "").trim(); });
       return o;
     });
-    return { headers, rows };
+    return { headers, rows, selectedSheet: null, availableSheets: [] };
   }
   const wb = XLSX.read(bytes.buffer, { type: "buffer" });
-  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const availableSheets = wb.SheetNames;
+
+  // Smart tab detection: find the sheet whose name best matches the selected class
+  let targetSheetName = wb.SheetNames[0];
+  if (className && wb.SheetNames.length > 1) {
+    const cn = n(className); // normalized
+    // Extract just the number from the class name (e.g. "Class 6" → "6")
+    const classNum = (className.match(/(\d+)/)?.[1]) || "";
+    const match = wb.SheetNames.find((sn) => {
+      const ns = n(sn);
+      // Exact match e.g. "class 6" === "class 6"
+      if (ns === cn) return true;
+      // Sheet name contains the class name
+      if (ns.includes(cn) || cn.includes(ns)) return true;
+      // Number-based match: sheet "6" or "Class 6" or "VI" for class 6
+      if (classNum && ns.replace(/[^0-9]/g, "") === classNum) return true;
+      return false;
+    });
+    if (match) targetSheetName = match;
+  }
+
+  const sheet = wb.Sheets[targetSheetName];
   const raw = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
   if (raw.length < 2) throw new Error("File has no data rows");
   const headers = (raw[0] as any[]).map((h) => String(h ?? "").trim()).filter(Boolean);
@@ -202,7 +223,7 @@ function parseSpreadsheet(b64: string, fileName: string): { headers: string[]; r
       headers.forEach((h, i) => { o[h] = String(r[i] ?? "").trim(); });
       return o;
     });
-  return { headers, rows };
+  return { headers, rows, selectedSheet: targetSheetName, availableSheets };
 }
 
 // ── Header role detection (which column = name / roll / subject) ──────
@@ -263,8 +284,9 @@ function processExcel(
   knownSubjects: KnownSubject[],
   knownStudents: KnownStudent[],
   assessmentMaxBySubject: Record<string, number>,
-): { rows: PreviewRow[]; detectedHeaders: string[]; ignoredColumns: string[] } {
-  const { headers, rows } = parseSpreadsheet(b64, fileName);
+  className?: string,
+): { rows: PreviewRow[]; detectedHeaders: string[]; ignoredColumns: string[]; selectedSheet: string | null; availableSheets: string[] } {
+  const { headers, rows, selectedSheet, availableSheets } = parseSpreadsheet(b64, fileName, className);
 
   const nameCol = findColumn(headers, ["name", "student name", "student", "full name", "pupil name", "pupil"]);
   const rollCol = findColumn(headers, ["roll no", "rollno", "roll number", "admission no", "adm no", "sr no", "sl no", "id", "student id"]);
@@ -319,7 +341,7 @@ function processExcel(
       };
       out.push({ ...base, confidenceScore: scoreRow(base, aMax) });
     });
-    return { rows: out, detectedHeaders: headers, ignoredColumns };
+    return { rows: out, detectedHeaders: headers, ignoredColumns, selectedSheet, availableSheets };
   }
 
   // WIDE LAYOUT
@@ -379,7 +401,7 @@ function processExcel(
     }
   });
 
-  return { rows: out, detectedHeaders: headers, ignoredColumns };
+  return { rows: out, detectedHeaders: headers, ignoredColumns, selectedSheet, availableSheets };
 }
 
 // ── Vision mode (printed / handwritten) ────────────────────────────────
@@ -523,6 +545,7 @@ serve(async (req) => {
       knownSubjects = [],
       knownStudents = [],
       assessmentMaxBySubject = {},
+      className,
     }: {
       mode: "excel" | "printed" | "handwritten";
       fileBase64: string;
@@ -531,6 +554,7 @@ serve(async (req) => {
       knownSubjects: KnownSubject[];
       knownStudents: KnownStudent[];
       assessmentMaxBySubject?: Record<string, number>;
+      className?: string;
     } = body;
 
     if (!mode || !fileBase64) {
@@ -541,7 +565,7 @@ serve(async (req) => {
 
     let result;
     if (mode === "excel") {
-      result = processExcel(fileBase64, fileName || "upload.xlsx", knownSubjects, knownStudents, assessmentMaxBySubject);
+      result = processExcel(fileBase64, fileName || "upload.xlsx", knownSubjects, knownStudents, assessmentMaxBySubject, className);
     } else if (mode === "printed" || mode === "handwritten") {
       const apiKey = Deno.env.get("LOVABLE_API_KEY");
       if (!apiKey) {

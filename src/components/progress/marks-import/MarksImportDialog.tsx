@@ -20,12 +20,14 @@ interface Props {
   knownSubjects: KnownSubject[];
   /** Resolved max marks per subject for THIS assessment. */
   assessmentMaxBySubject: Record<string, number>;
+  /** Currently selected class name, used for smart tab detection in multi-sheet Excel files. */
+  className?: string;
 }
 
 type Step = 'method' | 'upload' | 'preview' | 'success';
 
 export function MarksImportDialog({
-  open, onOpenChange, assessmentId, knownStudents, knownSubjects, assessmentMaxBySubject,
+  open, onOpenChange, assessmentId, knownStudents, knownSubjects, assessmentMaxBySubject, className,
 }: Props) {
   const [step, setStep] = useState<Step>('method');
   const [mode, setMode] = useState<ImportMode>('excel');
@@ -53,7 +55,7 @@ export function MarksImportDialog({
 
   const handleFile = async (file: File) => {
     setFileName(file.name);
-    const res = await parse.mutateAsync({ mode, file, knownSubjects, knownStudents, assessmentMaxBySubject });
+    const res = await parse.mutateAsync({ mode, file, knownSubjects, knownStudents, assessmentMaxBySubject, className });
     setPreview(res);
     setStep('preview');
   };
