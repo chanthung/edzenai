@@ -556,6 +556,14 @@ serve(async (req) => {
       });
     }
 
+    // Section breakdown: count matched rows per section
+    const sectionCounts: Record<string, number> = {};
+    for (const r of result.rows) {
+      if (r.studentId && r.matchedSection) {
+        sectionCounts[r.matchedSection] = (sectionCounts[r.matchedSection] || 0) + 1;
+      }
+    }
+
     const summary = {
       totalRows: result.rows.length,
       matchedStudents: result.rows.filter((r) => r.studentId && r.studentMatchConfidence !== "fuzzy").length,
@@ -567,6 +575,7 @@ serve(async (req) => {
         ? Math.round(result.rows.reduce((a, r) => a + r.confidenceScore, 0) / result.rows.length)
         : 100,
       exceedsMax: result.rows.filter((r) => r.issues.includes("marks_exceed_assessment_max") || r.issues.includes("marks_exceed_max")).length,
+      sectionBreakdown: sectionCounts,
     };
 
     return new Response(JSON.stringify({ ...result, summary, mode }), {
