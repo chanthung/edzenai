@@ -682,6 +682,7 @@ export default function MarksEntry() {
             acc[s.id] = totalMaxMarks > 0 ? totalMaxMarks : 100;
             return acc;
           }, {} as Record<string, number>)}
+          className={selectedClass}
         />
 
         {/* Competency Scoring Section */}
