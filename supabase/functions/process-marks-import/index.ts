@@ -341,7 +341,7 @@ function processExcel(
       };
       out.push({ ...base, confidenceScore: scoreRow(base, aMax) });
     });
-    return { rows: out, detectedHeaders: headers, ignoredColumns };
+    return { rows: out, detectedHeaders: headers, ignoredColumns, selectedSheet, availableSheets };
   }
 
   // WIDE LAYOUT
@@ -401,7 +401,7 @@ function processExcel(
     }
   });
 
-  return { rows: out, detectedHeaders: headers, ignoredColumns };
+  return { rows: out, detectedHeaders: headers, ignoredColumns, selectedSheet, availableSheets };
 }
 
 // ── Vision mode (printed / handwritten) ────────────────────────────────
