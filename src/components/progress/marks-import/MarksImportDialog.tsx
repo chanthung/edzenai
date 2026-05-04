@@ -81,6 +81,7 @@ export function MarksImportDialog({
       setSavedCount(marks.length);
       setSavedAvgConf(preview?.summary.avgConfidence ?? 100);
       setSavedExceedsMax(preview?.summary.exceedsMax ?? 0);
+      setSavedSections(preview?.summary.sectionBreakdown ?? {});
       logImport.mutate({
         fileName, mode,
         total: preview?.summary.totalRows ?? marks.length,
