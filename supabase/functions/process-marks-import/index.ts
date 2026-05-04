@@ -74,7 +74,7 @@ const NON_SUBJECT_HEADERS = new Set([
 
 // ── Student matching ───────────────────────────────────────────────────
 
-interface KnownStudent { id: string; name: string; roll_number: string | null }
+interface KnownStudent { id: string; name: string; roll_number: string | null; section?: string | null }
 
 function tokenSetRatio(a: string, b: string): number {
   const A = new Set(n(a).split(" ").filter(Boolean));
@@ -101,33 +101,57 @@ function lev(a: string, b: string): number {
   return m[a.length][b.length];
 }
 
-function matchStudent(rawName: string, rawRoll: string, pool: KnownStudent[]) {
-  if (pool.length === 0) return { studentId: null as string | null, matchedName: null as string | null, confidence: null as string | null };
+function matchStudent(rawName: string, rawRoll: string, pool: KnownStudent[], rawSection?: string) {
+  const result = { studentId: null as string | null, matchedName: null as string | null, confidence: null as string | null, matchedSection: null as string | null };
+  if (pool.length === 0) return result;
+
+  // If the Excel has a section column, narrow pool first for better disambiguation
+  let scopedPool = pool;
+  if (rawSection && rawSection.trim()) {
+    const sec = rawSection.trim().toUpperCase();
+    const sectionFiltered = pool.filter(s => (s.section || "").trim().toUpperCase() === sec);
+    if (sectionFiltered.length > 0) scopedPool = sectionFiltered;
+  }
+
   if (rawRoll && rawRoll.trim()) {
     const r = rawRoll.trim().toLowerCase().replace(/^0+/, "");
-    for (const s of pool) {
+    for (const s of scopedPool) {
       if (!s.roll_number) continue;
       if (s.roll_number.trim().toLowerCase().replace(/^0+/, "") === r) {
-        return { studentId: s.id, matchedName: s.name, confidence: "exact_roll" };
+        return { studentId: s.id, matchedName: s.name, confidence: "exact_roll", matchedSection: s.section || null };
+      }
+    }
+    // Fallback to full pool if scoped didn't match
+    if (scopedPool !== pool) {
+      for (const s of pool) {
+        if (!s.roll_number) continue;
+        if (s.roll_number.trim().toLowerCase().replace(/^0+/, "") === r) {
+          return { studentId: s.id, matchedName: s.name, confidence: "exact_roll", matchedSection: s.section || null };
+        }
       }
     }
   }
-  if (!rawName || !rawName.trim()) return { studentId: null, matchedName: null, confidence: null };
+  if (!rawName || !rawName.trim()) return result;
   const target = n(rawName);
-  for (const s of pool) {
-    if (n(s.name) === target) return { studentId: s.id, matchedName: s.name, confidence: "exact_name" };
+  for (const s of scopedPool) {
+    if (n(s.name) === target) return { studentId: s.id, matchedName: s.name, confidence: "exact_name", matchedSection: s.section || null };
   }
-  let best: { id: string; name: string; score: number } | null = null;
+  if (scopedPool !== pool) {
+    for (const s of pool) {
+      if (n(s.name) === target) return { studentId: s.id, matchedName: s.name, confidence: "exact_name", matchedSection: s.section || null };
+    }
+  }
+  let best: { id: string; name: string; score: number; section: string | null } | null = null;
   for (const s of pool) {
     const candidate = n(s.name);
     const ts = tokenSetRatio(target, candidate);
     const l = lev(target, candidate);
     const lr = 1 - l / Math.max(target.length, candidate.length, 1);
     const score = Math.max(ts, lr);
-    if (score >= 0.6 && (!best || score > best.score)) best = { id: s.id, name: s.name, score };
+    if (score >= 0.6 && (!best || score > best.score)) best = { id: s.id, name: s.name, score, section: s.section || null };
   }
-  if (best) return { studentId: best.id, matchedName: best.name, confidence: "fuzzy" };
-  return { studentId: null, matchedName: null, confidence: null };
+  if (best) return { studentId: best.id, matchedName: best.name, confidence: "fuzzy", matchedSection: best.section };
+  return result;
 }
 
 // ── Excel parsing ──────────────────────────────────────────────────────
@@ -198,6 +222,7 @@ interface PreviewRow {
   rawRoll: string;
   studentId: string | null;
   matchedStudentName: string | null;
+  matchedSection: string | null;
   studentMatchConfidence: string | null;   // exact_roll | exact_name | fuzzy | null
   rawSubject: string;
   subjectId: string | null;
