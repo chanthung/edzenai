@@ -545,6 +545,7 @@ serve(async (req) => {
       knownSubjects = [],
       knownStudents = [],
       assessmentMaxBySubject = {},
+      className,
     }: {
       mode: "excel" | "printed" | "handwritten";
       fileBase64: string;
@@ -553,6 +554,7 @@ serve(async (req) => {
       knownSubjects: KnownSubject[];
       knownStudents: KnownStudent[];
       assessmentMaxBySubject?: Record<string, number>;
+      className?: string;
     } = body;
 
     if (!mode || !fileBase64) {
