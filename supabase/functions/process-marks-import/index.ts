@@ -284,8 +284,9 @@ function processExcel(
   knownSubjects: KnownSubject[],
   knownStudents: KnownStudent[],
   assessmentMaxBySubject: Record<string, number>,
-): { rows: PreviewRow[]; detectedHeaders: string[]; ignoredColumns: string[] } {
-  const { headers, rows } = parseSpreadsheet(b64, fileName);
+  className?: string,
+): { rows: PreviewRow[]; detectedHeaders: string[]; ignoredColumns: string[]; selectedSheet: string | null; availableSheets: string[] } {
+  const { headers, rows, selectedSheet, availableSheets } = parseSpreadsheet(b64, fileName, className);
 
   const nameCol = findColumn(headers, ["name", "student name", "student", "full name", "pupil name", "pupil"]);
   const rollCol = findColumn(headers, ["roll no", "rollno", "roll number", "admission no", "adm no", "sr no", "sl no", "id", "student id"]);
