@@ -27,7 +27,7 @@ interface Props {
 type Step = 'method' | 'upload' | 'preview' | 'success';
 
 export function MarksImportDialog({
-  open, onOpenChange, assessmentId, knownStudents, knownSubjects, assessmentMaxBySubject,
+  open, onOpenChange, assessmentId, knownStudents, knownSubjects, assessmentMaxBySubject, className,
 }: Props) {
   const [step, setStep] = useState<Step>('method');
   const [mode, setMode] = useState<ImportMode>('excel');
