@@ -138,6 +138,12 @@ export default function MarksEntry() {
     return students.filter(s => s.class_name === selectedClass && s.section === selectedSection);
   }, [students, selectedClass, selectedSection]);
 
+  // All students in the selected class (all sections) — used for multi-section import
+  const classStudents = useMemo(() => {
+    if (!selectedClass) return [];
+    return students.filter(s => s.class_name === selectedClass);
+  }, [students, selectedClass]);
+
   // Reset dependent selections
   useEffect(() => {
     setSelectedSection("");
@@ -670,7 +676,7 @@ export default function MarksEntry() {
           open={importOpen}
           onOpenChange={setImportOpen}
           assessmentId={selectedAssessmentId}
-          knownStudents={filteredStudents.map(s => ({ id: s.id, name: s.name, roll_number: s.roll_number ?? null }))}
+          knownStudents={classStudents.map(s => ({ id: s.id, name: s.name, roll_number: s.roll_number ?? null, section: s.section ?? null }))}
           knownSubjects={subjects.map(s => ({ id: s.id, name: s.name, code: s.code }))}
           assessmentMaxBySubject={subjects.reduce((acc, s) => {
             acc[s.id] = totalMaxMarks > 0 ? totalMaxMarks : 100;

@@ -74,7 +74,7 @@ const NON_SUBJECT_HEADERS = new Set([
 
 // ── Student matching ───────────────────────────────────────────────────
 
-interface KnownStudent { id: string; name: string; roll_number: string | null }
+interface KnownStudent { id: string; name: string; roll_number: string | null; section?: string | null }
 
 function tokenSetRatio(a: string, b: string): number {
   const A = new Set(n(a).split(" ").filter(Boolean));
@@ -101,33 +101,57 @@ function lev(a: string, b: string): number {
   return m[a.length][b.length];
 }
 
-function matchStudent(rawName: string, rawRoll: string, pool: KnownStudent[]) {
-  if (pool.length === 0) return { studentId: null as string | null, matchedName: null as string | null, confidence: null as string | null };
+function matchStudent(rawName: string, rawRoll: string, pool: KnownStudent[], rawSection?: string) {
+  const result = { studentId: null as string | null, matchedName: null as string | null, confidence: null as string | null, matchedSection: null as string | null };
+  if (pool.length === 0) return result;
+
+  // If the Excel has a section column, narrow pool first for better disambiguation
+  let scopedPool = pool;
+  if (rawSection && rawSection.trim()) {
+    const sec = rawSection.trim().toUpperCase();
+    const sectionFiltered = pool.filter(s => (s.section || "").trim().toUpperCase() === sec);
+    if (sectionFiltered.length > 0) scopedPool = sectionFiltered;
+  }
+
   if (rawRoll && rawRoll.trim()) {
     const r = rawRoll.trim().toLowerCase().replace(/^0+/, "");
-    for (const s of pool) {
+    for (const s of scopedPool) {
       if (!s.roll_number) continue;
       if (s.roll_number.trim().toLowerCase().replace(/^0+/, "") === r) {
-        return { studentId: s.id, matchedName: s.name, confidence: "exact_roll" };
+        return { studentId: s.id, matchedName: s.name, confidence: "exact_roll", matchedSection: s.section || null };
+      }
+    }
+    // Fallback to full pool if scoped didn't match
+    if (scopedPool !== pool) {
+      for (const s of pool) {
+        if (!s.roll_number) continue;
+        if (s.roll_number.trim().toLowerCase().replace(/^0+/, "") === r) {
+          return { studentId: s.id, matchedName: s.name, confidence: "exact_roll", matchedSection: s.section || null };
+        }
       }
     }
   }
-  if (!rawName || !rawName.trim()) return { studentId: null, matchedName: null, confidence: null };
+  if (!rawName || !rawName.trim()) return result;
   const target = n(rawName);
-  for (const s of pool) {
-    if (n(s.name) === target) return { studentId: s.id, matchedName: s.name, confidence: "exact_name" };
+  for (const s of scopedPool) {
+    if (n(s.name) === target) return { studentId: s.id, matchedName: s.name, confidence: "exact_name", matchedSection: s.section || null };
   }
-  let best: { id: string; name: string; score: number } | null = null;
+  if (scopedPool !== pool) {
+    for (const s of pool) {
+      if (n(s.name) === target) return { studentId: s.id, matchedName: s.name, confidence: "exact_name", matchedSection: s.section || null };
+    }
+  }
+  let best: { id: string; name: string; score: number; section: string | null } | null = null;
   for (const s of pool) {
     const candidate = n(s.name);
     const ts = tokenSetRatio(target, candidate);
     const l = lev(target, candidate);
     const lr = 1 - l / Math.max(target.length, candidate.length, 1);
     const score = Math.max(ts, lr);
-    if (score >= 0.6 && (!best || score > best.score)) best = { id: s.id, name: s.name, score };
+    if (score >= 0.6 && (!best || score > best.score)) best = { id: s.id, name: s.name, score, section: s.section || null };
   }
-  if (best) return { studentId: best.id, matchedName: best.name, confidence: "fuzzy" };
-  return { studentId: null, matchedName: null, confidence: null };
+  if (best) return { studentId: best.id, matchedName: best.name, confidence: "fuzzy", matchedSection: best.section };
+  return result;
 }
 
 // ── Excel parsing ──────────────────────────────────────────────────────
@@ -198,6 +222,7 @@ interface PreviewRow {
   rawRoll: string;
   studentId: string | null;
   matchedStudentName: string | null;
+  matchedSection: string | null;
   studentMatchConfidence: string | null;   // exact_roll | exact_name | fuzzy | null
   rawSubject: string;
   subjectId: string | null;
@@ -243,6 +268,7 @@ function processExcel(
 
   const nameCol = findColumn(headers, ["name", "student name", "student", "full name", "pupil name", "pupil"]);
   const rollCol = findColumn(headers, ["roll no", "rollno", "roll number", "admission no", "adm no", "sr no", "sl no", "id", "student id"]);
+  const sectionCol = findColumn(headers, ["section", "sec", "div", "division"]);
 
   // Long layout? Has explicit "subject" + "marks" columns
   const subjectCol = findColumn(headers, ["subject", "subject name"]);
@@ -256,17 +282,18 @@ function processExcel(
   const out: PreviewRow[] = [];
 
   if (subjectCol && marksCol) {
-    const usedHeaders = new Set([nameCol, rollCol, subjectCol, marksCol, maxCol].filter(Boolean) as string[]);
+    const usedHeaders = new Set([nameCol, rollCol, sectionCol, subjectCol, marksCol, maxCol].filter(Boolean) as string[]);
     headers.forEach((h) => { if (!usedHeaders.has(h)) ignoredColumns.push(h); });
 
     rows.forEach((row, idx) => {
       const rawStudent = nameCol ? row[nameCol] : "";
       const rawRoll = rollCol ? row[rollCol] : "";
+      const rawSection = sectionCol ? row[sectionCol] : "";
       const rawSubject = row[subjectCol] || "";
       const marksRaw = row[marksCol];
       const maxRaw = maxCol ? row[maxCol] : "";
 
-      const sm = matchStudent(rawStudent, rawRoll, knownStudents);
+      const sm = matchStudent(rawStudent, rawRoll, knownStudents, rawSection);
       const subm = matchSubject(rawSubject, knownSubjects);
       const marks = marksRaw === "" || marksRaw == null ? null : Number(marksRaw);
       const max = maxRaw === "" || maxRaw == null ? null : Number(maxRaw);
@@ -283,7 +310,7 @@ function processExcel(
       const base = {
         rowIndex: idx + 2,
         rawStudent, rawRoll,
-        studentId: sm.studentId, matchedStudentName: sm.matchedName, studentMatchConfidence: sm.confidence,
+        studentId: sm.studentId, matchedStudentName: sm.matchedName, matchedSection: sm.matchedSection, studentMatchConfidence: sm.confidence,
         rawSubject,
         subjectId: subm.subjectId, matchedSubjectName: subm.matchedName, subjectMatchConfidence: subm.confidence,
         marksObtained: marks != null && !isNaN(marks) ? marks : null,
@@ -299,7 +326,7 @@ function processExcel(
   const knownIdx = new Map<string, ReturnType<typeof matchSubject>>();
   const subjectColumns: string[] = [];
   for (const h of headers) {
-    if ([nameCol, rollCol, totalCol, pctCol].includes(h)) continue;
+    if ([nameCol, rollCol, sectionCol, totalCol, pctCol].includes(h)) continue;
     if (NON_SUBJECT_HEADERS.has(n(h))) { ignoredColumns.push(h); continue; }
     const m = matchSubject(h, knownSubjects);
     if (m.subjectId) { subjectColumns.push(h); knownIdx.set(h, m); }
@@ -309,7 +336,8 @@ function processExcel(
   rows.forEach((row, idx) => {
     const rawStudent = nameCol ? row[nameCol] : "";
     const rawRoll = rollCol ? row[rollCol] : "";
-    const sm = matchStudent(rawStudent, rawRoll, knownStudents);
+    const rawSection = sectionCol ? row[sectionCol] : "";
+    const sm = matchStudent(rawStudent, rawRoll, knownStudents, rawSection);
 
     // Reported total + recomputed sum (for cross-check)
     const reportedRaw = totalCol && row[totalCol] !== "" && row[totalCol] != null ? Number(row[totalCol]) : null;
@@ -338,7 +366,7 @@ function processExcel(
       const base = {
         rowIndex: idx + 2,
         rawStudent, rawRoll,
-        studentId: sm.studentId, matchedStudentName: sm.matchedName, studentMatchConfidence: sm.confidence,
+        studentId: sm.studentId, matchedStudentName: sm.matchedName, matchedSection: sm.matchedSection, studentMatchConfidence: sm.confidence,
         rawSubject: subjHeader,
         subjectId: subm.subjectId, matchedSubjectName: subm.matchedName, subjectMatchConfidence: subm.confidence,
         marksObtained: isNaN(marks) ? null : marks,
@@ -528,6 +556,14 @@ serve(async (req) => {
       });
     }
 
+    // Section breakdown: count matched rows per section
+    const sectionCounts: Record<string, number> = {};
+    for (const r of result.rows) {
+      if (r.studentId && r.matchedSection) {
+        sectionCounts[r.matchedSection] = (sectionCounts[r.matchedSection] || 0) + 1;
+      }
+    }
+
     const summary = {
       totalRows: result.rows.length,
       matchedStudents: result.rows.filter((r) => r.studentId && r.studentMatchConfidence !== "fuzzy").length,
@@ -539,6 +575,7 @@ serve(async (req) => {
         ? Math.round(result.rows.reduce((a, r) => a + r.confidenceScore, 0) / result.rows.length)
         : 100,
       exceedsMax: result.rows.filter((r) => r.issues.includes("marks_exceed_assessment_max") || r.issues.includes("marks_exceed_max")).length,
+      sectionBreakdown: sectionCounts,
     };
 
     return new Response(JSON.stringify({ ...result, summary, mode }), {

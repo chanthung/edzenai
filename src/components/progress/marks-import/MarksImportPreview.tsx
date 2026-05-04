@@ -177,6 +177,11 @@ export function MarksImportPreview({
             Ignored columns: {preview.ignoredColumns.join(', ')}
           </Badge>
         )}
+        {preview.summary.sectionBreakdown && Object.keys(preview.summary.sectionBreakdown).length > 1 && (
+          <Badge variant="outline" className="text-indigo-700 bg-indigo-500/10 border-indigo-500/30">
+            Sections: {Object.entries(preview.summary.sectionBreakdown).sort(([a], [b]) => a.localeCompare(b)).map(([sec, count]) => `${sec} (${count})`).join(' · ')}
+          </Badge>
+        )}
       </div>
 
       {/* Duplicate strategy */}

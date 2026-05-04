@@ -33,6 +33,7 @@ export function MarksImportDialog({
   const [savedCount, setSavedCount] = useState(0);
   const [savedAvgConf, setSavedAvgConf] = useState(100);
   const [savedExceedsMax, setSavedExceedsMax] = useState(0);
+  const [savedSections, setSavedSections] = useState<Record<string, number>>({});
   const [fileName, setFileName] = useState('');
 
   const parse = useParseMarksImport();
@@ -42,7 +43,7 @@ export function MarksImportDialog({
   const { toast } = useToast();
 
   const reset = () => {
-    setStep('method'); setPreview(null); setSavedCount(0); setFileName('');
+    setStep('method'); setPreview(null); setSavedCount(0); setSavedSections({}); setFileName('');
   };
 
   const handleClose = (o: boolean) => {
@@ -80,6 +81,7 @@ export function MarksImportDialog({
       setSavedCount(marks.length);
       setSavedAvgConf(preview?.summary.avgConfidence ?? 100);
       setSavedExceedsMax(preview?.summary.exceedsMax ?? 0);
+      setSavedSections(preview?.summary.sectionBreakdown ?? {});
       logImport.mutate({
         fileName, mode,
         total: preview?.summary.totalRows ?? marks.length,
@@ -147,7 +149,14 @@ export function MarksImportDialog({
               <CheckCircle2 className="h-7 w-7" />
             </div>
             <div>
-              <div className="text-lg font-semibold">Imported {savedCount} mark{savedCount === 1 ? '' : 's'}</div>
+              <div className="text-lg font-semibold">
+                Imported {savedCount} mark{savedCount === 1 ? '' : 's'}
+                {Object.keys(savedSections).length > 1 && (
+                  <span className="text-sm font-normal text-muted-foreground ml-1">
+                    across sections {Object.keys(savedSections).sort().join(', ')}
+                  </span>
+                )}
+              </div>
               {aiAnalysisOk ? (
                 <p className="mt-1 text-sm text-muted-foreground">
                   Confidence is high — you can run AI analysis from the Progress Dashboard.
