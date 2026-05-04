@@ -282,17 +282,18 @@ function processExcel(
   const out: PreviewRow[] = [];
 
   if (subjectCol && marksCol) {
-    const usedHeaders = new Set([nameCol, rollCol, subjectCol, marksCol, maxCol].filter(Boolean) as string[]);
+    const usedHeaders = new Set([nameCol, rollCol, sectionCol, subjectCol, marksCol, maxCol].filter(Boolean) as string[]);
     headers.forEach((h) => { if (!usedHeaders.has(h)) ignoredColumns.push(h); });
 
     rows.forEach((row, idx) => {
       const rawStudent = nameCol ? row[nameCol] : "";
       const rawRoll = rollCol ? row[rollCol] : "";
+      const rawSection = sectionCol ? row[sectionCol] : "";
       const rawSubject = row[subjectCol] || "";
       const marksRaw = row[marksCol];
       const maxRaw = maxCol ? row[maxCol] : "";
 
-      const sm = matchStudent(rawStudent, rawRoll, knownStudents);
+      const sm = matchStudent(rawStudent, rawRoll, knownStudents, rawSection);
       const subm = matchSubject(rawSubject, knownSubjects);
       const marks = marksRaw === "" || marksRaw == null ? null : Number(marksRaw);
       const max = maxRaw === "" || maxRaw == null ? null : Number(maxRaw);
@@ -309,7 +310,7 @@ function processExcel(
       const base = {
         rowIndex: idx + 2,
         rawStudent, rawRoll,
-        studentId: sm.studentId, matchedStudentName: sm.matchedName, studentMatchConfidence: sm.confidence,
+        studentId: sm.studentId, matchedStudentName: sm.matchedName, matchedSection: sm.matchedSection, studentMatchConfidence: sm.confidence,
         rawSubject,
         subjectId: subm.subjectId, matchedSubjectName: subm.matchedName, subjectMatchConfidence: subm.confidence,
         marksObtained: marks != null && !isNaN(marks) ? marks : null,
