@@ -149,7 +149,14 @@ export function MarksImportDialog({
               <CheckCircle2 className="h-7 w-7" />
             </div>
             <div>
-              <div className="text-lg font-semibold">Imported {savedCount} mark{savedCount === 1 ? '' : 's'}</div>
+              <div className="text-lg font-semibold">
+                Imported {savedCount} mark{savedCount === 1 ? '' : 's'}
+                {Object.keys(savedSections).length > 1 && (
+                  <span className="text-sm font-normal text-muted-foreground ml-1">
+                    across sections {Object.keys(savedSections).sort().join(', ')}
+                  </span>
+                )}
+              </div>
               {aiAnalysisOk ? (
                 <p className="mt-1 text-sm text-muted-foreground">
                   Confidence is high — you can run AI analysis from the Progress Dashboard.
