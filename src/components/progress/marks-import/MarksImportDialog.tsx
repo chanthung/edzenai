@@ -33,6 +33,7 @@ export function MarksImportDialog({
   const [savedCount, setSavedCount] = useState(0);
   const [savedAvgConf, setSavedAvgConf] = useState(100);
   const [savedExceedsMax, setSavedExceedsMax] = useState(0);
+  const [savedSections, setSavedSections] = useState<Record<string, number>>({});
   const [fileName, setFileName] = useState('');
 
   const parse = useParseMarksImport();
