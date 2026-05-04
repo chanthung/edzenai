@@ -55,7 +55,7 @@ export function MarksImportDialog({
 
   const handleFile = async (file: File) => {
     setFileName(file.name);
-    const res = await parse.mutateAsync({ mode, file, knownSubjects, knownStudents, assessmentMaxBySubject });
+    const res = await parse.mutateAsync({ mode, file, knownSubjects, knownStudents, assessmentMaxBySubject, className });
     setPreview(res);
     setStep('preview');
   };
