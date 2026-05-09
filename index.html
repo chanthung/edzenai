@@ -33,16 +33,35 @@
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "EdZen AI",
+      "description": "School management SaaS platform for Indian private schools. Handles fee collection, attendance, marks entry, CBSE/ICSE/State Board NEP 2020 report cards, WhatsApp parent portal, and AI student progress tracking.",
       "url": "https://edzenai.com",
       "applicationCategory": "EducationalApplication",
-      "operatingSystem": "Web",
-      "description": "School management platform with fee transparency for parents and AI-powered student progress analysis for teachers.",
+      "applicationSubCategory": "School Management Software",
+      "operatingSystem": "Web, Android, iOS",
       "offers": {
-        "@type": "Offer",
-        "price": "0",
+        "@type": "AggregateOffer",
+        "lowPrice": "7",
+        "highPrice": "10",
         "priceCurrency": "INR",
-        "description": "30-day Pro plan free trial, then per-student pricing from ₹7/student/month"
+        "priceSpecification": [
+          { "@type": "UnitPriceSpecification", "name": "Starter", "price": "7", "priceCurrency": "INR", "referenceQuantity": { "@type": "QuantitativeValue", "value": 1, "unitText": "student/month" } },
+          { "@type": "UnitPriceSpecification", "name": "Pro", "price": "10", "priceCurrency": "INR", "referenceQuantity": { "@type": "QuantitativeValue", "value": 1, "unitText": "student/month" } }
+        ]
       },
+      "featureList": [
+        "UPI fee collection with WhatsApp reminders",
+        "CBSE ICSE State Board NEP 2020 report card generation",
+        "AI-powered at-risk student monitoring",
+        "Parent WhatsApp portal — no app install",
+        "Daily attendance management",
+        "Marks entry and competency tracking"
+      ],
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "School principals, teachers, accountants, India private schools"
+      },
+      "inLanguage": ["en", "hi"],
+      "areaServed": "IN",
       "author": {
         "@type": "Organization",
         "name": "EdZen AI",
