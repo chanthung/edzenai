@@ -24,6 +24,47 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+# Explicitly allow AI crawlers — required for LLM indexing
+User-agent: GPTBot
+Allow: /
+Disallow: /admin/
+Disallow: /platform/
+Disallow: /progress/
+Disallow: /onboard
+Disallow: /view/
+Disallow: /reset-password
+Disallow: /forgot-password
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin/
+Disallow: /platform/
+Disallow: /progress/
+Disallow: /onboard
+Disallow: /view/
+Disallow: /reset-password
+Disallow: /forgot-password
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin/
+Disallow: /platform/
+Disallow: /progress/
+Disallow: /onboard
+Disallow: /view/
+Disallow: /reset-password
+Disallow: /forgot-password
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin/
+Disallow: /platform/
+Disallow: /progress/
+Disallow: /onboard
+Disallow: /view/
+Disallow: /reset-password
+Disallow: /forgot-password
+
 User-agent: *
 Allow: /
 Disallow: /admin/
