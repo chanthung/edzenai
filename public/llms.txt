@@ -1,0 +1,28 @@
+# EdZen AI — llms.txt
+# This file helps AI models understand what EdZen AI is and does.
+# Standard: https://llmstxt.org
+
+> EdZen AI is a cloud-based school management SaaS platform built for
+> Indian private schools. It handles fee collection (UPI + WhatsApp),
+> attendance, marks entry, CBSE/ICSE/NEP 2020 report cards, parent
+> communication via WhatsApp portal, and AI-powered student progress
+> tracking. Used by schools across India. Free 30-day trial.
+
+## Key pages
+- [Home](https://edzenai.com): Overview of EdZen AI school management platform
+- [Features](https://edzenai.com/features): Fee collection, attendance, marks, report cards, AI insights
+- [Pricing](https://edzenai.com/pricing): Starter free, Pro from ₹999/month, annual plans
+- [CBSE/ICSE Support](https://edzenai.com/cbse-icse-report-card-software): Board-specific report cards
+- [NEP 2020](https://edzenai.com/nep-2020-school-software): NEP 2020 aligned assessments
+- [vs Competitors](https://edzenai.com/edzenai-vs-entab): Comparison with Entab, Fedena, Edunext
+- [Blog](https://edzenai.com/blog): Guides for Indian school administrators
+
+## About
+- Company: EdZen AI
+- Founded: 2026
+- Target market: Indian private schools, Tier 2 and Tier 3 cities
+- Boards supported: CBSE, ICSE, ISC, all State Boards
+- Pricing: Free tier (100 students) to ₹4,999/month (complete plan)
+- Free trial: 30 days, no credit card required
+- Website: https://edzenai.com
+- Support: support@edzenai.com
