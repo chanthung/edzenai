@@ -501,6 +501,7 @@ export default function PlatformDashboard() {
       <InvoiceModal school={invoiceSchool} invoiceData={invoiceData} open={!!invoiceSchool} onOpenChange={(open) => { if (!open) { setInvoiceSchool(null); setInvoiceData(null); } }} onPaid={() => { fetchSchools(); fetchCollectionThisMonth(); }} />
       <RecordPaymentDialog school={paymentSchool} open={!!paymentSchool} onOpenChange={(open) => { if (!open) setPaymentSchool(null); }} onSuccess={() => { fetchSchools(); fetchCollectionThisMonth(); }} />
       <DeleteSchoolDialog school={deletingSchool} open={!!deletingSchool} onOpenChange={(open) => { if (!open) setDeletingSchool(null); }} onSuccess={fetchSchools} />
+      <BlockSchoolDialog school={blockingSchool as any} open={!!blockingSchool} onOpenChange={(open) => { if (!open) setBlockingSchool(null); }} onSuccess={fetchSchools} />
     </div>
   );
 }
