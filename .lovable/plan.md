@@ -1,60 +1,61 @@
 ## Goal
 
-Create a new SEO landing page at `/school-management-software-india` targeting the query "best school management software India". The page must answer: what EdZen AI is, who it's for, pricing, comparison vs competitors, and the free trial.
+Create SEO landing page at `/fee-collection-software-schools-india` targeting "school fee collection WhatsApp UPI India". Page explains how EdZen AI's fee collection works end-to-end: UPI payments, WhatsApp reminders, parent payment proof upload, and admin verification.
 
 ## Changes
 
-### 1. New page: `src/pages/seo/SchoolManagementSoftwareIndia.tsx`
+### 1. New page: `src/pages/seo/FeeCollectionSoftwareIndia.tsx`
 
-Sections (top → bottom):
+Mirrors the structure of `SchoolManagementSoftwareIndia.tsx` (same Header/Footer, sections, Card/Button/Accordion, `usePageMeta`, lazy images, semantic sections, single H1).
 
-1. **Hero** — H1 "Best School Management Software in India (2026)". Sub: positioning EdZen AI for CBSE/ICSE/State-board private schools. Two CTAs: "Start 30-day free trial" → `/signup`, "Book demo" → `/book-demo`. Trust badges: No credit card, Setup in 1 day, WhatsApp parent portal.
-2. **What is EdZen AI** — 3-line summary + 6 feature cards (UPI fee collection, WhatsApp reminders, NEP 2020 report cards, AI at-risk monitoring, Daily attendance, Marks & competencies). Reuse icon style from existing landing page.
-3. **Who it's for** — 3 audience cards: School principals (Tier 2/3 cities), Accountants (fee collection), Teachers (marks & attendance).
-4. **Pricing snapshot** — Starter (₹7/student/mo), Pro (₹10/student/mo). CTA → `/pricing`.
-5. **Comparison table** — EdZen AI vs Entab vs Fedena vs Edunext. Rows: Setup time, WhatsApp parent portal (no app), UPI auto-reconciliation, NEP 2020 templates, AI insights, Pricing model, Free trial. Use `Card` + responsive table.
-6. **Free trial section** — 30 days, no credit card, full Pro features. Single CTA.
-7. **FAQ accordion** — 6 Q&As: best SMS for India, CBSE/ICSE support, parent app needed, data security, switching from Entab/Fedena, pricing for small schools. Use `Accordion` from `@/components/ui/accordion`.
-8. **Final CTA banner**.
+Sections:
 
-Use shared landing components/styles already in `src/pages/Index.tsx` (navbar, footer) — import the same Header/Footer rather than duplicating. If they're inline in `Index.tsx`, extract a minimal copy into the new page (no refactor of Index).
+1. **Hero** — H1 "School Fee Collection Software with UPI & WhatsApp (India)". Sub: zero-app parent fee collection for CBSE/ICSE/State-board schools. CTAs: "Start 30-day free trial" → `/signup`, "Book demo" → `/book-demo`. Trust badges: UPI any app, WhatsApp reminders, No parent app install.
+2. **How fee collection works** — 4-step horizontal flow:
+   1. School sets fee structure (annual / monthly installments, per-class, optional categories)
+   2. Parent receives WhatsApp link (no login, token-based view)
+   3. Parent pays via UPI deep-link (any UPI app — GPay, PhonePe, Paytm, BHIM)
+   4. Parent uploads payment proof; admin verifies → status auto-updates (Pending → Paid)
+3. **UPI deep-link payments** — explainer card. `upi://pay` deep-link opens parent's UPI app pre-filled with school VPA, amount, installment ref. Works on every Indian UPI app. No payment gateway fees, no per-transaction cut.
+4. **WhatsApp fee reminders** — explainer card. Automated pg_cron 8 AM IST reminders: 5 days before due, on due date, 1 day after. Bulk parent link share with throttle. Sent via Mayavi WhatsApp (no parent app).
+5. **Payment proof verification workflow** — explainer card. Parent uploads screenshot/photo via parent portal. OCR-assisted preview. Admin approves/rejects from dashboard. Status derived dynamically (Pending / Paid / Overdue) — never stale.
+6. **Flexible fee structure** — Card grid: annual or monthly installments, per-class fees, optional categories (transport, lab, exam), retroactive auto-assignment, sibling/family grouping by parent phone.
+7. **Reporting & reconciliation** — Card grid: collection rate by class/category, overdue list, payment history per student, exportable reports, anomaly detection.
+8. **Comparison row** — Compact table: EdZen AI vs traditional gateway-based SMS. Rows: parent app required, UPI deep-link, WhatsApp reminders included, transaction fees, proof verification, setup time.
+9. **FAQ accordion** — 6 Q&As:
+   - Do parents need to install an app?
+   - Which UPI apps are supported?
+   - Do you charge transaction fees?
+   - How are reminders sent?
+   - Can parents pay in installments?
+   - Is payment proof verification automatic?
+10. **Final CTA banner** — "Start collecting fees on UPI + WhatsApp in 1 day".
 
 ### 2. SEO
 
-- `usePageMeta({ title: "Best School Management Software in India 2026 | EdZen AI", description: "EdZen AI — UPI fee collection, WhatsApp parent portal, NEP 2020 report cards & AI insights for CBSE/ICSE/State-board schools. 30-day free trial.", canonical: "/school-management-software-india" })`
-- Inline JSON-LD `<script type="application/ld+json">` injected via `useEffect`, two schemas:
-  - `FAQPage` with the 6 FAQ Q&As.
-  - `Product` / `SoftwareApplication` summary with `aggregateRating`-free offers (reuse fields from `index.html`).
-- Single `<h1>`, semantic `<section>` blocks, alt text on any imagery, `loading="lazy"` for images.
+- `usePageMeta({ title: "School Fee Collection Software with UPI & WhatsApp | EdZen AI", description: "Collect school fees via UPI deep-link and WhatsApp — no parent app, no transaction fees. Auto reminders, payment proof verification, flexible installments. 30-day free trial.", canonical: "/fee-collection-software-schools-india" })`
+- Two JSON-LD schemas via `useEffect`:
+  - `FAQPage` with the 6 Q&As.
+  - `SoftwareApplication` (sub-application: fee collection module) with offer pricing (Starter ₹7, Pro ₹10).
 
 ### 3. Routing
 
 `src/App.tsx`:
-
-- Add `const SchoolManagementSoftwareIndia = lazy(() => import("./pages/seo/SchoolManagementSoftwareIndia"));`
-- Add `<Route path="/school-management-software-india" element={<SchoolManagementSoftwareIndia />} />` in the public routes block.
+- Add lazy import next to `SchoolManagementSoftwareIndia`.
+- Add `<Route path="/fee-collection-software-schools-india" element={<FeeCollectionSoftwareIndia />} />` in the public routes block.
 
 ### 4. Sitemap
 
-`public/sitemap.xml`: add
-
-```
-<url>
-  <loc>https://edzenai.com/school-management-software-india</loc>
-  <lastmod>2026-05-11</lastmod>
-  <changefreq>monthly</changefreq>
-  <priority>0.9</priority>
-</url>
-```
+`public/sitemap.xml`: add entry, `priority: 0.9`, `changefreq: monthly`, `lastmod: 2026-05-11`.
 
 ### 5. llms.txt
 
 `public/llms.txt`: add to Key pages list:
-`- [Best SMS India](https://edzenai.com/school-management-software-india): What EdZen AI is, pricing, vs Entab/Fedena/Edunext, free trial`
+`- [Fee Collection India](https://edzenai.com/fee-collection-software-schools-india): UPI deep-link, WhatsApp reminders, payment proof verification, flexible installments`
 
 ## Notes
 
-- Comparison claims kept factual & defensible (setup time, WhatsApp portal, pricing model). Avoid disparaging language.
-- Pricing matches project memory (Starter ₹7, Pro ₹10, Pro with 30-day free trial).
-- No backend changes. No new dependencies. Reuses `Card`, `Button`, `Accordion`, `usePageMeta`.
-- This is the first of a series — folder `src/pages/seo/` created so future query-cluster pages (`/cbse-icse-report-card-software`, `/nep-2020-school-software`, `/edzenai-vs-entab`, etc.) drop in alongside.
+- Reuses existing `Card`, `Button`, `Accordion`, `usePageMeta`. No new deps, no backend changes.
+- Claims align with project memory: UPI deep-link with `&am` injection, Mayavi WhatsApp (+91 prepended), pg_cron 8 AM IST reminders (5d/0d/+1d), parent token access via `/view/:name/:token`, derived fee status, flexible annual/monthly fees, sibling grouping by parent phone.
+- Pricing matches: Starter ₹7, Pro ₹10 (30-day free trial). No "Max" plan.
+- Folder `src/pages/seo/` already exists; this is page 2 in the series.
