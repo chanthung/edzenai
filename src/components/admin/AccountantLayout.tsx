@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpChatbot } from "@/components/admin/HelpChatbot";
+import { BlockedScreen } from "@/components/admin/BlockedScreen";
+import { useAccessBlock } from "@/hooks/useAccessBlock";
 
 interface AccountantLayoutProps {
   children: ReactNode;
