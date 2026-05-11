@@ -248,26 +248,19 @@ export default function SchoolManagementSoftwareIndia() {
               <h2 className="text-3xl sm:text-4xl font-bold">Simple, predictable pricing</h2>
               <p className="mt-3 text-muted-foreground">No hidden setup fees. No annual lock-ins.</p>
             </div>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
               <Card className="rounded-2xl border-border/60">
                 <CardContent className="p-6">
                   <div className="text-sm font-medium text-muted-foreground">Starter</div>
-                  <div className="mt-2 text-3xl font-bold">Free</div>
-                  <p className="mt-1 text-sm text-muted-foreground">Up to 100 students</p>
+                  <div className="mt-2 text-3xl font-bold">₹7<span className="text-base font-normal text-muted-foreground">/student/mo</span></div>
+                  <p className="mt-1 text-sm text-muted-foreground">Basic features for small schools</p>
                 </CardContent>
               </Card>
               <Card className="rounded-2xl border-2 border-primary shadow-lg">
                 <CardContent className="p-6">
                   <div className="text-sm font-medium text-primary">Pro · Most popular</div>
-                  <div className="mt-2 text-3xl font-bold">₹7<span className="text-base font-normal text-muted-foreground">/student/mo</span></div>
-                  <p className="mt-1 text-sm text-muted-foreground">30-day free trial included</p>
-                </CardContent>
-              </Card>
-              <Card className="rounded-2xl border-border/60">
-                <CardContent className="p-6">
-                  <div className="text-sm font-medium text-muted-foreground">Max</div>
                   <div className="mt-2 text-3xl font-bold">₹10<span className="text-base font-normal text-muted-foreground">/student/mo</span></div>
-                  <p className="mt-1 text-sm text-muted-foreground">Capped at ₹4,999 / month</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Full AI-powered intelligence suite · 30-day free trial included</p>
                 </CardContent>
               </Card>
             </div>
