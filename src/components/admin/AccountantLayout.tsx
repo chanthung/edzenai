@@ -70,6 +70,10 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
     return <Navigate to="/login" replace />;
   }
 
+  if (blocked) {
+    return <BlockedScreen schoolName={blocked.school_name} reason={blocked.reason || undefined} />;
+  }
+
   if (!roleLoading && !isAccountant) {
     return <Navigate to="/admin" replace />;
   }
