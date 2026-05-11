@@ -82,6 +82,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     return <Navigate to="/login" replace />;
   }
 
+  // Hard block by platform admin (suspicious activity)
+  if (blocked) {
+    return <BlockedScreen schoolName={blocked.school_name} reason={blocked.reason || undefined} />;
+  }
+
   // Hard lock for suspended/terminated schools — block all admin UI
   if (isHardLocked) {
     return <SuspendedScreen schoolName={school?.name} />;
