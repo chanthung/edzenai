@@ -465,6 +465,15 @@ export default function PlatformDashboard() {
                               <Button variant="ghost" size="sm" onClick={() => setPaymentSchool(school)} title="Record Payment">
                                 <CreditCard className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setBlockingSchool(school)}
+                                title={(school as any).access_blocked ? "Restore Login Access" : "Block Login (Suspicious)"}
+                                className={(school as any).access_blocked ? "text-emerald-600 hover:text-emerald-600" : "text-amber-600 hover:text-amber-600"}
+                              >
+                                {(school as any).access_blocked ? <ShieldCheck className="h-4 w-4" /> : <ShieldX className="h-4 w-4" />}
+                              </Button>
                               <Button variant="ghost" size="sm" onClick={() => setDeletingSchool(school)} title="Delete School" className="text-destructive hover:text-destructive">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
