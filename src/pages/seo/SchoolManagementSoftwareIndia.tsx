@@ -76,7 +76,7 @@ const COMPARISON = [
   { row: "UPI auto-reconciliation", us: true, entab: false, fedena: false, edunext: false },
   { row: "NEP 2020 report card templates", us: true, entab: true, fedena: false, edunext: false },
   { row: "AI at-risk insights", us: true, entab: false, fedena: false, edunext: false },
-  { row: "Pricing model", us: "₹7–₹10 / student / mo", entab: "Quote-based", fedena: "Per-user license", edunext: "Quote-based" },
+  { row: "Pricing model", us: "₹7 (Starter) / ₹10 (Pro) per student / mo", entab: "Quote-based", fedena: "Per-user license", edunext: "Quote-based" },
   { row: "Free trial", us: "30 days, no card", entab: false, fedena: "Limited", edunext: false },
 ];
 
