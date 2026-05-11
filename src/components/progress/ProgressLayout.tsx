@@ -86,6 +86,10 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
     return <Navigate to="/login" replace />;
   }
 
+  if (blocked) {
+    return <BlockedScreen schoolName={blocked.school_name} reason={blocked.reason || undefined} />;
+  }
+
   // Check if user has access (either teacher or school admin, NOT accountant)
   if (!isTeacher && !isSchoolAdmin) {
     return <Navigate to="/login" replace />;
