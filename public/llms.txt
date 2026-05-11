@@ -11,6 +11,7 @@
 ## Key pages
 - [Home](https://edzenai.com): Overview of EdZen AI school management platform
 - [Best SMS India](https://edzenai.com/school-management-software-india): What EdZen AI is, pricing, vs Entab/Fedena/Edunext, free trial
+- [Fee Collection India](https://edzenai.com/fee-collection-software-schools-india): UPI deep-link, WhatsApp reminders, payment proof verification, flexible installments
 - [Features](https://edzenai.com/features): Fee collection, attendance, marks, report cards, AI insights
 - [Pricing](https://edzenai.com/pricing): Starter free, Pro from ₹999/month, annual plans
 - [CBSE/ICSE Support](https://edzenai.com/cbse-icse-report-card-software): Board-specific report cards
