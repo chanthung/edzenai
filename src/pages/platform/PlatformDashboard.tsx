@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard, Handshake, Trash2 } from "lucide-react";
+import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard, Handshake, Trash2, ShieldX, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { CreateSchoolDialog } from "@/components/platform/CreateSchoolDialog";
 import { EditSchoolDialog } from "@/components/platform/EditSchoolDialog";
@@ -16,6 +16,7 @@ import { InvoiceModal } from "@/components/platform/InvoiceModal";
 import { RecordPaymentDialog } from "@/components/platform/RecordPaymentDialog";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
 import { DeleteSchoolDialog } from "@/components/platform/DeleteSchoolDialog";
+import { BlockSchoolDialog } from "@/components/platform/BlockSchoolDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePartners } from "@/hooks/usePartners";
 import { format, differenceInDays } from "date-fns";
