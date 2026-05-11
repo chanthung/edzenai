@@ -1553,6 +1553,10 @@ export type Database = {
       }
       schools: {
         Row: {
+          access_blocked: boolean
+          access_blocked_at: string | null
+          access_blocked_by: string | null
+          access_blocked_reason: string | null
           address: string | null
           billing_cycle: string
           board: string | null
@@ -1592,6 +1596,10 @@ export type Database = {
           upi_id: string | null
         }
         Insert: {
+          access_blocked?: boolean
+          access_blocked_at?: string | null
+          access_blocked_by?: string | null
+          access_blocked_reason?: string | null
           address?: string | null
           billing_cycle?: string
           board?: string | null
@@ -1631,6 +1639,10 @@ export type Database = {
           upi_id?: string | null
         }
         Update: {
+          access_blocked?: boolean
+          access_blocked_at?: string | null
+          access_blocked_by?: string | null
+          access_blocked_reason?: string | null
           address?: string | null
           billing_cycle?: string
           board?: string | null
@@ -2537,6 +2549,15 @@ export type Database = {
         Args: { _school_name: string }
         Returns: string
       }
+      current_user_blocked_school: {
+        Args: never
+        Returns: {
+          blocked_at: string
+          reason: string
+          school_id: string
+          school_name: string
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2606,6 +2627,10 @@ export type Database = {
       }
       is_partner: { Args: never; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      is_school_access_blocked: {
+        Args: { _school_id: string }
+        Returns: boolean
+      }
       is_school_admin: { Args: { _school_id: string }; Returns: boolean }
       is_school_restricted: { Args: { _school_id: string }; Returns: boolean }
       is_school_teacher: { Args: { _school_id: string }; Returns: boolean }
