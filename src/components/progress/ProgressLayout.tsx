@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SubscriptionBanner } from "@/components/admin/SubscriptionBanner";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { HelpChatbot } from "@/components/admin/HelpChatbot";
+import { BlockedScreen } from "@/components/admin/BlockedScreen";
+import { useAccessBlock } from "@/hooks/useAccessBlock";
 import { 
   BarChart3, 
   BookOpenCheck,
