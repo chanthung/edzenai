@@ -34,6 +34,7 @@ const navItems = [
 export function AccountantLayout({ children }: AccountantLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAccountant, isLoading: roleLoading } = useUserRole();
+  const { blocked } = useAccessBlock();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
