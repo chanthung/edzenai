@@ -24,6 +24,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 // SEO landing pages
 const SchoolManagementSoftwareIndia = lazy(() => import("./pages/seo/SchoolManagementSoftwareIndia"));
+const FeeCollectionSoftwareIndia = lazy(() => import("./pages/seo/FeeCollectionSoftwareIndia"));
 
 // Auth
 const Login = lazy(() => import("./pages/auth/Login"));
