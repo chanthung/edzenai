@@ -122,7 +122,7 @@ export default function SchoolManagementSoftwareIndia() {
       operatingSystem: "Web, Android, iOS",
       offers: {
         "@type": "AggregateOffer",
-        lowPrice: "0",
+        lowPrice: "7",
         highPrice: "10",
         priceCurrency: "INR",
       },
