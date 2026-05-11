@@ -22,6 +22,9 @@ const BookDemo = lazy(() => import("./pages/BookDemo"));
 const UserManual = lazy(() => import("./pages/UserManual"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
+// SEO landing pages
+const SchoolManagementSoftwareIndia = lazy(() => import("./pages/seo/SchoolManagementSoftwareIndia"));
+
 // Auth
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -84,6 +87,7 @@ const App = () => (
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/book-demo" element={<BookDemo />} />
+              <Route path="/school-management-software-india" element={<SchoolManagementSoftwareIndia />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/onboard" element={<Onboard />} />
