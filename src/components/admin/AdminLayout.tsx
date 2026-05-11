@@ -54,6 +54,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { data: school, isLoading: schoolLoading } = useSchool();
   const { effectiveState, daysRemaining, isRestricted, currentPlan, canAccessFeature } = useSubscriptionStatus();
   const { isHardLocked } = useLifecycleStage();
+  const { blocked } = useAccessBlock();
   const { isAccountant, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
