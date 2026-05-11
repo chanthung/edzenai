@@ -50,6 +50,7 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
   const { data: school, isLoading: schoolLoading } = useSchool();
   const { effectiveState, daysRemaining, canAccessFeature, currentPlan } = useSubscriptionStatus();
   const { isTeacher, isSchoolAdmin, isAccountant, isLoading: roleLoading } = useUserRole();
+  const { blocked } = useAccessBlock();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
