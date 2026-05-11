@@ -51,7 +51,7 @@ const FAQS = [
   },
   {
     q: "Is the pricing affordable for small schools?",
-    a: "Yes. The Starter plan is free for up to 100 students. Pro is ₹7 per student per month, Max is ₹10 per student per month, with a monthly cap of ₹4,999 — predictable and affordable for Tier 2 and Tier 3 schools.",
+    a: "Yes. Starter is ₹7 per student per month with basic features for small schools. Pro is ₹10 per student per month and includes the full AI-powered intelligence suite with a 30-day free trial — predictable and affordable for Tier 2 and Tier 3 schools.",
   },
 ];
 
@@ -76,7 +76,7 @@ const COMPARISON = [
   { row: "UPI auto-reconciliation", us: true, entab: false, fedena: false, edunext: false },
   { row: "NEP 2020 report card templates", us: true, entab: true, fedena: false, edunext: false },
   { row: "AI at-risk insights", us: true, entab: false, fedena: false, edunext: false },
-  { row: "Pricing model", us: "₹7–₹10 / student / mo", entab: "Quote-based", fedena: "Per-user license", edunext: "Quote-based" },
+  { row: "Pricing model", us: "₹7 (Starter) / ₹10 (Pro) per student / mo", entab: "Quote-based", fedena: "Per-user license", edunext: "Quote-based" },
   { row: "Free trial", us: "30 days, no card", entab: false, fedena: "Limited", edunext: false },
 ];
 
@@ -122,7 +122,7 @@ export default function SchoolManagementSoftwareIndia() {
       operatingSystem: "Web, Android, iOS",
       offers: {
         "@type": "AggregateOffer",
-        lowPrice: "0",
+        lowPrice: "7",
         highPrice: "10",
         priceCurrency: "INR",
       },
@@ -248,26 +248,19 @@ export default function SchoolManagementSoftwareIndia() {
               <h2 className="text-3xl sm:text-4xl font-bold">Simple, predictable pricing</h2>
               <p className="mt-3 text-muted-foreground">No hidden setup fees. No annual lock-ins.</p>
             </div>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
               <Card className="rounded-2xl border-border/60">
                 <CardContent className="p-6">
                   <div className="text-sm font-medium text-muted-foreground">Starter</div>
-                  <div className="mt-2 text-3xl font-bold">Free</div>
-                  <p className="mt-1 text-sm text-muted-foreground">Up to 100 students</p>
+                  <div className="mt-2 text-3xl font-bold">₹7<span className="text-base font-normal text-muted-foreground">/student/mo</span></div>
+                  <p className="mt-1 text-sm text-muted-foreground">Basic features for small schools</p>
                 </CardContent>
               </Card>
               <Card className="rounded-2xl border-2 border-primary shadow-lg">
                 <CardContent className="p-6">
                   <div className="text-sm font-medium text-primary">Pro · Most popular</div>
-                  <div className="mt-2 text-3xl font-bold">₹7<span className="text-base font-normal text-muted-foreground">/student/mo</span></div>
-                  <p className="mt-1 text-sm text-muted-foreground">30-day free trial included</p>
-                </CardContent>
-              </Card>
-              <Card className="rounded-2xl border-border/60">
-                <CardContent className="p-6">
-                  <div className="text-sm font-medium text-muted-foreground">Max</div>
                   <div className="mt-2 text-3xl font-bold">₹10<span className="text-base font-normal text-muted-foreground">/student/mo</span></div>
-                  <p className="mt-1 text-sm text-muted-foreground">Capped at ₹4,999 / month</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Full AI-powered intelligence suite · 30-day free trial included</p>
                 </CardContent>
               </Card>
             </div>
