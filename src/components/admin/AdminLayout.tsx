@@ -12,7 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { LifecycleBanner } from "@/components/admin/LifecycleBanner";
 import { SuspendedScreen } from "@/components/admin/SuspendedScreen";
+import { BlockedScreen } from "@/components/admin/BlockedScreen";
 import { useLifecycleStage } from "@/hooks/useLifecycleStage";
+import { useAccessBlock } from "@/hooks/useAccessBlock";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { PLAN_DISPLAY } from "@/config/plan-features";
 import { 
