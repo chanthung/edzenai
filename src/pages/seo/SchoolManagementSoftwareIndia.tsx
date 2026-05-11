@@ -51,7 +51,7 @@ const FAQS = [
   },
   {
     q: "Is the pricing affordable for small schools?",
-    a: "Yes. The Starter plan is free for up to 100 students. Pro is ₹7 per student per month, Max is ₹10 per student per month, with a monthly cap of ₹4,999 — predictable and affordable for Tier 2 and Tier 3 schools.",
+    a: "Yes. Starter is ₹7 per student per month with basic features for small schools. Pro is ₹10 per student per month and includes the full AI-powered intelligence suite with a 30-day free trial — predictable and affordable for Tier 2 and Tier 3 schools.",
   },
 ];
 
