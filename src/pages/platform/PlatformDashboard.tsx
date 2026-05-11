@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard, Handshake, Trash2 } from "lucide-react";
+import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard, Handshake, Trash2, ShieldX, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { CreateSchoolDialog } from "@/components/platform/CreateSchoolDialog";
 import { EditSchoolDialog } from "@/components/platform/EditSchoolDialog";
@@ -16,6 +16,7 @@ import { InvoiceModal } from "@/components/platform/InvoiceModal";
 import { RecordPaymentDialog } from "@/components/platform/RecordPaymentDialog";
 import { SystemStateBadge } from "@/components/ui/system-state-badge";
 import { DeleteSchoolDialog } from "@/components/platform/DeleteSchoolDialog";
+import { BlockSchoolDialog } from "@/components/platform/BlockSchoolDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePartners } from "@/hooks/usePartners";
 import { format, differenceInDays } from "date-fns";
@@ -74,6 +75,7 @@ export default function PlatformDashboard() {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [paymentSchool, setPaymentSchool] = useState<School | null>(null);
   const [deletingSchool, setDeletingSchool] = useState<School | null>(null);
+  const [blockingSchool, setBlockingSchool] = useState<School | null>(null);
   const { data: pricing } = useSubscriptionPricing();
   const { data: volumeTiers } = useVolumeDiscounts();
   const { data: allPartners = [] } = usePartners();
@@ -463,6 +465,15 @@ export default function PlatformDashboard() {
                               <Button variant="ghost" size="sm" onClick={() => setPaymentSchool(school)} title="Record Payment">
                                 <CreditCard className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setBlockingSchool(school)}
+                                title={(school as any).access_blocked ? "Restore Login Access" : "Block Login (Suspicious)"}
+                                className={(school as any).access_blocked ? "text-emerald-600 hover:text-emerald-600" : "text-amber-600 hover:text-amber-600"}
+                              >
+                                {(school as any).access_blocked ? <ShieldCheck className="h-4 w-4" /> : <ShieldX className="h-4 w-4" />}
+                              </Button>
                               <Button variant="ghost" size="sm" onClick={() => setDeletingSchool(school)} title="Delete School" className="text-destructive hover:text-destructive">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -490,6 +501,7 @@ export default function PlatformDashboard() {
       <InvoiceModal school={invoiceSchool} invoiceData={invoiceData} open={!!invoiceSchool} onOpenChange={(open) => { if (!open) { setInvoiceSchool(null); setInvoiceData(null); } }} onPaid={() => { fetchSchools(); fetchCollectionThisMonth(); }} />
       <RecordPaymentDialog school={paymentSchool} open={!!paymentSchool} onOpenChange={(open) => { if (!open) setPaymentSchool(null); }} onSuccess={() => { fetchSchools(); fetchCollectionThisMonth(); }} />
       <DeleteSchoolDialog school={deletingSchool} open={!!deletingSchool} onOpenChange={(open) => { if (!open) setDeletingSchool(null); }} onSuccess={fetchSchools} />
+      <BlockSchoolDialog school={blockingSchool as any} open={!!blockingSchool} onOpenChange={(open) => { if (!open) setBlockingSchool(null); }} onSuccess={fetchSchools} />
     </div>
   );
 }

@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SubscriptionBanner } from "@/components/admin/SubscriptionBanner";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { HelpChatbot } from "@/components/admin/HelpChatbot";
+import { BlockedScreen } from "@/components/admin/BlockedScreen";
+import { useAccessBlock } from "@/hooks/useAccessBlock";
 import { 
   BarChart3, 
   BookOpenCheck,
@@ -48,6 +50,7 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
   const { data: school, isLoading: schoolLoading } = useSchool();
   const { effectiveState, daysRemaining, canAccessFeature, currentPlan } = useSubscriptionStatus();
   const { isTeacher, isSchoolAdmin, isAccountant, isLoading: roleLoading } = useUserRole();
+  const { blocked } = useAccessBlock();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -81,6 +84,10 @@ export function ProgressLayout({ children }: ProgressLayoutProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (blocked) {
+    return <BlockedScreen schoolName={blocked.school_name} reason={blocked.reason || undefined} />;
   }
 
   // Check if user has access (either teacher or school admin, NOT accountant)

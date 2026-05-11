@@ -12,7 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { LifecycleBanner } from "@/components/admin/LifecycleBanner";
 import { SuspendedScreen } from "@/components/admin/SuspendedScreen";
+import { BlockedScreen } from "@/components/admin/BlockedScreen";
 import { useLifecycleStage } from "@/hooks/useLifecycleStage";
+import { useAccessBlock } from "@/hooks/useAccessBlock";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { PLAN_DISPLAY } from "@/config/plan-features";
 import { 
@@ -52,6 +54,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { data: school, isLoading: schoolLoading } = useSchool();
   const { effectiveState, daysRemaining, isRestricted, currentPlan, canAccessFeature } = useSubscriptionStatus();
   const { isHardLocked } = useLifecycleStage();
+  const { blocked } = useAccessBlock();
   const { isAccountant, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -77,6 +80,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Hard block by platform admin (suspicious activity)
+  if (blocked) {
+    return <BlockedScreen schoolName={blocked.school_name} reason={blocked.reason || undefined} />;
   }
 
   // Hard lock for suspended/terminated schools — block all admin UI

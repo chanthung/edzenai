@@ -45,6 +45,16 @@ export default function Login() {
     setUnverifiedEmail(null);
 
     const redirectByRole = async () => {
+      // Block access if school is admin-blocked (suspicious activity lockout)
+      const { data: blockedData } = await (supabase as any).rpc('current_user_blocked_school');
+      const blockedRow = Array.isArray(blockedData) ? blockedData[0] : blockedData;
+      if (blockedRow) {
+        const reason = blockedRow.reason || 'Access has been blocked due to suspicious activity.';
+        toast.error(`Login blocked: ${reason}`, { duration: 8000 });
+        await supabase.auth.signOut();
+        return;
+      }
+
       const { data: isPlatformAdmin } = await supabase.rpc('is_platform_admin');
       if (isPlatformAdmin) {
         navigate("/platform", { replace: true });

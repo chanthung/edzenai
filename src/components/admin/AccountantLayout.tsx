@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpChatbot } from "@/components/admin/HelpChatbot";
+import { BlockedScreen } from "@/components/admin/BlockedScreen";
+import { useAccessBlock } from "@/hooks/useAccessBlock";
 
 interface AccountantLayoutProps {
   children: ReactNode;
@@ -32,6 +34,7 @@ const navItems = [
 export function AccountantLayout({ children }: AccountantLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAccountant, isLoading: roleLoading } = useUserRole();
+  const { blocked } = useAccessBlock();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -65,6 +68,10 @@ export function AccountantLayout({ children }: AccountantLayoutProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (blocked) {
+    return <BlockedScreen schoolName={blocked.school_name} reason={blocked.reason || undefined} />;
   }
 
   if (!roleLoading && !isAccountant) {
