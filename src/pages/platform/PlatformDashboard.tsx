@@ -75,6 +75,7 @@ export default function PlatformDashboard() {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [paymentSchool, setPaymentSchool] = useState<School | null>(null);
   const [deletingSchool, setDeletingSchool] = useState<School | null>(null);
+  const [blockingSchool, setBlockingSchool] = useState<School | null>(null);
   const { data: pricing } = useSubscriptionPricing();
   const { data: volumeTiers } = useVolumeDiscounts();
   const { data: allPartners = [] } = usePartners();
