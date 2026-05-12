@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+// Avoid useLocation to keep this badge router-agnostic and resilient to mount order.
 
 const BUILD_ID = (import.meta.env.VITE_BUILD_ID as string) || "dev";
 const BUILD_TIME = (import.meta.env.VITE_BUILD_TIME as string) || "";
@@ -9,7 +9,7 @@ const BUILD_TIME = (import.meta.env.VITE_BUILD_TIME as string) || "";
  * Used by support: ask the user "what does the bottom-right say?"
  */
 export function BuildBadge() {
-  const { pathname } = useLocation();
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
   if (pathname.startsWith("/view/")) return null;
 
   const date = BUILD_TIME ? BUILD_TIME.slice(0, 10) : "";
