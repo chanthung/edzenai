@@ -1,28 +1,30 @@
-## Finding
-
-Facebook can access `https://edzenai.com/` successfully, and the meta tag is in the static `<head>` HTML. The issue is that the live site currently has this token:
-
-```html
-<meta name="facebook-domain-verification" content="28ub5zx1j1xdnt1d7briy8h91ryyee" />
-```
-
-But the token originally provided was:
-
-```html
-<meta name="facebook-domain-verification" content="2e3m1t4k72cb2plohdl2u5kb109i15" />
-```
-
-So Facebook is finding a verification tag, but not the expected verification token for the domain entry shown in your screenshot.
-
 ## Plan
 
-1. Update `index.html` so the Facebook verification meta tag uses the provided token:
-   `2e3m1t4k72cb2plohdl2u5kb109i15`.
-2. Keep it inside the static `<head>` section, not dynamically loaded by React.
-3. After the change, verify that the local source contains the exact expected value.
-4. You will need to publish the app again, then re-check `view-source:https://edzenai.com/` and click **Verify domain** in Facebook.
+1. **Keep the new Facebook token**
+   - Use the token currently shown in Facebook: `28ub5zx1j1xdnt1d7briy8h91ryyee`.
+   - Do not revert to the old `2e3m...` token.
 
-## Notes
+2. **Move the verification tag to the very top of the static `<head>`**
+   - Place `<meta name="facebook-domain-verification" content="28ub5zx1j1xdnt1d7briy8h91ryyee" />` immediately after the viewport/meta charset lines.
+   - Keep it in `index.html`, not React or `usePageMeta`, so Facebook sees it in raw page source.
 
-- You do not need to add `www.edzenai.com` separately for this specific mismatch; it redirects to `edzenai.com` and the HTML is served correctly.
-- The screenshot says “unable to find the verification file,” but Facebook often shows this generic failure even when the problem is a wrong meta-token.
+3. **Avoid anything that may confuse the crawler**
+   - Keep only one Facebook verification meta tag.
+   - Leave redirects as-is because `http://`, `https://`, `www`, and apex all currently resolve to `https://edzenai.com/` and expose the correct token.
+
+4. **After publishing, verify the public source**
+   - Confirm `view-source:https://edzenai.com/` shows the token near the top of `<head>`.
+   - Then use Facebook’s Sharing Debugger / Verify Domain again.
+
+## Current finding
+
+The live site already returns the new token for all tested variants:
+
+```text
+http://edzenai.com/       -> 28ub5zx1j1xdnt1d7briy8h91ryyee
+https://edzenai.com/      -> 28ub5zx1j1xdnt1d7briy8h91ryyee
+http://www.edzenai.com/   -> 28ub5zx1j1xdnt1d7briy8h91ryyee
+https://www.edzenai.com/  -> 28ub5zx1j1xdnt1d7briy8h91ryyee
+```
+
+So the safest code-side fix is to move the tag earlier in the static head. If Facebook still fails after that, the remaining cause is likely Meta-side caching/business verification state, not missing website code.
