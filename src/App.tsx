@@ -18,6 +18,7 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const DataDeletion = lazy(() => import("./pages/DataDeletion"));
 const BookDemo = lazy(() => import("./pages/BookDemo"));
 const UserManual = lazy(() => import("./pages/UserManual"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -87,6 +88,7 @@ const App = () => (
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/data-deletion" element={<DataDeletion />} />
               <Route path="/book-demo" element={<BookDemo />} />
               <Route path="/school-management-software-india" element={<SchoolManagementSoftwareIndia />} />
               <Route path="/fee-collection-software-schools-india" element={<FeeCollectionSoftwareIndia />} />
