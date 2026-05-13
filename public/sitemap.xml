@@ -49,6 +49,12 @@
     <priority>0.4</priority>
   </url>
   <url>
+    <loc>https://edzenai.com/data-deletion</loc>
+    <lastmod>2026-05-13</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://edzenai.com/terms</loc>
     <lastmod>2025-04-20</lastmod>
     <changefreq>yearly</changefreq>

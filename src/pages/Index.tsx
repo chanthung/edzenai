@@ -685,6 +685,9 @@ export default function Index() {
                 >
                   Refund &amp; Cancellation
                 </Link>
+                <Link to="/data-deletion" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Data Deletion
+                </Link>
                 <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Contact Support
                 </Link>

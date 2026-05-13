@@ -1,30 +1,28 @@
-## Plan
+# Add Data Deletion Instructions Page
 
-1. **Keep the new Facebook token**
-   - Use the token currently shown in Facebook: `28ub5zx1j1xdnt1d7briy8h91ryyee`.
-   - Do not revert to the old `2e3m...` token.
+Facebook requires a public URL with user data deletion instructions for app review. We'll add a new static page at `https://edzenai.com/data-deletion`.
 
-2. **Move the verification tag to the very top of the static `<head>`**
-   - Place `<meta name="facebook-domain-verification" content="28ub5zx1j1xdnt1d7briy8h91ryyee" />` immediately after the viewport/meta charset lines.
-   - Keep it in `index.html`, not React or `usePageMeta`, so Facebook sees it in raw page source.
+## Changes
 
-3. **Avoid anything that may confuse the crawler**
-   - Keep only one Facebook verification meta tag.
-   - Leave redirects as-is because `http://`, `https://`, `www`, and apex all currently resolve to `https://edzenai.com/` and expose the correct token.
+1. **Create `src/pages/DataDeletion.tsx`**
+   - Mirror the styling of `PrivacyPolicy.tsx` (same nav, logo, prose layout, `usePageMeta` for SEO).
+   - Title: "Data Deletion Instructions – EdZen AI"
+   - Canonical: `/data-deletion`
+   - Content sections:
+     - **How to request deletion** — email `privacy@edzenai.com` from the registered admin email with subject "Data Deletion Request"; include school name + reason.
+     - **What gets deleted** — school account, students, parents, attendance, marks, fees, payments, uploaded files.
+     - **Timeline** — confirmation within 3 business days, full deletion within 30 days (per DPDP Act 2023).
+     - **What's retained** — anonymised analytics + records required by law (e.g., financial records up to 7 years).
+     - **Self-service** — School Admins can also delete individual students from the admin panel; full account deletion requires email request (prevents accidental loss).
+     - **Contact** — `privacy@edzenai.com`.
 
-4. **After publishing, verify the public source**
-   - Confirm `view-source:https://edzenai.com/` shows the token near the top of `<head>`.
-   - Then use Facebook’s Sharing Debugger / Verify Domain again.
+2. **Register route in `src/App.tsx`**
+   - Add `<Route path="/data-deletion" element={<DataDeletion />} />` alongside `/privacy`, `/terms`, `/refund`.
 
-## Current finding
+3. **Add to `public/sitemap.xml`** so Facebook/crawlers can find it.
 
-The live site already returns the new token for all tested variants:
+4. **Add footer link** (next to Privacy / Terms) on the landing page footer for discoverability.
 
-```text
-http://edzenai.com/       -> 28ub5zx1j1xdnt1d7briy8h91ryyee
-https://edzenai.com/      -> 28ub5zx1j1xdnt1d7briy8h91ryyee
-http://www.edzenai.com/   -> 28ub5zx1j1xdnt1d7briy8h91ryyee
-https://www.edzenai.com/  -> 28ub5zx1j1xdnt1d7briy8h91ryyee
-```
-
-So the safest code-side fix is to move the tag earlier in the static head. If Facebook still fails after that, the remaining cause is likely Meta-side caching/business verification state, not missing website code.
+## Out of scope
+- No backend changes — deletion is handled by existing email-based support workflow.
+- No DNS / Facebook app configuration changes.
