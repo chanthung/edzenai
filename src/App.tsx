@@ -95,6 +95,7 @@ const App = () => (
               <Route path="/school-management-software-india" element={<SchoolManagementSoftwareIndia />} />
               <Route path="/fee-collection-software-schools-india" element={<FeeCollectionSoftwareIndia />} />
               <Route path="/edzenai-vs-entab" element={<EdzenAiVsEntab />} />
+              <Route path="/nep-2020-school-software" element={<Nep2020SchoolSoftware />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/onboard" element={<Onboard />} />
