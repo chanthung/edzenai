@@ -27,6 +27,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const SchoolManagementSoftwareIndia = lazy(() => import("./pages/seo/SchoolManagementSoftwareIndia"));
 const FeeCollectionSoftwareIndia = lazy(() => import("./pages/seo/FeeCollectionSoftwareIndia"));
 const EdzenAiVsEntab = lazy(() => import("./pages/seo/EdzenAiVsEntab"));
+const Nep2020SchoolSoftware = lazy(() => import("./pages/seo/Nep2020SchoolSoftware"));
 
 // Auth
 const Login = lazy(() => import("./pages/auth/Login"));
@@ -94,6 +95,7 @@ const App = () => (
               <Route path="/school-management-software-india" element={<SchoolManagementSoftwareIndia />} />
               <Route path="/fee-collection-software-schools-india" element={<FeeCollectionSoftwareIndia />} />
               <Route path="/edzenai-vs-entab" element={<EdzenAiVsEntab />} />
+              <Route path="/nep-2020-school-software" element={<Nep2020SchoolSoftware />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/onboard" element={<Onboard />} />
