@@ -688,6 +688,9 @@ export default function Index() {
                 <Link to="/data-deletion" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Data Deletion
                 </Link>
+                <Link to="/edzenai-vs-entab" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Compare vs Entab &amp; Fedena
+                </Link>
                 <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Contact Support
                 </Link>
