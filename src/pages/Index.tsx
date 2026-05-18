@@ -691,6 +691,9 @@ export default function Index() {
                 <Link to="/edzenai-vs-entab" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Compare vs Entab &amp; Fedena
                 </Link>
+                <Link to="/nep-2020-school-software" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  NEP 2020 Software
+                </Link>
                 <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Contact Support
                 </Link>
