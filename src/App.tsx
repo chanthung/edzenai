@@ -27,6 +27,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const SchoolManagementSoftwareIndia = lazy(() => import("./pages/seo/SchoolManagementSoftwareIndia"));
 const FeeCollectionSoftwareIndia = lazy(() => import("./pages/seo/FeeCollectionSoftwareIndia"));
 const EdzenAiVsEntab = lazy(() => import("./pages/seo/EdzenAiVsEntab"));
+const Nep2020SchoolSoftware = lazy(() => import("./pages/seo/Nep2020SchoolSoftware"));
 
 // Auth
 const Login = lazy(() => import("./pages/auth/Login"));
