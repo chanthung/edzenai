@@ -35,23 +35,21 @@ export function usePageMeta({ title, description, canonical }: PageMeta) {
     setMeta("description", description);
     setOg("og:title", title);
     setOg("og:description", description);
+    setMeta("twitter:title", title);
+    setMeta("twitter:description", description);
 
-    // Canonical
-    const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : undefined;
-    if (canonicalUrl) {
-      let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-      if (!link) {
-        link = document.createElement("link");
-        link.setAttribute("rel", "canonical");
-        document.head.appendChild(link);
-      }
-      link.setAttribute("href", canonicalUrl);
+    // Canonical + og:url — use the route's absolute URL
+    const pagePath = canonical ?? (typeof window !== "undefined" ? window.location.pathname : "/");
+    const pageUrl = `${BASE_URL}${pagePath}`;
+
+    setOg("og:url", pageUrl);
+
+    let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement("link");
+      link.setAttribute("rel", "canonical");
+      document.head.appendChild(link);
     }
-
-    return () => {
-      // cleanup canonical on unmount
-      const link = document.querySelector('link[rel="canonical"]');
-      if (link) link.remove();
-    };
+    link.setAttribute("href", pageUrl);
   }, [title, description, canonical]);
 }
