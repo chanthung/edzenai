@@ -1,62 +1,33 @@
-# AEO Page: NEP 2020 School Management Software
+## Goal
+Connect Google Search Console to the project, verify `https://edzenai.com/` ownership via meta tag, and submit `sitemap.xml`.
 
-Add a factual, AEO-optimised page that AI engines (ChatGPT, Perplexity, Gemini) will cite for "NEP 2020 school management software" and related queries.
+## Steps
 
-## Target
+1. **Connect Google Search Console**
+   - No `google_search_console` connection exists in the workspace yet (only Paddle is linked).
+   - Trigger the connector OAuth flow so `GOOGLE_SEARCH_CONSOLE_API_KEY` is provisioned. User must approve and sign in with the Google account that should own the property.
 
-- **URL:** `/nep-2020-school-software`
-- **Primary query:** "NEP 2020 school management software"
-- **Secondary:** "NEP 2020 report card software", "5+3+3+4 school software", "NEP compliant school ERP", "NEP 2020 assessment software India"
+2. **Request meta verification token**
+   - Call `siteVerification/v1/token` for `identifier: https://edzenai.com/`, method `META`.
+   - Receive a `<google-site-verification=...>` token string.
 
-## Page structure (AEO-optimised)
+3. **Embed the meta tag**
+   - Add `<meta name="google-site-verification" content="...">` to `index.html` `<head>`.
+   - Publish the frontend (required — verification reads the live deployed HTML, not preview).
 
-1. **H1 + 2-line verdict** — "NEP 2020 School Management Software: a complete guide to the 5+3+3+4 structure and how EdZen AI implements it." Followed by a quotable summary line AI engines will lift verbatim.
-2. **What NEP 2020 changes (TL;DR card)** — 4 short bullets: 5+3+3+4 structure, competency-based assessment (not just marks), holistic progress card, mother-tongue / multilingual support up to Grade 5.
-3. **The four NEP stages — full deep-dive** — one section per stage, each ≤120 words. For each:
-   - Stage name, grade range, age range (sourced from `src/lib/nep-stages.ts`)
-   - What NEP 2020 prescribes (pedagogy, assessment style, focus areas)
-   - **How EdZen AI implements it** — concrete features (auto-stage detection via `getNepStage`, competency rubrics with 4-level Red/Amber/Green/Blue scale, holistic report card templates, sample assessment types per stage)
-4. **NEP 2020 compliance checklist table** — rows: 5+3+3+4 auto-stage mapping · Competency-based grading · Holistic Progress Card · Multilingual parent portal · Continuous assessment (not just term exams) · Co-scholastic & life-skills tracking · Self & peer assessment fields · Teacher comments per competency. Columns: "NEP 2020 requirement" · "EdZen AI". Honest: where a requirement is partially supported (e.g. self-assessment), say "Partial — roadmap".
-5. **Competency framework section** — explain the 4-level system (Beginner / Progressing / Proficient / Advanced — Red/Amber/Green/Blue) already in the product, with a small visual.
-6. **Holistic Progress Card section** — what it includes (scholastic + co-scholastic + life skills + teacher remarks + parent feedback), screenshot or stylised mock, link to `/progress/report-cards`.
-7. **Multilingual support callout** — list the parent-portal languages already shipped: English, Hindi, Marathi, Tamil, Kannada, Bengali, Assamese. Aligns with NEP mother-tongue mandate up to Grade 5.
-8. **FAQ block (8 Q&As)** with JSON-LD `FAQPage`:
-   - What is the 5+3+3+4 structure in NEP 2020?
-   - What is a Holistic Progress Card?
-   - Is EdZen AI NEP 2020 compliant?
-   - Does EdZen AI support competency-based assessment?
-   - Which Indian languages does EdZen AI support for parents?
-   - How does EdZen AI map a class to a NEP stage automatically?
-   - Can CBSE/ICSE schools use EdZen AI for NEP report cards?
-   - Is NEP 2020 mandatory for private schools in 2026?
-9. **CTA** — Start 30-day free trial + See report card demo.
+4. **Verify ownership**
+   - Call `siteVerification/v1/webResource?verificationMethod=META` with the same identifier.
+   - 200 = verified. If 400 `failedToFindMetaTag`, re-check publish.
 
-## AEO / SEO technical
+5. **Add site to Search Console**
+   - `PUT /webmasters/v3/sites/https%3A%2F%2Fedzenai.com%2F`.
 
-- `usePageMeta`: title `"NEP 2020 School Management Software (2026) | EdZen AI"` (<60 chars), description <160 chars, canonical `/nep-2020-school-software`.
-- Inline `<script type="application/ld+json">` for `FAQPage`, `BreadcrumbList`, and `SoftwareApplication` (mirror pattern from `EdzenAiVsEntab.tsx`).
-- Single `<h1>`, semantic `<h2>` per section, `<table>` with `<caption>` for the checklist, `<dl>` fallback for FAQ.
-- Add to `public/sitemap.xml` (priority 0.9, lastmod today).
-- Add to `public/llms.txt` under Key pages (replace the existing `/nep-2020-school-software` line if present, or add).
-- Internal links: from `/school-management-software-india`, from `/edzenai-vs-entab` (the "NEP 2020 report cards" row), and footer link on `Index.tsx`.
+6. **Submit sitemap**
+   - `PUT /webmasters/v3/sites/https%3A%2F%2Fedzenai.com%2F/sitemaps/https%3A%2F%2Fedzenai.com%2Fsitemap.xml`.
 
-## Honesty guardrails
+## What I need from you
+- Approve the Google Search Console connector link when prompted, signing in with the Google account that should own the property.
+- After step 3, click **Publish → Update** so the meta tag goes live before I run verification.
 
-- Source stage/grade/age data from `src/lib/nep-stages.ts` (the actual product code) so the page can't drift from reality.
-- Where a NEP requirement is only partially supported, label it "Partial" — not a green tick. AI engines deprioritise pages that overclaim.
-- No fabricated stats, no fake testimonials, no "trusted by 1000+ schools" claims.
-
-## Files
-
-1. **Create `src/pages/seo/Nep2020SchoolSoftware.tsx`** — mirrors `EdzenAiVsEntab.tsx` structure (nav, hero, sections, JSON-LD, footer).
-2. **Edit `src/App.tsx`** — lazy import + `<Route path="/nep-2020-school-software" element={<Nep2020SchoolSoftware />} />`.
-3. **Edit `public/sitemap.xml`** — add URL.
-4. **Edit `public/llms.txt`** — ensure key-page line points to `/nep-2020-school-software`.
-5. **Edit `src/pages/Index.tsx`** — add footer link "NEP 2020 software".
-6. **Edit `src/pages/seo/EdzenAiVsEntab.tsx`** — link the NEP 2020 row to the new page.
-
-## Out of scope
-
-- No backend, no DB changes, no new product features.
-- No competitor logos.
-- No PDF download / lead magnet (can be added later if requested).
+## Notes
+- Only `edzenai.com` will be verified here. If you also want `www.edzenai.com` indexed as a separate property, I'll repeat steps 2–6 for it (recommended: pick one as primary and 301 the other; you've already configured both as custom domains).
