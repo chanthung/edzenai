@@ -226,6 +226,7 @@ export default function Pricing() {
         </div>
 
         {/* Student count calculator */}
+        <h2 className="sr-only">Pricing calculator</h2>
         <div className="max-w-md mx-auto mb-12 bg-card border rounded-xl p-6 shadow-sm">
           <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
             <Users className="h-4 w-4 text-primary" />
@@ -332,6 +333,7 @@ export default function Pricing() {
         </div>
 
         {/* Pricing cards */}
+        <h2 className="sr-only">Plans</h2>
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Starter */}
           <Card
