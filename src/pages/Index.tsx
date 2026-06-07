@@ -104,6 +104,9 @@ export default function Index() {
             <a href="#features" className="hover:text-foreground transition-colors">
               Features
             </a>
+            <Link to="/about" className="hover:text-foreground transition-colors">
+              About
+            </Link>
             <a href="#pricing" className="hover:text-foreground transition-colors">
               Pricing
             </a>
@@ -661,6 +664,9 @@ export default function Index() {
               <nav className="space-y-2 text-sm">
                 <Link to="/signup" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Features
+                </Link>
+                <Link to="/about" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  About
                 </Link>
                 <Link to="/pricing" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Pricing

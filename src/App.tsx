@@ -20,6 +20,7 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const DataDeletion = lazy(() => import("./pages/DataDeletion"));
 const BookDemo = lazy(() => import("./pages/BookDemo"));
+const About = lazy(() => import("./pages/About"));
 const UserManual = lazy(() => import("./pages/UserManual"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -92,6 +93,7 @@ const App = () => (
               <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/data-deletion" element={<DataDeletion />} />
               <Route path="/book-demo" element={<BookDemo />} />
+              <Route path="/about" element={<About />} />
               <Route path="/school-management-software-india" element={<SchoolManagementSoftwareIndia />} />
               <Route path="/fee-collection-software-schools-india" element={<FeeCollectionSoftwareIndia />} />
               <Route path="/edzenai-vs-entab" element={<EdzenAiVsEntab />} />
