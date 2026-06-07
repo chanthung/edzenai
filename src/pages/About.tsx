@@ -2,16 +2,7 @@ import { Link } from "react-router-dom";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  GraduationCap,
-  Wallet,
-  Sparkles,
-  Flag,
-  School,
-  MessageCircle,
-  ShieldCheck,
-  Quote,
-} from "lucide-react";
+import { GraduationCap, Wallet, Sparkles, Flag, School, MessageCircle, ShieldCheck, Quote } from "lucide-react";
 import edzenLogoFull from "@/assets/edzen-logo-full.png";
 
 export default function About() {
@@ -31,13 +22,23 @@ export default function About() {
             <img src={edzenLogoFull} alt="EdZen AI" className="h-14 sm:h-16 object-contain" />
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <Link to="/#features" className="hover:text-foreground transition-colors">Features</Link>
-            <Link to="/about" className="text-foreground transition-colors">About</Link>
-            <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
+            <Link to="/#features" className="hover:text-foreground transition-colors">
+              Features
+            </Link>
+            <Link to="/about" className="text-foreground transition-colors">
+              About
+            </Link>
+            <Link to="/pricing" className="hover:text-foreground transition-colors">
+              Pricing
+            </Link>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm"><Link to="/login">Login</Link></Button>
-            <Button asChild size="sm"><Link to="/signup?plan=pro">Start Free Trial</Link></Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/login">Login</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/signup?plan=pro">Start Free Trial</Link>
+            </Button>
           </div>
         </div>
       </nav>
@@ -46,7 +47,10 @@ export default function About() {
       <section className="py-20 sm:py-28 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground">
-            Built for Schools. <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Powered by AI.</span>
+            Built for Schools.{" "}
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Powered by AI.
+            </span>
           </h1>
           <p className="mt-6 text-lg sm:text-xl text-muted-foreground leading-relaxed">
             EdZen AI was created to simplify school management for every principal, teacher, and parent across India.
@@ -59,9 +63,9 @@ export default function About() {
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl font-bold mb-5">Our Story</h2>
           <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-            Managing a school shouldn't mean drowning in paperwork, chasing fee payments, or
-            spending hours on Excel sheets. EdZen AI was built to change that — bringing
-            AI-powered automation to schools of every size, starting with Northeast India.
+            Managing a school shouldn't mean drowning in paperwork, chasing fee payments, or spending hours on Excel
+            sheets. EdZen AI was built to change that — bringing AI-powered automation to schools of every size, across
+            India.
           </p>
         </div>
       </section>
@@ -96,8 +100,8 @@ export default function About() {
           <div className="relative rounded-2xl bg-secondary/60 border-l-4 border-primary p-8 sm:p-10">
             <Quote className="absolute top-4 right-4 h-8 w-8 text-primary/30" />
             <p className="text-xl sm:text-2xl font-medium text-foreground leading-snug italic">
-              "To make world-class school management tools accessible to every school in India —
-              regardless of size or budget."
+              "To make world-class school management tools accessible to every school in India — regardless of size or
+              budget."
             </p>
             <p className="mt-4 text-sm uppercase tracking-wider text-muted-foreground font-semibold">— Our Mission</p>
           </div>
@@ -129,7 +133,12 @@ export default function About() {
               <Button asChild size="lg" variant="secondary">
                 <Link to="/signup?plan=pro">Start Free Trial</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="bg-transparent border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="bg-transparent border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+              >
                 <Link to="/contact">Contact Us</Link>
               </Button>
             </div>
@@ -152,19 +161,38 @@ export default function About() {
             <div>
               <p className="font-semibold text-sm mb-3 uppercase tracking-wider text-muted-foreground">Platform</p>
               <nav className="space-y-2 text-sm">
-                <Link to="/#features" className="block text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-                <Link to="/about" className="block text-muted-foreground hover:text-foreground transition-colors">About</Link>
-                <Link to="/pricing" className="block text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
-                <Link to="/login" className="block text-muted-foreground hover:text-foreground transition-colors">School Portal</Link>
+                <Link to="/#features" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Features
+                </Link>
+                <Link to="/about" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  About
+                </Link>
+                <Link to="/pricing" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Pricing
+                </Link>
+                <Link to="/login" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  School Portal
+                </Link>
               </nav>
             </div>
             <div>
               <p className="font-semibold text-sm mb-3 uppercase tracking-wider text-muted-foreground">Legal</p>
               <nav className="space-y-2 text-sm">
-                <Link to="/privacy" className="block text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
-                <Link to="/terms" className="block text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
-                <Link to="/refund-policy" className="block text-muted-foreground hover:text-foreground transition-colors">Refund &amp; Cancellation</Link>
-                <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">Contact Support</Link>
+                <Link to="/privacy" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Privacy Policy
+                </Link>
+                <Link to="/terms" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Terms of Service
+                </Link>
+                <Link
+                  to="/refund-policy"
+                  className="block text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Refund &amp; Cancellation
+                </Link>
+                <Link to="/contact" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Contact Support
+                </Link>
               </nav>
             </div>
           </div>
@@ -199,13 +227,7 @@ function FeatureCard({
   );
 }
 
-function BuiltWithItem({
-  icon: Icon,
-  label,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-}) {
+function BuiltWithItem({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-4">
       <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
