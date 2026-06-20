@@ -1,45 +1,55 @@
-# Plan: About Page for EdZen AI
+# Alternate landing page at `/home-v2`
 
-## 1. New file: `src/pages/About.tsx`
-A single-page component matching the existing site's structure (same nav + footer used on `Index.tsx`, reusing tokens from `index.css` and shadcn `Button`/`Card`). Uses `usePageMeta` for SEO (title + description + canonical `/about`).
+A separate route that mirrors eduerp.ai's structural ideas but uses EdZen's existing brand (indigo/purple, current fonts, existing logo). The current `/` landing stays untouched so we can A/B and switch later.
 
-Sections, top to bottom, in the existing site container width (`max-w-6xl mx-auto px-4 sm:px-6`):
+## Route & wiring
 
-1. **Hero** — centered, generous vertical padding
-   - H1: "Built for Schools. Powered by AI."
-   - Sub: "EdZen AI was created to simplify school management for every principal, teacher, and parent across India."
+- Add `src/pages/HomeV2.tsx` (lazy-loaded) and register `/home-v2` in `src/App.tsx`.
+- Reuse the existing site navbar + footer from `Index.tsx` by extracting them into shared components only if trivial; otherwise inline the same markup/classes so visuals match exactly. Navbar links: Features, About, Pricing, Sign In, Start Free Trial (same targets as current).
+- `usePageMeta`: title "EdZen AI — School Management, Reimagined", description matching current landing tone, canonical `/home-v2`, `noindex` until promoted to `/`.
+- Add `/home-v2` to `public/sitemap.xml` only if/when we decide to index it (skip for now).
 
-2. **Our Story** — centered max-w-2xl paragraph block, heading "Our Story" + supplied 3 sentences.
+## Sections (top → bottom)
 
-3. **What We Do** — section heading + grid `grid md:grid-cols-3 gap-6`, three `Card`s.
-   - Uses lucide-react icons (no emojis in UI) styled with primary token: `GraduationCap`, `Wallet`, `Sparkles`.
-   - Each card: icon in a rounded primary-tinted square, title, description.
+1. **Hero — animated word swap**
+   - Layout: centered, eduerp-style. Small eyebrow chip "AI-Powered School ERP".
+   - H1 split into 3 lines: static word + a rotating word that cycles `Simplify → Connect → Succeed` every 2.4s using a `setInterval` + `key`-based `animate-fade-in` (Tailwind utility already in project). No new libs.
+   - Subtext: "Unify admissions, fees, attendance, and progress in one AI-powered platform — built for Indian schools."
+   - Primary CTA `Start Free Trial` → `/signup?plan=pro`. Secondary `Book a Demo` → `/contact`.
+   - Right/under: two existing product screenshots if available in `src/assets`, otherwise stacked rounded-3xl gradient cards (indigo/purple tokens). No new image generation.
 
-4. **Our Mission** — centered quote block: large serif-italic-ish styling using existing tokens, left border accent (`border-l-4 border-primary`), muted background `bg-secondary/50 rounded-2xl`, single line as supplied.
+2. **Scrolling feature marquee**
+   - Single horizontal infinite marquee of pill badges using a CSS keyframe (`@keyframes marquee` added to `tailwind.config.ts` + `index.css`). Two duplicated tracks for seamless loop, `hover:[animation-play-state:paused]`.
+   - Items (lucide-react icons + text, semantic tokens only): NEP 2020 Compliant · WhatsApp-First Communication · UPI / Razorpay Payments · AI Progress Reports · Attendance Tracking · Multi-School RLS · Parent No-Login Access · Bulk Student Import · Email + SMS Reminders · Token-Based Sharing.
 
-5. **Built With** — 2-column grid `grid sm:grid-cols-2 gap-4` of 4 items, each with lucide icon + label:
-   - Made in India (`Flag`)
-   - Designed for Indian Schools (`School`)
-   - WhatsApp-first approach (`MessageCircle`)
-   - Secure & private student data (`ShieldCheck`)
+3. **Solutions / modules grid**
+   - Heading "Everything your school runs on" + supporting line.
+   - `grid md:grid-cols-2 lg:grid-cols-3 gap-6` of 6 cards (lucide icons in `bg-primary/10 rounded-xl p-3`): Student Management, Fee Collection, Attendance, Academic Progress (NEP), Parent Communication, AI Insights. Each card: icon, title, 1-sentence description, optional "Learn more" link to existing matching page if present (else nothing — no broken links).
+   - Cards: `rounded-2xl border bg-card p-6 hover:shadow-lg transition`.
 
-6. **CTA** — centered card with heading "Ready to simplify your school?" and two buttons: `Start Free Trial` → `/signup?plan=pro`, `Contact Us` (outline) → `/contact`.
+4. **Final CTA strip**
+   - Indigo→purple gradient panel `rounded-3xl`, "Ready to simplify your school?" + Start Free Trial + Contact Us buttons. Mirrors existing landing CTA tone.
 
-Nav and footer: extract the same JSX used on `Index.tsx` (logo + Features/Pricing/About links + Login/Start Free Trial buttons; existing footer block). Implemented inline in `About.tsx` to avoid refactor scope creep — no new shared component.
+## Design rules
 
-## 2. Edit `src/pages/Index.tsx`
-- Add `<Link to="/about">About</Link>` in the desktop nav between Features and Pricing (line ~106).
-- Add same link in footer Platform nav between Features and Pricing.
+- Strictly semantic tokens (`bg-background`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `bg-card`, `border`, `text-muted-foreground`). No raw hex, no `text-white`/`bg-black`.
+- Existing fonts and logo (`@/assets/edzen-logo-full.png`).
+- Mobile-first; hero text scales `text-4xl sm:text-6xl lg:text-7xl` with `font-bold tracking-tight`.
+- Accessibility: word-swap announces via `aria-live="polite"`; marquee wrapped in `role="list"` with `aria-label`, respects `prefers-reduced-motion` (animation disabled).
 
-## 3. Edit `src/App.tsx`
-- Add `const About = lazy(() => import("./pages/About"));`
-- Add `<Route path="/about" element={<About />} />` in public routes.
+## Technical details
 
-## 4. Edit `public/sitemap.xml`
-- Add `<url><loc>https://edzenai.com/about</loc></url>` entry so the new page is indexable.
+Files:
+- `src/pages/HomeV2.tsx` (new)
+- `src/App.tsx` (add lazy import + route)
+- `tailwind.config.ts` (add `marquee` keyframe + animation)
+- `src/index.css` (add `@media (prefers-reduced-motion)` override + any helper)
 
-## Technical notes
-- No new dependencies. Uses existing: `react-router-dom`, `lucide-react`, shadcn `Button`/`Card`, `usePageMeta`.
-- All colors via semantic tokens (`bg-background`, `text-foreground`, `text-primary`, `bg-secondary`, `border-border`). No raw hex.
-- Mobile-first: stack on `sm`, row on `md`.
-- Page-level `<h1>` once; sections use `<h2>`.
+No new dependencies. No backend changes. No edits to existing `/` route, sitemap, or memory-locked landing design.
+
+## Out of scope
+
+- Replacing `/` (explicitly deferred per user choice).
+- Stats/trust bar section (not selected).
+- Testimonials (constraint: no mock testimonials).
+- New illustrations / image generation.
