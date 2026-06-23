@@ -334,6 +334,46 @@ export default function Settings() {
                   />
                 )}
               </RestrictedOverlay>
+
+              {/* WhatsApp delivery health check */}
+              <div className="pt-2 border-t space-y-3">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="flex items-start gap-2">
+                    <MessageCircle className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">WhatsApp delivery status</p>
+                      <p className="text-xs text-muted-foreground">Test the connection to the WhatsApp provider used for parent link sharing.</p>
+                    </div>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={handleTestWhatsApp} disabled={isTestingWa}>
+                    {isTestingWa ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
+                    Test WhatsApp delivery
+                  </Button>
+                </div>
+                {waResult && (
+                  <div className={`rounded-lg p-3 text-sm flex items-start gap-2 ${
+                    waResult.classification === "ok" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" :
+                    waResult.classification === "invalid_key" ? "bg-destructive/10 text-destructive" :
+                    "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                  }`}>
+                    {waResult.classification === "ok" ? <CheckCircle2 className="h-4 w-4 mt-0.5" /> :
+                     waResult.classification === "invalid_key" ? <XCircle className="h-4 w-4 mt-0.5" /> :
+                     <AlertTriangle className="h-4 w-4 mt-0.5" />}
+                    <div className="space-y-1">
+                      <p className="font-medium capitalize">{waResult.classification.replace("_", " ")}</p>
+                      <p className="text-xs opacity-80">
+                        {waResult.providerMessage} · {waResult.latencyMs}ms{waResult.httpStatus ? ` · HTTP ${waResult.httpStatus}` : ""}
+                      </p>
+                      {waResult.classification === "invalid_key" && (
+                        <p className="text-xs">The WhatsApp API key is no longer accepted by the provider. Contact support to refresh it.</p>
+                      )}
+                      {waResult.classification === "timeout" && (
+                        <p className="text-xs">The provider didn't respond in time. Usually transient — try sending the parent link again in a minute.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
