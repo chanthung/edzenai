@@ -19,7 +19,7 @@ import type { AssessmentTemplate } from "@/hooks/progress/useAssessmentTemplates
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown, GraduationCap, Image as ImageIcon } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown, GraduationCap, Image as ImageIcon, MessageCircle, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { PromotionRulesEditor } from "@/components/admin/PromotionRulesEditor";
 import { LogoUploader } from "@/components/ui/logo-uploader";
 
@@ -46,6 +46,32 @@ export default function Settings() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isUploadingQr, setIsUploadingQr] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isTestingWa, setIsTestingWa] = useState(false);
+  const [waResult, setWaResult] = useState<null | {
+    classification: "ok" | "invalid_key" | "rate_limited" | "timeout" | "invalid_number" | "unknown_error";
+    providerMessage: string;
+    latencyMs: number;
+    httpStatus: number | null;
+  }>(null);
+
+  const handleTestWhatsApp = async () => {
+    setIsTestingWa(true);
+    setWaResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-health", { body: {} });
+      if (error) throw error;
+      setWaResult(data);
+      if (data?.classification === "ok") toast.success(`WhatsApp provider OK (${data.latencyMs}ms)`);
+      else if (data?.classification === "invalid_key") toast.error("WhatsApp API key rejected by provider");
+      else if (data?.classification === "rate_limited") toast.error("WhatsApp provider rate-limited");
+      else if (data?.classification === "timeout") toast.error("WhatsApp provider timed out");
+      else toast.warning(`WhatsApp: ${data?.classification || "unknown"}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Test failed");
+    } finally {
+      setIsTestingWa(false);
+    }
+  };
 
   // Assessment template editing state
   const [editingTemplate, setEditingTemplate] = useState<AssessmentTemplate | null | undefined>(undefined);
@@ -311,6 +337,7 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+
           {/* Payment Settings */}
           <Card className="card-elevated">
             <CardHeader>
@@ -357,6 +384,46 @@ export default function Settings() {
                   <p className="text-sm text-muted-foreground">Upload your payment QR code. Parents can scan this to pay fees.</p>
                 </div>
               </RestrictedOverlay>
+
+              {/* WhatsApp delivery health check */}
+              <div className="pt-2 border-t space-y-3">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="flex items-start gap-2">
+                    <MessageCircle className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">WhatsApp delivery status</p>
+                      <p className="text-xs text-muted-foreground">Test the connection to the WhatsApp provider used for parent link sharing.</p>
+                    </div>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={handleTestWhatsApp} disabled={isTestingWa}>
+                    {isTestingWa ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
+                    Test WhatsApp delivery
+                  </Button>
+                </div>
+                {waResult && (
+                  <div className={`rounded-lg p-3 text-sm flex items-start gap-2 ${
+                    waResult.classification === "ok" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" :
+                    waResult.classification === "invalid_key" ? "bg-destructive/10 text-destructive" :
+                    "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                  }`}>
+                    {waResult.classification === "ok" ? <CheckCircle2 className="h-4 w-4 mt-0.5" /> :
+                     waResult.classification === "invalid_key" ? <XCircle className="h-4 w-4 mt-0.5" /> :
+                     <AlertTriangle className="h-4 w-4 mt-0.5" />}
+                    <div className="space-y-1">
+                      <p className="font-medium capitalize">{waResult.classification.replace("_", " ")}</p>
+                      <p className="text-xs opacity-80">
+                        {waResult.providerMessage} · {waResult.latencyMs}ms{waResult.httpStatus ? ` · HTTP ${waResult.httpStatus}` : ""}
+                      </p>
+                      {waResult.classification === "invalid_key" && (
+                        <p className="text-xs">The WhatsApp API key is no longer accepted by the provider. Contact support to refresh it.</p>
+                      )}
+                      {waResult.classification === "timeout" && (
+                        <p className="text-xs">The provider didn't respond in time. Usually transient — try sending the parent link again in a minute.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
