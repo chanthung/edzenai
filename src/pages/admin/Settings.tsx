@@ -46,6 +46,32 @@ export default function Settings() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isUploadingQr, setIsUploadingQr] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isTestingWa, setIsTestingWa] = useState(false);
+  const [waResult, setWaResult] = useState<null | {
+    classification: "ok" | "invalid_key" | "rate_limited" | "timeout" | "invalid_number" | "unknown_error";
+    providerMessage: string;
+    latencyMs: number;
+    httpStatus: number | null;
+  }>(null);
+
+  const handleTestWhatsApp = async () => {
+    setIsTestingWa(true);
+    setWaResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-health", { body: {} });
+      if (error) throw error;
+      setWaResult(data);
+      if (data?.classification === "ok") toast.success(`WhatsApp provider OK (${data.latencyMs}ms)`);
+      else if (data?.classification === "invalid_key") toast.error("WhatsApp API key rejected by provider");
+      else if (data?.classification === "rate_limited") toast.error("WhatsApp provider rate-limited");
+      else if (data?.classification === "timeout") toast.error("WhatsApp provider timed out");
+      else toast.warning(`WhatsApp: ${data?.classification || "unknown"}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Test failed");
+    } finally {
+      setIsTestingWa(false);
+    }
+  };
 
   // Assessment template editing state
   const [editingTemplate, setEditingTemplate] = useState<AssessmentTemplate | null | undefined>(undefined);
