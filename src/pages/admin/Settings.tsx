@@ -19,7 +19,7 @@ import type { AssessmentTemplate } from "@/hooks/progress/useAssessmentTemplates
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown, GraduationCap, Image as ImageIcon } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown, GraduationCap, Image as ImageIcon, MessageCircle, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { PromotionRulesEditor } from "@/components/admin/PromotionRulesEditor";
 import { LogoUploader } from "@/components/ui/logo-uploader";
 
