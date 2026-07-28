@@ -1,44 +1,44 @@
-## Goal
-Verify whether the current `WA_API_KEY` (Mayavi InfoTech) is still valid, and make it easy to refresh if not. The recent "WhatsApp service is temporarily unavailable" toast came from 3 retries timing out against the provider — the endpoint itself is reachable in <0.5s, so the most likely cause is the configured key being rate-limited, expired, or silently held by the provider.
+# Plan: EdZen AI — Interview Q&A Cheat Sheet PDF
 
-## Plan
+Deliverable: a single, print-friendly PDF at `/mnt/documents/edzenai-interview-qa.pdf` — 1–2 pages, ~15 Q&A, 2–3 sentence answers, tuned for a **full-stack / product engineer** interview.
 
-### 1. Add a diagnostic edge function: `whatsapp-health`
-- New function at `supabase/functions/whatsapp-health/index.ts`.
-- Admin-only (verifies the caller is a platform admin or school admin via JWT + `user_roles` / `school_admins`).
-- POST body: `{ testNumber?: string }` (optional — defaults to the sender number so no real message goes out).
-- Calls `https://wp.mayaviinfotech.in/send-message` once with the configured `WA_API_KEY`, **short 8 s timeout, no retries**.
-- Returns JSON:
-  ```
-  {
-    keyConfigured: boolean,
-    httpStatus: number | null,
-    providerStatus: boolean | null,
-    providerMessage: string,
-    latencyMs: number,
-    classification: "ok" | "invalid_key" | "rate_limited" | "timeout" | "invalid_number" | "unknown_error"
-  }
-  ```
-- Classification rules: `"Invali api_key"` / `"sender"` text → `invalid_key`; HTTP 429 or "limit" text → `rate_limited`; abort → `timeout`; provider `status: true` → `ok`.
+## Content outline (~15 questions)
 
-### 2. Surface it in Settings → Payment Details (admin only)
-- Add a "Test WhatsApp delivery" button next to the existing WhatsApp/parent-link section in `src/pages/Settings.tsx` (admin-only block, gated the same way the existing settings are).
-- On click: invoke `whatsapp-health`, show a toast + a small status card with `classification`, `latencyMs`, and `providerMessage`.
-- If `classification === "invalid_key"`, show an inline note: "The WhatsApp API key is no longer accepted by the provider. Contact support to refresh it." (Refresh itself is done via the `add_secret` flow below, not from the UI.)
+**Product / Why**
+1. What is EdZen AI in one line?
+2. Who is it for and why this market?
+3. What problem does it actually solve vs Entab/Fedena?
 
-### 3. Refresh `WA_API_KEY` if the diagnostic confirms it's invalid
-- If the test returns `invalid_key`, I'll trigger the secret-update flow via the `add_secret` tool for `WA_API_KEY` so you can paste the new key from Mayavi InfoTech.
-- No code change to `_shared/whatsapp.ts` is required — it already reads `WA_API_KEY` and falls back to `WHATSAPP_API_KEY`.
+**Architecture / How**
+4. What's the stack? (React 18 + Vite + TS + Tailwind + shadcn; Supabase Postgres/Auth/Edge Functions; Lovable AI Gateway → Gemini)
+5. How is multi-tenancy handled? (RLS per school_id, `has_role` security-definer, GRANTs)
+6. How do parents access data with no login? (UUID `access_token` + slugified URL)
+7. How is fee status computed? (derived from payments, not stored)
 
-### 4. No changes to existing send paths
-- `send-parent-link`, retries (3), and backoff stay as-is.
-- The existing memory rule `whatsapp-direct-messaging` (Mayavi InfoTech, +91 prepended, 2 retries / now 3) is unchanged.
+**AI features**
+8. Where does AI live in the product? (progress insights, marks import mapping, help assistant, subject suggest)
+9. Why Lovable AI Gateway + Gemini Flash? (single key, low latency, cost, structured output)
+10. How do you keep AI cost/output safe? (server-side prompts in edge functions, JSON schema output, usage tracking)
 
-## Out of scope
-- No timeout / retry tuning.
-- No background queue / auto-retry.
-- No provider switch.
+**Integrations & delivery**
+11. How do WhatsApp reminders work? (Mayavi InfoTech, 10-digit normalize + trigger, shared helper w/ retries + failure classification)
+12. How are payments handled? (Razorpay India / Paddle intl, webhook → subscription state machine)
 
-## Files to add / change
-- **Add** `supabase/functions/whatsapp-health/index.ts`
-- **Edit** `src/pages/Settings.tsx` — add the admin-only "Test WhatsApp delivery" button + result display in the Payment Details section.
+**Engineering tradeoffs**
+13. Biggest tradeoff you made? (derived fee status, no timetable, simple attendance model)
+14. How do you handle trial → restricted mode? (`system_state` + `useSubscriptionStatus` + guarded mutations)
+15. What would you build next? (AI attendance intelligence, weak-topic prediction, AI parent comms)
+
+Each answer: 2–3 sentences, plain language, one concrete file/table reference where useful.
+
+## How it will be built
+
+1. Use the **pdf skill** (ReportLab + DejaVu font for ₹ symbol) to generate a clean, single-column A4 PDF with:
+   - Header: "EdZen AI — Interview Cheat Sheet"
+   - Section dividers (Product / Architecture / AI / Integrations / Tradeoffs)
+   - Bold question, indented answer
+   - Footer: edzenai.com
+2. Convert pages to images and visually QA (no clipping, ₹ renders, fits 1–2 pages).
+3. Save to `/mnt/documents/edzenai-interview-qa.pdf` and surface with `<presentation-artifact>`.
+
+No code changes to the app. Purely a generated artifact.
