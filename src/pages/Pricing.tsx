@@ -25,7 +25,7 @@ const starterFeatures = [
   "Student management & bulk upload",
   "Fee categories, structures & payments",
   "Attendance tracking & leave records",
-  "Parent Link & Telegram notifications",
+  "Parent Link & WhatsApp notifications",
   "Academic years & promotions",
   "Teacher accounts",
   "Basic reports (view only)",
@@ -47,17 +47,22 @@ function formatINR(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
-function getPriceId(plan: 'starter' | 'pro', billing: 'monthly' | 'annual') {
+function getPriceId(plan: "starter" | "pro", billing: "monthly" | "annual") {
   return `${plan}_${billing}`;
 }
 
 export default function Pricing() {
-  usePageMeta({ title: "Pricing – EdZen AI", description: "Simple per-student pricing for EdZen AI school management. Starter from ₹7/student/month. 30-day Pro free trial, no credit card required.", canonical: "/pricing" });
+  usePageMeta({
+    title: "Pricing – EdZen AI",
+    description:
+      "Simple per-student pricing for EdZen AI school management. Starter from ₹7/student/month. 30-day Pro free trial, no credit card required.",
+    canonical: "/pricing",
+  });
   const [students, setStudents] = useState(100);
-  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('pro');
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro">("pro");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [paymentLoadingMethod, setPaymentLoadingMethod] = useState<'upi' | 'card' | null>(null);
+  const [paymentLoadingMethod, setPaymentLoadingMethod] = useState<"upi" | "card" | null>(null);
   const { data: pricing } = useSubscriptionPricing();
   const { data: tiers = [] } = useVolumeDiscounts();
   const { user } = useAuth();
@@ -71,10 +76,8 @@ export default function Pricing() {
 
   const checkoutLoading = paddleLoading || razorpayLoading;
 
-  const isOnTrialOrSubscribed = !!user && (
-    effectiveState === 'trial_active' ||
-    effectiveState === 'subscription_active'
-  );
+  const isOnTrialOrSubscribed =
+    !!user && (effectiveState === "trial_active" || effectiveState === "subscription_active");
 
   // Logged-in school context: use real roster as the source of truth.
   const isLoggedInSchool = !!user && !!school;
@@ -90,8 +93,8 @@ export default function Pricing() {
     }
   }, [isLoggedInSchool, rosterLoading, rosterCount]);
 
-  const STARTER_RATE = pricing?.find(p => p.plan === 'starter')?.per_student_fee ?? DEFAULT_STARTER_RATE;
-  const PRO_RATE = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? DEFAULT_PRO_RATE;
+  const STARTER_RATE = pricing?.find((p) => p.plan === "starter")?.per_student_fee ?? DEFAULT_STARTER_RATE;
+  const PRO_RATE = pricing?.find((p) => p.plan === "pro")?.per_student_fee ?? DEFAULT_PRO_RATE;
   const discountPct = getApplicableDiscount(students, tiers);
 
   const handleSlider = (v: number[]) => {
@@ -104,12 +107,12 @@ export default function Pricing() {
   };
 
   const applyDiscount = (total: number) => Math.max(0, total - total * (discountPct / 100));
-  const annualMultiplier = billingCycle === 'annual' ? 0.9 : 1;
+  const annualMultiplier = billingCycle === "annual" ? 0.9 : 1;
   const starterTotal = applyDiscount(students * STARTER_RATE) * annualMultiplier;
   const proTotal = applyDiscount(students * PRO_RATE) * annualMultiplier;
   const diff = PRO_RATE - STARTER_RATE;
 
-  const signupUrl = (plan: 'starter' | 'pro') => `/signup?plan=${plan}&billing=${billingCycle}`;
+  const signupUrl = (plan: "starter" | "pro") => `/signup?plan=${plan}&billing=${billingCycle}`;
 
   // Gateway minimum billable quantity (volume-pricing floor in Paddle/Razorpay).
   const GATEWAY_MIN_QTY = 10;
@@ -121,7 +124,7 @@ export default function Pricing() {
   const hasNoStudents = isLoggedInSchool && rosterCount === 0;
 
   // For logged-in users: show payment method dialog
-  const handleCheckout = (plan: 'starter' | 'pro') => {
+  const handleCheckout = (plan: "starter" | "pro") => {
     if (!user || !school) {
       toast.error("Please log in and set up your school first");
       return;
@@ -138,7 +141,7 @@ export default function Pricing() {
 
   const handlePayViaUPI = async () => {
     if (!user || !school) return;
-    setPaymentLoadingMethod('upi');
+    setPaymentLoadingMethod("upi");
     try {
       await openRazorpayCheckout({
         schoolId: school.id,
@@ -149,7 +152,7 @@ export default function Pricing() {
         customerEmail: user.email || undefined,
         onSuccess: () => {
           setPaymentDialogOpen(false);
-          navigate('/admin?checkout=success');
+          navigate("/admin?checkout=success");
         },
       });
     } catch {
@@ -161,7 +164,7 @@ export default function Pricing() {
 
   const handlePayViaCard = async () => {
     if (!user || !school) return;
-    setPaymentLoadingMethod('card');
+    setPaymentLoadingMethod("card");
     try {
       const priceId = getPriceId(selectedPlan, billingCycle);
       await openPaddleCheckout({
@@ -183,7 +186,7 @@ export default function Pricing() {
   };
 
   // Determine if the logged-in user can directly checkout (has school, not already subscribed)
-  const canDirectCheckout = !!user && !!school && effectiveState !== 'subscription_active' && !hasNoStudents;
+  const canDirectCheckout = !!user && !!school && effectiveState !== "subscription_active" && !hasNoStudents;
 
   return (
     <div className="min-h-[100dvh] bg-background">
@@ -217,9 +220,7 @@ export default function Pricing() {
       <main className="max-w-5xl mx-auto px-4 py-12 md:py-20">
         {/* Headline */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-            Simple, transparent pricing
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Simple, transparent pricing</h1>
           <p className="text-muted-foreground mt-2 text-lg max-w-xl mx-auto">
             Pay only for the students you manage. No hidden fees.
           </p>
@@ -257,8 +258,8 @@ export default function Pricing() {
                 <Link to="/admin/students" className="text-primary hover:underline font-medium">
                   Students module
                 </Link>
-                : <span className="font-semibold text-foreground tabular-nums">{rosterCount}</span> on roster.
-                You can bill for more, but not fewer.
+                : <span className="font-semibold text-foreground tabular-nums">{rosterCount}</span> on roster. You can
+                bill for more, but not fewer.
               </p>
               {isBelowGatewayMin && (
                 <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40 rounded-md px-2.5 py-1.5">
@@ -273,15 +274,15 @@ export default function Pricing() {
                   <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                   <span>
                     Add students before subscribing.{" "}
-                    <Link to="/admin/students" className="underline font-medium">Go to Students →</Link>
+                    <Link to="/admin/students" className="underline font-medium">
+                      Go to Students →
+                    </Link>
                   </span>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground text-center">
-              Drag or type to see your monthly cost
-            </p>
+            <p className="text-xs text-muted-foreground text-center">Drag or type to see your monthly cost</p>
           )}
           {discountPct > 0 && (
             <p className="text-center mt-2">
@@ -294,8 +295,18 @@ export default function Pricing() {
           {tiers.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2 mt-2">
               {tiers.map((t) => (
-                <Badge key={t.id} variant="outline" className={cn("text-xs", students >= t.min_students && (t.max_students === null || students <= t.max_students) ? "border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20" : "")}>
-                  {t.max_students != null ? `${t.min_students}–${t.max_students}` : `${t.min_students}+`} students → {t.discount_percent}% off
+                <Badge
+                  key={t.id}
+                  variant="outline"
+                  className={cn(
+                    "text-xs",
+                    students >= t.min_students && (t.max_students === null || students <= t.max_students)
+                      ? "border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20"
+                      : "",
+                  )}
+                >
+                  {t.max_students != null ? `${t.min_students}–${t.max_students}` : `${t.min_students}+`} students →{" "}
+                  {t.discount_percent}% off
                 </Badge>
               ))}
             </div>
@@ -305,28 +316,31 @@ export default function Pricing() {
         {/* Billing cycle toggle */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <button
-            onClick={() => setBillingCycle('monthly')}
+            onClick={() => setBillingCycle("monthly")}
             className={cn(
               "px-5 py-2 rounded-full text-sm font-medium transition-all",
-              billingCycle === 'monthly'
+              billingCycle === "monthly"
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80",
             )}
           >
             Monthly
           </button>
           <button
-            onClick={() => setBillingCycle('annual')}
+            onClick={() => setBillingCycle("annual")}
             className={cn(
               "px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5",
-              billingCycle === 'annual'
+              billingCycle === "annual"
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80",
             )}
           >
             <CalendarDays className="h-3.5 w-3.5" />
             Annual
-            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20">
+            <Badge
+              variant="outline"
+              className="ml-1 text-[10px] px-1.5 py-0 border-green-500 text-green-600 bg-green-50 dark:bg-green-950/20"
+            >
               Save 10%
             </Badge>
           </button>
@@ -339,13 +353,13 @@ export default function Pricing() {
           <Card
             className={cn(
               "relative flex flex-col cursor-pointer transition-all",
-              selectedPlan === 'starter'
+              selectedPlan === "starter"
                 ? "border-primary shadow-lg ring-2 ring-primary/20"
-                : "hover:border-primary/40"
+                : "hover:border-primary/40",
             )}
-            onClick={() => setSelectedPlan('starter')}
+            onClick={() => setSelectedPlan("starter")}
           >
-            {selectedPlan === 'starter' && (
+            {selectedPlan === "starter" && (
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                 <Badge className="bg-primary text-primary-foreground px-3 py-1 text-xs gap-1">
                   <Check className="h-3 w-3" /> Selected
@@ -354,9 +368,7 @@ export default function Pricing() {
             )}
             <CardHeader className="pb-4">
               <CardTitle className="text-xl">Starter</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Basic features for small schools
-              </p>
+              <p className="text-sm text-muted-foreground">Basic features for small schools</p>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <div className="mb-6">
@@ -369,10 +381,10 @@ export default function Pricing() {
                 <p className="text-sm text-muted-foreground mt-1 tabular-nums">
                   For {students} students:{" "}
                   <span className="font-semibold text-foreground">
-                    {formatINR(starterTotal)}/{billingCycle === 'annual' ? 'month (billed annually)' : 'month'}
+                    {formatINR(starterTotal)}/{billingCycle === "annual" ? "month (billed annually)" : "month"}
                   </span>
                 </p>
-                {billingCycle === 'annual' && (
+                {billingCycle === "annual" && (
                   <p className="text-xs text-green-600 font-medium mt-1">
                     You save {formatINR(applyDiscount(students * STARTER_RATE) * 12 * 0.1)}/year
                   </p>
@@ -390,13 +402,13 @@ export default function Pricing() {
 
               <PlanButton
                 plan="starter"
-                isSelected={selectedPlan === 'starter'}
+                isSelected={selectedPlan === "starter"}
                 canDirectCheckout={canDirectCheckout}
                 isOnTrialOrSubscribed={isOnTrialOrSubscribed}
                 checkoutLoading={checkoutLoading}
-                onCheckout={() => handleCheckout('starter')}
-                onSelect={() => setSelectedPlan('starter')}
-                signupUrl={signupUrl('starter')}
+                onCheckout={() => handleCheckout("starter")}
+                onSelect={() => setSelectedPlan("starter")}
+                signupUrl={signupUrl("starter")}
               />
             </CardContent>
           </Card>
@@ -405,27 +417,35 @@ export default function Pricing() {
           <Card
             className={cn(
               "relative flex flex-col cursor-pointer transition-all border-2",
-              selectedPlan === 'pro'
+              selectedPlan === "pro"
                 ? "border-primary shadow-lg ring-2 ring-primary/20"
-                : "border-primary/30 hover:border-primary/60"
+                : "border-primary/30 hover:border-primary/60",
             )}
-            onClick={() => setSelectedPlan('pro')}
+            onClick={() => setSelectedPlan("pro")}
           >
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-              <Badge className={cn(
-                "px-3 py-1 text-xs gap-1",
-                selectedPlan === 'pro'
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-primary/90 text-primary-foreground"
-              )}>
-                {selectedPlan === 'pro' ? <><Check className="h-3 w-3" /> Selected</> : <><Star className="h-3 w-3" /> Most Popular</>}
+              <Badge
+                className={cn(
+                  "px-3 py-1 text-xs gap-1",
+                  selectedPlan === "pro"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-primary/90 text-primary-foreground",
+                )}
+              >
+                {selectedPlan === "pro" ? (
+                  <>
+                    <Check className="h-3 w-3" /> Selected
+                  </>
+                ) : (
+                  <>
+                    <Star className="h-3 w-3" /> Most Popular
+                  </>
+                )}
               </Badge>
             </div>
             <CardHeader className="pb-4">
               <CardTitle className="text-xl">Pro</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Full AI-powered intelligence suite
-              </p>
+              <p className="text-sm text-muted-foreground">Full AI-powered intelligence suite</p>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <div className="mb-6">
@@ -438,10 +458,10 @@ export default function Pricing() {
                 <p className="text-sm text-muted-foreground mt-1 tabular-nums">
                   For {students} students:{" "}
                   <span className="font-semibold text-foreground">
-                    {formatINR(proTotal)}/{billingCycle === 'annual' ? 'month (billed annually)' : 'month'}
+                    {formatINR(proTotal)}/{billingCycle === "annual" ? "month (billed annually)" : "month"}
                   </span>
                 </p>
-                {billingCycle === 'annual' && (
+                {billingCycle === "annual" && (
                   <p className="text-xs text-green-600 font-medium mt-1">
                     You save {formatINR(applyDiscount(students * PRO_RATE) * 12 * 0.1)}/year
                   </p>
@@ -460,13 +480,13 @@ export default function Pricing() {
 
               <PlanButton
                 plan="pro"
-                isSelected={selectedPlan === 'pro'}
+                isSelected={selectedPlan === "pro"}
                 canDirectCheckout={canDirectCheckout}
-                isOnTrialOrSubscribed={isOnTrialOrSubscribed && effectiveState !== 'trial_active'}
+                isOnTrialOrSubscribed={isOnTrialOrSubscribed && effectiveState !== "trial_active"}
                 checkoutLoading={checkoutLoading}
-                onCheckout={() => handleCheckout('pro')}
-                onSelect={() => setSelectedPlan('pro')}
-                signupUrl={signupUrl('pro')}
+                onCheckout={() => handleCheckout("pro")}
+                onSelect={() => setSelectedPlan("pro")}
+                signupUrl={signupUrl("pro")}
                 isPro
               />
             </CardContent>
@@ -475,7 +495,7 @@ export default function Pricing() {
 
         {/* CTA + Value message */}
         <div className="text-center mb-12 space-y-4">
-          {effectiveState === 'subscription_active' ? (
+          {effectiveState === "subscription_active" ? (
             <Button size="lg" className="px-10 text-base" asChild>
               <Link to="/admin">Go to Dashboard</Link>
             </Button>
@@ -487,16 +507,16 @@ export default function Pricing() {
               disabled={checkoutLoading}
             >
               {checkoutLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {selectedPlan === 'pro' ? 'Subscribe to Pro →' : 'Subscribe to Starter →'}
+              {selectedPlan === "pro" ? "Subscribe to Pro →" : "Subscribe to Starter →"}
             </Button>
           ) : (
             <Button size="lg" className="px-10 text-base" asChild>
               <Link to={signupUrl(selectedPlan)}>
-                {selectedPlan === 'pro' ? 'Try Pro Free for 30 Days →' : 'Continue with Starter →'}
+                {selectedPlan === "pro" ? "Try Pro Free for 30 Days →" : "Continue with Starter →"}
               </Link>
             </Button>
           )}
-          {!isOnTrialOrSubscribed && selectedPlan === 'starter' && (
+          {!isOnTrialOrSubscribed && selectedPlan === "starter" && (
             <p className="inline-flex items-center gap-2 bg-accent/10 text-accent-foreground border border-accent/20 rounded-full px-5 py-2 text-sm font-medium">
               <Star className="h-4 w-4 text-accent" />
               Only {formatINR(diff)} more per student for AI-powered automation + free 30-day trial
@@ -519,9 +539,7 @@ export default function Pricing() {
 
         {/* FAQ-style trust */}
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-xl font-semibold mb-2 text-foreground">
-            Built for modern Indian schools
-          </h2>
+          <h2 className="text-xl font-semibold mb-2 text-foreground">Built for modern Indian schools</h2>
           <p className="text-muted-foreground text-sm leading-relaxed">
             NEP 2020 aligned • Works for CBSE, ICSE & State Boards • 30-day free trial on Pro plan
           </p>
@@ -535,7 +553,7 @@ export default function Pricing() {
         onSelectCard={handlePayViaCard}
         loading={paymentLoadingMethod !== null}
         loadingMethod={paymentLoadingMethod}
-        planLabel={`${selectedPlan === 'pro' ? 'Pro' : 'Starter'} (${billingCycle})`}
+        planLabel={`${selectedPlan === "pro" ? "Pro" : "Starter"} (${billingCycle})`}
       />
     </div>
   );
@@ -553,7 +571,7 @@ function PlanButton({
   signupUrl,
   isPro = false,
 }: {
-  plan: 'starter' | 'pro';
+  plan: "starter" | "pro";
   isSelected: boolean;
   canDirectCheckout: boolean;
   isOnTrialOrSubscribed: boolean;
@@ -563,14 +581,17 @@ function PlanButton({
   signupUrl: string;
   isPro?: boolean;
 }) {
-  const label = isPro ? 'Subscribe to Pro' : 'Subscribe to Starter';
-  const trialLabel = isPro ? 'Try Pro Free for 30 Days' : 'Get Started';
+  const label = isPro ? "Subscribe to Pro" : "Subscribe to Starter";
+  const trialLabel = isPro ? "Try Pro Free for 30 Days" : "Get Started";
 
   if (isSelected && canDirectCheckout) {
     return (
       <Button
         className="w-full"
-        onClick={(e) => { e.stopPropagation(); onCheckout(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onCheckout();
+        }}
         disabled={checkoutLoading}
       >
         {checkoutLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -583,7 +604,7 @@ function PlanButton({
     return (
       <Button className="w-full" asChild>
         <Link to={signupUrl} onClick={(e) => e.stopPropagation()}>
-          {isPro ? 'Try Pro Free for 30 Days →' : 'Continue with Starter →'}
+          {isPro ? "Try Pro Free for 30 Days →" : "Continue with Starter →"}
         </Link>
       </Button>
     );
@@ -591,11 +612,14 @@ function PlanButton({
 
   return (
     <Button
-      variant={isSelected ? 'default' : 'outline'}
+      variant={isSelected ? "default" : "outline"}
       className="w-full"
-      onClick={(e) => { e.stopPropagation(); onSelect(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
     >
-      {isSelected ? '✓ Selected' : trialLabel}
+      {isSelected ? "✓ Selected" : trialLabel}
     </Button>
   );
 }
