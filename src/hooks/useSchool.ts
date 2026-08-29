@@ -71,11 +71,10 @@ export function useUpdateSchool() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
-      const { data: school } = await supabase
-        .from('schools')
-        .select('id')
-        .limit(1)
-        .single();
+      const managedId = getManagedSchoolId();
+      let schoolQuery = supabase.from('schools').select('id');
+      if (managedId) schoolQuery = schoolQuery.eq('id', managedId);
+      const { data: school } = await schoolQuery.limit(1).single();
       
       if (!school) throw new Error('School not found');
       
