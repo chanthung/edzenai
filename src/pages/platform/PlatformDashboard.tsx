@@ -456,6 +456,19 @@ export default function PlatformDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setManagedSchoolId(school.id);
+                                  queryClient.clear();
+                                  navigate("/admin");
+                                }}
+                                title="Manage this school"
+                                className="text-primary hover:text-primary"
+                              >
+                                <LogIn className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="sm" onClick={() => setEditingSchool(school)} title="Edit">
                                 <Pencil className="h-4 w-4" />
                               </Button>

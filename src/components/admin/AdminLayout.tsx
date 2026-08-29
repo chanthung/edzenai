@@ -248,6 +248,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         {/* Main content */}
         <main className="flex-1 lg:pl-[260px]">
           <div className="p-4 sm:p-6 lg:px-8 lg:py-7 max-w-7xl mx-auto">
+            <ManagedSchoolBanner />
             {/* Lifecycle banner (replaces TrialBanner / SubscriptionBanner) */}
             <div className="mb-6">
               <LifecycleBanner />
