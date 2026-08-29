@@ -40,15 +40,15 @@ export interface School {
 
 export function useSchool() {
   const { user } = useAuth();
+  const managedSchoolId = useManagedSchoolId();
   
   return useQuery({
-    queryKey: ['school', user?.id],
+    queryKey: ['school', user?.id, managedSchoolId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('schools')
-        .select('*')
-        .limit(1)
-        .single();
+      let query = supabase.from('schools').select('*');
+      if (managedSchoolId) query = query.eq('id', managedSchoolId);
+
+      const { data, error } = await query.limit(1).single();
       
       if (error) throw error;
       return data as School;
