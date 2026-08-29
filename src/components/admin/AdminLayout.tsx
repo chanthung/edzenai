@@ -16,6 +16,7 @@ import { BlockedScreen } from "@/components/admin/BlockedScreen";
 import { useLifecycleStage } from "@/hooks/useLifecycleStage";
 import { useAccessBlock } from "@/hooks/useAccessBlock";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
+import { ManagedSchoolBanner } from "@/components/admin/ManagedSchoolBanner";
 import { PLAN_DISPLAY } from "@/config/plan-features";
 import { 
   GraduationCap, 

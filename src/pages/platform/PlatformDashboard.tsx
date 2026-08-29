@@ -7,7 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard, Handshake, Trash2, ShieldX, ShieldCheck } from "lucide-react";
+import { Loader2, Plus, Building2, Users, LogOut, Shield, Pencil, Zap, Clock, AlertTriangle, Settings2, IndianRupee, Search, FileText, CreditCard, Handshake, Trash2, ShieldX, ShieldCheck, LogIn } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { setManagedSchoolId } from "@/contexts/ManagedSchoolContext";
 import { toast } from "sonner";
 import { CreateSchoolDialog } from "@/components/platform/CreateSchoolDialog";
 import { EditSchoolDialog } from "@/components/platform/EditSchoolDialog";
@@ -63,6 +65,7 @@ interface InvoiceData {
 export default function PlatformDashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isPlatformAdmin, setIsPlatformAdmin] = useState<boolean | null>(null);
   const [schools, setSchools] = useState<School[]>([]);
   const [studentCounts, setStudentCounts] = useState<Record<string, number>>({});
