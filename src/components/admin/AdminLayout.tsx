@@ -17,6 +17,7 @@ import { useLifecycleStage } from "@/hooks/useLifecycleStage";
 import { useAccessBlock } from "@/hooks/useAccessBlock";
 import { SchoolStatusBadge } from "@/components/admin/SchoolStatusBadge";
 import { ManagedSchoolBanner } from "@/components/admin/ManagedSchoolBanner";
+import { useManagedSchoolId } from "@/contexts/ManagedSchoolContext";
 import { PLAN_DISPLAY } from "@/config/plan-features";
 import { 
   GraduationCap, 
@@ -56,7 +57,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { effectiveState, daysRemaining, isRestricted, currentPlan, canAccessFeature } = useSubscriptionStatus();
   const { isHardLocked } = useLifecycleStage();
   const { blocked } = useAccessBlock();
-  const { isAccountant, isLoading: roleLoading } = useUserRole();
+  const { isAccountant, isPlatformAdmin, isLoading: roleLoading } = useUserRole();
+  const managedSchoolId = useManagedSchoolId();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -81,6 +83,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Platform admins must pick a school to manage before entering the admin app
+  if (!roleLoading && isPlatformAdmin && !managedSchoolId) {
+    return <Navigate to="/platform" replace />;
   }
 
   // Hard block by platform admin (suspicious activity)
