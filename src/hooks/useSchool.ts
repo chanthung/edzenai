@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscriptionStatus } from './useSubscriptionStatus';
+import { useManagedSchoolId, getManagedSchoolId } from '@/contexts/ManagedSchoolContext';
 
 export interface School {
   id: string;
@@ -40,15 +41,15 @@ export interface School {
 
 export function useSchool() {
   const { user } = useAuth();
+  const managedSchoolId = useManagedSchoolId();
   
   return useQuery({
-    queryKey: ['school', user?.id],
+    queryKey: ['school', user?.id, managedSchoolId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('schools')
-        .select('*')
-        .limit(1)
-        .single();
+      let query = supabase.from('schools').select('*');
+      if (managedSchoolId) query = query.eq('id', managedSchoolId);
+
+      const { data, error } = await query.limit(1).single();
       
       if (error) throw error;
       return data as School;
@@ -70,11 +71,10 @@ export function useUpdateSchool() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
-      const { data: school } = await supabase
-        .from('schools')
-        .select('id')
-        .limit(1)
-        .single();
+      const managedId = getManagedSchoolId();
+      let schoolQuery = supabase.from('schools').select('id');
+      if (managedId) schoolQuery = schoolQuery.eq('id', managedId);
+      const { data: school } = await schoolQuery.limit(1).single();
       
       if (!school) throw new Error('School not found');
       
