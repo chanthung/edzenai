@@ -108,7 +108,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
   };
 
   const computeSystemState = () => {
-    if (school?.payment_verified && formData.subscription_status === 'active') {
+    if (formData.subscription_status === 'active') {
       return 'subscription_active' as const;
     }
     if (!formData.trial_end_date) {
@@ -123,6 +123,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     }
     return 'trial_expired' as const;
   };
+
 
   const handleSubmit = async () => {
     if (!school) return;
