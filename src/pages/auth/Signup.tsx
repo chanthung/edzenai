@@ -16,7 +16,10 @@ import { useSubscriptionPricing, DEFAULT_STARTER_RATE, DEFAULT_PRO_RATE } from "
 import { SchoolAutocomplete } from "@/components/ui/school-autocomplete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { INDIAN_STATES } from "@/lib/indian-states";
+import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
 import { usePageMeta } from "@/hooks/usePageMeta";
+
 
 export default function Signup() {
   usePageMeta({
