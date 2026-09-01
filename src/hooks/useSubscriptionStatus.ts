@@ -114,11 +114,12 @@ function calculateDaysRemaining(trialEndDate: string | null): number | null {
 
 export function useSubscriptionStatus() {
   const { user } = useAuth();
+  const managedSchoolId = useManagedSchoolId();
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['subscription-status', user?.id],
+    queryKey: ['subscription-status', user?.id, managedSchoolId],
     queryFn: async (): Promise<SubscriptionInfo | null> => {
-      const { data: schoolData, error: schoolError } = await supabase
+      let query = supabase
         .from('schools')
         .select(`
           id,
@@ -130,9 +131,14 @@ export function useSubscriptionStatus() {
           subscription_status,
           subscription_type,
           subscription_plan
-        `)
+        `);
+
+      if (managedSchoolId) query = query.eq('id', managedSchoolId);
+
+      const { data: schoolData, error: schoolError } = await query
         .limit(1)
         .maybeSingle();
+
 
       if (schoolError) throw schoolError;
       if (!schoolData) return null;
