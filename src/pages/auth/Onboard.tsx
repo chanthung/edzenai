@@ -73,6 +73,7 @@ export default function Onboard() {
         return;
       }
 
+      try { sessionStorage.removeItem("edzen_signup_plan"); } catch { /* ignore */ }
       toast.success(selectedPlan === 'pro' ? "Welcome! Your 30-day Pro trial has started 🚀" : "Welcome! Your Starter plan is active 🎉");
       navigate("/admin/getting-started", { replace: true });
     } catch (err: any) {
