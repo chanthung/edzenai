@@ -30,6 +30,9 @@ export default function Signup() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const { signInWithOAuth } = useAuth();
+
 
   // Referral code from ?ref=
   const [referralCode, setReferralCode] = useState<string>("");
