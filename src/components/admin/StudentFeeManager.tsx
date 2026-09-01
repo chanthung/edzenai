@@ -123,6 +123,8 @@ export function StudentFeeManager({ student, open, onOpenChange }: StudentFeeMan
               activeYear={activeYear}
               academicYearId={activeYear?.id}
               studentId={student.id}
+              studentClassName={student.class_name}
+
               onToggleFee={handleToggleFee}
             />
           )}
