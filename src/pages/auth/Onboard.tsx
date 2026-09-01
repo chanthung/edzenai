@@ -29,7 +29,14 @@ export default function Onboard() {
   const [stateName, setStateName] = useState("");
   const [adminName, setAdminName] = useState("");
   const [phone, setPhone] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("pro");
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(() => {
+    try {
+      return sessionStorage.getItem("edzen_signup_plan") === "starter" ? "starter" : "pro";
+    } catch {
+      return "pro";
+    }
+  });
+
 
   useEffect(() => {
     if (!user) {
@@ -66,6 +73,7 @@ export default function Onboard() {
         return;
       }
 
+      try { sessionStorage.removeItem("edzen_signup_plan"); } catch { /* ignore */ }
       toast.success(selectedPlan === 'pro' ? "Welcome! Your 30-day Pro trial has started 🚀" : "Welcome! Your Starter plan is active 🎉");
       navigate("/admin/getting-started", { replace: true });
     } catch (err: any) {
