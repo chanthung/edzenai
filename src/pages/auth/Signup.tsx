@@ -71,6 +71,19 @@ export default function Signup() {
   const proRate = pricing?.find(p => p.plan === 'pro')?.per_student_fee ?? DEFAULT_PRO_RATE;
   const isProTrial = selectedPlan === 'pro';
 
+  const handleGoogleSignup = async () => {
+    setOauthLoading(true);
+    try {
+      sessionStorage.setItem("edzen_signup_plan", selectedPlan);
+    } catch { /* ignore */ }
+    const { error } = await signInWithOAuth("google");
+    if (error) {
+      toast.error("Sign up with Google failed", { description: error.message });
+      setOauthLoading(false);
+    }
+  };
+
+
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
     if (!schoolName || !city || !stateName || !adminName || !email || !phone || !password || !confirmPassword) {
