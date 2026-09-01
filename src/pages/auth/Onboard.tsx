@@ -29,7 +29,14 @@ export default function Onboard() {
   const [stateName, setStateName] = useState("");
   const [adminName, setAdminName] = useState("");
   const [phone, setPhone] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>("pro");
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(() => {
+    try {
+      return sessionStorage.getItem("edzen_signup_plan") === "starter" ? "starter" : "pro";
+    } catch {
+      return "pro";
+    }
+  });
+
 
   useEffect(() => {
     if (!user) {
