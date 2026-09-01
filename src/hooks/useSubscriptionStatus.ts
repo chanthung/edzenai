@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useManagedSchoolId } from '@/contexts/ManagedSchoolContext';
+
 import { canAccessFeature as checkFeatureAccess, type SubscriptionPlan, type PlanFeature } from '@/config/plan-features';
 
 export type SystemState = 'trial_active' | 'trial_expired' | 'subscription_active' | 'restricted_mode';
@@ -114,11 +116,12 @@ function calculateDaysRemaining(trialEndDate: string | null): number | null {
 
 export function useSubscriptionStatus() {
   const { user } = useAuth();
+  const managedSchoolId = useManagedSchoolId();
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['subscription-status', user?.id],
+    queryKey: ['subscription-status', user?.id, managedSchoolId],
     queryFn: async (): Promise<SubscriptionInfo | null> => {
-      const { data: schoolData, error: schoolError } = await supabase
+      let query = supabase
         .from('schools')
         .select(`
           id,
@@ -130,9 +133,14 @@ export function useSubscriptionStatus() {
           subscription_status,
           subscription_type,
           subscription_plan
-        `)
+        `);
+
+      if (managedSchoolId) query = query.eq('id', managedSchoolId);
+
+      const { data: schoolData, error: schoolError } = await query
         .limit(1)
         .maybeSingle();
+
 
       if (schoolError) throw schoolError;
       if (!schoolData) return null;

@@ -108,7 +108,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
   };
 
   const computeSystemState = () => {
-    if (school?.payment_verified && formData.subscription_status === 'active') {
+    if (formData.subscription_status === 'active') {
       return 'subscription_active' as const;
     }
     if (!formData.trial_end_date) {
@@ -123,6 +123,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
     }
     return 'trial_expired' as const;
   };
+
 
   const handleSubmit = async () => {
     if (!school) return;
@@ -154,7 +155,9 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
           trial_start_date: formData.trial_start_date || null,
           trial_end_date: formData.trial_end_date || null,
           system_state: computedState,
+          payment_verified: formData.subscription_status === 'active',
           subscription_plan: formData.subscription_plan,
+
           custom_per_student_fee: customFee,
           discount_percent: discount,
           billing_cycle: formData.billing_cycle,
