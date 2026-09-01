@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useManagedSchoolId } from '@/contexts/ManagedSchoolContext';
+
 import { canAccessFeature as checkFeatureAccess, type SubscriptionPlan, type PlanFeature } from '@/config/plan-features';
 
 export type SystemState = 'trial_active' | 'trial_expired' | 'subscription_active' | 'restricted_mode';
