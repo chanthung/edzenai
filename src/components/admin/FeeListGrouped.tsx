@@ -15,6 +15,7 @@ interface FeeListGroupedProps {
   activeYear: any;
   academicYearId: string | undefined;
   studentId: string;
+  studentClassName?: string | null;
   onToggleFee: (structureId: string, isAssigned: boolean) => void;
 }
 
@@ -27,6 +28,7 @@ export function FeeListGrouped({
   activeYear,
   academicYearId,
   studentId,
+  studentClassName,
   onToggleFee,
 }: FeeListGroupedProps) {
   const { data: allFscData } = useAllFeeStructureClasses(academicYearId);
@@ -53,6 +55,14 @@ export function FeeListGrouped({
     // Check if this fee has new_admission_only enabled
     const fscEntries = structureId ? allFscData?.filter((f) => f.fee_structure_id === structureId) : [];
     const isNewAdmissionOnly = fscEntries?.some((f) => f.new_admission_only) ?? false;
+
+    // Fee is scoped to classes that don't include this student's class
+    const notForThisClass =
+      !!structureId &&
+      !!studentClassName &&
+      (fscEntries?.length ?? 0) > 0 &&
+      !fscEntries!.some((f) => f.class_name === studentClassName);
+
 
     return (
       <div
@@ -84,6 +94,12 @@ export function FeeListGrouped({
             {isNewAdmissionOnly && !isAssigned && (
               <Badge variant="outline" className="text-xs text-muted-foreground">Optional for continuing</Badge>
             )}
+            {notForThisClass && (
+              <Badge variant="outline" className="text-xs text-amber-600 border-amber-200">
+                Not for this class
+              </Badge>
+            )}
+
             {isAssigned && (
               <Badge className="text-xs bg-green-500/10 text-green-600 border-green-200">
                 <CheckCircle2 className="h-3 w-3 mr-1" />

@@ -98,7 +98,55 @@ export function useUpdateFeeStructureClasses() {
           }
         }
       }
+
+      // Un-assign this fee from students of classes that were removed,
+      // keeping students that already have payments / payment proofs on it.
+      const removedClasses = [...existingSet].filter((c) => !classes.includes(c));
+      if (removedClasses.length > 0) {
+        const { data: fs } = await supabase
+          .from('fee_structures')
+          .select('school_id')
+          .eq('id', feeStructureId)
+          .single();
+
+        if (fs?.school_id) {
+          const { data: affectedStudents } = await supabase
+            .from('students')
+            .select('id')
+            .eq('school_id', fs.school_id)
+            .in('class_name', removedClasses);
+
+          const studentIds = (affectedStudents ?? []).map((s) => s.id);
+          if (studentIds.length > 0) {
+            const { data: insts } = await supabase
+              .from('installments')
+              .select('id')
+              .eq('fee_structure_id', feeStructureId);
+            const instIds = (insts ?? []).map((i) => i.id);
+
+            const protectedIds = new Set<string>();
+            if (instIds.length > 0) {
+              const [{ data: pays }, { data: proofs }] = await Promise.all([
+                supabase.from('payments').select('student_id').in('installment_id', instIds).in('student_id', studentIds),
+                supabase.from('payment_proofs').select('student_id').in('installment_id', instIds).in('student_id', studentIds),
+              ]);
+              (pays ?? []).forEach((p) => protectedIds.add(p.student_id));
+              (proofs ?? []).forEach((p) => protectedIds.add(p.student_id));
+            }
+
+            const toRemove = studentIds.filter((id) => !protectedIds.has(id));
+            if (toRemove.length > 0) {
+              await supabase
+                .from('student_fees')
+                .delete()
+                .eq('fee_structure_id', feeStructureId)
+                .in('student_id', toRemove);
+            }
+          }
+        }
+      }
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fee-structure-classes'] });
       queryClient.invalidateQueries({ queryKey: ['student-fees'] });
