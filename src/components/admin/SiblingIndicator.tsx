@@ -23,21 +23,35 @@ function truncate(val: string | null | undefined, max = 60): string {
   return s.length > max ? s.slice(0, max) + "…" : s;
 }
 
+function normPhone(val: string | null | undefined): string {
+  const digits = (val ?? "").replace(/\D/g, "");
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
 function findSiblings(student: Student, allStudents: Student[]): Student[] {
-  const phone = normalize(student.parent_phone);
+  const phone = normPhone(student.parent_phone);
   const parentName = normalize(student.parent_name);
   const guardian = normalize(student.guardian);
-  const address = normalize(student.address);
 
   return allStudents.filter((s) => {
     if (s.id === student.id) return false;
-    if (phone && normalize(s.parent_phone) === phone) return true;
+
+    const sPhone = normPhone(s.parent_phone);
+
+    // Primary: same parent phone
+    if (phone && sPhone && phone === sPhone) return true;
+
+    // Different known phones => never siblings
+    if (phone && sPhone && phone !== sPhone) return false;
+
+    // Secondary: exact parent/guardian name match, only when a phone is missing
     if (parentName.length > 2 && normalize(s.parent_name) === parentName) return true;
     if (guardian.length > 2 && normalize(s.guardian) === guardian) return true;
-    if (address.length > 5 && normalize(s.address) === address) return true;
+
     return false;
   }).slice(0, MAX_SIBLINGS_SHOWN);
 }
+
 
 /** Shared content rendered inside HoverCard or Dialog */
 function FamilyContent({
