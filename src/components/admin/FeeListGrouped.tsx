@@ -15,6 +15,7 @@ interface FeeListGroupedProps {
   activeYear: any;
   academicYearId: string | undefined;
   studentId: string;
+  studentClassName?: string | null;
   onToggleFee: (structureId: string, isAssigned: boolean) => void;
 }
 
@@ -27,6 +28,7 @@ export function FeeListGrouped({
   activeYear,
   academicYearId,
   studentId,
+  studentClassName,
   onToggleFee,
 }: FeeListGroupedProps) {
   const { data: allFscData } = useAllFeeStructureClasses(academicYearId);
@@ -53,6 +55,14 @@ export function FeeListGrouped({
     // Check if this fee has new_admission_only enabled
     const fscEntries = structureId ? allFscData?.filter((f) => f.fee_structure_id === structureId) : [];
     const isNewAdmissionOnly = fscEntries?.some((f) => f.new_admission_only) ?? false;
+
+    // Fee is scoped to classes that don't include this student's class
+    const notForThisClass =
+      !!structureId &&
+      !!studentClassName &&
+      (fscEntries?.length ?? 0) > 0 &&
+      !fscEntries!.some((f) => f.class_name === studentClassName);
+
 
     return (
       <div
