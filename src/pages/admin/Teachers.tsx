@@ -20,7 +20,7 @@ import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { EditTeacherDialog } from "@/components/admin/EditTeacherDialog";
-import { Plus, UserPlus, Mail, User, Pencil, BookOpen, School, Send, Phone, RefreshCw, X, Clock } from "lucide-react";
+import { Plus, UserPlus, Mail, User, Pencil, BookOpen, School, Send, Phone, RefreshCw, X, Clock, IdCard } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type DeliveryMethod = 'email' | 'whatsapp' | 'both';
@@ -32,6 +32,7 @@ export default function Teachers() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    employee_id: "",
     role: "teacher" as "teacher" | "accountant",
     delivery: "email" as DeliveryMethod,
     phone: "",
@@ -68,7 +69,7 @@ export default function Teachers() {
   const [editingTeacher, setEditingTeacher] = useState<typeof teachers[0] | null>(null);
 
   const resetForm = () => {
-    setFormData({ name: "", email: "", role: "teacher", delivery: "email", phone: "" });
+    setFormData({ name: "", email: "", employee_id: "", role: "teacher", delivery: "email", phone: "" });
     setAddSelectedSubjects([]);
     setAddSelectedClassSections(new Set());
   };
@@ -96,6 +97,7 @@ export default function Teachers() {
     await inviteUser.mutateAsync({
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
+      employee_id: formData.employee_id.trim() || null,
       role: formData.role,
       delivery_method: formData.delivery,
       phone: formData.phone.trim() || null,
@@ -167,6 +169,15 @@ export default function Teachers() {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input id="email" type="email" placeholder="user@school.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="pl-10" required />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="employee_id">Employee ID <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <div className="relative">
+                    <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="employee_id" placeholder="e.g. EMP-001" value={formData.employee_id} onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })} className="pl-10" maxLength={40} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Your school's own staff code. Must be unique within the school.</p>
                 </div>
 
                 {/* Delivery method */}
@@ -257,6 +268,7 @@ export default function Teachers() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Employee ID</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
@@ -275,6 +287,7 @@ export default function Teachers() {
                           Last sent {formatDistanceToNow(new Date(inv.last_sent_at), { addSuffix: true })}
                         </div>
                       </TableCell>
+                      <TableCell className="text-sm">{inv.employee_id || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell>{inv.email}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={inv.role === 'accountant' ? 'border-amber-500 text-amber-700' : 'border-blue-500 text-blue-700'}>
@@ -323,6 +336,7 @@ export default function Teachers() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Employee ID</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
@@ -334,6 +348,7 @@ export default function Teachers() {
                 {teachers.map((teacher) => (
                   <TableRow key={teacher.id}>
                     <TableCell className="font-medium">{teacher.name}</TableCell>
+                    <TableCell className="text-sm">{teacher.employee_id || <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell>{teacher.email}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={teacher.role === 'accountant' ? 'border-amber-500 text-amber-700' : 'border-blue-500 text-blue-700'}>

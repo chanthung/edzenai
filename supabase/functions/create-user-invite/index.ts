@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
     const {
       name,
       email,
+      employee_id = null,
       role = 'teacher',
       delivery_method = 'email',
       phone = null,
@@ -152,6 +153,7 @@ Deno.serve(async (req) => {
         invited_by: callerUser.id,
         delivery_method,
         phone: phone?.trim() || null,
+        employee_id: typeof employee_id === 'string' && employee_id.trim() ? employee_id.trim().slice(0, 40) : null,
         assignments,
       })
       .select('id, token, expires_at')

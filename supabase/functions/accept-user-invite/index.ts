@@ -127,6 +127,7 @@ Deno.serve(async (req) => {
         name: invite.name,
         email: invite.email,
         role: invite.role,
+        employee_id: invite.employee_id ?? null,
       })
       .select('id')
       .single();
