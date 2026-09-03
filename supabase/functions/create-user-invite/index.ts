@@ -127,6 +127,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    const empId = typeof employee_id === 'string' && employee_id.trim() ? employee_id.trim().slice(0, 40) : null;
+    if (empId) {
+      const [{ data: dupStaff }, { data: dupInvite }] = await Promise.all([
+        supabaseAdmin.from('school_teachers').select('id')
+          .eq('school_id', schoolAdmin.school_id).ilike('employee_id', empId).maybeSingle(),
+        supabaseAdmin.from('user_invites').select('id')
+          .eq('school_id', schoolAdmin.school_id).ilike('employee_id', empId).is('accepted_at', null).maybeSingle(),
+      ]);
+      if (dupStaff || dupInvite) {
+        return new Response(JSON.stringify({ error: 'That Employee ID is already used in your school' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Cancel any prior pending invite for the same email/school
     await supabaseAdmin
       .from('user_invites')
@@ -153,7 +168,7 @@ Deno.serve(async (req) => {
         invited_by: callerUser.id,
         delivery_method,
         phone: phone?.trim() || null,
-        employee_id: typeof employee_id === 'string' && employee_id.trim() ? employee_id.trim().slice(0, 40) : null,
+        employee_id: empId,
         assignments,
       })
       .select('id, token, expires_at')
