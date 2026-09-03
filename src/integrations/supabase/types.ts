@@ -1511,6 +1511,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          employee_id: string | null
           id: string
           is_active: boolean
           name: string
@@ -1522,6 +1523,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          employee_id?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -1533,6 +1535,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          employee_id?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -2411,6 +2414,7 @@ export type Database = {
           created_at: string
           delivery_method: Database["public"]["Enums"]["invite_delivery_method"]
           email: string
+          employee_id: string | null
           expires_at: string
           id: string
           invited_by: string
@@ -2428,6 +2432,7 @@ export type Database = {
           created_at?: string
           delivery_method?: Database["public"]["Enums"]["invite_delivery_method"]
           email: string
+          employee_id?: string | null
           expires_at?: string
           id?: string
           invited_by: string
@@ -2445,6 +2450,7 @@ export type Database = {
           created_at?: string
           delivery_method?: Database["public"]["Enums"]["invite_delivery_method"]
           email?: string
+          employee_id?: string | null
           expires_at?: string
           id?: string
           invited_by?: string
