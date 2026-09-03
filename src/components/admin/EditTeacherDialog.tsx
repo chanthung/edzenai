@@ -11,7 +11,7 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectsWithClasses } from "@/hooks/progress/useSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mail, User, BookOpen, ChevronRight } from "lucide-react";
+import { Loader2, Mail, User, BookOpen, ChevronRight, IdCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sortClassNames } from "@/lib/class-sort";
 
@@ -28,6 +28,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
 
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editEmployeeId, setEditEmployeeId] = useState("");
   // Set of "subjectId::className" keys
   const [selectedPairs, setSelectedPairs] = useState<Set<string>>(new Set());
   const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
@@ -37,6 +38,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
     if (teacher) {
       setEditName(teacher.name);
       setEditEmail(teacher.email);
+      setEditEmployeeId(teacher.employee_id ?? "");
     }
   }, [teacher]);
 
@@ -51,11 +53,19 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
   const handleSave = async () => {
     if (!teacher || !editName.trim() || !editEmail.trim()) return;
 
-    await updateTeacher.mutateAsync({
-      id: teacher.id,
-      name: editName.trim(),
-      is_active: teacher.is_active,
-    });
+    try {
+      await updateTeacher.mutateAsync({
+        id: teacher.id,
+        name: editName.trim(),
+        is_active: teacher.is_active,
+        employee_id: editEmployeeId.trim() || null,
+      });
+    } catch (err: any) {
+      if (typeof err?.message === 'string' && err.message.toLowerCase().includes('duplicate')) {
+        toast.error("That Employee ID is already used by another user in this school");
+      }
+      return;
+    }
 
     if (editEmail.trim() !== teacher.email) {
       const { error } = await supabase
@@ -148,6 +158,12 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
           <div className="space-y-2">
             <Label><Mail className="h-4 w-4 inline mr-1" />Email Address</Label>
             <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="teacher@school.com" />
+          </div>
+
+          <div className="space-y-2">
+            <Label><IdCard className="h-4 w-4 inline mr-1" />Employee ID</Label>
+            <Input value={editEmployeeId} onChange={(e) => setEditEmployeeId(e.target.value)} placeholder="e.g. EMP-001" maxLength={40} />
+            <p className="text-xs text-muted-foreground">Optional. Must be unique within your school.</p>
           </div>
 
           {/* Subject-Class Assignments */}
