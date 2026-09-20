@@ -6,3 +6,4 @@
 - [x] Revise timetable design for multi-tenant isolation (v3)
 - [x] Add dedicated least-privilege timetable service DB role + teacher availability privacy to the design
 - [x] Replace broad service-role RLS with transaction-scoped verified tenant context (3-layer model)
+- [x] Implement the nine timetable_* tables, tenant triggers, composite FKs, RLS, least-privilege timetable_service role and tenant-context functions
