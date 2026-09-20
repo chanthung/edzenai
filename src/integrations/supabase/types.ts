@@ -2407,6 +2407,579 @@ export type Database = {
           },
         ]
       }
+      timetable_breaks: {
+        Row: {
+          academic_year_id: string
+          after_period: number
+          break_type: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          is_active: boolean
+          school_id: string
+          updated_at: string
+          weekday: number | null
+        }
+        Insert: {
+          academic_year_id: string
+          after_period: number
+          break_type?: string
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          is_active?: boolean
+          school_id: string
+          updated_at?: string
+          weekday?: number | null
+        }
+        Update: {
+          academic_year_id?: string
+          after_period?: number
+          break_type?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          school_id?: string
+          updated_at?: string
+          weekday?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_breaks_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_breaks_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timetable_entries: {
+        Row: {
+          academic_year_id: string
+          class_name: string
+          created_at: string
+          elective_group: string | null
+          id: string
+          is_locked: boolean
+          room_id: string | null
+          run_id: string
+          school_id: string
+          section: string | null
+          subject_id: string
+          teacher_id: string | null
+          time_slot_id: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year_id: string
+          class_name: string
+          created_at?: string
+          elective_group?: string | null
+          id?: string
+          is_locked?: boolean
+          room_id?: string | null
+          run_id: string
+          school_id: string
+          section?: string | null
+          subject_id: string
+          teacher_id?: string | null
+          time_slot_id: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year_id?: string
+          class_name?: string
+          created_at?: string
+          elective_group?: string | null
+          id?: string
+          is_locked?: boolean
+          room_id?: string | null
+          run_id?: string
+          school_id?: string
+          section?: string | null
+          subject_id?: string
+          teacher_id?: string | null
+          time_slot_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_entries_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_room_id_school_id_fkey"
+            columns: ["room_id", "school_id"]
+            isOneToOne: false
+            referencedRelation: "timetable_rooms"
+            referencedColumns: ["id", "school_id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_run_id_school_id_academic_year_id_fkey"
+            columns: ["run_id", "school_id", "academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "timetable_runs"
+            referencedColumns: ["id", "school_id", "academic_year_id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "school_teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_time_slot_id_school_id_academic_year_id_fkey"
+            columns: ["time_slot_id", "school_id", "academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "timetable_time_slots"
+            referencedColumns: ["id", "school_id", "academic_year_id"]
+          },
+        ]
+      }
+      timetable_room_requirements: {
+        Row: {
+          academic_year_id: string | null
+          class_name: string | null
+          created_at: string
+          id: string
+          is_mandatory: boolean
+          preferred_room_id: string | null
+          required_room_type: string | null
+          school_id: string
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year_id?: string | null
+          class_name?: string | null
+          created_at?: string
+          id?: string
+          is_mandatory?: boolean
+          preferred_room_id?: string | null
+          required_room_type?: string | null
+          school_id: string
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year_id?: string | null
+          class_name?: string | null
+          created_at?: string
+          id?: string
+          is_mandatory?: boolean
+          preferred_room_id?: string | null
+          required_room_type?: string | null
+          school_id?: string
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_room_requirements_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_room_requirements_preferred_room_id_school_id_fkey"
+            columns: ["preferred_room_id", "school_id"]
+            isOneToOne: false
+            referencedRelation: "timetable_rooms"
+            referencedColumns: ["id", "school_id"]
+          },
+          {
+            foreignKeyName: "timetable_room_requirements_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_room_requirements_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timetable_rooms: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          room_type: string
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          room_type?: string
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          room_type?: string
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_rooms_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timetable_runs: {
+        Row: {
+          academic_year_id: string
+          completed_at: string | null
+          constraints_snapshot: Json | null
+          created_at: string
+          id: string
+          notes: string | null
+          requested_by: string | null
+          school_id: string
+          solver_stats: Json | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year_id: string
+          completed_at?: string | null
+          constraints_snapshot?: Json | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          requested_by?: string | null
+          school_id: string
+          solver_stats?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year_id?: string
+          completed_at?: string | null
+          constraints_snapshot?: Json | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          requested_by?: string | null
+          school_id?: string
+          solver_stats?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_runs_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_runs_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timetable_settings: {
+        Row: {
+          academic_year_id: string
+          created_at: string
+          day_start_time: string
+          default_period_minutes: number
+          id: string
+          is_active: boolean
+          periods_per_day: number
+          school_id: string
+          updated_at: string
+          working_days: number[]
+        }
+        Insert: {
+          academic_year_id: string
+          created_at?: string
+          day_start_time?: string
+          default_period_minutes?: number
+          id?: string
+          is_active?: boolean
+          periods_per_day?: number
+          school_id: string
+          updated_at?: string
+          working_days?: number[]
+        }
+        Update: {
+          academic_year_id?: string
+          created_at?: string
+          day_start_time?: string
+          default_period_minutes?: number
+          id?: string
+          is_active?: boolean
+          periods_per_day?: number
+          school_id?: string
+          updated_at?: string
+          working_days?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_settings_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_settings_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timetable_subject_requirements: {
+        Row: {
+          academic_year_id: string
+          class_name: string
+          consecutive_periods: number
+          created_at: string
+          delivery_mode: string
+          elective_group: string | null
+          id: string
+          periods_per_week: number
+          preferred_weekdays: number[] | null
+          priority: number
+          school_id: string
+          section: string | null
+          status: string
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year_id: string
+          class_name: string
+          consecutive_periods?: number
+          created_at?: string
+          delivery_mode?: string
+          elective_group?: string | null
+          id?: string
+          periods_per_week: number
+          preferred_weekdays?: number[] | null
+          priority?: number
+          school_id: string
+          section?: string | null
+          status?: string
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year_id?: string
+          class_name?: string
+          consecutive_periods?: number
+          created_at?: string
+          delivery_mode?: string
+          elective_group?: string | null
+          id?: string
+          periods_per_week?: number
+          preferred_weekdays?: number[] | null
+          priority?: number
+          school_id?: string
+          section?: string | null
+          status?: string
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_subject_requirements_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_subject_requirements_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_subject_requirements_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timetable_teacher_availability: {
+        Row: {
+          academic_year_id: string
+          created_at: string
+          id: string
+          is_available: boolean
+          reason: string | null
+          school_id: string
+          teacher_id: string
+          time_slot_id: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year_id: string
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          reason?: string | null
+          school_id: string
+          teacher_id: string
+          time_slot_id: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year_id?: string
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          reason?: string | null
+          school_id?: string
+          teacher_id?: string
+          time_slot_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_teacher_availabilit_time_slot_id_school_id_acade_fkey"
+            columns: ["time_slot_id", "school_id", "academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "timetable_time_slots"
+            referencedColumns: ["id", "school_id", "academic_year_id"]
+          },
+          {
+            foreignKeyName: "timetable_teacher_availability_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_teacher_availability_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_teacher_availability_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "school_teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timetable_time_slots: {
+        Row: {
+          academic_year_id: string
+          created_at: string
+          end_time: string
+          id: string
+          is_active: boolean
+          period_number: number
+          school_id: string
+          start_time: string
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          academic_year_id: string
+          created_at?: string
+          end_time: string
+          id?: string
+          is_active?: boolean
+          period_number: number
+          school_id: string
+          start_time: string
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          academic_year_id?: string
+          created_at?: string
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          period_number?: number
+          school_id?: string
+          start_time?: string
+          updated_at?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_time_slots_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_time_slots_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_invites: {
         Row: {
           accepted_at: string | null
@@ -2519,7 +3092,59 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      timetable_teacher_availability_public: {
+        Row: {
+          academic_year_id: string | null
+          is_available: boolean | null
+          school_id: string | null
+          teacher_id: string | null
+          time_slot_id: string | null
+        }
+        Insert: {
+          academic_year_id?: string | null
+          is_available?: boolean | null
+          school_id?: string | null
+          teacher_id?: string | null
+          time_slot_id?: string | null
+        }
+        Update: {
+          academic_year_id?: string | null
+          is_available?: boolean | null
+          school_id?: string | null
+          teacher_id?: string | null
+          time_slot_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_teacher_availabilit_time_slot_id_school_id_acade_fkey"
+            columns: ["time_slot_id", "school_id", "academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "timetable_time_slots"
+            referencedColumns: ["id", "school_id", "academic_year_id"]
+          },
+          {
+            foreignKeyName: "timetable_teacher_availability_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_teacher_availability_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_teacher_availability_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "school_teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       auto_assign_fees_for_class: {
@@ -2668,6 +3293,20 @@ export type Database = {
           referral_code: string
         }[]
       }
+      timetable_assert_subject_school: {
+        Args: { _school_id: string; _subject_id: string }
+        Returns: undefined
+      }
+      timetable_assert_teacher_school: {
+        Args: { _school_id: string; _teacher_id: string }
+        Returns: undefined
+      }
+      timetable_assert_year_school: {
+        Args: { _academic_year_id: string; _school_id: string }
+        Returns: undefined
+      }
+      timetable_ctx_school: { Args: never; Returns: string }
+      timetable_ctx_year: { Args: never; Returns: string }
       validate_payment_proof_insert: {
         Args: { _installment_id: string; _student_id: string }
         Returns: boolean
