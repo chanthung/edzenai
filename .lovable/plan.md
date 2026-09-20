@@ -1,89 +1,93 @@
-# Timetable Service — Read-Only Database Audit
+# Proposed Timetable Data Model (design only — nothing built)
 
-No schema, data, or policy was changed. All findings come from live read-only queries.
+Nine new tables, all prefixed `timetable_`/`tt_`-style and additive. No existing table, policy, or row is touched. Teachers, subjects, students, schools, academic years, classes and sections stay in the existing EdZen AI tables and are referenced by id or by the same `class_name` / `section` text convention already used in `student_enrollments`.
 
-## 1. Table inventory
+Convention used throughout: `id uuid PK default gen_random_uuid()`, `created_at/updated_at timestamptz not null default now()`, `school_id uuid not null references schools(id) on delete cascade` on every table (needed for RLS scoping), and `class_name`/`section` as `text` matching `student_enrollments` exactly.
 
-### schools
-- Columns (relevant): `id uuid PK`, `name text`, `address`, `phone`, `email`, `logo_url`, `upi_id`, `qr_code_url`, `created_at/updated_at timestamptz`, subscription fields (`subscription_type/status/start_date/renewal_date`, `trial_start_date/end_date`, `system_state` enum, `payment_verified*`, `subscription_plan`, `custom_per_student_fee`, `discount_percent`, `billing_cycle`, `pending_amount`, `next_billing_date`), `board text`, `default_classes text[]`, `default_sections text[]`, `onboarding_completed bool`, lifecycle/purge fields, `referred_by uuid -> partners.id`, `access_blocked*`.
-- PK `id`. FK: `referred_by -> partners.id`. Indexes: `schools_pkey`, `idx_schools_referred_by`.
-- school_id: is itself. academic_year_id: no.
-- SELECT RLS: platform admins (`is_platform_admin()`), school admins (`id in get_user_school_ids()`), accountants (`get_accountant_school_ids()`), plus **`Public can view school info` = true for `anon`**.
-- Sample: `{id: 7655a339…, name: "Fun school", board: null, plan: starter, state: subscription_active}`.
+## 1. timetable_settings
+Purpose: one configuration per school per academic year.
+- `id`, `school_id` (req), `academic_year_id uuid not null -> academic_years(id)`
+- `working_days smallint[] not null` (ISO 1=Mon…7=Sun)
+- `day_start_time time not null`, `default_period_minutes smallint not null`, `periods_per_day smallint not null`
+- `is_active boolean not null default true`
+- PK `id`; FK school, academic year; unique `(school_id, academic_year_id)`; index on `school_id`.
+- academic_year_id: required.
 
-### academic_years
-- `id uuid PK`, `school_id uuid NOT NULL -> schools.id`, `name text`, `start_date date`, `end_date date`, `is_active bool default true`, `created_at`, `updated_at`.
-- Indexes: `academic_years_pkey`, `idx_academic_years_school_id`. No unique constraint on (school_id, is_active).
-- school_id: yes. academic_year_id: is itself.
-- SELECT RLS: admins, teachers, accountants — all scoped by school.
-- Sample: `2026-2027 (2026-01-15 → 2027-03-15, active)`, `2025-2026 (active)`, `2024-2025 (inactive)`.
+## 2. rooms
+Purpose: physical room inventory per school (not year-scoped, rooms outlive a year).
+- `id`, `school_id` (req), `name text not null`, `room_type text not null` (`classroom|science_lab|computer_lab|library|art|music|sports|auditorium|other`), `capacity int`, `is_active boolean not null default true`
+- PK `id`; unique `(school_id, lower(name))`; index `(school_id, room_type) where is_active`.
+- academic_year_id: not required.
 
-### school_teachers
-- `id uuid PK`, `user_id uuid`, `school_id uuid -> schools.id`, `name`, `email`, `is_active bool default true`, `created_at`, `updated_at`, `role text default 'teacher'`, `employee_id text`.
-- Indexes: `school_teachers_pkey`, unique `(user_id, school_id)`, partial unique `(school_id, lower(employee_id))`.
-- school_id: yes. academic_year_id: no (staff are not year-scoped).
-- SELECT RLS: school admins for their schools; teachers see only their own row.
-- Sample: `{role: accountant, is_active: true}`, `{role: teacher, is_active: true}` — `employee_id` currently null for existing rows.
+## 3. subject_room_requirements
+Purpose: which room a subject needs.
+- `id`, `school_id` (req), `subject_id uuid not null -> subjects(id)`, `academic_year_id uuid null`, `class_name text null` (null = applies to all classes)
+- `required_room_type text null`, `preferred_room_id uuid null -> rooms(id)`, `is_mandatory boolean not null default false`
+- PK `id`; unique `(subject_id, coalesce(class_name,''), coalesce(academic_year_id,'…'))`; index `(school_id, subject_id)`.
+- academic_year_id: optional (null = applies to every year).
 
-### subjects
-- `id uuid PK`, `school_id uuid -> schools.id`, `name`, `code`, `display_order int`, `created_at`, `subject_type` enum (`academic|co_curricular|vocational`).
-- Indexes: `subjects_pkey`, `idx_subjects_school_id`.
-- school_id: yes. academic_year_id: no.
-- SELECT RLS: admins, teachers, **and `Public can view subjects` = true**.
-- Sample: `English/ENG/academic`, `Hindi/HIN`, `Numbers/NUM`.
+## 4. time_slots
+Purpose: the concrete grid of teachable periods; generated from settings but stored so days can differ.
+- `id`, `school_id` (req), `academic_year_id` (req), `weekday smallint not null` (1–7), `period_number smallint not null`, `start_time time not null`, `end_time time not null`, `is_active boolean not null default true`
+- PK `id`; unique `(academic_year_id, weekday, period_number)`; index `(school_id, academic_year_id, weekday) where is_active`.
 
-### subject_class_assignments
-- `id uuid PK`, `subject_id -> subjects.id`, `school_id -> schools.id`, `class_name text`, `created_at`.
-- Indexes: `pkey`, unique `(subject_id, class_name)` — note: **not** scoped by school in the unique key, but subject already belongs to one school.
-- school_id: yes. academic_year_id: **no** — subject/class mapping is not year-scoped.
-- SELECT RLS: admins/teachers by school, **plus `Public can view subject class assignments` = true**.
-- Sample: `English → LKG`, `English → UKG`, `English → Class 1`.
+## 5. timetable_breaks
+Purpose: recess/lunch/assembly, placed after a given period.
+- `id`, `school_id` (req), `academic_year_id` (req), `weekday smallint null` (null = all working days), `break_type text not null` (`short_break|lunch|assembly|prayer|other`), `after_period smallint not null`, `duration_minutes smallint not null`, `is_active boolean not null default true`
+- PK `id`; unique `(academic_year_id, coalesce(weekday,0), after_period, break_type)`; index `(school_id, academic_year_id)`.
 
-### teacher_class_assignments
-- `id uuid PK`, `teacher_id -> school_teachers.id`, `class_name text`, `section text NULL`, `school_id -> schools.id`, `created_at`.
-- Indexes: `pkey`, unique `(teacher_id, class_name, section)`.
-- school_id: yes. academic_year_id: no.
-- SELECT RLS: admins manage all for their school; teachers see only their own rows. **No accountant/public SELECT.**
-- Sample: `teacher 5e98… → Class 2/A`, `Class 2/B`, `teacher 3a9b… → Class 3/A`. Only **5 rows total** across the platform.
+## 6. teacher_availability
+Purpose: per-teacher blocked or free slots.
+- `id`, `school_id` (req), `teacher_id uuid not null -> school_teachers(id) on delete cascade`, `academic_year_id` (req), `time_slot_id uuid not null -> time_slots(id) on delete cascade`, `is_available boolean not null default true`, `reason text null`
+- PK `id`; unique `(teacher_id, time_slot_id)`; index `(school_id, academic_year_id, teacher_id)`.
+- Default rule: absence of a row means available; rows are exceptions only.
 
-### teacher_subject_assignments
-- `id uuid PK`, `teacher_id -> school_teachers.id`, `subject_id -> subjects.id`, `school_id -> schools.id`, `class_name text NOT NULL`, `created_at`. **No `section` column.**
-- Indexes: `pkey`, unique `(teacher_id, subject_id, class_name)`.
-- school_id: yes. academic_year_id: no.
-- SELECT RLS: admins for their school; teachers their own rows.
-- Sample: `teacher 5e98… → subject 88e7… → Class 2`, `→ Class 3`. 14 rows total.
+## 7. subject_requirements
+Purpose: the solver's demand table — how much of each subject each section needs.
+- `id`, `school_id` (req), `academic_year_id` (req), `class_name text not null`, `section text null`, `subject_id uuid not null -> subjects(id)`
+- `periods_per_week smallint not null`, `delivery_mode text not null default 'theory'` (`theory|practical|lab|activity|online`)
+- `elective_group text null`, `consecutive_periods smallint not null default 1`, `preferred_weekdays smallint[] null`, `priority smallint not null default 5`, `status text not null default 'active'` (`active|draft|archived`)
+- PK `id`; unique `(academic_year_id, class_name, coalesce(section,''), subject_id, coalesce(elective_group,''))`; indexes `(school_id, academic_year_id)`, `(subject_id)`.
 
-### student_enrollments
-- `id uuid PK`, `student_id -> students.id`, `academic_year_id -> academic_years.id`, `class_name text NULL`, `section text NULL`, `created_at`.
-- Indexes: `pkey`, unique `(student_id, academic_year_id)`.
-- school_id: **not present** — must be reached via `students.school_id`.
-- academic_year_id: yes.
-- SELECT RLS: admins via the student's school, **plus `Public can view enrollments by student` = true for `anon`**.
-- Sample: `Class 5/A`, `Class 5/A`, `Class 5/B` for year `a9f6…`. 579 rows, 33 distinct class|section combos, 0 null sections.
+## 8. timetable_runs
+Purpose: one solver execution, so generated timetables are versioned and reviewable before publishing.
+- `id`, `school_id` (req), `academic_year_id` (req), `status text not null default 'pending'` (`pending|running|solved|infeasible|published|discarded`), `requested_by uuid null`, `solver_stats jsonb null`, `constraints_snapshot jsonb null`, `notes text null`, `started_at`, `completed_at`
+- PK `id`; index `(school_id, academic_year_id, status)`.
 
-## 2. Answers
+## 9. timetable_entries
+Purpose: the resulting schedule — one row per scheduled period.
+- `id`, `school_id` (req), `run_id uuid not null -> timetable_runs(id) on delete cascade`, `academic_year_id` (req)
+- `class_name text not null`, `section text null`, `time_slot_id uuid not null -> time_slots(id)`, `subject_id uuid not null -> subjects(id)`, `teacher_id uuid null -> school_teachers(id)`, `room_id uuid null -> rooms(id)`, `elective_group text null`, `is_locked boolean not null default false`
+- PK `id`; unique `(run_id, class_name, coalesce(section,''), time_slot_id, coalesce(elective_group,''))`; unique `(run_id, teacher_id, time_slot_id) where teacher_id is not null`; unique `(run_id, room_id, time_slot_id) where room_id is not null`; index `(school_id, academic_year_id, run_id)`.
 
-**A. Active teachers for one school** — `select * from school_teachers where school_id = :school and is_active = true and role = 'teacher'`. Exclude `role='accountant'` (accountants live in the same table). Teachers are not year-scoped.
+The last two partial unique indexes make double-booking a teacher or room impossible at the database level, independent of the solver.
 
-**B. Valid class/section combinations for one academic year** — `select distinct class_name, section from student_enrollments e join students s on s.id = e.student_id where s.school_id = :school and e.academic_year_id = :year and class_name is not null`. This is the only year-aware source. `schools.default_classes/default_sections` is a fallback for a school with no enrollments yet.
+## How the model handles each case
 
-**C. Subjects per class** — `subject_class_assignments` joined to `subjects`, filtered by `school_id` and matched on `class_name` (class only, sections inherit). Not year-scoped, so it applies to whichever year is being generated.
+**A. Class 5-A vs Class 5-B** — `class_name` + `section` travel together on `subject_requirements` and `timetable_entries`, matching the text values already in `student_enrollments`. Each section gets its own demand rows and its own schedule rows, so 5-A and 5-B are fully independent while sharing subject and teacher records.
 
-**D. Qualified teachers per subject+class** — `teacher_subject_assignments (teacher_id, subject_id, class_name)` joined to active `school_teachers`. `teacher_class_assignments` is a separate, coarser class-teacher/homeroom mapping and should be treated as advisory (preferred-teacher hint), not as the eligibility source.
+**B. Different years** — `timetable_settings`, `time_slots`, `timetable_breaks`, `teacher_availability`, `subject_requirements`, `timetable_runs` and `timetable_entries` all carry `academic_year_id`. A new year starts from a clean configuration and old years stay intact for reference. Only `rooms` (physical inventory) and optionally `subject_room_requirements` are year-independent.
 
-**E. Inconsistencies found (live counts)**
-- 333 `subject_class_assignments` rows have **no qualified teacher at all** for that subject+class — the solver must handle unassignable subjects rather than assume feasibility.
-- Only 5 `teacher_class_assignments` rows vs 14 `teacher_subject_assignments` rows; the two tables disagree in coverage and neither is authoritative for sections.
-- 2 `teacher_subject_assignments` rows point at teachers with `is_active = false` — always join and filter on active.
-- `teacher_subject_assignments` has no `section`, but real classes are split into sections (33 combos). Section-level teacher allocation must be decided by the solver or inferred from `teacher_class_assignments`.
-- Assignment tables carry no `academic_year_id`, so they are global per school and silently carry over between years.
-- 1 school currently has **two** `is_active = true` academic years (7 active rows overall) — never assume a single active year; take the year id as an explicit input.
-- 0 `teacher_subject_assignments` rows reference a class outside `subject_class_assignments`, and 0 school-id mismatches between subjects and their class assignments — those two joins are clean.
+**C. Teacher availability** — `teacher_availability` rows are exceptions against the `time_slots` grid; no row means the teacher is free. The solver reads only active teachers from `school_teachers` (`is_active = true`, `role = 'teacher'`) and subtracts unavailable slots.
 
-**F. Safe to read from a separate service** — `schools`, `academic_years`, `school_teachers`, `subjects`, `subject_class_assignments`, `teacher_class_assignments`, `teacher_subject_assignments`, `student_enrollments`, and `students` (only for `id, school_id, class_name, section` to resolve enrollment→school and headcounts). All are read-only inputs; nothing in the timetable service needs write access to them.
+**D. Labs and special rooms** — `rooms.room_type` classifies the inventory; `subject_room_requirements` states that, say, Physics needs `science_lab`, optionally naming a `preferred_room_id`, with `is_mandatory` deciding whether the solver may fall back to a normal classroom. The room double-booking index enforces one class per room per slot.
 
-**G. Authentication approach** — the Python service should authenticate to Postgres/PostgREST as a dedicated identity, never with a browser anon key and never by relaxing RLS:
-- Preferred: a **dedicated read-only Postgres role** for the timetable service with `SELECT` granted only on the nine tables above, connecting over the pooled Postgres connection string. It bypasses RLS by role design while staying least-privilege, and every query must still filter `school_id = :school` in application code.
-- Alternative: use the **service role key** server-side only (held in the service's own secret store, never shipped to a client), calling PostgREST with explicit `school_id` filters. Simpler to wire up but far broader privilege, so it needs strict query review.
-- In both cases: the EdZen app calls the timetable service with the school id and academic year id plus a signed short-lived token (HMAC or JWT shared secret) so the service can verify the caller and refuse cross-school requests; the service returns a proposed timetable and the writes back into EdZen happen through the existing authenticated app or an edge function, not from the solver.
-- Note on egress: because `schools`, `subjects`, `subject_class_assignments`, and `student_enrollments` already have `true` public-read policies, the service does not widen exposure, but those policies remain a separate pre-existing concern worth tightening independently.
+**E. Mathematics = 5 periods/week** — one `subject_requirements` row per section with `periods_per_week = 5`; `consecutive_periods` handles double lab periods, `preferred_weekdays` spreads or clusters them, and `priority` decides what gets sacrificed first when the grid is tight.
+
+**F. Different period counts per weekday** — `timetable_settings` only holds the default; `time_slots` is the authority. A Saturday with four periods simply has four active rows, and `is_active = false` retires a slot without deleting history.
+
+**G. Breaks after different periods** — each break row names the period it follows and, optionally, the weekday. Breaks are not teachable slots: they sit between `time_slots` rows and shift the displayed clock times rather than consuming a period.
+
+**H. Electives, vocational, interdisciplinary, mixed groups** — `elective_group` on both `subject_requirements` and `timetable_entries` lets several subjects share one slot for a section, so students split across parallel options without breaking the per-section uniqueness rule. `subjects.subject_type` (`academic|co_curricular|vocational`) already distinguishes the category, and `delivery_mode` covers activity/practical formats. Mixed-group blocks across sections can later be modelled by adding a nullable group table without changing these tables.
+
+**I. Future substitutions** — `timetable_entries` is the published baseline and `is_locked` protects manually pinned rows. Substitution can later be a thin `timetable_substitutions` table (`entry_id`, `date`, `original_teacher_id`, `substitute_teacher_id`, `reason`) that overlays a single date without editing the baseline, reusing `teacher_availability` to find free staff.
+
+## Known data realities the design must absorb
+
+From the earlier read-only audit: `teacher_subject_assignments` has no `section` column, 333 subject/class pairs currently have no qualified teacher, two assignment rows point at inactive teachers, and one school has two academic years flagged active. So the service should take `academic_year_id` as an explicit input, always join teacher eligibility through active `school_teachers`, and report unassignable `subject_requirements` rows as an infeasibility reason on `timetable_runs` rather than failing silently.
+
+## Technical notes
+
+- Every table needs RLS enabled plus `GRANT SELECT/INSERT/UPDATE/DELETE ... TO authenticated` and `GRANT ALL ... TO service_role` in the same migration, scoped by `school_id IN (SELECT get_user_school_ids())` for admins and `get_teacher_school_ids()` for read-only teacher access.
+- The Python/OR-Tools service reads settings, slots, breaks, availability, requirements, rooms and the existing assignment tables, then writes only `timetable_runs` and `timetable_entries`.
+- Nothing is created until this design is approved.
