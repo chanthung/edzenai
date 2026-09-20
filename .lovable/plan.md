@@ -177,11 +177,23 @@ Triggers are used only where composite FKs would require altering an existing Ed
 Every one of the nine tables: `ENABLE ROW LEVEL SECURITY`, plus in the same migration
 `GRANT SELECT, INSERT, UPDATE, DELETE ON public.<table> TO authenticated;` and `GRANT ALL ON public.<table> TO service_role;`. No `anon` grant — timetable data is never public.
 
-Policies per table:
+Baseline policies (eight tables — all except `timetable_teacher_availability`):
 - **Admin full access** — `FOR ALL TO authenticated USING (school_id IN (SELECT get_user_school_ids())) WITH CHECK (school_id IN (SELECT get_user_school_ids()))`. The `WITH CHECK` half is what stops a School A admin writing a row stamped with School B.
-- **Teacher read** — `FOR SELECT TO authenticated USING (school_id IN (SELECT get_teacher_school_ids()))`.
+- **Teacher read** — `FOR SELECT TO authenticated USING (school_id IN (SELECT get_teacher_school_ids()))`. Timetables, slots, breaks, rooms and requirements are legitimately shared staffroom information.
 
-`get_user_school_ids()` already grants platform admins every school, which is the intended support path. RLS is never bypassed to simplify the service; the Python service's elevated key is compensated for by explicit authorization checks described next.
+`get_user_school_ids()` already grants platform admins every school, which is the intended support path. RLS is never bypassed to simplify the service.
+
+### Teacher availability privacy (corrected)
+
+The earlier blanket teacher-read policy **would** have let any teacher in a school read every colleague's availability rows, including the free-text `reason` (which can carry medical or personal detail). That is changed. `timetable_teacher_availability` gets narrower policies:
+
+- **Admin full access** — unchanged `FOR ALL` scoped by `get_user_school_ids()`.
+- **Own rows only, for teachers** — `FOR SELECT TO authenticated USING (school_id IN (SELECT get_teacher_school_ids()) AND teacher_id IN (SELECT id FROM public.school_teachers WHERE user_id = auth.uid() AND is_active))`. A teacher sees and edits only their own availability; no colleague's row and no colleague's `reason` is reachable.
+- **Own rows writable** — optional `FOR INSERT/UPDATE/DELETE` with the same predicate in `USING`/`WITH CHECK`, if schools want teachers to declare their own constraints. Otherwise availability stays admin-managed.
+
+What a teacher legitimately needs — "is this colleague free during period 4?" — is served without exposing reasons by a `SECURITY INVOKER` helper view, `timetable_teacher_availability_public`, selecting `school_id, academic_year_id, teacher_id, time_slot_id, is_available` (no `reason`), guarded by its own `FOR SELECT` grant to `authenticated` and the school-scoped predicate. Free/busy is visible; the explanation is not.
+
+The solver is unaffected: it connects as the dedicated service role described below, which reads the base table directly and ignores `reason` entirely.
 
 ## Tenant isolation model end to end (requirement 16)
 
@@ -207,7 +219,58 @@ timetable_* tables (every row carries school_id)
 
 **Requirements 13–15 in practice.** The API takes `school_id` and `academic_year_id` as *inputs to validate, never as facts to trust*. A School A user requesting School B's timetable fails at step 2/3: the API returns **HTTP 403** with a generic message, writes an audit line, and returns **no School B data of any kind** — not row counts, not names, not an existence hint (a 404 would itself leak existence, so 403 is returned uniformly). Even if that check were somehow skipped, the database refuses: RLS returns zero rows for a user-token connection, and any attempted write is rejected by `WITH CHECK`, the composite FKs, or the tenant triggers.
 
-**Write boundary (requirement 18), unchanged.** The service reads `schools`, `academic_years`, `school_teachers`, `subjects`, `subject_class_assignments`, `teacher_subject_assignments`, `teacher_class_assignments`, `student_enrollments` and all nine `timetable_*` tables. It writes **only** `timetable_runs` and `timetable_entries`. It never writes `students`, `school_teachers`, `subjects`, `student_enrollments`, `teacher_subject_assignments`, `teacher_class_assignments`, `academic_years`, or `schools`. Enforced by a dedicated database role granted `INSERT/UPDATE/DELETE` on exactly those two tables and `SELECT` elsewhere — not by convention in the Python code.
+## Dedicated least-privilege database role for the Timetable API
+
+**The Timetable API must not use `service_role`.** `service_role` bypasses RLS and holds full privileges on every table; using it for routine solver work makes an application bug a full-database incident. It may continue to exist for other trusted backend operations (edge functions, admin jobs), but it is never the credential the Python service connects with.
+
+Instead the migration creates a dedicated, non-login-privileged, RLS-respecting role:
+
+```sql
+CREATE ROLE timetable_service NOLOGIN;              -- granted to a login role holding the service password
+GRANT USAGE ON SCHEMA public TO timetable_service;
+
+-- READ ONLY: existing EdZen AI source-of-truth tables
+GRANT SELECT ON public.schools,
+                public.academic_years,
+                public.school_teachers,
+                public.subjects,
+                public.subject_class_assignments,
+                public.teacher_subject_assignments,
+                public.teacher_class_assignments,
+                public.student_enrollments
+  TO timetable_service;
+
+-- READ ONLY: timetable configuration
+GRANT SELECT ON public.timetable_settings,
+                public.timetable_rooms,
+                public.timetable_room_requirements,
+                public.timetable_time_slots,
+                public.timetable_breaks,
+                public.timetable_teacher_availability,
+                public.timetable_subject_requirements
+  TO timetable_service;
+
+-- READ + WRITE: solver output only
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.timetable_runs,
+                                        public.timetable_entries
+  TO timetable_service;
+```
+
+No `GRANT` of any kind is issued to `timetable_service` on `students`, and no INSERT/UPDATE/DELETE is issued on any table other than `timetable_runs` and `timetable_entries`. Because Postgres grants nothing by default, everything unlisted — including future tables — is denied unless explicitly added. No `GRANT ALL`, no `GRANT ... ON ALL TABLES IN SCHEMA public`, no membership in `service_role` or `postgres`.
+
+The role is **not** given `BYPASSRLS`. It is subject to RLS like any other role, so `timetable_runs` and `timetable_entries` each carry one extra policy:
+
+```sql
+CREATE POLICY timetable_runs_service ON public.timetable_runs
+  FOR ALL TO timetable_service
+  USING (true) WITH CHECK (true);
+```
+
+with the identical pair on `timetable_entries`. Tenant correctness for this role comes from three layers that remain fully active: the API's per-request school authorization, the composite foreign keys, and the tenant triggers. Configuration tables stay admin-managed through the authenticated-user RLS policies above — the service can read them but can never alter them.
+
+Operationally: the password-holding login role is granted `timetable_service` and nothing else; its credential lives only in the Python service's secret store, is rotatable without touching `service_role`, and is never shipped to any browser.
+
+**Write boundary (requirement 18), unchanged.** The service reads `schools`, `academic_years`, `school_teachers`, `subjects`, `subject_class_assignments`, `teacher_subject_assignments`, `teacher_class_assignments`, `student_enrollments` and all nine `timetable_*` tables. It writes **only** `timetable_runs` and `timetable_entries`. It never writes `students`, `school_teachers`, `subjects`, `student_enrollments`, `teacher_subject_assignments`, `teacher_class_assignments`, `academic_years`, `schools`, or any `timetable_*` configuration table — enforced by the grants above, not by convention in the Python code.
 
 ## Identical names across schools (requirement 19)
 
