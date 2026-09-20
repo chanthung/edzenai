@@ -243,6 +243,7 @@ export default function Settings() {
           <TabsTrigger value="subscription"><Crown className="h-4 w-4 mr-1.5" /> Subscription</TabsTrigger>
           <TabsTrigger value="templates"><ClipboardList className="h-4 w-4 mr-1.5" /> Assessment Templates</TabsTrigger>
           <TabsTrigger value="promotion-rules"><GraduationCap className="h-4 w-4 mr-1.5" /> Promotion Rules</TabsTrigger>
+          <TabsTrigger value="timetable"><CalendarClock className="h-4 w-4 mr-1.5" /> Timetable</TabsTrigger>
         </TabsList>
 
         {/* School Settings Tab */}
