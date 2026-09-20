@@ -499,7 +499,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="timetable" className="space-y-6">
-          <TimetableSettingsTab canEdit={canPerform("edit")} />
+          <TimetableSettingsTab canEdit={canPerform("update_school_settings")} />
         </TabsContent>
       </Tabs>
     </AdminLayout>
