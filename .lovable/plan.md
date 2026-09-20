@@ -177,11 +177,23 @@ Triggers are used only where composite FKs would require altering an existing Ed
 Every one of the nine tables: `ENABLE ROW LEVEL SECURITY`, plus in the same migration
 `GRANT SELECT, INSERT, UPDATE, DELETE ON public.<table> TO authenticated;` and `GRANT ALL ON public.<table> TO service_role;`. No `anon` grant — timetable data is never public.
 
-Policies per table:
+Baseline policies (eight tables — all except `timetable_teacher_availability`):
 - **Admin full access** — `FOR ALL TO authenticated USING (school_id IN (SELECT get_user_school_ids())) WITH CHECK (school_id IN (SELECT get_user_school_ids()))`. The `WITH CHECK` half is what stops a School A admin writing a row stamped with School B.
-- **Teacher read** — `FOR SELECT TO authenticated USING (school_id IN (SELECT get_teacher_school_ids()))`.
+- **Teacher read** — `FOR SELECT TO authenticated USING (school_id IN (SELECT get_teacher_school_ids()))`. Timetables, slots, breaks, rooms and requirements are legitimately shared staffroom information.
 
-`get_user_school_ids()` already grants platform admins every school, which is the intended support path. RLS is never bypassed to simplify the service; the Python service's elevated key is compensated for by explicit authorization checks described next.
+`get_user_school_ids()` already grants platform admins every school, which is the intended support path. RLS is never bypassed to simplify the service.
+
+### Teacher availability privacy (corrected)
+
+The earlier blanket teacher-read policy **would** have let any teacher in a school read every colleague's availability rows, including the free-text `reason` (which can carry medical or personal detail). That is changed. `timetable_teacher_availability` gets narrower policies:
+
+- **Admin full access** — unchanged `FOR ALL` scoped by `get_user_school_ids()`.
+- **Own rows only, for teachers** — `FOR SELECT TO authenticated USING (school_id IN (SELECT get_teacher_school_ids()) AND teacher_id IN (SELECT id FROM public.school_teachers WHERE user_id = auth.uid() AND is_active))`. A teacher sees and edits only their own availability; no colleague's row and no colleague's `reason` is reachable.
+- **Own rows writable** — optional `FOR INSERT/UPDATE/DELETE` with the same predicate in `USING`/`WITH CHECK`, if schools want teachers to declare their own constraints. Otherwise availability stays admin-managed.
+
+What a teacher legitimately needs — "is this colleague free during period 4?" — is served without exposing reasons by a `SECURITY INVOKER` helper view, `timetable_teacher_availability_public`, selecting `school_id, academic_year_id, teacher_id, time_slot_id, is_available` (no `reason`), guarded by its own `FOR SELECT` grant to `authenticated` and the school-scoped predicate. Free/busy is visible; the explanation is not.
+
+The solver is unaffected: it connects as the dedicated service role described below, which reads the base table directly and ignores `reason` entirely.
 
 ## Tenant isolation model end to end (requirement 16)
 
