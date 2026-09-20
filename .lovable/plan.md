@@ -1,64 +1,89 @@
-# EdZen AI — Offline "School Server Edition"
+# Timetable Service — Read-Only Database Audit
 
-Goal: a version of EdZen AI that installs on a school's own computer and runs with zero internet, while the existing cloud product stays completely unchanged.
+No schema, data, or policy was changed. All findings come from live read-only queries.
 
-## Verdict
+## 1. Table inventory
 
-Feasible. Nothing in the app requires the cloud in principle — the whole stack (Postgres, auth, storage, functions) can run locally via self-hosted Supabase. The work is in packaging, replacing internet-only features, and supporting installs in the field.
+### schools
+- Columns (relevant): `id uuid PK`, `name text`, `address`, `phone`, `email`, `logo_url`, `upi_id`, `qr_code_url`, `created_at/updated_at timestamptz`, subscription fields (`subscription_type/status/start_date/renewal_date`, `trial_start_date/end_date`, `system_state` enum, `payment_verified*`, `subscription_plan`, `custom_per_student_fee`, `discount_percent`, `billing_cycle`, `pending_amount`, `next_billing_date`), `board text`, `default_classes text[]`, `default_sections text[]`, `onboarding_completed bool`, lifecycle/purge fields, `referred_by uuid -> partners.id`, `access_blocked*`.
+- PK `id`. FK: `referred_by -> partners.id`. Indexes: `schools_pkey`, `idx_schools_referred_by`.
+- school_id: is itself. academic_year_id: no.
+- SELECT RLS: platform admins (`is_platform_admin()`), school admins (`id in get_user_school_ids()`), accountants (`get_accountant_school_ids()`), plus **`Public can view school info` = true for `anon`**.
+- Sample: `{id: 7655a339…, name: "Fun school", board: null, plan: starter, state: subscription_active}`.
 
-## What runs offline vs what cannot
+### academic_years
+- `id uuid PK`, `school_id uuid NOT NULL -> schools.id`, `name text`, `start_date date`, `end_date date`, `is_active bool default true`, `created_at`, `updated_at`.
+- Indexes: `academic_years_pkey`, `idx_academic_years_school_id`. No unique constraint on (school_id, is_active).
+- school_id: yes. academic_year_id: is itself.
+- SELECT RLS: admins, teachers, accountants — all scoped by school.
+- Sample: `2026-2027 (2026-01-15 → 2027-03-15, active)`, `2025-2026 (active)`, `2024-2025 (inactive)`.
 
-| Area | Offline status |
-| --- | --- |
-| Students, classes, academic years, enrollments | Works fully |
-| Fees, installments, payments, receipts | Works fully (cash/cheque/UPI reference entry) |
-| Attendance | Works fully |
-| Marks, assessments, competencies, report cards (print to PDF) | Works fully |
-| Login, roles, RLS isolation | Works fully (local auth, email/password only) |
-| Excel import/export | Works fully, minus AI column mapping |
-| Google sign-in | Not available offline — email/password only |
-| WhatsApp parent links, fee reminders, email | Not available offline; queued and sent when a connection exists |
-| AI features (student analysis, AI import, help assistant, OCR of payment proofs) | Not available offline; disabled or degraded to manual |
-| Online payments (Paddle/Razorpay), subscription lifecycle | Not applicable — replaced by an offline licence key |
-| Parent portal links (`/view/:name/:token`) | Only reachable from devices on the school LAN unless the school has internet |
+### school_teachers
+- `id uuid PK`, `user_id uuid`, `school_id uuid -> schools.id`, `name`, `email`, `is_active bool default true`, `created_at`, `updated_at`, `role text default 'teacher'`, `employee_id text`.
+- Indexes: `school_teachers_pkey`, unique `(user_id, school_id)`, partial unique `(school_id, lower(employee_id))`.
+- school_id: yes. academic_year_id: no (staff are not year-scoped).
+- SELECT RLS: school admins for their schools; teachers see only their own row.
+- Sample: `{role: accountant, is_active: true}`, `{role: teacher, is_active: true}` — `employee_id` currently null for existing rows.
 
-## Architecture
+### subjects
+- `id uuid PK`, `school_id uuid -> schools.id`, `name`, `code`, `display_order int`, `created_at`, `subject_type` enum (`academic|co_curricular|vocational`).
+- Indexes: `subjects_pkey`, `idx_subjects_school_id`.
+- school_id: yes. academic_year_id: no.
+- SELECT RLS: admins, teachers, **and `Public can view subjects` = true**.
+- Sample: `English/ENG/academic`, `Hindi/HIN`, `Numbers/NUM`.
 
-```text
-School computer (Windows / mini-PC)
-├─ Postgres 15            ← all school data, same schema + RLS
-├─ Supabase services      ← GoTrue (auth), PostgREST, Storage, Kong
-├─ Local functions host   ← ported edge functions (Deno/Node)
-├─ Static web build       ← same React app, pointed at http://localhost
-└─ Backup service         ← nightly dump to USB / network folder
+### subject_class_assignments
+- `id uuid PK`, `subject_id -> subjects.id`, `school_id -> schools.id`, `class_name text`, `created_at`.
+- Indexes: `pkey`, unique `(subject_id, class_name)` — note: **not** scoped by school in the unique key, but subject already belongs to one school.
+- school_id: yes. academic_year_id: **no** — subject/class mapping is not year-scoped.
+- SELECT RLS: admins/teachers by school, **plus `Public can view subject class assignments` = true**.
+- Sample: `English → LKG`, `English → UKG`, `English → Class 1`.
 
-Teachers & staff reach it at http://school-server.local on the LAN
-(desktop, laptop, phone browsers — no per-device install needed)
-```
+### teacher_class_assignments
+- `id uuid PK`, `teacher_id -> school_teachers.id`, `class_name text`, `section text NULL`, `school_id -> schools.id`, `created_at`.
+- Indexes: `pkey`, unique `(teacher_id, class_name, section)`.
+- school_id: yes. academic_year_id: no.
+- SELECT RLS: admins manage all for their school; teachers see only their own rows. **No accountant/public SELECT.**
+- Sample: `teacher 5e98… → Class 2/A`, `Class 2/B`, `teacher 3a9b… → Class 3/A`. Only **5 rows total** across the platform.
 
-Packaging options, in order of preference:
-1. Docker Desktop + a one-click installer script — closest to the cloud stack, easiest to keep in sync.
-2. Electron shell wrapping the same LAN server for a single-PC school that wants a desktop icon.
+### teacher_subject_assignments
+- `id uuid PK`, `teacher_id -> school_teachers.id`, `subject_id -> subjects.id`, `school_id -> schools.id`, `class_name text NOT NULL`, `created_at`. **No `section` column.**
+- Indexes: `pkey`, unique `(teacher_id, subject_id, class_name)`.
+- school_id: yes. academic_year_id: no.
+- SELECT RLS: admins for their school; teachers their own rows.
+- Sample: `teacher 5e98… → subject 88e7… → Class 2`, `→ Class 3`. 14 rows total.
 
-## Work breakdown
+### student_enrollments
+- `id uuid PK`, `student_id -> students.id`, `academic_year_id -> academic_years.id`, `class_name text NULL`, `section text NULL`, `created_at`.
+- Indexes: `pkey`, unique `(student_id, academic_year_id)`.
+- school_id: **not present** — must be reached via `students.school_id`.
+- academic_year_id: yes.
+- SELECT RLS: admins via the student's school, **plus `Public can view enrollments by student` = true for `anon`**.
+- Sample: `Class 5/A`, `Class 5/A`, `Class 5/B` for year `a9f6…`. 579 rows, 33 distinct class|section combos, 0 null sections.
 
-1. **Runtime split** — introduce a build-time `deployment mode` flag (`cloud` | `onprem`) so one codebase produces both editions. No behaviour change for cloud.
-2. **Feature gating** — one capability map that hides/disables WhatsApp, email, AI, online payments, Google sign-in and subscription screens in on-prem mode, replacing them with clear "requires internet" states.
-3. **Local backend bring-up** — Docker compose with Postgres + Supabase services; apply the existing migrations unchanged so schema, RLS and DB functions match the cloud exactly.
-4. **Edge-function port** — move the ~40 functions into a local Deno server. Roughly 15 are internet-only (payments, email, WhatsApp, AI) and are simply absent on-prem; the rest (invites, imports, school/teacher creation, report helpers) run locally.
-5. **Licensing** — offline licence key with expiry, validated locally, replacing the subscription lifecycle. Optional periodic online check when internet is available.
-6. **Backup & restore** — scheduled `pg_dump` to a chosen folder/USB, plus a restore command and a visible "last backup" indicator in Settings. Non-negotiable for on-prem.
-7. **Updates** — versioned installer package plus an in-app updater that applies pending migrations on start.
-8. **Sync (optional, phase 2)** — one-way nightly push of the school's data to the cloud so parent links, WhatsApp reminders and AI insights keep working when the school does have internet.
-9. **Field kit** — install guide, LAN/hostname setup, printer setup, admin recovery procedure, and a support runbook.
+## 2. Answers
 
-## Effort and trade-offs
+**A. Active teachers for one school** — `select * from school_teachers where school_id = :school and is_active = true and role = 'teacher'`. Exclude `role='accountant'` (accountants live in the same table). Teachers are not year-scoped.
 
-- Phases 1–4 are the bulk of the engineering; 5–7 are what make it supportable in real schools.
-- Realistic first release: on-prem core (students, fees, attendance, marks, report cards) without AI, WhatsApp or payments.
-- Ongoing cost is support, not servers: every school becomes an installation you must patch, back up and troubleshoot remotely — plan for a per-install annual licence that covers this.
-- Recommended middle path if connectivity is the only concern: keep the cloud product and add offline-tolerant behaviour (local caching + queued writes) instead of a full on-prem edition — far cheaper to build and support.
+**B. Valid class/section combinations for one academic year** — `select distinct class_name, section from student_enrollments e join students s on s.id = e.student_id where s.school_id = :school and e.academic_year_id = :year and class_name is not null`. This is the only year-aware source. `schools.default_classes/default_sections` is a fallback for a school with no enrollments yet.
 
-## Scope guardrail
+**C. Subjects per class** — `subject_class_assignments` joined to `subjects`, filtered by `school_id` and matched on `class_name` (class only, sections inherit). Not year-scoped, so it applies to whichever year is being generated.
 
-No changes to the current cloud app in this phase. All on-prem work lands behind the deployment-mode flag and in new packaging files.
+**D. Qualified teachers per subject+class** — `teacher_subject_assignments (teacher_id, subject_id, class_name)` joined to active `school_teachers`. `teacher_class_assignments` is a separate, coarser class-teacher/homeroom mapping and should be treated as advisory (preferred-teacher hint), not as the eligibility source.
+
+**E. Inconsistencies found (live counts)**
+- 333 `subject_class_assignments` rows have **no qualified teacher at all** for that subject+class — the solver must handle unassignable subjects rather than assume feasibility.
+- Only 5 `teacher_class_assignments` rows vs 14 `teacher_subject_assignments` rows; the two tables disagree in coverage and neither is authoritative for sections.
+- 2 `teacher_subject_assignments` rows point at teachers with `is_active = false` — always join and filter on active.
+- `teacher_subject_assignments` has no `section`, but real classes are split into sections (33 combos). Section-level teacher allocation must be decided by the solver or inferred from `teacher_class_assignments`.
+- Assignment tables carry no `academic_year_id`, so they are global per school and silently carry over between years.
+- 1 school currently has **two** `is_active = true` academic years (7 active rows overall) — never assume a single active year; take the year id as an explicit input.
+- 0 `teacher_subject_assignments` rows reference a class outside `subject_class_assignments`, and 0 school-id mismatches between subjects and their class assignments — those two joins are clean.
+
+**F. Safe to read from a separate service** — `schools`, `academic_years`, `school_teachers`, `subjects`, `subject_class_assignments`, `teacher_class_assignments`, `teacher_subject_assignments`, `student_enrollments`, and `students` (only for `id, school_id, class_name, section` to resolve enrollment→school and headcounts). All are read-only inputs; nothing in the timetable service needs write access to them.
+
+**G. Authentication approach** — the Python service should authenticate to Postgres/PostgREST as a dedicated identity, never with a browser anon key and never by relaxing RLS:
+- Preferred: a **dedicated read-only Postgres role** for the timetable service with `SELECT` granted only on the nine tables above, connecting over the pooled Postgres connection string. It bypasses RLS by role design while staying least-privilege, and every query must still filter `school_id = :school` in application code.
+- Alternative: use the **service role key** server-side only (held in the service's own secret store, never shipped to a client), calling PostgREST with explicit `school_id` filters. Simpler to wire up but far broader privilege, so it needs strict query review.
+- In both cases: the EdZen app calls the timetable service with the school id and academic year id plus a signed short-lived token (HMAC or JWT shared secret) so the service can verify the caller and refuse cross-school requests; the service returns a proposed timetable and the writes back into EdZen happen through the existing authenticated app or an edge function, not from the solver.
+- Note on egress: because `schools`, `subjects`, `subject_class_assignments`, and `student_enrollments` already have `true` public-read policies, the service does not widen exposure, but those policies remain a separate pre-existing concern worth tightening independently.
