@@ -19,8 +19,9 @@ import type { AssessmentTemplate } from "@/hooks/progress/useAssessmentTemplates
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown, GraduationCap, Image as ImageIcon, MessageCircle, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { Save, Loader2, Building, QrCode, Phone, Mail, Lock, Upload, Trash2, ClipboardList, Crown, GraduationCap, CalendarClock, Image as ImageIcon, MessageCircle, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { PromotionRulesEditor } from "@/components/admin/PromotionRulesEditor";
+import { TimetableSettingsTab } from "@/components/admin/timetable/TimetableSettingsTab";
 import { LogoUploader } from "@/components/ui/logo-uploader";
 
 export default function Settings() {
@@ -243,6 +244,7 @@ export default function Settings() {
           <TabsTrigger value="subscription"><Crown className="h-4 w-4 mr-1.5" /> Subscription</TabsTrigger>
           <TabsTrigger value="templates"><ClipboardList className="h-4 w-4 mr-1.5" /> Assessment Templates</TabsTrigger>
           <TabsTrigger value="promotion-rules"><GraduationCap className="h-4 w-4 mr-1.5" /> Promotion Rules</TabsTrigger>
+          <TabsTrigger value="timetable"><CalendarClock className="h-4 w-4 mr-1.5" /> Timetable</TabsTrigger>
         </TabsList>
 
         {/* School Settings Tab */}
@@ -494,6 +496,10 @@ export default function Settings() {
 
         <TabsContent value="promotion-rules" className="space-y-6">
           <PromotionRulesEditor />
+        </TabsContent>
+
+        <TabsContent value="timetable" className="space-y-6">
+          <TimetableSettingsTab canEdit={canPerform("update_school_settings")} />
         </TabsContent>
       </Tabs>
     </AdminLayout>
