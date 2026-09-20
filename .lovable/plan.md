@@ -258,17 +258,92 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.timetable_runs,
 
 No `GRANT` of any kind is issued to `timetable_service` on `students`, and no INSERT/UPDATE/DELETE is issued on any table other than `timetable_runs` and `timetable_entries`. Because Postgres grants nothing by default, everything unlisted — including future tables — is denied unless explicitly added. No `GRANT ALL`, no `GRANT ... ON ALL TABLES IN SCHEMA public`, no membership in `service_role` or `postgres`.
 
-The role is **not** given `BYPASSRLS`. It is subject to RLS like any other role, so `timetable_runs` and `timetable_entries` each carry one extra policy:
+The role is **not** given `BYPASSRLS`, and it is **not** given blanket `USING (true)` policies. `USING (true)` would mean one forgotten `WHERE school_id = …` in the Python code silently returns every school's timetable. Instead the service's RLS is scoped to a verified, transaction-scoped tenant context.
+
+Operationally: the password-holding login role is granted `timetable_service` and nothing else; its credential lives only in the Python service's secret store, is rotatable without touching `service_role`, and is never shipped to any browser.
+
+### Transaction-scoped tenant context
+
+Two GUCs carry the context, read back through immutable-ish helper functions:
+
+```sql
+CREATE OR REPLACE FUNCTION public.timetable_ctx_school()
+RETURNS uuid LANGUAGE sql STABLE AS $$
+  SELECT nullif(current_setting('timetable.school_id', true), '')::uuid
+$$;
+
+CREATE OR REPLACE FUNCTION public.timetable_ctx_year()
+RETURNS uuid LANGUAGE sql STABLE AS $$
+  SELECT nullif(current_setting('timetable.academic_year_id', true), '')::uuid
+$$;
+```
+
+`current_setting(..., true)` returns NULL when unset, so a missing context yields NULL and every policy below evaluates false — fail-closed, never fail-open.
+
+Policies on `timetable_runs` and `timetable_entries` for the service role:
 
 ```sql
 CREATE POLICY timetable_runs_service ON public.timetable_runs
   FOR ALL TO timetable_service
-  USING (true) WITH CHECK (true);
+  USING (
+    school_id = public.timetable_ctx_school()
+    AND academic_year_id = public.timetable_ctx_year()
+  )
+  WITH CHECK (
+    school_id = public.timetable_ctx_school()
+    AND academic_year_id = public.timetable_ctx_year()
+  );
 ```
 
-with the identical pair on `timetable_entries`. Tenant correctness for this role comes from three layers that remain fully active: the API's per-request school authorization, the composite foreign keys, and the tenant triggers. Configuration tables stay admin-managed through the authenticated-user RLS policies above — the service can read them but can never alter them.
+An identical policy pair is created on `timetable_entries`. The same `USING (school_id = public.timetable_ctx_school())` predicate is added as a **read** policy for `timetable_service` on the seven timetable configuration tables and as a row filter on the existing EdZen AI tables it reads (via read-only policies attached for the `timetable_service` role only — no existing policy is altered and no existing table is modified). `timetable_rooms` uses the school predicate alone, since rooms are year-independent.
 
-Operationally: the password-holding login role is granted `timetable_service` and nothing else; its credential lives only in the Python service's secret store, is rotatable without touching `service_role`, and is never shipped to any browser.
+### How a request establishes the context
+
+```text
+1. Request arrives with the caller's Supabase JWT and a requested
+   school_id + academic_year_id in the body.
+2. API verifies the JWT signature against Supabase JWKS -> trusted auth uid.
+3. API resolves the caller's authorized schools server-side from
+   school_admins / school_teachers / user_roles. The body's school_id is
+   only ever *compared against* that set, never trusted as the answer.
+4. API confirms the academic_year_id row belongs to that authorized school.
+5. Mismatch at step 3 or 4 -> HTTP 403, connection never used, no query run.
+6. On success the API opens an explicit transaction and, as its first
+   statement, sets the context LOCAL to that transaction:
+
+     BEGIN;
+     SELECT set_config('timetable.school_id',        $1, true);
+     SELECT set_config('timetable.academic_year_id', $2, true);
+     -- ... all reads and writes for this request ...
+     COMMIT;   -- or ROLLBACK
+
+   The third argument `true` means is_local: Postgres discards both
+   settings at COMMIT or ROLLBACK, automatically.
+7. Values are passed as bound parameters ($1, $2) — never string-
+   interpolated — so no SQL injection into the tenant context is possible.
+```
+
+**Connection pooling safety (requirements 12 and 13).** Because `set_config(..., true)` is transaction-local, the setting cannot survive the transaction and therefore cannot ride a pooled connection into the next request. This holds for a normal session pool and for PgBouncer in transaction mode, where a connection is only ever handed back at transaction boundaries. Belt and braces: the connection pool is configured with a reset hook issuing `RESET ALL` on check-in, and the API runs every request inside exactly one transaction — no work is ever performed on an implicit autocommit connection outside a `BEGIN`. If a code path ever forgets the `set_config` calls, both helpers return NULL, every policy is false, and the request reads and writes nothing rather than reading everything.
+
+### Three independent layers
+
+| Layer | Mechanism | Stops |
+|---|---|---|
+| 1 | API: JWT verification + server-side school authorization | An unauthenticated or unauthorized caller ever reaching the database |
+| 2 | RLS scoped to the transaction-local tenant context | A buggy or incomplete query returning or writing another school's rows |
+| 3 | Composite foreign keys + tenant validation triggers | A structurally cross-school row existing at all, whatever wrote it |
+
+All three are retained; none substitutes for another. The composite FKs and triggers from the schema sections above are unchanged and still required.
+
+### Expected behaviour (requirement 14)
+
+| Scenario | Result |
+|---|---|
+| School A user requests School A / Year X timetable | Allowed. Context set to (A, X); policies match; rows returned. |
+| School A user requests School B timetable | **HTTP 403** at Layer 1. No transaction opened, no context set, no School B row read. Uniform 403 (not 404), so existence is not leaked. |
+| Python query accidentally omits `school_id` in its `WHERE` | Layer 2 still filters: the policy's `school_id = timetable_ctx_school()` applies to every row, so only School A rows come back. No cross-school leak. |
+| Insert a School A entry referencing a School B room, teacher, subject, run or time slot | Rejected by Layer 3: composite FK violation for room/run/time slot, tenant-trigger exception for teacher/subject. Rejected even if Layers 1 and 2 were both satisfied. |
+| Context never set (bug or new code path) | Helpers return NULL, policies false — zero rows read, all writes rejected. Fail-closed. |
 
 **Write boundary (requirement 18), unchanged.** The service reads `schools`, `academic_years`, `school_teachers`, `subjects`, `subject_class_assignments`, `teacher_subject_assignments`, `teacher_class_assignments`, `student_enrollments` and all nine `timetable_*` tables. It writes **only** `timetable_runs` and `timetable_entries`. It never writes `students`, `school_teachers`, `subjects`, `student_enrollments`, `teacher_subject_assignments`, `teacher_class_assignments`, `academic_years`, `schools`, or any `timetable_*` configuration table — enforced by the grants above, not by convention in the Python code.
 
