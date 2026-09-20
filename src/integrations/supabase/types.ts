@@ -3307,6 +3307,10 @@ export type Database = {
       }
       timetable_ctx_school: { Args: never; Returns: string }
       timetable_ctx_year: { Args: never; Returns: string }
+      timetable_enrollment_in_ctx: {
+        Args: { _student_id: string }
+        Returns: boolean
+      }
       validate_payment_proof_insert: {
         Args: { _installment_id: string; _student_id: string }
         Returns: boolean
