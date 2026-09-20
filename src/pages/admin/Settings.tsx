@@ -497,6 +497,10 @@ export default function Settings() {
         <TabsContent value="promotion-rules" className="space-y-6">
           <PromotionRulesEditor />
         </TabsContent>
+
+        <TabsContent value="timetable" className="space-y-6">
+          <TimetableSettingsTab canEdit={canPerform("edit")} />
+        </TabsContent>
       </Tabs>
     </AdminLayout>
   );
