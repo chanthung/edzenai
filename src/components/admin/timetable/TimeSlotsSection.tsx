@@ -11,6 +11,7 @@ import { useTimetableConfig } from "./TimetableConfigContext";
 import {
   useTimetableSettings,
   useTimetableTimeSlots,
+  useTimetableBreaks,
   useTimeSlotMutations,
   TimetableTimeSlot,
 } from "@/hooks/timetable/useTimetableConfigData";
