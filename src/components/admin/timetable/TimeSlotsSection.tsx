@@ -29,6 +29,7 @@ export function TimeSlotsSection() {
   const scope = { schoolId, academicYearId };
   const { data: settings } = useTimetableSettings(scope);
   const { data: slots = [], isLoading } = useTimetableTimeSlots(scope);
+  const { data: breaks = [] } = useTimetableBreaks(scope);
   const { save, remove } = useTimeSlotMutations(scope);
 
   const [weekday, setWeekday] = useState(1);
