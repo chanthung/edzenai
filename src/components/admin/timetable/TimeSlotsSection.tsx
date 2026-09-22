@@ -74,12 +74,22 @@ export function TimeSlotsSection() {
     const start = toTimeInput(settings?.day_start_time) || "08:00";
     const length = settings?.default_period_minutes ?? 45;
     const count = settings?.periods_per_day ?? 8;
+
+    // breaks that apply to this weekday (specific day or "all working days"), in period order
+    const dayBreaks = breaks
+      .filter((b) => b.is_active && (b.weekday == null || b.weekday === weekday))
+      .sort((a, b) => a.after_period - b.after_period);
+
     const rows: DraftSlot[] = [];
     let cursor = start;
     for (let i = 1; i <= count; i++) {
       const end = addMinutes(cursor, length);
       rows.push({ period_number: i, start_time: cursor, end_time: end, is_active: true });
       cursor = end;
+      // push the next period forward by every break that falls after this period
+      for (const b of dayBreaks.filter((b) => b.after_period === i)) {
+        cursor = addMinutes(cursor, b.duration_minutes ?? 0);
+      }
     }
     // keep ids of existing rows where the period number matches, so we update instead of duplicate
     setDraft(
