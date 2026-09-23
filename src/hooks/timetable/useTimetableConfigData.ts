@@ -506,7 +506,87 @@ export function useSubjectRequirementMutations(scope: Scope) {
     onError,
   });
 
-  return { save, remove };
+  /**
+   * Creates the missing class/section/subject rows derived from existing EdZen AI
+   * records. Existing rows are never touched or overwritten.
+   */
+  const initialize = useMutation({
+    mutationFn: async (
+      combos: { class_name: string; section: string | null; subject_id: string }[]
+    ) => {
+      const { data: existing, error } = await supabase
+        .from("timetable_subject_requirements")
+        .select("class_name, section, subject_id")
+        .eq("school_id", scope.schoolId!)
+        .eq("academic_year_id", scope.academicYearId!);
+      if (error) throw error;
+
+      const keyOf = (c: string, s: string | null, sub: string) => `${c}||${s ?? ""}||${sub}`;
+      const have = new Set((existing ?? []).map((r: any) => keyOf(r.class_name, r.section, r.subject_id)));
+
+      const seen = new Set<string>();
+      const missing = combos
+        .filter((c) => {
+          const k = keyOf(c.class_name, c.section, c.subject_id);
+          if (have.has(k) || seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        })
+        .map((c) => ({
+          school_id: scope.schoolId!,
+          academic_year_id: scope.academicYearId!,
+          class_name: c.class_name,
+          section: c.section,
+          subject_id: c.subject_id,
+          periods_per_week: 1,
+          delivery_mode: "theory",
+          elective_group: null,
+          consecutive_periods: 1,
+          preferred_weekdays: null,
+          priority: 2,
+          // Not configured yet - admins must set the real periods per week.
+          status: "draft",
+        }));
+
+      for (let i = 0; i < missing.length; i += 300) {
+        const { error: insErr } = await supabase
+          .from("timetable_subject_requirements")
+          .insert(missing.slice(i, i + 300));
+        if (insErr) throw insErr;
+      }
+      return missing.length;
+    },
+    onSuccess: (count) => {
+      toast.success(
+        count === 0
+          ? "Everything is already initialized"
+          : `${count} subject requirement${count === 1 ? "" : "s"} created`
+      );
+      invalidate();
+    },
+    onError,
+  });
+
+  /** Applies the same values to a set of already saved requirement rows. */
+  const bulkUpdate = useMutation({
+    mutationFn: async (args: { ids: string[]; values: Partial<SubjectRequirement> }) => {
+      if (!args.ids.length) return 0;
+      const { error } = await supabase
+        .from("timetable_subject_requirements")
+        .update(args.values)
+        .in("id", args.ids)
+        .eq("school_id", scope.schoolId!);
+      if (error) throw error;
+      return args.ids.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count} subject${count === 1 ? "" : "s"} updated`);
+      invalidate();
+    },
+    onError,
+  });
+
+  return { save, remove, initialize, bulkUpdate };
 }
 
 /* -------------------------------------------------- room requirements */
