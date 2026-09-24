@@ -77,6 +77,24 @@ async function fetchBreaks(
   return { error: false, data: data ?? [] };
 }
 
+// Rooms are school-scoped (not year-specific), so they filter by school_id only.
+async function fetchRooms(
+  client: ReturnType<typeof createClient>,
+  school_id: string,
+): Promise<FetchResult<unknown[]>> {
+  const { data, error } = await client
+    .from("timetable_rooms")
+    .select("id, school_id, name, room_type, capacity, is_active")
+    .eq("school_id", school_id)
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("[timetable-api] rooms query failed", error);
+    return { error: true };
+  }
+  return { error: false, data: data ?? [] };
+}
+
 // Subject requirements are year-scoped and ordered by class, section, priority, subject.
 async function fetchSubjectRequirements(
   client: ReturnType<typeof createClient>,
