@@ -35,11 +35,13 @@ async function secretMatches(received: string, expected: string): Promise<boolea
   return diff === 0;
 }
 
+type FetchResult<T> = { error: true } | { error: false; data: T };
+
 async function fetchTimeSlots(
   client: ReturnType<typeof createClient>,
   school_id: string,
   academic_year_id: string,
-): Promise<Response> {
+): Promise<FetchResult<unknown[]>> {
   const { data, error } = await client
     .from("timetable_time_slots")
     .select("id, school_id, academic_year_id, weekday, period_number, start_time, end_time, is_active")
@@ -49,10 +51,49 @@ async function fetchTimeSlots(
     .order("period_number", { ascending: true });
 
   if (error) {
-    console.error("[timetable-api] query failed", error);
-    return json({ error: "Internal error" }, 500);
+    console.error("[timetable-api] time_slots query failed", error);
+    return { error: true };
   }
-  return json({ school_id, academic_year_id, time_slots: data ?? [] });
+  return { error: false, data: data ?? [] };
+}
+
+async function fetchBreaks(
+  client: ReturnType<typeof createClient>,
+  school_id: string,
+  academic_year_id: string,
+): Promise<FetchResult<unknown[]>> {
+  const { data, error } = await client
+    .from("timetable_breaks")
+    .select("id, school_id, academic_year_id, weekday, break_type, after_period, duration_minutes, is_active")
+    .eq("school_id", school_id)
+    .eq("academic_year_id", academic_year_id)
+    .order("weekday", { ascending: true })
+    .order("after_period", { ascending: true });
+
+  if (error) {
+    console.error("[timetable-api] breaks query failed", error);
+    return { error: true };
+  }
+  return { error: false, data: data ?? [] };
+}
+
+// Both reads run in parallel; a combined 200 carries time_slots and breaks.
+async function fetchSchedule(
+  client: ReturnType<typeof createClient>,
+  school_id: string,
+  academic_year_id: string,
+): Promise<Response> {
+  const [slotsRes, breaksRes] = await Promise.all([
+    fetchTimeSlots(client, school_id, academic_year_id),
+    fetchBreaks(client, school_id, academic_year_id),
+  ]);
+  if (slotsRes.error || breaksRes.error) return json({ error: "Internal error" }, 500);
+  return json({
+    school_id,
+    academic_year_id,
+    time_slots: slotsRes.data,
+    breaks: breaksRes.data,
+  });
 }
 
 Deno.serve(async (req) => {
@@ -82,7 +123,7 @@ Deno.serve(async (req) => {
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       );
-      return await fetchTimeSlots(serviceClient, school_id, academic_year_id);
+      return await fetchSchedule(serviceClient, school_id, academic_year_id);
     }
 
     // ---- Path 2: signed-in user (unchanged) ----
@@ -114,7 +155,7 @@ Deno.serve(async (req) => {
     ]);
     if (!allowed.has(school_id)) return json({ error: "Forbidden" }, 403);
 
-    return await fetchTimeSlots(supabase, school_id, academic_year_id);
+    return await fetchSchedule(supabase, school_id, academic_year_id);
   } catch (e) {
     console.error("[timetable-api] unexpected", e);
     return json({ error: "Internal error" }, 500);
