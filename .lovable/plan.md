@@ -1,17 +1,34 @@
-# About the database dashboard instructions you received
+# timetable-api Edge Function (read-only time slots)
 
-## What the instructions assume
+## What gets built
+One new backend function, `timetable-api`, with a single read-only GET endpoint that returns a school's time slots for one academic year. Nothing else changes.
 
-The guide you pasted ("Project Settings → Database → Connect, copy the Postgres connection string") applies to a **self-managed** database account. Your EdZen AI app runs on **Lovable Cloud**, where the database is fully managed for you — and, as a security measure, direct dashboard access and the raw database password are **not exposed to you or to me**. There is no dashboard page to open, and the connection string cannot be retrieved.
+## Behaviour
+- `GET /timetable-api?school_id=<uuid>&academic_year_id=<uuid>`
+- No or invalid sign-in token: **401**
+- Missing or malformed `school_id` / `academic_year_id`: **400**
+- Signed-in user not authorized for that school: **403** (the same response whether the school exists or not)
+- Any method other than GET or OPTIONS: **405**
+- Success: **200**
+```json
+{ "school_id": "...", "academic_year_id": "...", "time_slots": [ { "id", "school_id", "academic_year_id", "weekday", "period_number", "start_time", "end_time", "is_active" } ] }
+```
 
-## What you can do instead
+## Authorization (existing EdZen AI model)
+The function uses the caller's own token, so all checks run under the caller's permissions and the existing row-level rules:
+1. Check the token server-side (`auth.getClaims`) to get the user id.
+2. Call the existing `get_user_school_ids()` and `get_teacher_school_ids()` functions as the caller. Between them these already cover school admins, active school staff, and platform admins (managed-school access). The requested `school_id` must be in the combined list, otherwise 403. The `school_id` sent in the request is only compared against this list and is never trusted on its own.
+3. Query `timetable_time_slots` as the caller, filtered by both ids and sorted by weekday, then period_number. The existing timetable row-level rules act as a second layer of protection.
 
-Depending on what you were trying to accomplish:
+## Security
+- No service-role key. The function uses only the public anon key plus the caller's token.
+- No secrets, credentials or database details appear in any response. Errors return generic messages, and details are only written to the function logs.
+- CORS uses the standard shared headers from the SDK.
 
-1. **You wanted me to run a query or check data** — just ask. I can query and inspect the database for you directly (read-only or with changes, as you prefer), and show you the results here.
-2. **You wanted to connect an external tool or the future Timetable Python API** — the supported path is through the app's built-in secure functions/endpoints, not a raw Postgres connection string. For the Timetable service specifically, the approved design already covers this: a dedicated least-privilege service role with scoped access, connected through the backend rather than an exposed password.
-3. **You need ongoing direct SQL access yourself** — that would require moving the backend to your own external database account (I can plan that migration if you want it, but it's a significant change and not needed for current work).
+## Out of scope
+No generation, publishing, Python connection, or writes. Existing tables, policies, functions and app code are not touched, and `supabase/config.toml` is not edited.
 
-## Recommendation
-
-Tell me what you were hoping to do with the dashboard (check data? connect the Timetable API? fix something?), and I'll do it for you or set up the supported way to do it — no credentials needed.
+## Technical details
+- New file: `supabase/functions/timetable-api/index.ts` (Deno, `npm:@supabase/supabase-js@2`, `corsHeaders` from `npm:@supabase/supabase-js@2/cors`, zod UUID validation).
+- Deploy with the deploy tool, then test with curl: no token gives 401, a bad id gives 400, another school gives 403, and your own school gives 200 with slots in order.
+- Endpoint: `https://fwnvfkaihuqdfdcwkakj.supabase.co/functions/v1/timetable-api`
