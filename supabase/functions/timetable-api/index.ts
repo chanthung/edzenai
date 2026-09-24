@@ -95,24 +95,50 @@ async function fetchRooms(
   return { error: false, data: data ?? [] };
 }
 
-// All three reads run in parallel; a combined 200 carries time_slots, breaks and rooms.
+// Subject requirements are year-scoped and ordered by class, section, priority, subject.
+async function fetchSubjectRequirements(
+  client: ReturnType<typeof createClient>,
+  school_id: string,
+  academic_year_id: string,
+): Promise<FetchResult<unknown[]>> {
+  const { data, error } = await client
+    .from("timetable_subject_requirements")
+    .select("id, school_id, academic_year_id, class_name, section, subject_id, periods_per_week, delivery_mode, elective_group, consecutive_periods, preferred_weekdays, priority, status")
+    .eq("school_id", school_id)
+    .eq("academic_year_id", academic_year_id)
+    .order("class_name", { ascending: true })
+    .order("section", { ascending: true })
+    .order("priority", { ascending: false })
+    .order("subject_id", { ascending: true });
+
+  if (error) {
+    console.error("[timetable-api] subject_requirements query failed", error);
+    return { error: true };
+  }
+  return { error: false, data: data ?? [] };
+}
+
+// All four reads run in parallel; a combined 200 carries time_slots, breaks, rooms and subject_requirements.
 async function fetchSchedule(
   client: ReturnType<typeof createClient>,
   school_id: string,
   academic_year_id: string,
 ): Promise<Response> {
-  const [slotsRes, breaksRes, roomsRes] = await Promise.all([
+  const [slotsRes, breaksRes, roomsRes, reqsRes] = await Promise.all([
     fetchTimeSlots(client, school_id, academic_year_id),
     fetchBreaks(client, school_id, academic_year_id),
     fetchRooms(client, school_id),
+    fetchSubjectRequirements(client, school_id, academic_year_id),
   ]);
-  if (slotsRes.error || breaksRes.error || roomsRes.error) return json({ error: "Internal error" }, 500);
+  if (slotsRes.error || breaksRes.error || roomsRes.error || reqsRes.error)
+    return json({ error: "Internal error" }, 500);
   return json({
     school_id,
     academic_year_id,
     time_slots: slotsRes.data,
     breaks: breaksRes.data,
     rooms: roomsRes.data,
+    subject_requirements: reqsRes.data,
   });
 }
 
