@@ -57,6 +57,26 @@ async function fetchTimeSlots(
   return { error: false, data: data ?? [] };
 }
 
+async function fetchBreaks(
+  client: ReturnType<typeof createClient>,
+  school_id: string,
+  academic_year_id: string,
+): Promise<FetchResult<unknown[]>> {
+  const { data, error } = await client
+    .from("timetable_breaks")
+    .select("id, school_id, academic_year_id, weekday, break_type, after_period, duration_minutes, is_active")
+    .eq("school_id", school_id)
+    .eq("academic_year_id", academic_year_id)
+    .order("weekday", { ascending: true })
+    .order("after_period", { ascending: true });
+
+  if (error) {
+    console.error("[timetable-api] breaks query failed", error);
+    return { error: true };
+  }
+  return { error: false, data: data ?? [] };
+}
+
 // Rooms are school-scoped (not year-specific), so they filter by school_id only.
 async function fetchRooms(
   client: ReturnType<typeof createClient>,
