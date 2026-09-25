@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { Student, useUpdateStudent, useStudents } from "@/hooks/useStudents";
-import { useAcademicYears } from "@/hooks/useAcademicYears";
+import { useAcademicYears, useCurrentAcademicYear } from "@/hooks/useAcademicYears";
+import { CurrentAcademicYearNotice } from "./CurrentAcademicYearNotice";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -33,21 +34,28 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
   const { data: allStudents } = useStudents();
   const queryClient = useQueryClient();
   const { data: academicYears } = useAcademicYears();
+  const currentYear = useCurrentAcademicYear();
   
+  // Current enrollment = the one in today's academic year; otherwise the most recent one.
+  // Historical enrollments are never modified.
   const { data: currentEnrollment } = useQuery({
-    queryKey: ['student-enrollment', student?.id],
+    queryKey: ['student-enrollment', student?.id, currentYear.year?.id ?? null],
     queryFn: async () => {
       if (!student?.id) return null;
       const { data, error } = await supabase
         .from('student_enrollments')
         .select('*')
         .eq('student_id', student.id)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      if (!data || data.length === 0) return null;
+      return data.find((e) => e.academic_year_id === currentYear.year?.id) ?? data[0];
     },
-    enabled: !!student?.id && open,
+    enabled: !!student?.id && open && currentYear.status !== 'loading',
   });
+  const enrollmentYear = currentEnrollment
+    ? academicYears?.find((y) => y.id === currentEnrollment.academic_year_id) ?? null
+    : null;
   
   const [formData, setFormData] = useState({
     name: "",
@@ -98,7 +106,9 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
     formData.parent_phone = phoneDigits;
 
     try {
-      const { academic_year_id, ...studentData } = formData;
+      const { academic_year_id: _ignored, ...studentData } = formData;
+      // Existing enrollment keeps its academic year; new enrollment uses the date-based current year.
+      const academic_year_id = currentEnrollment?.academic_year_id ?? currentYear.year?.id ?? "";
       // Convert empty strings to null for nullable fields to avoid DB type errors
       const sanitized = Object.fromEntries(
         Object.entries(studentData).map(([key, value]) => [key, value === "" ? null : value])
@@ -109,7 +119,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
         if (currentEnrollment) {
           const { error } = await supabase
             .from('student_enrollments')
-            .update({ academic_year_id, class_name: studentData.class_name || null, section: studentData.section || null })
+            .update({ class_name: studentData.class_name || null, section: studentData.section || null })
             .eq('id', currentEnrollment.id);
           if (error) console.error('Failed to update enrollment:', error);
         } else {
@@ -148,17 +158,11 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                 <Input id="edit-roll" placeholder="2024001" value={formData.roll_number} onChange={(e) => setFormData({ ...formData, roll_number: e.target.value })} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-academic-year">Academic Year</Label>
-              <Select value={formData.academic_year_id} onValueChange={(value) => setFormData({ ...formData, academic_year_id: value })}>
-                <SelectTrigger><SelectValue placeholder="Select academic year" /></SelectTrigger>
-                <SelectContent>
-                  {academicYears?.map((year) => (
-                    <SelectItem key={year.id} value={year.id}>{year.name} {year.is_active && "(Active)"}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <CurrentAcademicYearNotice
+              result={currentYear}
+              year={enrollmentYear}
+              label={currentEnrollment ? "Academic Year (current enrollment)" : "Academic Year"}
+            />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-class">Class</Label>
