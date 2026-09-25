@@ -11,9 +11,10 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectsWithClasses } from "@/hooks/progress/useSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mail, User, BookOpen, ChevronRight, IdCard } from "lucide-react";
+import { Loader2, Mail, User, BookOpen, ChevronRight, IdCard, CalendarDays, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sortClassNames } from "@/lib/class-sort";
+import { useCurrentAcademicYearContext } from "@/hooks/useAcademicYears";
 
 interface EditTeacherDialogProps {
   teacher: Teacher | null;
@@ -25,6 +26,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
   const { updateTeacher } = useTeachers();
   const { assignments, isLoading: loadingSubjectAssignments, updateAssignments } = useTeacherSubjects(teacher?.id);
   const { data: subjects = [], isLoading: loadingSubjects } = useSubjectsWithClasses();
+  const currentYear = useCurrentAcademicYearContext();
 
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -169,6 +171,21 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
           {/* Subject-Class Assignments */}
           <div className="space-y-2">
             <Label><BookOpen className="h-4 w-4 inline mr-1" />Assigned Subjects &amp; Classes</Label>
+            {currentYear.name && (
+              <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                <span>Academic Year: <span className="font-medium">{currentYear.name}</span> (Current)</span>
+              </div>
+            )}
+            {currentYear.warning && (
+              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>{currentYear.warning}</span>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Assign the subjects and classes this teacher is qualified to teach for the current academic year. The timetable will automatically use these assignments when scheduling lessons.
+            </p>
             {isLoading ? (
               <div className="space-y-2"><Skeleton className="h-6 w-full" /><Skeleton className="h-6 w-full" /></div>
             ) : subjects.length === 0 ? (

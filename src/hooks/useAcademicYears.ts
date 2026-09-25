@@ -193,6 +193,7 @@ export function useCreateAcademicYear() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
+      if (year.is_active) await deactivateOtherYears(school!.id);
       const { data, error } = await supabase
         .from('academic_years')
         .insert({ ...year, school_id: school!.id })
@@ -219,6 +220,7 @@ export function useUpdateAcademicYear() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
+      if (updates.is_active === true) await deactivateOtherYears(school!.id, id);
       const { data, error } = await supabase
         .from('academic_years')
         .update(updates)
