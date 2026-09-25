@@ -8,49 +8,71 @@ export interface TeacherSubjectClassAssignment {
   class_name: string;
 }
 
-export function useTeacherSubjects(teacherId?: string) {
+/**
+ * Year-scoped teacher subject/class assignments.
+ * Only rows for `academicYearId` are read or modified; rows of other years
+ * (and legacy rows without a year) are never touched.
+ */
+export function useTeacherSubjects(teacherId?: string, academicYearId?: string | null) {
   const { data: school } = useSchool();
 
   const { data: assignments = [], isLoading } = useQuery({
-    queryKey: ['teacher-subject-assignments', teacherId],
+    queryKey: ['teacher-subject-assignments', teacherId, academicYearId],
     queryFn: async () => {
-      if (!teacherId) return [];
+      if (!teacherId || !academicYearId) return [];
       const { data, error } = await supabase
         .from('teacher_subject_assignments')
         .select('subject_id, class_name')
-        .eq('teacher_id', teacherId);
+        .eq('teacher_id', teacherId)
+        .eq('academic_year_id', academicYearId);
       if (error) throw error;
       return data as TeacherSubjectClassAssignment[];
+    },
+    enabled: !!teacherId && !!academicYearId,
+  });
+
+  // Legacy rows that have no academic year yet (shown as info only)
+  const { data: yearlessCount = 0 } = useQuery({
+    queryKey: ['teacher-subject-assignments-yearless', teacherId],
+    queryFn: async () => {
+      if (!teacherId) return 0;
+      const { count, error } = await supabase
+        .from('teacher_subject_assignments')
+        .select('id', { count: 'exact', head: true })
+        .eq('teacher_id', teacherId)
+        .is('academic_year_id', null);
+      if (error) throw error;
+      return count ?? 0;
     },
     enabled: !!teacherId,
   });
 
-  // Deduplicated subject IDs for backward compatibility
   const assignedSubjectIds = [...new Set(assignments.map(a => a.subject_id))];
 
   const queryClient = useQueryClient();
 
   const updateAssignments = useMutation({
-    mutationFn: async ({ teacherId, assignments: newAssignments }: { teacherId: string; assignments: TeacherSubjectClassAssignment[] }) => {
+    mutationFn: async ({ teacherId, academicYearId, assignments: newAssignments }: { teacherId: string; academicYearId: string; assignments: TeacherSubjectClassAssignment[] }) => {
       if (!school?.id) throw new Error('No school found');
+      if (!academicYearId) throw new Error('No current academic year is set');
 
-      // Delete existing
-      await supabase
+      // Delete only this year's rows
+      const { error: delError } = await supabase
         .from('teacher_subject_assignments')
         .delete()
-        .eq('teacher_id', teacherId);
+        .eq('teacher_id', teacherId)
+        .eq('academic_year_id', academicYearId);
+      if (delError) throw delError;
 
-      // Insert new
       if (newAssignments.length > 0) {
         const rows = newAssignments.map(a => ({
           teacher_id: teacherId,
           subject_id: a.subject_id,
           class_name: a.class_name,
           school_id: school.id,
+          academic_year_id: academicYearId,
         }));
-        const { error } = await supabase
-          .from('teacher_subject_assignments')
-          .insert(rows);
+        const { error } = await supabase.from('teacher_subject_assignments').insert(rows);
         if (error) throw error;
       }
     },
@@ -63,5 +85,5 @@ export function useTeacherSubjects(teacherId?: string) {
     },
   });
 
-  return { assignments, assignedSubjectIds, isLoading, updateAssignments };
+  return { assignments, assignedSubjectIds, yearlessCount, isLoading, updateAssignments };
 }
