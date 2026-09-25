@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCurrentAcademicYearContext, useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear } from "@/hooks/useAcademicYears";
+import { useCurrentAcademicYearContext, useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear, academicYearPhase, autoCurrentYearTarget, type AcademicYear } from "@/hooks/useAcademicYears";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useSchool } from "@/hooks/useSchool";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
@@ -30,6 +30,23 @@ export default function AcademicYears() {
   const currentCtx = useCurrentAcademicYearContext();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmFuture, setConfirmFuture] = useState<AcademicYear | null>(null);
+  const autoSyncedFor = useRef<string | null>(null);
+
+  // Automatically keep the year covering today's date as the single current year.
+  useEffect(() => {
+    if (isLoading || isRestricted || updateYear.isPending) return;
+    const target = autoCurrentYearTarget(academicYears);
+    if (!target) return;
+    const key = `${target}:${academicYears?.filter((y) => y.is_active).map((y) => y.id).join(",")}`;
+    if (autoSyncedFor.current === key) return;
+    autoSyncedFor.current = key;
+    const name = academicYears?.find((y) => y.id === target)?.name;
+    updateYear
+      .mutateAsync({ id: target, is_active: true })
+      .then(() => toast.success(`${name} set as current year (covers today's date)`))
+      .catch((e: any) => toast.error("Could not update current year", { description: e.message }));
+  }, [academicYears, isLoading, isRestricted]);
   const [newYear, setNewYear] = useState({
     name: "",
     start_date: "",
@@ -50,6 +67,19 @@ export default function AcademicYears() {
     } catch (error: any) {
       toast.error("Failed to create academic year", { description: error.message });
     }
+  };
+
+  const requestActivate = (year: AcademicYear) => {
+    const phase = academicYearPhase(year);
+    if (phase === "past") {
+      toast.error("Past academic years cannot be made current");
+      return;
+    }
+    if (phase === "future") {
+      setConfirmFuture(year);
+      return;
+    }
+    handleToggleActive(year.id, true);
   };
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
@@ -116,7 +146,7 @@ export default function AcademicYears() {
                     <Label htmlFor="isActive">Set as current year</Label>
                     <p className="text-sm text-muted-foreground">Only one year can be current; the previous one becomes inactive</p>
                   </div>
-                  <Switch id="isActive" checked={newYear.is_active} onCheckedChange={(checked) => setNewYear({ ...newYear, is_active: checked })} />
+                  <Switch id="isActive" disabled={!!newYear.end_date && newYear.end_date < new Date().toISOString().slice(0, 10)} checked={newYear.is_active && !(newYear.end_date && newYear.end_date < new Date().toISOString().slice(0, 10))} onCheckedChange={(checked) => setNewYear({ ...newYear, is_active: checked })} />
                 </div>
               </div>
               <DialogFooter>
@@ -196,6 +226,8 @@ export default function AcademicYears() {
                             {year.is_active && (
                               <Badge className="bg-status-paid/20 text-status-paid border-status-paid/20">Current</Badge>
                             )}
+                            {academicYearPhase(year) === "past" && <Badge variant="secondary">Historical</Badge>}
+                            {academicYearPhase(year) === "future" && <Badge variant="outline">Upcoming</Badge>}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {formatDate(year.start_date)} — {formatDate(year.end_date)}
@@ -203,15 +235,23 @@ export default function AcademicYears() {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor={`active-${year.id}`} className="text-sm text-muted-foreground">Active</Label>
-                          <Switch
-                            id={`active-${year.id}`}
-                            checked={year.is_active}
-                            onCheckedChange={(checked) => handleToggleActive(year.id, checked)}
-                            disabled={isRestricted}
-                          />
-                        </div>
+                        {academicYearPhase(year) === "past" ? (
+                          <span className="text-sm text-muted-foreground">Historical · Not current</span>
+                        ) : academicYearPhase(year) === "current" && year.is_active ? (
+                          <span className="text-sm text-muted-foreground">Current (set automatically)</span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor={`active-${year.id}`} className="text-sm text-muted-foreground">
+                              {academicYearPhase(year) === "future" ? "Activate early" : "Active"}
+                            </Label>
+                            <Switch
+                              id={`active-${year.id}`}
+                              checked={year.is_active}
+                              onCheckedChange={(checked) => (checked ? requestActivate(year) : handleToggleActive(year.id, false))}
+                              disabled={isRestricted || updateYear.isPending}
+                            />
+                          </div>
+                        )}
                         <RestrictedButton isRestricted={isRestricted}>
                           <Button
                             variant="ghost"
@@ -238,6 +278,31 @@ export default function AcademicYears() {
           )}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!confirmFuture} onOpenChange={(o) => !o && setConfirmFuture(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Activate {confirmFuture?.name} early?</DialogTitle>
+            <DialogDescription>
+              This year starts on {confirmFuture ? formatDate(confirmFuture.start_date) : ""}. It will become the school's
+              current year for students, teachers, attendance, marks, fees and timetable, and the present current year will
+              be switched off. Existing records are not changed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmFuture(null)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                const y = confirmFuture;
+                setConfirmFuture(null);
+                if (y) await handleToggleActive(y.id, true);
+              }}
+            >
+              Activate early
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
