@@ -36,6 +36,13 @@
       "when": 1790326311907,
       "tag": "0004_tsa_academic_year",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790333562908,
+      "tag": "0005_tsa_year_required",
+      "breakpoints": true
     }
   ]
 }
