@@ -60,7 +60,7 @@ export default function AcademicYears() {
       return;
     }
     try {
-      await createYear.mutateAsync(newYear);
+      await createYear.mutateAsync({ ...newYear, is_active: newYear.is_active && newYear.end_date >= new Date().toISOString().slice(0, 10) });
       toast.success("Academic year created");
       setDialogOpen(false);
       setNewYear({ name: "", start_date: "", end_date: "", is_active: true });
