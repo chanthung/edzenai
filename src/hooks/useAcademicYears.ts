@@ -45,6 +45,45 @@ export function useActiveAcademicYear() {
   return academicYears?.find(year => year.is_active) ?? academicYears?.[0];
 }
 
+export type CurrentAcademicYearStatus = 'loading' | 'ok' | 'overlap' | 'none';
+
+export interface CurrentAcademicYearResult {
+  status: CurrentAcademicYearStatus;
+  year: AcademicYear | null;
+  matches: AcademicYear[];
+}
+
+/** Local calendar date as YYYY-MM-DD (avoids UTC shifting the day). */
+function todayLocalISO(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+/**
+ * Date-based current academic year: start_date <= today <= end_date.
+ * Never picks by is_active. Exactly one match => 'ok'; several => 'overlap'; zero => 'none'.
+ */
+export function resolveCurrentAcademicYear(
+  years: AcademicYear[] | undefined,
+  today: string = todayLocalISO(),
+): CurrentAcademicYearResult {
+  if (!years) return { status: 'loading', year: null, matches: [] };
+  const matches = years.filter(
+    (y) => y.start_date && y.end_date && y.start_date <= today && today <= y.end_date,
+  );
+  if (matches.length === 1) return { status: 'ok', year: matches[0], matches };
+  if (matches.length > 1) return { status: 'overlap', year: null, matches };
+  return { status: 'none', year: null, matches };
+}
+
+export function useCurrentAcademicYear(): CurrentAcademicYearResult {
+  const { data: academicYears, isLoading } = useAcademicYears();
+  if (isLoading) return { status: 'loading', year: null, matches: [] };
+  return resolveCurrentAcademicYear(academicYears ?? []);
+}
+
 export function useCreateAcademicYear() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();

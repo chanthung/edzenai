@@ -31,7 +31,8 @@ import {
 import { useStudents, useCreateStudent, useDeleteStudent, Student } from "@/hooks/useStudents";
 import { useStudentFees } from "@/hooks/useStudentFees";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
-import { useAcademicYears, useActiveAcademicYear } from "@/hooks/useAcademicYears";
+import { useCurrentAcademicYear } from "@/hooks/useAcademicYears";
+import { CurrentAcademicYearNotice } from "@/components/admin/CurrentAcademicYearNotice";
 import { StudentFeeManager } from "@/components/admin/StudentFeeManager";
 import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
 import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
@@ -65,8 +66,7 @@ export default function Students() {
   const deleteStudent = useDeleteStudent();
   const { data: school } = useSchool();
   const { isRestricted, canPerform } = useSubscriptionStatus();
-  const { data: academicYears } = useAcademicYears();
-  const activeAcademicYear = useActiveAcademicYear();
+  const currentYear = useCurrentAcademicYear();
   const queryClient = useQueryClient();
   const { isAccountant } = useUserRole();
   const { data: latestImportLog } = useLatestImportLog();
@@ -165,15 +165,13 @@ export default function Students() {
     religion: "",
   });
 
-  // Pre-select active academic year when dialog opens
+  // Auto-use the date-based current academic year when dialog opens
+  const currentYearId = currentYear.year?.id ?? "";
   useEffect(() => {
-    if (activeAcademicYear && dialogOpen) {
-      setNewStudent(prev => ({ 
-        ...prev, 
-        academic_year_id: activeAcademicYear.id 
-      }));
+    if (dialogOpen) {
+      setNewStudent(prev => ({ ...prev, academic_year_id: currentYearId }));
     }
-  }, [activeAcademicYear, dialogOpen]);
+  }, [currentYearId, dialogOpen]);
 
   // Get unique classes for filter dropdown
   const uniqueClasses = useMemo(() => {
@@ -332,8 +330,18 @@ export default function Students() {
     }
     newStudent.parent_phone = phoneDigits;
 
+    if (currentYear.status !== "ok" || !currentYear.year) {
+      toast.error(
+        currentYear.status === "overlap"
+          ? "Overlapping academic years cover today's date"
+          : "No academic year covers today's date",
+        { description: "Ask an administrator to fix the dates in Academic Years." },
+      );
+      return;
+    }
+
     try {
-      await createStudent.mutateAsync(newStudent);
+      await createStudent.mutateAsync({ ...newStudent, academic_year_id: currentYear.year.id });
       toast.success("Student added successfully");
       setDialogOpen(false);
       setNewStudent({
@@ -341,7 +349,7 @@ export default function Students() {
         roll_number: "",
         class_name: "",
         section: "",
-        academic_year_id: activeAcademicYear?.id || "",
+        academic_year_id: currentYear.year.id,
         parent_name: "",
         parent_phone: "",
         parent_email: "",
@@ -624,24 +632,8 @@ export default function Students() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="academic_year">Academic Year *</Label>
-                  <Select
-                    value={newStudent.academic_year_id}
-                    onValueChange={(value) => setNewStudent({ ...newStudent, academic_year_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select academic year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {academicYears?.map((year) => (
-                        <SelectItem key={year.id} value={year.id}>
-                          {year.name} {year.is_active && "(Active)"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <CurrentAcademicYearNotice result={currentYear} />
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="class">Class</Label>
