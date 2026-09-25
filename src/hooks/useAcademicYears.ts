@@ -54,7 +54,7 @@ export interface CurrentAcademicYearResult {
 }
 
 /** Local calendar date as YYYY-MM-DD (avoids UTC shifting the day). */
-function todayLocalISO(): string {
+export function todayLocalISO(): string {
   const d = new Date();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -193,6 +193,9 @@ export function useCreateAcademicYear() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
+      if (year.is_active && year.end_date < todayLocalISO()) {
+        throw new Error('A past academic year cannot be made current.');
+      }
       if (year.is_active) await deactivateOtherYears(school!.id);
       const { data, error } = await supabase
         .from('academic_years')
@@ -220,7 +223,14 @@ export function useUpdateAcademicYear() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
-      if (updates.is_active === true) await deactivateOtherYears(school!.id, id);
+      if (updates.is_active === true) {
+        const { data: target, error: tErr } = await supabase.from('academic_years').select('end_date').eq('id', id).single();
+        if (tErr) throw tErr;
+        if (target?.end_date && target.end_date < todayLocalISO()) {
+          throw new Error('A past academic year cannot be made current.');
+        }
+        await deactivateOtherYears(school!.id, id);
+      }
       const { data, error } = await supabase
         .from('academic_years')
         .update(updates)
@@ -259,4 +269,29 @@ export function useDeleteAcademicYear() {
       queryClient.invalidateQueries({ queryKey: ['academic-years', school?.id] });
     },
   });
+}
+
+export type AcademicYearPhase = 'past' | 'current' | 'future';
+
+export function academicYearPhase(y: AcademicYear, today: string = todayLocalISO()): AcademicYearPhase {
+  if (y.end_date < today) return 'past';
+  if (y.start_date > today) return 'future';
+  return 'current';
+}
+
+/**
+ * Decide whether the active flag needs an automatic, safe correction.
+ * Returns the id to make current, or null when nothing should change.
+ * Only acts when exactly one year covers today and the active state is wrong
+ * (none active, several active, or a past year active). An explicitly
+ * activated future year is respected. Dates are never touched.
+ */
+export function autoCurrentYearTarget(years: AcademicYear[] | undefined, today: string = todayLocalISO()): string | null {
+  if (!years?.length) return null;
+  const matches = resolveCurrentAcademicYear(years, today).matches;
+  if (matches.length !== 1) return null;
+  const active = years.filter((y) => y.is_active);
+  if (active.length === 1 && active[0].id === matches[0].id) return null;
+  if (active.length === 1 && academicYearPhase(active[0], today) === 'future') return null;
+  return matches[0].id;
 }
