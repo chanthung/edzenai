@@ -84,6 +84,104 @@ export function useCurrentAcademicYear(): CurrentAcademicYearResult {
   return resolveCurrentAcademicYear(academicYears ?? []);
 }
 
+export type AcademicYearIssue = 'no_current' | 'multiple_active' | 'overlap' | 'mismatch' | 'error';
+
+export interface CurrentAcademicYearContext {
+  /** The school's single current operational year (null when it can't be determined safely). */
+  year: AcademicYear | null;
+  academic_year_id: string | null;
+  name: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  isLoading: boolean;
+  isValid: boolean;
+  issues: AcademicYearIssue[];
+  activeYears: AcademicYear[];
+  dateMatches: AcademicYear[];
+  /** Human-readable warning for administrators, or null. */
+  warning: string | null;
+}
+
+/**
+ * Shared current-academic-year resolver. Current = the single active year.
+ * The date range (start_date <= today <= end_date) is cross-checked; any
+ * disagreement is surfaced as a warning — data is never changed silently.
+ */
+export function resolveCurrentAcademicYearContext(
+  years: AcademicYear[] | undefined,
+  today: string = todayLocalISO(),
+): Omit<CurrentAcademicYearContext, 'isLoading'> {
+  const list = years ?? [];
+  const activeYears = list.filter((y) => y.is_active);
+  const dateMatches = resolveCurrentAcademicYear(list, today).matches;
+  const issues: AcademicYearIssue[] = [];
+  let year: AcademicYear | null = null;
+
+  if (activeYears.length > 1) issues.push('multiple_active');
+  if (dateMatches.length > 1) issues.push('overlap');
+
+  if (activeYears.length === 1) year = activeYears[0];
+  else if (activeYears.length === 0 && dateMatches.length === 1) year = dateMatches[0];
+
+  if (!year && !issues.includes('multiple_active')) issues.push('no_current');
+  if (year && activeYears.length === 1 && dateMatches.length === 1 && dateMatches[0].id !== year.id) {
+    issues.push('mismatch');
+  }
+  if (year && activeYears.length === 1 && dateMatches.length === 0) issues.push('mismatch');
+
+  const warnings: string[] = [];
+  if (issues.includes('multiple_active'))
+    warnings.push(`More than one academic year is marked active (${activeYears.map((y) => y.name).join(', ')}). Activate only one in Academic Years.`);
+  if (issues.includes('overlap'))
+    warnings.push(`Academic year dates overlap today (${dateMatches.map((y) => y.name).join(', ')}).`);
+  if (issues.includes('no_current')) warnings.push('No current academic year is set. Create or activate one in Academic Years.');
+  if (issues.includes('mismatch'))
+    warnings.push(
+      dateMatches.length === 1
+        ? `The active year (${year?.name}) differs from the year covering today's date (${dateMatches[0].name}).`
+        : `Today's date is outside the active year (${year?.name}).`,
+    );
+
+  return {
+    year: issues.includes('multiple_active') ? null : year,
+    academic_year_id: issues.includes('multiple_active') ? null : year?.id ?? null,
+    name: issues.includes('multiple_active') ? null : year?.name ?? null,
+    start_date: issues.includes('multiple_active') ? null : year?.start_date ?? null,
+    end_date: issues.includes('multiple_active') ? null : year?.end_date ?? null,
+    isValid: !!year && !issues.includes('multiple_active'),
+    issues,
+    activeYears,
+    dateMatches,
+    warning: warnings.length ? warnings.join(' ') : null,
+  };
+}
+
+export function useCurrentAcademicYearContext(): CurrentAcademicYearContext {
+  const { data, isLoading, error } = useAcademicYears();
+  if (isLoading) {
+    return {
+      year: null, academic_year_id: null, name: null, start_date: null, end_date: null,
+      isLoading: true, isValid: false, issues: [], activeYears: [], dateMatches: [], warning: null,
+    };
+  }
+  if (error) {
+    return {
+      year: null, academic_year_id: null, name: null, start_date: null, end_date: null,
+      isLoading: false, isValid: false, issues: ['error'], activeYears: [], dateMatches: [],
+      warning: 'Could not load academic years.',
+    };
+  }
+  return { ...resolveCurrentAcademicYearContext(data), isLoading: false };
+}
+
+/** Deactivate every other active year of the school (only the is_active flag changes). */
+async function deactivateOtherYears(schoolId: string, keepId?: string) {
+  let q = supabase.from('academic_years').update({ is_active: false }).eq('school_id', schoolId).eq('is_active', true);
+  if (keepId) q = q.neq('id', keepId);
+  const { error } = await q;
+  if (error) throw error;
+}
+
 export function useCreateAcademicYear() {
   const queryClient = useQueryClient();
   const { data: school } = useSchool();
@@ -95,6 +193,7 @@ export function useCreateAcademicYear() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
+      if (year.is_active) await deactivateOtherYears(school!.id);
       const { data, error } = await supabase
         .from('academic_years')
         .insert({ ...year, school_id: school!.id })
@@ -121,6 +220,7 @@ export function useUpdateAcademicYear() {
         throw new Error('Operation not permitted. School is in restricted mode.');
       }
       
+      if (updates.is_active === true) await deactivateOtherYears(school!.id, id);
       const { data, error } = await supabase
         .from('academic_years')
         .update(updates)

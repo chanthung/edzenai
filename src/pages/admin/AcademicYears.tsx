@@ -11,14 +11,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear } from "@/hooks/useAcademicYears";
+import { useCurrentAcademicYearContext, useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear } from "@/hooks/useAcademicYears";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useSchool } from "@/hooks/useSchool";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { PromoteStudentsTab } from "@/components/admin/PromoteStudentsTab";
 import { formatDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Plus, CalendarDays, Trash2, Loader2, GraduationCap } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Loader2, GraduationCap, AlertTriangle } from "lucide-react";
 
 export default function AcademicYears() {
   const { data: academicYears, isLoading } = useAcademicYears();
@@ -27,6 +27,7 @@ export default function AcademicYears() {
   const deleteYear = useDeleteAcademicYear();
   const { isRestricted } = useSubscriptionStatus();
   const { data: school } = useSchool();
+  const currentCtx = useCurrentAcademicYearContext();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newYear, setNewYear] = useState({
@@ -58,7 +59,7 @@ export default function AcademicYears() {
     }
     try {
       await updateYear.mutateAsync({ id, is_active: isActive });
-      toast.success(isActive ? "Year activated" : "Year deactivated");
+      toast.success(isActive ? "Year activated — other years were set inactive" : "Year deactivated");
     } catch (error: any) {
       toast.error("Failed to update", { description: error.message });
     }
@@ -112,8 +113,8 @@ export default function AcademicYears() {
                 </div>
                 <div className="flex items-center justify-between pt-2">
                   <div>
-                    <Label htmlFor="isActive">Set as active year</Label>
-                    <p className="text-sm text-muted-foreground">Active year is shown by default</p>
+                    <Label htmlFor="isActive">Set as current year</Label>
+                    <p className="text-sm text-muted-foreground">Only one year can be current; the previous one becomes inactive</p>
                   </div>
                   <Switch id="isActive" checked={newYear.is_active} onCheckedChange={(checked) => setNewYear({ ...newYear, is_active: checked })} />
                 </div>
@@ -143,6 +144,12 @@ export default function AcademicYears() {
         </TabsList>
 
         <TabsContent value="years" className="mt-4">
+          {currentCtx.warning && (
+            <div className="mb-4 flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{currentCtx.warning}</span>
+            </div>
+          )}
           <div className="grid gap-4">
             {isLoading ? (
               [1, 2].map((i) => (
@@ -187,7 +194,7 @@ export default function AcademicYears() {
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold text-lg">{year.name}</h3>
                             {year.is_active && (
-                              <Badge className="bg-status-paid/20 text-status-paid border-status-paid/20">Active</Badge>
+                              <Badge className="bg-status-paid/20 text-status-paid border-status-paid/20">Current</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
