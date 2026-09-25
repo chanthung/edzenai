@@ -2249,6 +2249,7 @@ export type Database = {
       }
       teacher_subject_assignments: {
         Row: {
+          academic_year_id: string | null
           class_name: string
           created_at: string
           id: string
@@ -2257,6 +2258,7 @@ export type Database = {
           teacher_id: string
         }
         Insert: {
+          academic_year_id?: string | null
           class_name: string
           created_at?: string
           id?: string
@@ -2265,6 +2267,7 @@ export type Database = {
           teacher_id: string
         }
         Update: {
+          academic_year_id?: string | null
           class_name?: string
           created_at?: string
           id?: string
@@ -2273,6 +2276,13 @@ export type Database = {
           teacher_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "teacher_subject_assignments_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "teacher_subject_assignments_school_id_fkey"
             columns: ["school_id"]

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
+import { fetchCurrentAcademicYearId } from '@/lib/current-academic-year';
 
 export interface MySubjectClassAssignment {
   subjectId: string;
@@ -23,18 +24,22 @@ export function useMySubjectIds() {
       // Get teacher record
       const { data: teacher } = await supabase
         .from('school_teachers')
-        .select('id')
+        .select('id, school_id')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
       if (!teacher) return null;
 
-      // Get assigned subject-class pairs
+      // Current academic year only; if it can't be determined, the teacher sees no subjects
+      const yearId = await fetchCurrentAcademicYearId(teacher.school_id);
+      if (!yearId) return [];
+
       const { data: assignments, error } = await supabase
         .from('teacher_subject_assignments')
         .select('subject_id, class_name')
-        .eq('teacher_id', teacher.id);
+        .eq('teacher_id', teacher.id)
+        .eq('academic_year_id', yearId);
 
       if (error) throw error;
       return (assignments || []).map(a => ({ subjectId: a.subject_id, className: a.class_name }));

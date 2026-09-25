@@ -24,9 +24,9 @@ interface EditTeacherDialogProps {
 
 export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDialogProps) {
   const { updateTeacher } = useTeachers();
-  const { assignments, isLoading: loadingSubjectAssignments, updateAssignments } = useTeacherSubjects(teacher?.id);
-  const { data: subjects = [], isLoading: loadingSubjects } = useSubjectsWithClasses();
   const currentYear = useCurrentAcademicYearContext();
+  const { assignments, yearlessCount, isLoading: loadingSubjectAssignments, updateAssignments } = useTeacherSubjects(teacher?.id, currentYear.academic_year_id);
+  const { data: subjects = [], isLoading: loadingSubjects } = useSubjectsWithClasses();
 
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -77,14 +77,19 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
       if (error) toast.error("Failed to update email");
     }
 
-    const assignmentPairs = Array.from(selectedPairs).map(key => {
-      const [subject_id, class_name] = key.split('::');
-      return { subject_id, class_name };
-    });
-    await updateAssignments.mutateAsync({
-      teacherId: teacher.id,
-      assignments: assignmentPairs,
-    });
+    if (currentYear.academic_year_id) {
+      const assignmentPairs = Array.from(selectedPairs).map(key => {
+        const [subject_id, class_name] = key.split('::');
+        return { subject_id, class_name };
+      });
+      await updateAssignments.mutateAsync({
+        teacherId: teacher.id,
+        academicYearId: currentYear.academic_year_id,
+        assignments: assignmentPairs,
+      });
+    } else {
+      toast.warning("Subject assignments were not saved", { description: "Set a single current academic year first." });
+    }
 
     onOpenChange(false);
   };
@@ -174,7 +179,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
             {currentYear.name && (
               <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
                 <CalendarDays className="h-4 w-4 text-primary" />
-                <span>Academic Year: <span className="font-medium">{currentYear.name}</span> (Current)</span>
+                <span>Academic Year: <span className="font-medium">{currentYear.name.replace('-', '–')}</span> (Current)</span>
               </div>
             )}
             {currentYear.warning && (
@@ -186,6 +191,11 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
             <p className="text-xs text-muted-foreground">
               Assign the subjects and classes this teacher is qualified to teach for the current academic year. The timetable will automatically use these assignments when scheduling lessons.
             </p>
+            {yearlessCount > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {yearlessCount} older assignment{yearlessCount === 1 ? "" : "s"} without an academic year {yearlessCount === 1 ? "is" : "are"} kept unchanged and not shown here.
+              </p>
+            )}
             {isLoading ? (
               <div className="space-y-2"><Skeleton className="h-6 w-full" /><Skeleton className="h-6 w-full" /></div>
             ) : subjects.length === 0 ? (

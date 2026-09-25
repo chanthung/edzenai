@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from './useSchool';
 import { toast } from 'sonner';
+import { fetchCurrentAcademicYearId } from '@/lib/current-academic-year';
 
 export interface TeacherClassAssignment {
   class_name: string;
@@ -76,18 +77,22 @@ export function useMyClassAssignments() {
 
       const { data: teacher } = await supabase
         .from('school_teachers')
-        .select('id')
+        .select('id, school_id')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
       if (!teacher) return [];
 
-      // Get distinct class names from teacher_subject_assignments
+      // Only the school's current academic year; yearless rows are not assumed to apply
+      const yearId = await fetchCurrentAcademicYearId(teacher.school_id);
+      if (!yearId) return [];
+
       const { data: assignments, error } = await supabase
         .from('teacher_subject_assignments')
         .select('class_name')
-        .eq('teacher_id', teacher.id);
+        .eq('teacher_id', teacher.id)
+        .eq('academic_year_id', yearId);
 
       if (error) throw error;
 
