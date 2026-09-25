@@ -118,27 +118,82 @@ async function fetchSubjectRequirements(
   return { error: false, data: data ?? [] };
 }
 
-// All four reads run in parallel; a combined 200 carries time_slots, breaks, rooms and subject_requirements.
+// Generic read-only helper for the additional engine inputs.
+async function readRows(
+  label: string,
+  query: PromiseLike<{ data: unknown[] | null; error: unknown }>,
+): Promise<FetchResult<unknown[]>> {
+  const { data, error } = await query;
+  if (error) {
+    console.error(`[timetable-api] ${label} query failed`, error);
+    return { error: true };
+  }
+  return { error: false, data: data ?? [] };
+}
+
+// All reads run in parallel; a combined 200 carries every read-only engine input.
 async function fetchSchedule(
   client: ReturnType<typeof createClient>,
   school_id: string,
   academic_year_id: string,
 ): Promise<Response> {
-  const [slotsRes, breaksRes, roomsRes, reqsRes] = await Promise.all([
+  const results = await Promise.all([
     fetchTimeSlots(client, school_id, academic_year_id),
     fetchBreaks(client, school_id, academic_year_id),
     fetchRooms(client, school_id),
     fetchSubjectRequirements(client, school_id, academic_year_id),
+    readRows("teachers", client
+      .from("school_teachers")
+      .select("id, user_id, school_id, name, email, employee_id, role, is_active")
+      .eq("school_id", school_id)
+      .eq("is_active", true)
+      .eq("role", "teacher")
+      .order("name", { ascending: true })),
+    readRows("teacher_subject_assignments", client
+      .from("teacher_subject_assignments")
+      .select("id, teacher_id, subject_id, school_id, class_name, academic_year_id")
+      .eq("school_id", school_id)
+      .eq("academic_year_id", academic_year_id)
+      .order("class_name", { ascending: true })
+      .order("teacher_id", { ascending: true })
+      .order("subject_id", { ascending: true })),
+    readRows("subjects", client
+      .from("subjects")
+      .select("id, school_id, name, code, display_order, subject_type")
+      .eq("school_id", school_id)
+      .order("display_order", { ascending: true })
+      .order("name", { ascending: true })),
+    readRows("teacher_availability", client
+      .from("timetable_teacher_availability")
+      .select("id, school_id, teacher_id, academic_year_id, time_slot_id, is_available, reason")
+      .eq("school_id", school_id)
+      .eq("academic_year_id", academic_year_id)
+      .order("teacher_id", { ascending: true })
+      .order("time_slot_id", { ascending: true })),
+    // No active flag on this table: every saved rule is a live constraint.
+    readRows("room_requirements", client
+      .from("timetable_room_requirements")
+      .select("id, school_id, subject_id, academic_year_id, class_name, required_room_type, preferred_room_id, is_mandatory")
+      .eq("school_id", school_id)
+      .or(`academic_year_id.is.null,academic_year_id.eq.${academic_year_id}`)
+      .order("class_name", { ascending: true })
+      .order("subject_id", { ascending: true })),
   ]);
-  if (slotsRes.error || breaksRes.error || roomsRes.error || reqsRes.error)
-    return json({ error: "Internal error" }, 500);
+  if (results.some((r) => r.error)) return json({ error: "Internal error" }, 500);
+  const [slots, breaks, rooms, reqs, teachers, tsa, subjects, avail, roomReqs] =
+    results.map((r) => (r as { data: unknown[] }).data);
   return json({
     school_id,
     academic_year_id,
-    time_slots: slotsRes.data,
-    breaks: breaksRes.data,
-    rooms: roomsRes.data,
-    subject_requirements: reqsRes.data,
+    time_slots: slots,
+    breaks,
+    rooms,
+    subject_requirements: reqs,
+    teachers,
+    teacher_subject_assignments: tsa,
+    subjects,
+    teacher_availability: avail,
+    room_requirements: roomReqs,
   });
 }
 
