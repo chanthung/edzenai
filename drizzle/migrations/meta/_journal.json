@@ -29,6 +29,13 @@
       "when": 1789926679273,
       "tag": "0003_timetable_service_read_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790326311907,
+      "tag": "0004_tsa_academic_year",
+      "breakpoints": true
     }
   ]
 }
