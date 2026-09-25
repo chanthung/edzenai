@@ -143,12 +143,26 @@ Deno.serve(async (req) => {
     // Apply pending assignments (subjects + classes)
     const assignments = invite.assignments as any[] | null;
     if (Array.isArray(assignments) && assignments.length > 0) {
-      const subjectAssigns = assignments.filter(a => a.type === 'subject').map(a => ({
-        teacher_id: teacherRow.id,
-        school_id: invite.school_id,
-        subject_id: a.subject_id,
-        class_name: a.class_name,
-      }));
+      // Resolve the school's single current academic year (never guess)
+      const { data: activeYears } = await supabaseAdmin
+        .from('academic_years')
+        .select('id')
+        .eq('school_id', invite.school_id)
+        .eq('is_active', true);
+      const currentYearId = activeYears && activeYears.length === 1 ? activeYears[0].id : null;
+
+      const subjectAssigns = currentYearId
+        ? assignments.filter(a => a.type === 'subject').map(a => ({
+            teacher_id: teacherRow.id,
+            school_id: invite.school_id,
+            subject_id: a.subject_id,
+            class_name: a.class_name,
+            academic_year_id: currentYearId,
+          }))
+        : [];
+      if (!currentYearId && assignments.some(a => a.type === 'subject')) {
+        console.warn('Subject assignments skipped: school has no single current academic year');
+      }
       const classAssigns = assignments.filter(a => a.type === 'class').map(a => ({
         teacher_id: teacherRow.id,
         school_id: invite.school_id,
