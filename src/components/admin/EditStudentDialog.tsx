@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { Student, useUpdateStudent, useStudents } from "@/hooks/useStudents";
-import { useAcademicYears, useCurrentAcademicYear } from "@/hooks/useAcademicYears";
-import { CurrentAcademicYearNotice } from "./CurrentAcademicYearNotice";
+import { useAcademicYears, useCurrentAcademicYearContext } from "@/hooks/useAcademicYears";
+import { AcademicYearSelect } from "./AcademicYearSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -34,27 +34,26 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
   const { data: allStudents } = useStudents();
   const queryClient = useQueryClient();
   const { data: academicYears } = useAcademicYears();
-  const currentYear = useCurrentAcademicYear();
+  const currentYear = useCurrentAcademicYearContext();
+  const currentYearId = currentYear.academic_year_id;
   
-  // Current enrollment = the one in today's academic year; otherwise the most recent one.
-  // Historical enrollments are never modified.
-  const { data: currentEnrollment } = useQuery({
-    queryKey: ['student-enrollment', student?.id, currentYear.year?.id ?? null],
+  // All enrollments of the student; default selection = current-year enrollment, else most recent.
+  const { data: enrollments } = useQuery({
+    queryKey: ['student-enrollment', student?.id],
     queryFn: async () => {
-      if (!student?.id) return null;
+      if (!student?.id) return [];
       const { data, error } = await supabase
         .from('student_enrollments')
         .select('*')
         .eq('student_id', student.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      if (!data || data.length === 0) return null;
-      return data.find((e) => e.academic_year_id === currentYear.year?.id) ?? data[0];
+      return data ?? [];
     },
-    enabled: !!student?.id && open && currentYear.status !== 'loading',
+    enabled: !!student?.id && open,
   });
-  const enrollmentYear = currentEnrollment
-    ? academicYears?.find((y) => y.id === currentEnrollment.academic_year_id) ?? null
+  const currentEnrollment = enrollments
+    ? enrollments.find((e) => e.academic_year_id === currentYearId) ?? enrollments[0] ?? null
     : null;
   
   const [formData, setFormData] = useState({
@@ -82,7 +81,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
         roll_number: student.roll_number || "",
         class_name: student.class_name || "",
         section: student.section || "",
-        academic_year_id: currentEnrollment?.academic_year_id || "",
+        academic_year_id: currentEnrollment?.academic_year_id || currentYearId || "",
         parent_name: student.parent_name || "",
         parent_phone: student.parent_phone || "",
         parent_email: student.parent_email || "",
@@ -95,7 +94,7 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
         religion: student.religion || "",
       });
     }
-  }, [student, currentEnrollment]);
+  }, [student, currentEnrollment, currentYearId]);
 
   const handleSubmit = async () => {
     if (!student) return;
@@ -105,32 +104,34 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
     if (phoneDigits.length !== 10) { toast.error("Phone number must be exactly 10 digits"); return; }
     formData.parent_phone = phoneDigits;
 
+    const selectedYear = academicYears?.find((y) => y.id === formData.academic_year_id);
+    if (!selectedYear) { toast.error("Please select a valid academic year"); return; }
+
     try {
       const { academic_year_id: _ignored, ...studentData } = formData;
-      // Existing enrollment keeps its academic year; new enrollment uses the date-based current year.
-      const academic_year_id = currentEnrollment?.academic_year_id ?? currentYear.year?.id ?? "";
+      const academic_year_id = selectedYear.id;
       // Convert empty strings to null for nullable fields to avoid DB type errors
       const sanitized = Object.fromEntries(
         Object.entries(studentData).map(([key, value]) => [key, value === "" ? null : value])
       ) as typeof studentData;
       await updateStudent.mutateAsync({ id: student.id, ...sanitized });
       
-      if (academic_year_id) {
-        if (currentEnrollment) {
-          const { error } = await supabase
-            .from('student_enrollments')
-            .update({ class_name: studentData.class_name || null, section: studentData.section || null })
-            .eq('id', currentEnrollment.id);
-          if (error) console.error('Failed to update enrollment:', error);
-        } else {
-          const { error } = await supabase
-            .from('student_enrollments')
-            .insert({ student_id: student.id, academic_year_id, class_name: studentData.class_name || null, section: studentData.section || null });
-          if (error) console.error('Failed to create enrollment:', error);
-        }
-        queryClient.invalidateQueries({ queryKey: ['student-enrollment', student.id] });
-        queryClient.invalidateQueries({ queryKey: ['student-enrollments'] });
+      // Update the enrollment for the selected year, or create one; other years stay untouched.
+      const existing = enrollments?.find((e) => e.academic_year_id === academic_year_id);
+      if (existing) {
+        const { error } = await supabase
+          .from('student_enrollments')
+          .update({ class_name: studentData.class_name || null, section: studentData.section || null })
+          .eq('id', existing.id);
+        if (error) console.error('Failed to update enrollment:', error);
+      } else {
+        const { error } = await supabase
+          .from('student_enrollments')
+          .insert({ student_id: student.id, academic_year_id, class_name: studentData.class_name || null, section: studentData.section || null });
+        if (error) console.error('Failed to create enrollment:', error);
       }
+      queryClient.invalidateQueries({ queryKey: ['student-enrollment', student.id] });
+      queryClient.invalidateQueries({ queryKey: ['student-enrollments'] });
       
       toast.success("Student updated successfully");
       onOpenChange(false);
@@ -158,10 +159,11 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                 <Input id="edit-roll" placeholder="2024001" value={formData.roll_number} onChange={(e) => setFormData({ ...formData, roll_number: e.target.value })} />
               </div>
             </div>
-            <CurrentAcademicYearNotice
-              result={currentYear}
-              year={enrollmentYear}
-              label={currentEnrollment ? "Academic Year (current enrollment)" : "Academic Year"}
+            <AcademicYearSelect
+              years={academicYears}
+              value={formData.academic_year_id}
+              onChange={(id) => setFormData({ ...formData, academic_year_id: id })}
+              currentId={currentYearId}
             />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
