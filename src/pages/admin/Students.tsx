@@ -31,8 +31,8 @@ import {
 import { useStudents, useCreateStudent, useDeleteStudent, Student } from "@/hooks/useStudents";
 import { useStudentFees } from "@/hooks/useStudentFees";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
-import { useCurrentAcademicYear } from "@/hooks/useAcademicYears";
-import { CurrentAcademicYearNotice } from "@/components/admin/CurrentAcademicYearNotice";
+import { useAcademicYears, useCurrentAcademicYearContext } from "@/hooks/useAcademicYears";
+import { AcademicYearSelect } from "@/components/admin/AcademicYearSelect";
 import { StudentFeeManager } from "@/components/admin/StudentFeeManager";
 import { PaymentRecorder } from "@/components/admin/PaymentRecorder";
 import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
@@ -66,7 +66,8 @@ export default function Students() {
   const deleteStudent = useDeleteStudent();
   const { data: school } = useSchool();
   const { isRestricted, canPerform } = useSubscriptionStatus();
-  const currentYear = useCurrentAcademicYear();
+  const currentYear = useCurrentAcademicYearContext();
+  const { data: academicYears } = useAcademicYears();
   const queryClient = useQueryClient();
   const { isAccountant } = useUserRole();
   const { data: latestImportLog } = useLatestImportLog();
@@ -165,11 +166,11 @@ export default function Students() {
     religion: "",
   });
 
-  // Auto-use the date-based current academic year when dialog opens
-  const currentYearId = currentYear.year?.id ?? "";
+  // Default to the school's current academic year (active year, else the one covering today)
+  const currentYearId = currentYear.academic_year_id ?? "";
   useEffect(() => {
     if (dialogOpen) {
-      setNewStudent(prev => ({ ...prev, academic_year_id: currentYearId }));
+      setNewStudent(prev => ({ ...prev, academic_year_id: prev.academic_year_id || currentYearId }));
     }
   }, [currentYearId, dialogOpen]);
 
@@ -330,18 +331,14 @@ export default function Students() {
     }
     newStudent.parent_phone = phoneDigits;
 
-    if (currentYear.status !== "ok" || !currentYear.year) {
-      toast.error(
-        currentYear.status === "overlap"
-          ? "Overlapping academic years cover today's date"
-          : "No academic year covers today's date",
-        { description: "Ask an administrator to fix the dates in Academic Years." },
-      );
+    const selectedYear = academicYears?.find((y) => y.id === newStudent.academic_year_id);
+    if (!selectedYear) {
+      toast.error("Please select a valid academic year");
       return;
     }
 
     try {
-      await createStudent.mutateAsync({ ...newStudent, academic_year_id: currentYear.year.id });
+      await createStudent.mutateAsync({ ...newStudent, academic_year_id: selectedYear.id });
       toast.success("Student added successfully");
       setDialogOpen(false);
       setNewStudent({
@@ -349,7 +346,7 @@ export default function Students() {
         roll_number: "",
         class_name: "",
         section: "",
-        academic_year_id: currentYear.year.id,
+        academic_year_id: currentYearId,
         parent_name: "",
         parent_phone: "",
         parent_email: "",
@@ -632,7 +629,12 @@ export default function Students() {
                     />
                   </div>
                 </div>
-                <CurrentAcademicYearNotice result={currentYear} />
+                <AcademicYearSelect
+                  years={academicYears}
+                  value={newStudent.academic_year_id}
+                  onChange={(id) => setNewStudent({ ...newStudent, academic_year_id: id })}
+                  currentId={currentYearId}
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
