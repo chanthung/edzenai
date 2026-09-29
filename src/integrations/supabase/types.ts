@@ -3190,6 +3190,19 @@ export type Database = {
         Args: { _school_name: string }
         Returns: string
       }
+      create_timetable_run: {
+        Args: {
+          _academic_year_id: string
+          _entries: Json
+          _notes?: string
+          _school_id: string
+        }
+        Returns: {
+          entries_created: number
+          run_id: string
+          status: string
+        }[]
+      }
       current_user_blocked_school: {
         Args: never
         Returns: {
