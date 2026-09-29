@@ -197,8 +197,85 @@ async function fetchSchedule(
   });
 }
 
+// ---- POST: timetable engine writes a solved run (engine secret only) ----
+const EntrySchema = z.object({
+  class_name: z.string().min(1),
+  section: z.string().min(1),
+  time_slot_id: z.string().uuid(),
+  subject_id: z.string().uuid(),
+  teacher_id: z.string().uuid().nullable().optional(),
+  room_id: z.string().uuid().nullable().optional(),
+  elective_group: z.string().nullable().optional(),
+});
+const PostBodySchema = z.object({
+  school_id: z.string().uuid(),
+  academic_year_id: z.string().uuid(),
+  entries: z.array(EntrySchema).min(1),
+  notes: z.string().nullable().optional(),
+});
+
+async function handleEnginePost(req: Request): Promise<Response> {
+  const engineHeader = req.headers.get(ENGINE_SECRET_HEADER);
+  const expected = Deno.env.get("TIMETABLE_ENGINE_SECRET");
+  if (engineHeader === null || !expected || !(await secretMatches(engineHeader, expected))) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+  const parsed = PostBodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return json({ error: "Invalid parameters", details: parsed.error.flatten() }, 400);
+  }
+  const { school_id, academic_year_id, entries, notes } = parsed.data;
+
+  const serviceClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  const { data, error } = await serviceClient.rpc("create_timetable_run", {
+    _school_id: school_id,
+    _academic_year_id: academic_year_id,
+    _entries: entries,
+    _notes: notes ?? null,
+  });
+
+  if (error) {
+    console.error("[timetable-api] create_timetable_run failed", error);
+    const code = (error as { code?: string }).code ?? "";
+    if (code.startsWith("22") || code.startsWith("23") || code === "P0001") {
+      return json({ error: "Invalid timetable data" }, 400);
+    }
+    return json({ error: "Internal error" }, 500);
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    console.error("[timetable-api] create_timetable_run returned no row");
+    return json({ error: "Internal error" }, 500);
+  }
+  return json({
+    success: true,
+    run_id: row.run_id,
+    status: row.status,
+    entries_created: row.entries_created,
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeadersExtended });
+  if (req.method === "POST") {
+    try {
+      return await handleEnginePost(req);
+    } catch (e) {
+      console.error("[timetable-api] unexpected (POST)", e);
+      return json({ error: "Internal error" }, 500);
+    }
+  }
   if (req.method !== "GET") return json({ error: "Method not allowed" }, 405);
 
   try {
