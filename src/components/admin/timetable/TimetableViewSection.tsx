@@ -31,6 +31,10 @@ export function TimetableViewSection() {
   const { schoolId, academicYearId } = useTimetableConfig();
   const { data, isLoading, error } = useTimetableView(schoolId, academicYearId);
   const { data: breaks = [] } = useTimetableBreaks({ schoolId, academicYearId });
+  // Pickers are sourced from the school's own records, NOT from the saved run:
+  // teachers from all active school_teachers, rooms from all active timetable_rooms.
+  const { data: allTeachers = [] } = useActiveTeachers(schoolId);
+  const { data: allRooms = [] } = useTimetableRooms(schoolId);
   const [mode, setMode] = useState<Mode>("class");
   const [classKey, setClassKey] = useState("");
   const [teacherId, setTeacherId] = useState("");
@@ -49,17 +53,18 @@ export function TimetableViewSection() {
 
   const teacherOptions = useMemo(() => {
     if (!data?.run) return [];
-    const ids = new Set(entries.map((e) => e.teacher_id).filter(Boolean) as string[]);
-    return [...ids].map((id) => [id, data.teachers.get(id) ?? "Unknown teacher"] as const)
+    return allTeachers
+      .map((t) => [t.id, t.name] as const)
       .sort((a, b) => a[1].localeCompare(b[1]));
-  }, [entries, data]);
+  }, [allTeachers, data]);
 
   const roomOptions = useMemo(() => {
     if (!data?.run) return [];
-    const ids = new Set(entries.map((e) => e.room_id).filter(Boolean) as string[]);
-    return [...ids].map((id) => [id, data.rooms.get(id) ?? "Unknown room"] as const)
+    return allRooms
+      .filter((r) => r.is_active !== false)
+      .map((r) => [r.id, r.name] as const)
       .sort((a, b) => a[1].localeCompare(b[1], undefined, { numeric: true }));
-  }, [entries, data]);
+  }, [allRooms, data]);
 
   useEffect(() => {
     if (!classKey && classOptions[0]) setClassKey(classOptions[0][0]);
