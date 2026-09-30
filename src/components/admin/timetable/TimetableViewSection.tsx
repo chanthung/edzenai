@@ -9,6 +9,8 @@ import { CalendarX2 } from "lucide-react";
 import { useTimetableConfig } from "./TimetableConfigContext";
 import { useTimetableView, type ViewEntry } from "@/hooks/timetable/useTimetableView";
 import { useTimetableBreaks } from "@/hooks/timetable/useTimetableConfigData";
+import { useTimetableRooms } from "@/hooks/timetable/useTimetableConfigData";
+import { useActiveTeachers } from "@/hooks/timetable/useTimetableSourceData";
 import { BREAK_TYPES, WEEKDAYS, labelOf, toTimeInput } from "./constants";
 
 type Mode = "class" | "teacher" | "room";
