@@ -77,7 +77,7 @@ export function TimetableSettingsTab({ canEdit }: { canEdit: boolean }) {
         initialYearId={selectedYear}
         canEdit={canEdit}
       >
-        <Tabs defaultValue="general">
+        <Tabs defaultValue={new URLSearchParams(window.location.search).get("ttab") ?? "general"}>
           <TabsList className="mb-4 flex-wrap h-auto">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="slots">Periods</TabsTrigger>

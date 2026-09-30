@@ -35,9 +35,9 @@ export function TimetableViewSection() {
   // teachers from all active school_teachers, rooms from all active timetable_rooms.
   const { data: allTeachers = [] } = useActiveTeachers(schoolId);
   const { data: allRooms = [] } = useTimetableRooms(schoolId);
-  const [mode, setMode] = useState<Mode>("class");
+  const [mode, setMode] = useState<Mode>(() => (new URLSearchParams(window.location.search).get("mode") as Mode) || "class");
   const [classKey, setClassKey] = useState("");
-  const [teacherId, setTeacherId] = useState("");
+  const [teacherId, setTeacherId] = useState(() => new URLSearchParams(window.location.search).get("teacher") ?? "");
   const [roomId, setRoomId] = useState("");
 
   const entries = data && data.run ? data.entries : [];

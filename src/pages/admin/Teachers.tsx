@@ -20,7 +20,13 @@ import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { EditTeacherDialog } from "@/components/admin/EditTeacherDialog";
-import { Plus, UserPlus, Mail, User, Pencil, BookOpen, School, Send, Phone, RefreshCw, X, Clock, IdCard } from "lucide-react";
+import { Plus, UserPlus, Mail, User, Pencil, BookOpen, School, Send, Phone, RefreshCw, X, Clock, IdCard, CalendarDays } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCurrentAcademicYearContext } from "@/hooks/useAcademicYears";
+import { useSchoolTeachingAssignments } from "@/hooks/useTeachingAssignments";
+import { TeachingChips, groupAssignments, type SubjectGroup } from "@/components/admin/teaching/TeachingChips";
+import { TeachingAssignmentsMatrix } from "@/components/admin/teaching/TeachingAssignmentsMatrix";
 import { formatDistanceToNow } from "date-fns";
 
 type DeliveryMethod = 'email' | 'whatsapp' | 'both';
@@ -42,6 +48,23 @@ export default function Teachers() {
 
   const { data: subjects = [], isLoading: loadingSubjects } = useSubjectsWithClasses();
   const { data: allStudents = [] } = useResolvedStudents();
+  const navigate = useNavigate();
+  const currentYear = useCurrentAcademicYearContext();
+  const { data: yearAssignments = [], isLoading: loadingAssignments } = useSchoolTeachingAssignments(currentYear.academic_year_id);
+  const loadingTeaching = currentYear.isLoading || loadingAssignments || loadingSubjects;
+
+  // One query for all teachers → grouped in memory (no per-teacher fetch)
+  const teachingGroups = useMemo(() => {
+    const name = new Map(subjects.map(s => [s.id, s.name]));
+    const order = new Map(subjects.map((s, i) => [s.id, i]));
+    const byTeacher = new Map<string, { subject_id: string; class_name: string }[]>();
+    for (const a of yearAssignments) {
+      byTeacher.set(a.teacher_id, [...(byTeacher.get(a.teacher_id) ?? []), a]);
+    }
+    const out = new Map<string, SubjectGroup[]>();
+    byTeacher.forEach((rows, tid) => out.set(tid, groupAssignments(rows, id => name.get(id) ?? "Subject", id => order.get(id) ?? 9999)));
+    return out;
+  }, [yearAssignments, subjects]);
 
   const classSectionOptions = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -321,8 +344,19 @@ export default function Teachers() {
         </Card>
       )}
 
+      <Tabs defaultValue="users">
+        <TabsList className="mb-4">
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="assignments">Teaching Assignments</TabsTrigger>
+        </TabsList>
+        <TabsContent value="users">
       <Card>
-        <CardHeader><CardTitle>Active Users</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Active Users</CardTitle>
+          {currentYear.name && (
+            <p className="text-xs text-muted-foreground">Teaching shows assignments for {currentYear.name} (Current).</p>
+          )}
+        </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
@@ -339,6 +373,7 @@ export default function Teachers() {
                   <TableHead>Employee ID</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Teaching</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -356,6 +391,13 @@ export default function Teachers() {
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      {teacher.role === 'accountant'
+                        ? <span className="text-muted-foreground">—</span>
+                        : loadingTeaching
+                          ? <Skeleton className="h-5 w-24" />
+                          : <TeachingChips groups={teachingGroups.get(teacher.id) ?? []} />}
+                    </TableCell>
+                    <TableCell>
                       <Badge variant={teacher.is_active ? "default" : "secondary"}>
                         {teacher.is_active ? "Active" : "Inactive"}
                       </Badge>
@@ -363,6 +405,14 @@ export default function Teachers() {
                     <TableCell>{new Date(teacher.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {teacher.role !== 'accountant' && (
+                          <Button
+                            variant="ghost" size="icon" title="View timetable" aria-label="View timetable"
+                            onClick={() => navigate(`/admin/settings?tab=timetable&ttab=view&mode=teacher&teacher=${teacher.id}`)}
+                          >
+                            <CalendarDays className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => handleEditTeacher(teacher)} disabled={isRestricted}>
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -376,6 +426,11 @@ export default function Teachers() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+        <TabsContent value="assignments">
+          <TeachingAssignmentsMatrix teachers={teachers} canEdit={!isRestricted} />
+        </TabsContent>
+      </Tabs>
 
       <EditTeacherDialog
         teacher={editingTeacher}

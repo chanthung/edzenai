@@ -78,6 +78,8 @@ export function useTeacherSubjects(teacherId?: string, academicYearId?: string |
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments', vars.teacherId] });
+      // School-wide shared reads (Users → Teaching column, Teaching Assignments matrix)
+      queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments', 'school'] });
       toast.success('Subject assignments updated');
     },
     onError: (error: Error) => {
