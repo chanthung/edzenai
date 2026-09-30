@@ -31,7 +31,7 @@ type Draft = Partial<SubjectRequirement>;
 export function SubjectRequirementsSection() {
   const { schoolId, academicYearId, canEdit } = useTimetableConfig();
   const scope = { schoolId, academicYearId };
-  const { data: classSections = [], isLoading: loadingClasses } = useEnrolledClassSections(academicYearId);
+  const { data: classSections = [], isLoading: loadingClasses } = useEnrolledClassSections(academicYearId, schoolId);
   const { data: subjectData, isLoading: loadingSubjects } = useSchoolSubjects(schoolId);
   const { data: requirements = [] } = useSubjectRequirements(scope);
   const { save, remove, initialize, bulkUpdate } = useSubjectRequirementMutations(scope);

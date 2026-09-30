@@ -12,31 +12,72 @@ export interface ClassSection {
   label: string;
 }
 
-export function useEnrolledClassSections(academicYearId: string | null) {
+/**
+ * Valid classes for a school + academic year come from:
+ *  - student_enrollments (year-scoped, with sections)
+ *  - class_template_assignments (year-scoped, class only)
+ * Sections for classes without enrolled students come from teacher_class_assignments,
+ * used only for classes already valid for this year.
+ */
+export function useEnrolledClassSections(academicYearId: string | null, schoolId: string | null) {
   return useQuery({
-    queryKey: ["timetable-class-sections", academicYearId],
-    enabled: !!academicYearId,
+    queryKey: ["timetable-class-sections", academicYearId, schoolId],
+    enabled: !!academicYearId && !!schoolId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("student_enrollments")
-        .select("class_name, section")
-        .eq("academic_year_id", academicYearId!);
-      if (error) throw error;
-      const map = new Map<string, ClassSection>();
-      for (const row of data ?? []) {
-        const section = row.section ?? null;
-        const key = `${row.class_name}||${section ?? ""}`;
-        if (!map.has(key)) {
-          map.set(key, {
-            class_name: row.class_name,
+      const [enrRes, ctaRes, tcaRes] = await Promise.all([
+        supabase
+          .from("student_enrollments")
+          .select("class_name, section")
+          .eq("academic_year_id", academicYearId!),
+        supabase
+          .from("class_template_assignments")
+          .select("class_name")
+          .eq("school_id", schoolId!)
+          .eq("academic_year_id", academicYearId!),
+        supabase
+          .from("teacher_class_assignments")
+          .select("class_name, section")
+          .eq("school_id", schoolId!),
+      ]);
+      if (enrRes.error) throw enrRes.error;
+      if (ctaRes.error) throw ctaRes.error;
+      if (tcaRes.error) throw tcaRes.error;
+
+      const sectionsByClass = new Map<string, Set<string | null>>();
+      const add = (cls: string, section: string | null) => {
+        const set = sectionsByClass.get(cls) ?? new Set<string | null>();
+        set.add(section);
+        sectionsByClass.set(cls, set);
+      };
+      for (const r of enrRes.data ?? []) add(r.class_name, r.section ?? null);
+
+      const validClasses = new Set<string>([
+        ...(enrRes.data ?? []).map((r) => r.class_name),
+        ...(ctaRes.data ?? []).map((r) => r.class_name),
+      ]);
+      const enrolledClasses = new Set((enrRes.data ?? []).map((r) => r.class_name));
+
+      // Sections for year-valid classes that have no enrolled students yet.
+      for (const r of tcaRes.data ?? []) {
+        if (validClasses.has(r.class_name) && !enrolledClasses.has(r.class_name)) {
+          add(r.class_name, r.section ?? null);
+        }
+      }
+      for (const cls of validClasses) if (!sectionsByClass.has(cls)) add(cls, null);
+
+      const out: ClassSection[] = [];
+      for (const [cls, sections] of sectionsByClass) {
+        const named = [...sections].filter((s) => s);
+        const list = named.length > 0 ? named : [null];
+        for (const section of list) {
+          out.push({
+            class_name: cls,
             section,
-            label: section ? `${row.class_name} - ${section}` : row.class_name,
+            label: section ? `${cls} - ${section}` : cls,
           });
         }
       }
-      return Array.from(map.values()).sort((a, b) =>
-        a.label.localeCompare(b.label, undefined, { numeric: true })
-      );
+      return out.sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
     },
   });
 }
