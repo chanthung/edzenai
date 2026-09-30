@@ -113,7 +113,9 @@ export function TimetableViewSection() {
           <div className="space-y-2 w-full sm:w-64">
             <Label>{mode === "class" ? "Class & section" : mode === "teacher" ? "Teacher" : "Room"}</Label>
             {options.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None in this timetable.</p>
+              <p className="text-sm text-muted-foreground">
+                {mode === "class" ? "No classes in this timetable." : mode === "teacher" ? "No active teachers found." : "No active rooms found."}
+              </p>
             ) : (
               <Select value={value || undefined} onValueChange={setValue}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
