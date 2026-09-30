@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { useAcademicYears, useCurrentAcademicYearContext } from "@/hooks/useAcademicYears";
 import { useSubjectsWithClasses } from "@/hooks/progress/useSubjects";
 import { useSchoolTeachingAssignments } from "@/hooks/useTeachingAssignments";
@@ -12,8 +12,9 @@ import type { Teacher } from "@/hooks/useTeachers";
 import { sortClassNames } from "@/lib/class-sort";
 import { cn } from "@/lib/utils";
 import { AssignTeachersPopover } from "./AssignTeachersPopover";
+import { TeacherSummaryPopover } from "./TeacherSummaryPopover";
 
-export function TeachingAssignmentsMatrix({ teachers, canEdit }: { teachers: Teacher[]; canEdit: boolean }) {
+export function TeachingAssignmentsMatrix({ teachers, canEdit, onEditTeacher }: { teachers: Teacher[]; canEdit: boolean; onEditTeacher?: (t: Teacher) => void }) {
   const { data: years = [] } = useAcademicYears();
   const current = useCurrentAcademicYearContext();
   const [yearId, setYearId] = useState<string | null>(null);
@@ -25,6 +26,9 @@ export function TeachingAssignmentsMatrix({ teachers, canEdit }: { teachers: Tea
   const { data: assignments = [], isLoading: loadingAssignments } = useSchoolTeachingAssignments(selectedYear);
 
   const teacherById = useMemo(() => new Map(teachers.map(t => [t.id, t])), [teachers]);
+  const subjectIndex = useMemo(() => new Map(subjects.map((s, i) => [s.id, { name: s.name, i }])), [subjects]);
+  const subjectName = (id: string) => subjectIndex.get(id)?.name ?? "Unknown subject";
+  const subjectOrder = (id: string) => subjectIndex.get(id)?.i ?? 9999;
   const cellMap = useMemo(() => {
     const m = new Map<string, string[]>();
     for (const a of assignments) {
@@ -79,8 +83,8 @@ export function TeachingAssignmentsMatrix({ teachers, canEdit }: { teachers: Tea
         </div>
         {!loading && total > 0 && (
           <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{covered} of {total}</span> subject–class combinations have a teacher
-            {total - covered > 0 && <> · <span className="text-amber-700">{total - covered} unassigned</span></>}
+            <span className="font-medium text-foreground">{covered} of {total}</span> subject–class combinations assigned
+            {total - covered > 0 && <> · <span className="text-amber-700">{total - covered} need a teacher</span></>}
           </p>
         )}
         <p className="text-xs text-muted-foreground">Assignments apply to a whole class (all its sections).</p>
@@ -113,14 +117,36 @@ export function TeachingAssignmentsMatrix({ teachers, canEdit }: { teachers: Tea
                       if (!s.assigned_classes.includes(c)) return <td key={c} className="px-3 py-2 bg-muted/20" />;
                       const ids = cellMap.get(`${s.id}::${c}`) ?? [];
                       if (onlyUnassigned && ids.length > 0) return <td key={c} className="px-3 py-2" />;
-                      const content = ids.length > 0 ? (
-                        <div className="flex flex-col gap-0.5 text-left">
-                          {ids.map(id => {
-                            const t = teacherById.get(id);
-                            return <span key={id} className={cn("text-sm", t && !t.is_active && "text-muted-foreground line-through")}>{t?.name ?? "Unknown"}</span>;
-                          })}
-                        </div>
-                      ) : (
+                      if (ids.length > 0) {
+                        return (
+                          <td key={c} className="px-3 py-2 align-top">
+                            <div className="flex items-start gap-1">
+                              <div className="flex flex-col gap-0.5 text-left">
+                                {ids.map(id => {
+                                  const t = teacherById.get(id);
+                                  const label = <span className={cn("text-sm", t && !t.is_active && "text-muted-foreground line-through")}>{t?.name ?? "Unknown"}</span>;
+                                  return t ? (
+                                    <TeacherSummaryPopover
+                                      key={id} teacher={t} assignments={assignments}
+                                      subjectName={subjectName} subjectOrder={subjectOrder}
+                                      onEdit={canEdit ? onEditTeacher : undefined}
+                                      trigger={<button type="button" className="rounded px-1 text-left hover:bg-muted/60 hover:underline">{label}</button>}
+                                    />
+                                  ) : <span key={id} className="px-1">{label}</span>;
+                                })}
+                              </div>
+                              {canEdit && (
+                                <AssignTeachersPopover
+                                  subjectId={s.id} subjectName={s.name} className={c}
+                                  academicYearId={selectedYear} teachers={teachers} assignments={assignments}
+                                  trigger={<button type="button" aria-label="Change teachers" title="Change teachers" className="rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground"><Pencil className="h-3 w-3" /></button>}
+                                />
+                              )}
+                            </div>
+                          </td>
+                        );
+                      }
+                      const content = (
                         <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/60 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700">
                           <Plus className="h-3 w-3" />Assign
                         </span>
@@ -133,7 +159,7 @@ export function TeachingAssignmentsMatrix({ teachers, canEdit }: { teachers: Tea
                               academicYearId={selectedYear} teachers={teachers} assignments={assignments}
                               trigger={<button type="button" className="rounded-md px-1 py-0.5 hover:bg-muted/60 text-left">{content}</button>}
                             />
-                          ) : ids.length > 0 ? content : <span className="text-xs text-amber-700">Unassigned</span>}
+                          ) : <span className="text-xs text-amber-700">Unassigned</span>}
                         </td>
                       );
                     })}

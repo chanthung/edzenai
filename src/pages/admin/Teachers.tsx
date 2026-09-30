@@ -428,7 +428,7 @@ export default function Teachers() {
       </Card>
         </TabsContent>
         <TabsContent value="assignments">
-          <TeachingAssignmentsMatrix teachers={teachers} canEdit={!isRestricted} />
+          <TeachingAssignmentsMatrix teachers={teachers} canEdit={!isRestricted} onEditTeacher={handleEditTeacher} />
         </TabsContent>
       </Tabs>
 
