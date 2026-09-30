@@ -9,6 +9,8 @@ import { CalendarX2 } from "lucide-react";
 import { useTimetableConfig } from "./TimetableConfigContext";
 import { useTimetableView, type ViewEntry } from "@/hooks/timetable/useTimetableView";
 import { useTimetableBreaks } from "@/hooks/timetable/useTimetableConfigData";
+import { useTimetableRooms } from "@/hooks/timetable/useTimetableConfigData";
+import { useActiveTeachers } from "@/hooks/timetable/useTimetableSourceData";
 import { BREAK_TYPES, WEEKDAYS, labelOf, toTimeInput } from "./constants";
 
 type Mode = "class" | "teacher" | "room";
@@ -29,6 +31,10 @@ export function TimetableViewSection() {
   const { schoolId, academicYearId } = useTimetableConfig();
   const { data, isLoading, error } = useTimetableView(schoolId, academicYearId);
   const { data: breaks = [] } = useTimetableBreaks({ schoolId, academicYearId });
+  // Pickers are sourced from the school's own records, NOT from the saved run:
+  // teachers from all active school_teachers, rooms from all active timetable_rooms.
+  const { data: allTeachers = [] } = useActiveTeachers(schoolId);
+  const { data: allRooms = [] } = useTimetableRooms(schoolId);
   const [mode, setMode] = useState<Mode>("class");
   const [classKey, setClassKey] = useState("");
   const [teacherId, setTeacherId] = useState("");
@@ -47,17 +53,18 @@ export function TimetableViewSection() {
 
   const teacherOptions = useMemo(() => {
     if (!data?.run) return [];
-    const ids = new Set(entries.map((e) => e.teacher_id).filter(Boolean) as string[]);
-    return [...ids].map((id) => [id, data.teachers.get(id) ?? "Unknown teacher"] as const)
+    return allTeachers
+      .map((t) => [t.id, t.name] as const)
       .sort((a, b) => a[1].localeCompare(b[1]));
-  }, [entries, data]);
+  }, [allTeachers, data]);
 
   const roomOptions = useMemo(() => {
     if (!data?.run) return [];
-    const ids = new Set(entries.map((e) => e.room_id).filter(Boolean) as string[]);
-    return [...ids].map((id) => [id, data.rooms.get(id) ?? "Unknown room"] as const)
+    return allRooms
+      .filter((r) => r.is_active !== false)
+      .map((r) => [r.id, r.name] as const)
       .sort((a, b) => a[1].localeCompare(b[1], undefined, { numeric: true }));
-  }, [entries, data]);
+  }, [allRooms, data]);
 
   useEffect(() => {
     if (!classKey && classOptions[0]) setClassKey(classOptions[0][0]);
@@ -106,7 +113,9 @@ export function TimetableViewSection() {
           <div className="space-y-2 w-full sm:w-64">
             <Label>{mode === "class" ? "Class & section" : mode === "teacher" ? "Teacher" : "Room"}</Label>
             {options.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None in this timetable.</p>
+              <p className="text-sm text-muted-foreground">
+                {mode === "class" ? "No classes in this timetable." : mode === "teacher" ? "No active teachers found." : "No active rooms found."}
+              </p>
             ) : (
               <Select value={value || undefined} onValueChange={setValue}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
