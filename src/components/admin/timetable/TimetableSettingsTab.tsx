@@ -22,6 +22,7 @@ import { RoomsSection } from "./RoomsSection";
 import { TeacherAvailabilitySection } from "./TeacherAvailabilitySection";
 import { SubjectRequirementsSection } from "./SubjectRequirementsSection";
 import { RoomRequirementsSection } from "./RoomRequirementsSection";
+import { TimetableViewSection } from "./TimetableViewSection";
 
 export function TimetableSettingsTab({ canEdit }: { canEdit: boolean }) {
   const { data: school, isLoading: loadingSchool } = useSchool();
@@ -85,6 +86,7 @@ export function TimetableSettingsTab({ canEdit }: { canEdit: boolean }) {
             <TabsTrigger value="availability">Teacher Availability</TabsTrigger>
             <TabsTrigger value="subjects">Subject Requirements</TabsTrigger>
             <TabsTrigger value="room-req">Room Requirements</TabsTrigger>
+            <TabsTrigger value="view">View</TabsTrigger>
           </TabsList>
           <TabsContent value="general"><GeneralSection /></TabsContent>
           <TabsContent value="slots"><TimeSlotsSection /></TabsContent>
@@ -93,6 +95,7 @@ export function TimetableSettingsTab({ canEdit }: { canEdit: boolean }) {
           <TabsContent value="availability"><TeacherAvailabilitySection /></TabsContent>
           <TabsContent value="subjects"><SubjectRequirementsSection /></TabsContent>
           <TabsContent value="room-req"><RoomRequirementsSection /></TabsContent>
+          <TabsContent value="view"><TimetableViewSection /></TabsContent>
         </Tabs>
       </TimetableConfigProvider>
     </div>
