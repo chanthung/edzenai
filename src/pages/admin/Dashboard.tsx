@@ -1,5 +1,6 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,8 @@ import { ImportHistoryCard } from "@/components/admin/ImportHistoryCard";
 import { CollectionAnomalyCard } from "@/components/admin/CollectionAnomalyCard";
 import { Badge } from "@/components/ui/badge";
 import { exportMultiSheetXLSX } from "@/lib/export-utils";
+import { TimetableDashboardTab } from "@/components/admin/timetable/dashboard/TimetableDashboardTab";
+
 
 export default function Dashboard() {
   const navigate = useNavigate();
