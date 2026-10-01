@@ -61,8 +61,8 @@ export default function Dashboard() {
         <TrialBanner />
       </div>
 
-      <Tabs defaultValue="overview" className="mt-6">
-        <TabsList className="w-full sm:w-auto overflow-x-auto">
+      <Tabs value={tab} onValueChange={setTab} className="mt-6">
+        <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap justify-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="proofs" className="flex items-center gap-2">
             <FileCheck className="h-4 w-4" />
@@ -77,7 +77,16 @@ export default function Dashboard() {
             <BarChart3 className="h-4 w-4" />
             Fee Reports
           </TabsTrigger>
+          <TabsTrigger value="timetable" className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Timetable
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="timetable" className="mt-6">
+          <TimetableDashboardTab />
+        </TabsContent>
+
 
         <TabsContent value="overview" className="space-y-6 mt-6">
           {/* Quick stats */}
