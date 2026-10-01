@@ -1,5 +1,6 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,9 +29,21 @@ import { ImportHistoryCard } from "@/components/admin/ImportHistoryCard";
 import { CollectionAnomalyCard } from "@/components/admin/CollectionAnomalyCard";
 import { Badge } from "@/components/ui/badge";
 import { exportMultiSheetXLSX } from "@/lib/export-utils";
+import { TimetableDashboardTab } from "@/components/admin/timetable/dashboard/TimetableDashboardTab";
+
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTabState] = useState(searchParams.get("tab") ?? "overview");
+  const setTab = (v: string) => {
+    setTabState(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === "overview") next.delete("tab");
+    else next.set("tab", v);
+    setSearchParams(next, { replace: true });
+  };
+
   const { data: students, isLoading: studentsLoading } = useStudents();
   const { data: academicYears, isLoading: yearsLoading } = useAcademicYears();
   const { data: feeCategories, isLoading: categoriesLoading } = useFeeCategories();
@@ -61,8 +74,8 @@ export default function Dashboard() {
         <TrialBanner />
       </div>
 
-      <Tabs defaultValue="overview" className="mt-6">
-        <TabsList className="w-full sm:w-auto overflow-x-auto">
+      <Tabs value={tab} onValueChange={setTab} className="mt-6">
+        <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap justify-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="proofs" className="flex items-center gap-2">
             <FileCheck className="h-4 w-4" />
@@ -77,7 +90,16 @@ export default function Dashboard() {
             <BarChart3 className="h-4 w-4" />
             Fee Reports
           </TabsTrigger>
+          <TabsTrigger value="timetable" className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Timetable
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="timetable" className="mt-6">
+          <TimetableDashboardTab />
+        </TabsContent>
+
 
         <TabsContent value="overview" className="space-y-6 mt-6">
           {/* Quick stats */}

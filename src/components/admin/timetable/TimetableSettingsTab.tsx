@@ -11,7 +11,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { CalendarDays, LayoutDashboard } from "lucide-react";
+
 import { useSchool } from "@/hooks/useSchool";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { TimetableConfigProvider } from "./TimetableConfigContext";
@@ -68,7 +71,14 @@ export function TimetableSettingsTab({ canEdit }: { canEdit: boolean }) {
             School: <span className="font-medium text-foreground">{school?.name}</span>
             <Badge variant="secondary" className="ml-2 font-normal">Configuration only</Badge>
           </div>
+          <Button asChild variant="outline" size="sm" className="ml-auto mb-0.5">
+            <Link to="/admin?tab=timetable">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              View on Dashboard
+            </Link>
+          </Button>
         </CardContent>
+
       </Card>
 
       <TimetableConfigProvider
