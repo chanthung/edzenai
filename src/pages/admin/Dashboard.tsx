@@ -34,6 +34,16 @@ import { TimetableDashboardTab } from "@/components/admin/timetable/dashboard/Ti
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTabState] = useState(searchParams.get("tab") ?? "overview");
+  const setTab = (v: string) => {
+    setTabState(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === "overview") next.delete("tab");
+    else next.set("tab", v);
+    setSearchParams(next, { replace: true });
+  };
+
   const { data: students, isLoading: studentsLoading } = useStudents();
   const { data: academicYears, isLoading: yearsLoading } = useAcademicYears();
   const { data: feeCategories, isLoading: categoriesLoading } = useFeeCategories();
