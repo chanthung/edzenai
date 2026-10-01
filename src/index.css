@@ -43,6 +43,15 @@
 
     --radius: 0.875rem;
 
+    /* Timetable discipline colors */
+    --discipline-stem: 243 75% 51%;
+    --discipline-lang: 32 95% 44%;
+    --discipline-social: 160 94% 30%;
+    --discipline-arts: 347 77% 50%;
+    --discipline-study: 215 16% 47%;
+
+
+
     /* Status colors */
     --status-paid: 152 60% 38%;
     --status-paid-bg: 152 50% 95%;

@@ -43,10 +43,18 @@ export default {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
+        discipline: {
+          stem: "hsl(var(--discipline-stem))",
+          lang: "hsl(var(--discipline-lang))",
+          social: "hsl(var(--discipline-social))",
+          arts: "hsl(var(--discipline-arts))",
+          study: "hsl(var(--discipline-study))",
+        },
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
