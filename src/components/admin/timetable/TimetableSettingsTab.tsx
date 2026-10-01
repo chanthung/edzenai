@@ -68,7 +68,14 @@ export function TimetableSettingsTab({ canEdit }: { canEdit: boolean }) {
             School: <span className="font-medium text-foreground">{school?.name}</span>
             <Badge variant="secondary" className="ml-2 font-normal">Configuration only</Badge>
           </div>
+          <Button asChild variant="outline" size="sm" className="ml-auto mb-0.5">
+            <Link to="/admin?tab=timetable">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              View on Dashboard
+            </Link>
+          </Button>
         </CardContent>
+
       </Card>
 
       <TimetableConfigProvider
