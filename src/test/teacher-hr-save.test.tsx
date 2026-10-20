@@ -5,14 +5,16 @@ import type { Teacher } from "@/hooks/useTeachers";
 
 const mocks = vi.hoisted(() => ({
   save: vi.fn(), assignments: vi.fn(), close: vi.fn(), loading: false,
+  pairs: [{ subject_id: "english", class_name: "Class 2" }],
+  subjects: [{ id: "english", name: "English", assigned_classes: ["Class 2"] }],
 }));
 vi.mock("@/hooks/useTeachers", () => ({ useTeachers: () => ({ updateTeacher: { mutateAsync: mocks.save, isPending: false } }) }));
 vi.mock("@/hooks/useTeacherSubjects", () => ({ useTeacherSubjects: () => ({
-  assignments: [{ subject_id: "english", class_name: "Class 2" }], yearlessCount: 0,
+  assignments: mocks.pairs, yearlessCount: 0,
   isLoading: mocks.loading, updateAssignments: { mutateAsync: mocks.assignments, isPending: false },
 }) }));
 vi.mock("@/hooks/progress/useSubjects", () => ({ useSubjectsWithClasses: () => ({
-  data: [{ id: "english", name: "English", assigned_classes: ["Class 2"] }], isLoading: false,
+  data: mocks.subjects, isLoading: false,
 }) }));
 vi.mock("@/hooks/useAcademicYears", () => ({ useCurrentAcademicYearContext: () => ({ academic_year_id: "year", name: "2026-2027" }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
