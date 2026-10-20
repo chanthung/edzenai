@@ -6,7 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useTeachers, type Teacher } from "@/hooks/useTeachers";
+import { useTeachers, type Teacher, type TeacherHrFields } from "@/hooks/useTeachers";
+import { TeacherHrSection, EMPTY_HR, validateHr } from "@/components/admin/TeacherHrSection";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectsWithClasses } from "@/hooks/progress/useSubjects";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +31,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
 
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
-  const [editEmployeeId, setEditEmployeeId] = useState("");
+  const [hr, setHr] = useState<TeacherHrFields>(EMPTY_HR);
   // Set of "subjectId::className" keys
   const [selectedPairs, setSelectedPairs] = useState<Set<string>>(new Set());
   const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
@@ -40,7 +41,17 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
     if (teacher) {
       setEditName(teacher.name);
       setEditEmail(teacher.email);
-      setEditEmployeeId(teacher.employee_id ?? "");
+      setHr({
+        date_of_joining: teacher.date_of_joining ?? null,
+        date_of_birth: teacher.date_of_birth ?? null,
+        gender: teacher.gender ?? null,
+        designation: teacher.designation ?? null,
+        department: teacher.department ?? null,
+        qualification: teacher.qualification ?? null,
+        experience_years: teacher.experience_years ?? null,
+        employment_type: teacher.employment_type ?? null,
+        employment_status: teacher.employment_status ?? null,
+      });
     }
   }, [teacher]);
 
@@ -54,18 +65,22 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
 
   const handleSave = async () => {
     if (!teacher || !editName.trim() || !editEmail.trim()) return;
+    const hrError = validateHr(hr);
+    if (hrError) { toast.error(hrError); return; }
 
     try {
       await updateTeacher.mutateAsync({
         id: teacher.id,
         name: editName.trim(),
         is_active: teacher.is_active,
-        employee_id: editEmployeeId.trim() || null,
+        hr: {
+          ...hr,
+          designation: hr.designation?.trim() || null,
+          department: hr.department?.trim() || null,
+          qualification: hr.qualification?.trim() || null,
+        },
       });
-    } catch (err: any) {
-      if (typeof err?.message === 'string' && err.message.toLowerCase().includes('duplicate')) {
-        toast.error("That Employee ID is already used by another user in this school");
-      }
+    } catch {
       return;
     }
 
@@ -169,9 +184,11 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
 
           <div className="space-y-2">
             <Label><IdCard className="h-4 w-4 inline mr-1" />Employee ID</Label>
-            <Input value={editEmployeeId} onChange={(e) => setEditEmployeeId(e.target.value)} placeholder="e.g. EMP-001" maxLength={40} />
-            <p className="text-xs text-muted-foreground">Optional. Must be unique within your school.</p>
+            <Input value={teacher?.employee_id ?? "Assigned automatically"} readOnly disabled />
+            <p className="text-xs text-muted-foreground">Assigned automatically and never changes.</p>
           </div>
+
+          <TeacherHrSection value={hr} onChange={setHr} />
 
           {/* Subject-Class Assignments */}
           <div className="space-y-2">
