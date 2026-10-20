@@ -64,7 +64,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
   }, [assignments]);
 
   const handleSave = async () => {
-    if (!teacher || !editName.trim() || !editEmail.trim()) return;
+    if (!teacher || loadingSubjectAssignments || loadingSubjects || !editName.trim() || !editEmail.trim()) return;
     const hrError = validateHr(hr);
     if (hrError) { toast.error(hrError); return; }
 
@@ -92,7 +92,9 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
       if (error) toast.error("Failed to update email");
     }
 
-    if (currentYear.academic_year_id) {
+    const assignmentsChanged = selectedPairs.size !== assignments.length
+      || assignments.some(a => !selectedPairs.has(`${a.subject_id}::${a.class_name}`));
+    if (currentYear.academic_year_id && assignmentsChanged) {
       const assignmentPairs = Array.from(selectedPairs).map(key => {
         const [subject_id, class_name] = key.split('::');
         return { subject_id, class_name };
@@ -102,7 +104,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
         academicYearId: currentYear.academic_year_id,
         assignments: assignmentPairs,
       });
-    } else {
+    } else if (!currentYear.academic_year_id && assignmentsChanged) {
       toast.warning("Subject assignments were not saved", { description: "Set a single current academic year first." });
     }
 
@@ -290,7 +292,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={updateTeacher.isPending || updateAssignments.isPending}>
+            <Button onClick={handleSave} disabled={isLoading || updateTeacher.isPending || updateAssignments.isPending}>
             {(updateTeacher.isPending || updateAssignments.isPending) ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
