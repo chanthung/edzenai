@@ -1510,11 +1510,20 @@ export type Database = {
       school_teachers: {
         Row: {
           created_at: string
+          date_of_birth: string | null
+          date_of_joining: string | null
+          department: string | null
+          designation: string | null
           email: string
           employee_id: string | null
+          employment_status: string | null
+          employment_type: string | null
+          experience_years: number | null
+          gender: string | null
           id: string
           is_active: boolean
           name: string
+          qualification: string | null
           role: string
           school_id: string
           updated_at: string
@@ -1522,11 +1531,20 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          date_of_birth?: string | null
+          date_of_joining?: string | null
+          department?: string | null
+          designation?: string | null
           email: string
           employee_id?: string | null
+          employment_status?: string | null
+          employment_type?: string | null
+          experience_years?: number | null
+          gender?: string | null
           id?: string
           is_active?: boolean
           name: string
+          qualification?: string | null
           role?: string
           school_id: string
           updated_at?: string
@@ -1534,11 +1552,20 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          date_of_birth?: string | null
+          date_of_joining?: string | null
+          department?: string | null
+          designation?: string | null
           email?: string
           employee_id?: string | null
+          employment_status?: string | null
+          employment_type?: string | null
+          experience_years?: number | null
+          gender?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          qualification?: string | null
           role?: string
           school_id?: string
           updated_at?: string
