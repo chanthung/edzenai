@@ -195,12 +195,12 @@ export default function Teachers() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="employee_id">Employee ID <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Label htmlFor="employee_id">Employee ID</Label>
                   <div className="relative">
                     <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="employee_id" placeholder="e.g. EMP-001" value={formData.employee_id} onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })} className="pl-10" maxLength={40} />
+                    <Input id="employee_id" value="Assigned automatically" readOnly disabled className="pl-10" />
                   </div>
-                  <p className="text-xs text-muted-foreground">Your school's own staff code. Must be unique within the school.</p>
+                  <p className="text-xs text-muted-foreground">A unique ID (e.g. EMP-0001) is created when the user accepts the invite. Identity &amp; employment details can be added from Edit afterwards.</p>
                 </div>
 
                 {/* Delivery method */}

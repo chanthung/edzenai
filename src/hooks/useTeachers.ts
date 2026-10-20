@@ -14,6 +14,27 @@ export interface Teacher {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  date_of_joining?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  designation?: string | null;
+  department?: string | null;
+  qualification?: string | null;
+  experience_years?: number | null;
+  employment_type?: string | null;
+  employment_status?: string | null;
+}
+
+export interface TeacherHrFields {
+  date_of_joining: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  designation: string | null;
+  department: string | null;
+  qualification: string | null;
+  experience_years: number | null;
+  employment_type: string | null;
+  employment_status: string | null;
 }
 
 export interface UserInvite {
@@ -131,10 +152,10 @@ export function useTeachers() {
   });
 
   const updateTeacher = useMutation({
-    mutationFn: async ({ id, name, is_active, employee_id }: { id: string; name: string; is_active: boolean; employee_id?: string | null }) => {
+    mutationFn: async ({ id, name, is_active, employee_id, hr }: { id: string; name: string; is_active: boolean; employee_id?: string | null; hr?: TeacherHrFields }) => {
       const { error } = await supabase
         .from('school_teachers')
-        .update({ name, is_active, ...(employee_id !== undefined ? { employee_id } : {}) })
+        .update({ name, is_active, ...(employee_id !== undefined ? { employee_id } : {}), ...(hr ?? {}) })
         .eq('id', id);
       if (error) throw error;
     },
