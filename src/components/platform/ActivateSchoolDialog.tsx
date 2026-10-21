@@ -13,6 +13,7 @@ import { format, addMonths, addYears } from "date-fns";
 import { PLAN_DISPLAY, type SubscriptionPlan } from "@/config/plan-features";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
+import { renewalLifecycleUpdate } from '@/lib/school-access-renewal';
 
 type School = Tables<"schools">;
 
@@ -75,6 +76,7 @@ export function ActivateSchoolDialog({ school, open, onOpenChange, onSuccess }: 
           subscription_type: subscriptionType,
           subscription_start_date: subscriptionStartDate,
           subscription_renewal_date: renewalDate,
+          ...renewalLifecycleUpdate('active', renewalDate, null),
           system_state: 'subscription_active',
           subscription_plan: selectedPlan,
         } as any)

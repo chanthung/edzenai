@@ -14,6 +14,7 @@ import { useSubscriptionPricing, getDefaultRate } from "@/hooks/useSubscriptionP
 import { BillingBreakdown } from "@/components/platform/BillingBreakdown";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
+import { renewalLifecycleUpdate } from '@/lib/school-access-renewal';
 
 type School = Tables<"schools">;
 
@@ -152,6 +153,7 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
           subscription_status: formData.subscription_status,
           subscription_start_date: formData.subscription_start_date || null,
           subscription_renewal_date: formData.subscription_renewal_date || null,
+          ...renewalLifecycleUpdate(formData.subscription_status, formData.subscription_renewal_date || null, school.subscription_renewal_date),
           trial_start_date: formData.trial_start_date || null,
           trial_end_date: formData.trial_end_date || null,
           system_state: computedState,
@@ -303,13 +305,14 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-next-billing">Next Billing Date</Label>
+                  <Label htmlFor="edit-next-billing">Next Invoice Date</Label>
                   <Input
                     id="edit-next-billing"
                     type="date"
                     value={formData.next_billing_date}
                     onChange={(e) => setFormData({ ...formData, next_billing_date: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground">Invoice schedule only; does not extend paid access.</p>
                 </div>
               </div>
             </div>
@@ -452,13 +455,14 @@ export function EditSchoolDialog({ school, open, onOpenChange, onSuccess }: Edit
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-sub-renewal">Renewal Date</Label>
+                  <Label htmlFor="edit-sub-renewal">Paid Access Until / Renewal Date</Label>
                   <Input
                     id="edit-sub-renewal"
                     type="date"
                     value={formData.subscription_renewal_date}
                     onChange={(e) => setFormData({ ...formData, subscription_renewal_date: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground">The verified subscription's access expiry.</p>
                 </div>
               </div>
             </div>
