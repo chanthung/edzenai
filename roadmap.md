@@ -26,3 +26,5 @@
 - [x] Add dedicated least-privilege timetable service DB role + teacher availability privacy to the design
 - [x] Replace broad service-role RLS with transaction-scoped verified tenant context (3-layer model)
 - [x] Implement the nine timetable_* tables, tenant triggers, composite FKs, RLS, least-privilege timetable_service role and tenant-context functions
+
+- [x] Teacher account-linking UX Stage 1: Account column in Users shows Account linked / Invitation pending / Invitation expired / Not invited from persisted state (user_id + unaccepted invites matched by normalized email), with FieldHelp guidance for unlinked records; active switch and employment status unchanged. Live-verified on Cherry (16 Not invited, 3 Account linked, popover OK); 77 tests and build passed. Limitation: email-less HR-only records cannot be matched to invites. Linking workflow (Stage 2) not started.
