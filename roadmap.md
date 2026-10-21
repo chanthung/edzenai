@@ -1,5 +1,6 @@
 # Roadmap
 
+- [ ] Context-sensitive help UX: shared FieldHelp/FieldHint/SystemGenerated component applied to Edit Teacher, HR fields, teacher import, Teaching Assignments matrix and timetable Subject Requirements/Teacher Availability; tests + build.
 - [x] Add compatible blank teacher template and saved, school-scoped teacher Excel export. Both signed-in downloads verified (18 saved Cherry teachers), blank workbook rejected as empty, optional fields/parser and mixed-school guards tested; 67 tests and automatic build passed. No live import save or Excel desktop check performed; no record changes.
 
 - [x] Simplify teacher imports: flexible headers/manual mapping, permissive optional HR fields and unmatched emails, independent row safety/results, frozen post-save preview, Add User compatibility. Live mixed workbook saved 4 HR-only records, skipped 3, retained all existing rows/assignments/timetable/invitations, rejected cross-school request; test records cleaned up. 57 tests and automatic build passed. Live invitation acceptance not exercised.
