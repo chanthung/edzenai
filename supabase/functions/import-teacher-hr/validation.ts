@@ -29,73 +29,58 @@ const normalizeEmail = (raw: string | undefined) => (raw ?? '').trim().toLowerCa
 
 export function validateRows(rows: RawRow[], teachers: ExistingTeacher[], today = new Date().toISOString().slice(0, 10)): CheckedRow[] {
   const emails = new Map<string, number>();
-  rows.forEach(r => { const email = normalizeEmail(r.values.email_address); if (email) emails.set(email, (emails.get(email) ?? 0) + 1); });
-  const blankEmailNames = new Map<string, number>();
-  rows.forEach(r => {
-    if (normalizeEmail(r.values.email_address)) return;
-    const name = (r.values.full_name ?? '').trim().toLowerCase();
-    if (name) blankEmailNames.set(name, (blankEmailNames.get(name) ?? 0) + 1);
-  });
+  const ids = new Map<string, number>();
+  const names = new Map<string, number>();
+  for (const row of rows) {
+    for (const [map, value] of [[emails, normalizeEmail(row.values.email_address)], [ids, (row.values.employee_id ?? '').trim().toLowerCase()], [names, (row.values.full_name ?? '').trim().toLowerCase()]] as const) {
+      if (value) map.set(value, (map.get(value) ?? 0) + 1);
+    }
+  }
   return rows.map(row => {
     const v = row.values;
     const issues: Issue[] = [];
-    const add = (field: string, problem: string, correction: string, severity: 'error' | 'warning' = 'error') => issues.push({ rowNumber: row.rowNumber, field, problem, correction, severity });
+    const add = (field: string, problem: string, correction: string, severity: 'error' | 'warning' = 'warning') => issues.push({ rowNumber: row.rowNumber, field, problem, correction, severity });
     const email = normalizeEmail(v.email_address);
     const name = (v.full_name ?? '').trim();
+    const empId = (v.employee_id ?? '').trim().toLowerCase();
     let teacher: ExistingTeacher | null = null;
-    let action: RowAction | null = null;
+    let action: RowAction | null = 'create';
     const updates: Updates = {};
-    if (!name || name.length > 200) add('full_name', 'Name is required and must be at most 200 characters.', 'Enter the teacher’s full name.');
-    if (email) {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) add('email_address', 'A valid email is required.', 'Use a valid school email, or leave it blank for an HR-only record.');
-      if (/@(?:[^@.]+\.)*(?:example\.(?:com|net|org)|test|invalid|localhost)$/i.test(email)) add('email_address', 'Placeholder email cannot be linked.', 'Replace it with the teacher’s real email or leave it blank.');
-      if ((emails.get(email) ?? 0) > 1) add('email_address', 'Duplicate email in workbook.', 'Keep one row per teacher.');
-      const matches = teachers.filter(t => normalizeEmail(t.email ?? undefined) === email);
-      if (matches.length > 1) add('email_address', 'Multiple school records match this email.', 'Resolve the duplicate school records before importing.');
-      else if (matches.length === 1) {
-        teacher = matches[0];
-        if (teacher.role !== 'teacher') add('email_address', 'Matching user is not a Teacher.', 'Only existing Teacher records can receive these HR updates.');
-        else if (!teacher.user_id) add('email_address', 'This record has no linked account yet.', 'Invite the teacher via Add User so the email links to their account.', 'warning');
-        action = 'update';
-        if (v.employee_id?.trim()) add('employee_id', 'Spreadsheet Employee ID will be ignored.', 'Leave blank; the existing ID is preserved.', 'warning');
-      } else {
-        action = 'invitation_required';
-        add('email_address', 'No existing teacher matches this email.', 'Invite this teacher via Add User first; the import never creates login accounts.', 'warning');
-      }
+    if (!name || name.length > 200) add('full_name', 'Name is required and must be at most 200 characters.', 'Enter the staff member’s full name.', 'error');
+    const validEmail = !email || (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254 && !/@(?:[^@.]+\.)*(?:example\.(?:com|net|org)|test|invalid|localhost)$/i.test(email));
+    if (!validEmail) add('email_address', 'Email cannot be interpreted and will be skipped.', 'Supply a real email later.');
+    const emailMatches = validEmail && email ? teachers.filter(t => normalizeEmail(t.email ?? undefined) === email) : [];
+    const idMatches = empId ? teachers.filter(t => (t.employee_id ?? '').trim().toLowerCase() === empId) : [];
+    if (emailMatches.length > 1 || idMatches.length > 1) add('match', 'Multiple school records match this identifier.', 'Resolve the ambiguous match before importing this row.', 'error');
+    if (emailMatches.length === 1 && idMatches.length === 1 && emailMatches[0].id !== idMatches[0].id) add('match', 'Email and Employee ID identify different people.', 'Correct the identifiers.', 'error');
+    teacher = idMatches.length === 1 ? idMatches[0] : emailMatches.length === 1 ? emailMatches[0] : null;
+    if (teacher) {
+      action = 'update';
+      if (teacher.role !== 'teacher') add('match', 'Matching user is not a Teacher.', 'Manage this existing account separately.', 'error');
     } else {
-      const empId = v.employee_id?.trim() ?? '';
-      if (empId) {
-        const matches = teachers.filter(t => (t.employee_id ?? '').trim().toLowerCase() === empId.toLowerCase());
-        if (matches.length > 1) add('employee_id', 'Multiple school records match this Employee ID.', 'Resolve the duplicate records before importing.');
-        else if (matches.length === 1) {
-          teacher = matches[0];
-          if (teacher.role !== 'teacher') add('employee_id', 'Matching user is not a Teacher.', 'Only existing Teacher records can receive these HR updates.');
-          action = 'update';
-        } else add('employee_id', 'No existing teacher matches this Employee ID.', 'Leave Employee ID blank to create a new record; IDs are system-generated.');
-      } else {
-        action = 'create';
-        if ((blankEmailNames.get(name.toLowerCase()) ?? 0) > 1) add('full_name', 'Duplicate name in workbook.', 'Keep one row per teacher, or add distinct emails.', 'warning');
-        const nameMatches = teachers.filter(t => t.name.trim().toLowerCase() === name.toLowerCase());
-        if (nameMatches.length > 0) add('full_name', `A teacher named ${nameMatches[0].name} already exists (${nameMatches[0].employee_id ?? 'no ID'}).`, 'Review: add the matching Employee ID to update that record, or confirm this is a different person.', 'warning');
-      }
+      if (empId) add('employee_id', 'Unmatched spreadsheet ID will be ignored.', 'A new Employee ID is generated automatically.');
+      if (teachers.some(t => t.name.trim().toLowerCase() === name.toLowerCase()) || (names.get(name.toLowerCase()) ?? 0) > 1) add('full_name', 'Potential duplicate name needs review.', 'Supply the correct existing Employee ID or distinguish this person before importing.', 'error');
     }
+    if ((email && (emails.get(email) ?? 0) > 1) || (empId && (ids.get(empId) ?? 0) > 1)) add('match', 'Duplicate identifier in workbook.', 'Keep one row per person.', 'error');
+    if (!email) add('email_address', 'No email supplied.', 'Record remains without a login account unless already linked.');
     const date = (key: 'date_of_birth' | 'date_of_joining', earliest: string) => {
       const value = v[key]?.trim(); if (!value) return;
       const parsed = new Date(`${value}T00:00:00Z`);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value || value < earliest) add(key, 'Invalid date.', 'Use a valid YYYY-MM-DD date.');
-      else if (key === 'date_of_birth' && value > today) add(key, 'Birth date is in the future.', 'Enter a past birth date.');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value || value < earliest || (key === 'date_of_birth' && value > today)) add(key, 'Date cannot be interpreted and will be skipped.', 'Use a valid YYYY-MM-DD date later.');
       else updates[key] = value;
     };
     date('date_of_birth', '1930-01-01'); date('date_of_joining', '1950-01-01');
-    // Compare against preserved dates too, so partial updates cannot create invalid combinations.
     const existing = teacher as (ExistingTeacher & { date_of_birth?: string | null; date_of_joining?: string | null }) | null;
     const birth = updates.date_of_birth ?? existing?.date_of_birth;
     const joining = updates.date_of_joining ?? existing?.date_of_joining;
-    if (birth && joining && joining <= birth) add('date_of_joining', 'Joining date must be after birth date.', 'Correct the joining or birth date.');
+    if (birth && joining && joining <= birth) {
+      delete updates.date_of_birth; delete updates.date_of_joining;
+      add('dates', 'Conflicting birth/joining dates will be skipped.', 'Joining must be after birth; existing dates are preserved.');
+    }
     const controlled = (key: 'gender' | 'employment_type' | 'status', target: 'gender' | 'employment_type' | 'employment_status', allowed: string[]) => {
       const raw = v[key]?.trim(); if (!raw) return;
       const normalized = raw.toLowerCase().replace(/[\s-]+/g, '_');
-      if (!allowed.includes(normalized)) add(key, 'Unsupported value.', `Use ${allowed.join(', ')}.`);
+      if (!allowed.includes(normalized)) add(key, 'Unrecognized value will be skipped.', `Supported values: ${allowed.join(', ')}.`);
       else updates[target] = normalized;
     };
     controlled('gender', 'gender', ['male', 'female', 'other', 'prefer_not_to_say']);
@@ -103,16 +88,16 @@ export function validateRows(rows: RawRow[], teachers: ExistingTeacher[], today 
     controlled('status', 'employment_status', ['active', 'inactive', 'on_leave', 'resigned']);
     const experience = v.experience_years?.trim();
     if (experience) {
-      if (!/^\d+$/.test(experience) || Number(experience) > 70) add('experience_years', 'Experience must be a whole number from 0 to 70.', 'Enter 0–70 without words or decimals.');
+      if (!/^\d+$/.test(experience) || Number(experience) > 70) add('experience_years', 'Unrecognized experience will be skipped.', 'Use a whole number from 0 to 70 later.');
       else updates.experience_years = Number(experience);
     }
     for (const key of ['designation', 'department', 'qualification'] as const) {
-      const value = v[key]?.trim(); if (!value) continue;
-      if (value.length > (key === 'qualification' ? 200 : 100)) add(key, 'Text exceeds the field limit.', `Shorten to ${key === 'qualification' ? 200 : 100} characters.`);
+      const value = v[key]; if (!value?.trim()) continue;
+      if (value.length > (key === 'qualification' ? 200 : 100)) add(key, 'Text exceeds the field limit and will be skipped.', `Use at most ${key === 'qualification' ? 200 : 100} characters.`);
       else updates[key] = value;
     }
-    if (/\b(librarian|office|assistant librarian|accountant|clerk|receptionist|driver|security|cleaner|peon|nurse|non[ -]?teaching|administrator|principal|headmaster|headmistress|counsell?or)\b/i.test(v.designation ?? '')) add('designation', 'Designation may indicate an unsupported non-teaching role.', 'Review this staff record separately; do not import it as Teacher.');
     if (issues.some(i => i.severity === 'error')) action = null;
-    return { ...row, teacher, action, updates, issues };
+    // Invalid optional emails never reach storage; existing account fields are never updated.
+    return { ...row, values: { ...v, email_address: validEmail ? email : '' }, teacher, action, updates, issues };
   });
 }

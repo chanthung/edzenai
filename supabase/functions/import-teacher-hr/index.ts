@@ -37,26 +37,20 @@ Deno.serve(async req => {
     if (error) return response({ error: 'Could not read school teachers.' }, 500);
     const checked = validateRows(rows, (teachers ?? []) as ExistingTeacher[]);
     const issues = checked.flatMap(row => row.issues);
-    if (issues.some(issue => issue.severity === 'error')) {
-      const outcomes = previewOutcomes(checked).map(row => row.status === 'ready' ? { ...row, status: 'blocked' as const, reasons: ['Not saved: another workbook row needs correction.'] } : row);
-      return response({ ...summarizeOutcomes(outcomes, 'Correct the workbook before importing. No records were saved.'), issues }, 400);
-    }
-    // Recheck dates on the server and reject stale previews before the first write (updates only; creates have no prior record).
-    if (checked.some((row, i) => row.action === 'update' && (!rows[i].expectedUpdatedAt || rows[i].expectedUpdatedAt !== row.teacher?.updated_at))) return reject('Teacher records changed since preview. Reload and review again. No records were saved.', 409);
     const results: RowOutcome[] = [];
     for (const row of checked) {
-      if (row.action === 'invitation_required') {
-        results.push({ rowNumber: row.rowNumber, status: 'invitation_required', reasons: ['No existing teacher matches this email. Invite them via Add User; nothing was saved for this row.'] });
+      if (!row.action) {
+        results.push({ rowNumber: row.rowNumber, status: 'blocked', reasons: row.issues.filter(i => i.severity === 'error').map(i => `${i.problem} ${i.correction}`) });
         continue;
       }
-      if (results.some(r => r.status === 'failed')) {
-        results.push({ rowNumber: row.rowNumber, status: 'blocked', reasons: ['Not attempted: an earlier write failed. Review saved rows before retrying.'] });
+      if (row.action === 'update' && (!rows.find(r => r.rowNumber === row.rowNumber)?.expectedUpdatedAt || rows.find(r => r.rowNumber === row.rowNumber)?.expectedUpdatedAt !== row.teacher?.updated_at)) {
+        results.push({ rowNumber: row.rowNumber, status: 'blocked', reasons: ['Teacher changed since preview. Reload and review this row again.'] });
         continue;
       }
       if (row.action === 'create') {
         // HR-only record: no auth account, no email, Employee ID assigned by the database trigger.
         const { data, error: insertError } = await client.from('school_teachers')
-          .insert({ school_id: membership.school_id, name: row.values.full_name!.trim(), role: 'teacher', ...row.updates })
+          .insert({ school_id: membership.school_id, name: (row.values.full_name ?? '').trim(), email: row.values.email_address || null, user_id: null, role: 'teacher', ...row.updates })
           .select('id');
         results.push({ rowNumber: row.rowNumber, status: !insertError && data?.length === 1 ? 'created' : 'failed',
           reasons: [!insertError && data?.length === 1 ? 'Teacher record created without login access (Not invited). Employee ID was system-generated.' : 'Create failed. This row was not saved.'] });
@@ -73,6 +67,6 @@ Deno.serve(async req => {
       results.push({ rowNumber: row.rowNumber, status: !updateError && data?.length === 1 ? 'updated' : 'failed',
         reasons: [!updateError && data?.length === 1 ? 'HR fields saved. Account, Employee ID and assignments unchanged.' : 'Update failed or record changed. This row was not saved.'] });
     }
-    return response(summarizeOutcomes(results));
+    return response({ ...summarizeOutcomes(results), issues });
   } catch { return response({ error: 'Import could not be processed.' }, 400); }
 });
