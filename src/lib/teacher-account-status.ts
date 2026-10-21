@@ -17,6 +17,7 @@ export type AccountLinkStatus =
   | 'not_invited';
 
 export interface AccountStatusTeacher {
+  id?: string;
   user_id: string | null;
   email: string | null;
 }
@@ -24,6 +25,8 @@ export interface AccountStatusTeacher {
 export interface AccountStatusInvite {
   email: string;
   expires_at: string;
+  /** Set for Stage 2 targeted invitations; authoritative over email matching. */
+  target_teacher_id?: string | null;
 }
 
 export function getAccountLinkStatus(
@@ -32,9 +35,16 @@ export function getAccountLinkStatus(
   now: Date = new Date(),
 ): AccountLinkStatus {
   if (teacher.user_id) return 'linked';
-  const email = teacher.email?.trim().toLowerCase();
-  if (!email) return 'not_invited';
-  const invite = pendingInvites.find(i => i.email.trim().toLowerCase() === email);
+  // Targeted invitations match by persisted record ID (works without a saved email).
+  let invite = teacher.id
+    ? pendingInvites.find(i => i.target_teacher_id === teacher.id)
+    : undefined;
+  if (!invite) {
+    const email = teacher.email?.trim().toLowerCase();
+    if (!email) return 'not_invited';
+    // Legacy invitations only: a targeted invite for another record never matches by email.
+    invite = pendingInvites.find(i => !i.target_teacher_id && i.email.trim().toLowerCase() === email);
+  }
   if (!invite) return 'not_invited';
   return new Date(invite.expires_at) < now ? 'invitation_expired' : 'invitation_pending';
 }
