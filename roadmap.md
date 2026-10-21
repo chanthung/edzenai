@@ -1,5 +1,6 @@
 # Roadmap
 
+- [ ] Correct confirmed Cherry access renewal, align Global Admin renewal saves and authoritative status display, then verify teacher import persistence and safeguards.
 - [x] Rechecked current Cherry authorization with a real controlled Excel request and retry on 21 Oct 2026: membership valid, access block false, import HTTP 403 because authoritative restriction remains true; 41 teacher tests passed and automatic build OK.
 - [ ] Complete a successful Cherry Excel save, retry and Edit Teacher read-back — blocked by current authoritative effective state `terminated` with renewal date 29 May 2026. Requires the actual renewal correction to reach this app's school record; no enforcement bypass approved or applied.
 
