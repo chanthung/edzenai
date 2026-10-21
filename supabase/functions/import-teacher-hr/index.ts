@@ -41,15 +41,28 @@ Deno.serve(async req => {
       const outcomes = previewOutcomes(checked).map(row => row.status === 'ready' ? { ...row, status: 'blocked' as const, reasons: ['Not saved: another workbook row needs correction.'] } : row);
       return response({ ...summarizeOutcomes(outcomes, 'Correct the workbook before importing. No records were saved.'), issues }, 400);
     }
-    // Recheck dates on the server and reject stale previews before the first write.
-    if (checked.some((row, i) => !rows[i].expectedUpdatedAt || rows[i].expectedUpdatedAt !== row.teacher?.updated_at)) return reject('Teacher records changed since preview. Reload and review again. No records were saved.', 409);
+    // Recheck dates on the server and reject stale previews before the first write (updates only; creates have no prior record).
+    if (checked.some((row, i) => row.action === 'update' && (!rows[i].expectedUpdatedAt || rows[i].expectedUpdatedAt !== row.teacher?.updated_at))) return reject('Teacher records changed since preview. Reload and review again. No records were saved.', 409);
     const results: RowOutcome[] = [];
     for (const row of checked) {
-      if (!row.teacher) continue;
-      if (results.some(r => r.status === 'failed')) {
-        results.push({ rowNumber: row.rowNumber, status: 'blocked', reasons: ['Not attempted: an earlier update failed. Review saved rows before retrying.'] });
+      if (row.action === 'invitation_required') {
+        results.push({ rowNumber: row.rowNumber, status: 'invitation_required', reasons: ['No existing teacher matches this email. Invite them via Add User; nothing was saved for this row.'] });
         continue;
       }
+      if (results.some(r => r.status === 'failed')) {
+        results.push({ rowNumber: row.rowNumber, status: 'blocked', reasons: ['Not attempted: an earlier write failed. Review saved rows before retrying.'] });
+        continue;
+      }
+      if (row.action === 'create') {
+        // HR-only record: no auth account, no email, Employee ID assigned by the database trigger.
+        const { data, error: insertError } = await client.from('school_teachers')
+          .insert({ school_id: membership.school_id, name: row.values.full_name!.trim(), role: 'teacher', ...row.updates })
+          .select('id');
+        results.push({ rowNumber: row.rowNumber, status: !insertError && data?.length === 1 ? 'created' : 'failed',
+          reasons: [!insertError && data?.length === 1 ? 'Teacher record created without login access (Not invited). Employee ID was system-generated.' : 'Create failed. This row was not saved.'] });
+        continue;
+      }
+      if (!row.teacher) continue;
       if (!Object.keys(row.updates).length) {
         results.push({ rowNumber: row.rowNumber, status: 'blocked', reasons: ['No non-blank supported HR fields to update. Existing values were preserved.'] });
         continue;
