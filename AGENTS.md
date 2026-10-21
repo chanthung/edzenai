@@ -8,3 +8,4 @@
 - Invite acceptance links a matching HR-only teacher record (by Employee ID, else exact unique name) instead of inserting a duplicate; it only attaches user_id/email/role and preserves the Employee ID and HR details.
 - Add User permits an email already stored on exactly one unlinked HR record only when name and supported role agree; linked or ambiguous matches remain blocked to preserve existing invitation behavior safely.
 - Global Admin access badges use the authoritative effective-state RPC; explicit paid renewals align lifecycle anchors and clear termination, while invoice-only edits never alter access expiry.
+- Context-sensitive help uses the shared `src/components/ui/field-help.tsx` patterns (FieldHelp popover, FieldHint, SystemGenerated) — never per-screen tooltip logic; popovers are portal-based so they are not clipped by scrollable dialogs.
