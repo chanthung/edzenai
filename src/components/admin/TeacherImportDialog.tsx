@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { Upload, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -75,12 +76,26 @@ export function TeacherImportDialog() {
       }
       if (body && Array.isArray(body.results)) {
         setResult(body); setApproved(false); setError(body.error ?? '');
-        if (body.updated > 0 || (body.created ?? 0) > 0) await queryClient.invalidateQueries({ queryKey: ['teachers', school.id] });
+        const created = body.created ?? 0, updated = body.updated ?? 0, skipped = (body.blocked ?? 0) + (body.failed ?? 0);
+        // One toast per confirmed save; the toast fires in save(), never during render, so the same result cannot notify twice.
+        if (body.error) {
+          toast.error('Import failed', { description: body.error });
+        } else if (skipped > 0) {
+          toast.warning(`Import completed with warnings: ${created} created, ${updated} updated, ${skipped} skipped.`, { description: 'Review the results for details.' });
+        } else if (created > 0 && updated === 0) {
+          toast.success(`Successfully imported ${created} teacher records.`);
+        } else if (created + updated > 0) {
+          toast.success(`Import completed: ${created} created, ${updated} updated, 0 skipped.`);
+        } else {
+          toast.warning('Import completed: no records were saved.', { description: 'Review the results for details.' });
+        }
+        if (updated > 0 || created > 0) await queryClient.invalidateQueries({ queryKey: ['teachers', school.id] });
       } else {
         throw new Error(body?.error ?? 'Save outcome could not be confirmed. Refresh Users before retrying; do not assume records were saved.');
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Save outcome could not be confirmed.';
+      toast.error('Import failed', { description: message });
       setError(message); setApproved(false);
       setResult(summarizeOutcomes(rows.map(row => ({ rowNumber: row.rowNumber, status: 'failed', reasons: [message] })), message));
     }
