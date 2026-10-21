@@ -18,6 +18,7 @@ import { exportToXLSX } from '@/lib/export-utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { ColumnMapping } from '@/lib/teacher-import';
 import { TeacherTemplateDownload } from '@/components/admin/TeacherDownloadActions';
+import { FieldHelp } from '@/components/ui/field-help';
 
 export function TeacherImportDialog() {
   const { isSchoolAdmin } = useUserRole();
@@ -111,6 +112,11 @@ export function TeacherImportDialog() {
           <div className="flex flex-wrap items-center gap-3">
             <TeacherTemplateDownload />
             <Input aria-label="Teacher workbook" type="file" accept=".xlsx" disabled={busy || isLoading} className="max-w-sm" onChange={e => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
+            <FieldHelp label="Help about the teacher import workbook">
+              <p>Download the template to see every supported column. Only Full Name is required — all other columns are optional and can be left blank.</p>
+              <p>Blank cells preserve the values already saved for an existing teacher. Unrecognized optional values are skipped, not treated as errors.</p>
+              <p>If a row shows a warning or is skipped, check the results list below or download the error report — each entry names the row, the problem and how to fix it.</p>
+            </FieldHelp>
           </div>
           {headers.length > 0 && !result && <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{headers.map((header, index) => <label key={index} className="space-y-1 text-sm"><span className="block break-words">{header || `Column ${index + 1}`}</span><Select value={mapping[index] ?? 'skip'} disabled={busy} onValueChange={v => remap(index, v)}><SelectTrigger aria-label={`Map ${header || index + 1}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="skip">Skip column</SelectItem>{COLUMNS.map(c => <SelectItem key={c} value={c}>{c.replace(/_/g, ' ')}</SelectItem>)}</SelectContent></Select></label>)}</div>}
           {filename && <p className="text-sm break-all">{filename} · {rows.length} detected records</p>}

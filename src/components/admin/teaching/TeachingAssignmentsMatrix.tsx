@@ -13,6 +13,7 @@ import { sortClassNames } from "@/lib/class-sort";
 import { cn } from "@/lib/utils";
 import { AssignTeachersPopover } from "./AssignTeachersPopover";
 import { TeacherSummaryPopover } from "./TeacherSummaryPopover";
+import { FieldHelp } from "@/components/ui/field-help";
 
 export function TeachingAssignmentsMatrix({ teachers, canEdit, onEditTeacher }: { teachers: Teacher[]; canEdit: boolean; onEditTeacher?: (t: Teacher) => void }) {
   const { data: years = [] } = useAcademicYears();
@@ -53,7 +54,13 @@ export function TeachingAssignmentsMatrix({ teachers, canEdit, onEditTeacher }: 
   return (
     <Card>
       <CardHeader className="space-y-4">
-        <CardTitle>Teaching Assignments</CardTitle>
+        <CardTitle className="flex items-center gap-1.5">Teaching Assignments
+          <FieldHelp label="Help about Teaching Assignments">
+            <p>Each cell shows the teachers currently assigned to that subject–class combination for the selected academic year.</p>
+            <p>A combination can have more than one teacher. Cells marked Assign have no teacher yet — click them to choose one.</p>
+            <p>Assignments never change a teacher's login access or HR record, and nothing is assigned automatically.</p>
+          </FieldHelp>
+        </CardTitle>
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1.5 w-full sm:w-52">
             <Label className="text-xs">Academic Year</Label>
