@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Investigate invitation 409: both captured requests were targeted links using emails already in auth accounts; live trigger correctly rejects these and returns before that check for legacy invites. No routing defect reproduced; signed-in switch-to-new payload verified with delivery intercepted. Added 12 regressions; 99 tests pass, preview build OK. No application/schema changes, deployment, migration or publication; real delivery/acceptance not tested. Findings in EdZenAI-Invitation-409-Investigation.md.
+
 - [x] Pre-approval Stage 2 review: identity-only email snapshot replaces blanket timestamp; effective catalog privileges/RLS/triggers/lifecycle audited; full review-only SQL includes issuance/resend/atomic completion and proposed narrowing of unsafe public invite SELECT. 21 existing tests passed. No migration or linking implementation applied; runtime concurrency/acceptance remain unverified.
 
 - [x] Context-sensitive help UX: shared FieldHelp/FieldHint/SystemGenerated component applied to Edit Teacher, HR fields, teacher import, Teaching Assignments matrix and timetable Subject Requirements/Teacher Availability. Live-verified popovers in scrollable dialog and at 375px; 71 tests and build passed. No behavior/schema changes.
