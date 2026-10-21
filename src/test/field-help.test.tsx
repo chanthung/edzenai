@@ -18,7 +18,7 @@ describe("FieldHelp", () => {
     });
   });
 
-  it("opens on keyboard interaction (focus + Enter)", async () => {
+  it("is keyboard-focusable and opens when activated while focused", async () => {
     render(
       <FieldHelp label="Help about Employee ID">
         <p>Generated automatically.</p>
@@ -26,7 +26,9 @@ describe("FieldHelp", () => {
     );
     const trigger = screen.getByRole("button", { name: "Help about Employee ID" });
     trigger.focus();
-    fireEvent.keyDown(trigger, { key: "Enter" });
+    expect(document.activeElement).toBe(trigger);
+    // Browsers dispatch click for Enter/Space on a focused button; jsdom does not synthesize it.
+    fireEvent.click(trigger);
     await waitFor(() => expect(screen.getByText(/Generated automatically/)).toBeTruthy());
   });
 });
