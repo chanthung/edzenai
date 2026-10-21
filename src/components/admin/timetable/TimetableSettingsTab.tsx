@@ -26,11 +26,13 @@ import { TeacherAvailabilitySection } from "./TeacherAvailabilitySection";
 import { SubjectRequirementsSection } from "./SubjectRequirementsSection";
 import { RoomRequirementsSection } from "./RoomRequirementsSection";
 import { TimetableViewSection } from "./TimetableViewSection";
+import { ReadinessSection } from "./ReadinessSection";
 
 export function TimetableSettingsTab({ canEdit }: { canEdit: boolean }) {
   const { data: school, isLoading: loadingSchool } = useSchool();
   const { data: years = [], isLoading: loadingYears } = useAcademicYears();
   const [yearId, setYearId] = useState<string | null>(null);
+  const [tab, setTab] = useState<string>(() => new URLSearchParams(window.location.search).get("ttab") ?? "readiness");
 
   if (loadingSchool || loadingYears) return <Skeleton className="h-96 w-full rounded-xl" />;
 
@@ -87,8 +89,9 @@ export function TimetableSettingsTab({ canEdit }: { canEdit: boolean }) {
         initialYearId={selectedYear}
         canEdit={canEdit}
       >
-        <Tabs defaultValue={new URLSearchParams(window.location.search).get("ttab") ?? "general"}>
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="mb-4 flex-wrap h-auto">
+            <TabsTrigger value="readiness">Readiness</TabsTrigger>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="slots">Periods</TabsTrigger>
             <TabsTrigger value="breaks">Breaks</TabsTrigger>
@@ -98,6 +101,7 @@ export function TimetableSettingsTab({ canEdit }: { canEdit: boolean }) {
             <TabsTrigger value="room-req">Room Requirements</TabsTrigger>
             <TabsTrigger value="view">View</TabsTrigger>
           </TabsList>
+          <TabsContent value="readiness"><ReadinessSection onNavigate={setTab} /></TabsContent>
           <TabsContent value="general"><GeneralSection /></TabsContent>
           <TabsContent value="slots"><TimeSlotsSection /></TabsContent>
           <TabsContent value="breaks"><BreaksSection /></TabsContent>
