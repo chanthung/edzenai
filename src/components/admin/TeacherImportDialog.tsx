@@ -35,12 +35,13 @@ export function TeacherImportDialog() {
   const [busy, setBusy] = useState(false);
   const [approved, setApproved] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
-  const checked = useMemo(() => validateRows(rows, teachers), [rows, teachers]);
+  const [savedPreview, setSavedPreview] = useState<ReturnType<typeof validateRows> | null>(null);
+  const checked = useMemo(() => savedPreview ?? validateRows(rows, teachers), [rows, teachers, savedPreview]);
   const issues = [...workbookIssues, ...checked.flatMap(r => r.issues)];
   const warningRows = checked.filter(r => workbookIssues.length > 0 || r.issues.some(i => i.severity === 'warning')).length;
   const preview = summarizeOutcomes(previewOutcomes(checked));
   const outcomes = result ?? preview;
-  const reset = () => { setRows([]); setBuffer(null); setHeaders([]); setMapping([]); setWorkbookIssues([]); setFilename(''); setError(''); setApproved(false); setResult(null); };
+  const reset = () => { setRows([]); setBuffer(null); setHeaders([]); setMapping([]); setWorkbookIssues([]); setFilename(''); setError(''); setApproved(false); setResult(null); setSavedPreview(null); };
   const onFile = async (file?: File) => {
     reset(); if (!file) return; setFilename(file.name);
     if (!file.name.toLowerCase().endsWith('.xlsx')) { setError('Choose an .xlsx workbook.'); return; }
@@ -63,7 +64,7 @@ export function TeacherImportDialog() {
   };
   const save = async () => {
     if (!school || isRestricted || !isSchoolAdmin || !approved || !preview.ready || !rows.length || busy || result) return;
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setSavedPreview(checked);
     try {
       const { data, error: invokeError } = await supabase.functions.invoke('import-teacher-hr', { body: {
         schoolId: school.id, rows: checked.map(r => ({ rowNumber: r.rowNumber, values: r.values, expectedUpdatedAt: r.teacher?.updated_at })),
@@ -124,7 +125,7 @@ export function TeacherImportDialog() {
         <div className="border-t pt-4 space-y-3">
           {!result && rows.length > 0 && <label className="flex items-start gap-2 text-sm"><Checkbox checked={approved} disabled={!preview.ready || busy} onCheckedChange={v => setApproved(v === true)} />I approve importing ready rows and skipping rows requiring review. I understand importing never grants login access.</label>}
           <div className="flex justify-end gap-2"><Button variant="outline" disabled={busy} onClick={() => { setOpen(false); reset(); }}>{result ? 'Close' : 'Cancel'}</Button>
-            {result && <Button variant="outline" onClick={() => { setResult(null); setError(''); setApproved(false); void queryClient.invalidateQueries({ queryKey: ['teachers', school?.id] }); }}>Review again</Button>}
+            {result && <Button variant="outline" onClick={() => { setResult(null); setSavedPreview(null); setError(''); setApproved(false); void queryClient.invalidateQueries({ queryKey: ['teachers', school?.id] }); }}>Review again</Button>}
             {!result && <Button onClick={() => void save()} disabled={busy || isLoading || isRestricted || !preview.ready || !rows.length || !approved}>{busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Confirm import</Button>}
           </div>
         </div>
