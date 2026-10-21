@@ -74,7 +74,7 @@ export function useTimetableReadiness(schoolId: string | null, academicYearId: s
         runs: v(runs) as any,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    all.map((q) => q.data).concat(all.map((q) => q.isError)),
+    [...all.map((q) => q.data as unknown), ...all.map((q) => q.isError)],
   );
 
   return { ...result, isLoading };

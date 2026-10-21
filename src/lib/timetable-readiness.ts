@@ -304,7 +304,7 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
       capacity = [...rows.values()].map((r) => ({
         ...r,
         remaining: r.available - r.required,
-        status: r.required === 0 ? "none" : r.required > r.available ? "over" : "fits",
+        status: (r.required === 0 ? "none" : r.required > r.available ? "over" : "fits") as CapacityRow["status"],
       })).sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
       const over = capacity.filter((r) => r.status === "over");
       const none = capacity.filter((r) => r.status === "none").length;
