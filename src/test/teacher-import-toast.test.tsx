@@ -37,7 +37,8 @@ const body = (created: number, updated: number, blocked: number, failed: number)
 async function importFile() {
   render(<TeacherImportDialog />, { wrapper: ({ children }) => <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider> });
   fireEvent.click(screen.getByRole("button", { name: /import teachers/i }));
-  fireEvent.change(screen.getByLabelText("Teacher workbook"), { target: { files: [new File(["x"], "teachers.xlsx")] } });
+  const fakeFile = { name: "teachers.xlsx", size: 10, arrayBuffer: async () => new ArrayBuffer(8) } as unknown as File;
+  fireEvent.change(screen.getByLabelText("Teacher workbook"), { target: { files: [fakeFile] } });
   await screen.findByText(/16 detected records/i);
   fireEvent.click(screen.getByRole("checkbox"));
   fireEvent.click(screen.getByRole("button", { name: /confirm import/i }));
