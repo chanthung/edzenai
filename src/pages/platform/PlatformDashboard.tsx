@@ -28,23 +28,9 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type School = Tables<"schools">;
 
-function calculateEffectiveState(school: School): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (school.payment_verified === true && school.system_state === 'subscription_active') return 'subscription_active';
-  if (!school.trial_end_date) return 'trial_active';
-  const trialEnd = new Date(school.trial_end_date);
-  trialEnd.setHours(0, 0, 0, 0);
-  return today <= trialEnd ? 'trial_active' : 'trial_expired';
-}
-
 function getDaysRemaining(school: School): number | null {
-  const state = calculateEffectiveState(school);
-  if (state === 'subscription_active') {
-    const d = (school as any).next_billing_date || school.subscription_renewal_date;
-    return d ? differenceInDays(new Date(d), new Date()) : null;
-  }
-  return school.trial_end_date ? differenceInDays(new Date(school.trial_end_date), new Date()) : null;
+  const expiry = school.subscription_status === 'active' ? school.subscription_renewal_date : school.trial_end_date;
+  return expiry ? differenceInDays(new Date(`${expiry}T00:00:00Z`), new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`)) : null;
 }
 
 interface InvoiceData {
@@ -68,6 +54,8 @@ export default function PlatformDashboard() {
   const queryClient = useQueryClient();
   const [isPlatformAdmin, setIsPlatformAdmin] = useState<boolean | null>(null);
   const [schools, setSchools] = useState<School[]>([]);
+  const [effectiveStates, setEffectiveStates] = useState<Record<string, string>>({});
+  const calculateEffectiveState = (school: School) => effectiveStates[school.id] ?? 'restricted_mode';
   const [studentCounts, setStudentCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -109,6 +97,12 @@ export default function PlatformDashboard() {
     const { data, error } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
     if (error) { toast.error("Failed to load schools"); }
     else {
+      const states = await Promise.all((data ?? []).map(async school => {
+        const result = await supabase.rpc('get_school_effective_state', { _school_id: school.id });
+        return [school.id, result.error ? 'restricted_mode' : result.data] as const;
+      }));
+      setEffectiveStates(Object.fromEntries(states));
+      if (states.some(([, state]) => state === 'restricted_mode')) toast.error('Some school access states are restricted or unavailable.');
       setSchools(data || []);
       if (data && data.length > 0) fetchStudentCounts(data.map(s => s.id));
     }
@@ -369,7 +363,8 @@ export default function PlatformDashboard() {
                       <TableHead className="text-right">Rate (₹)</TableHead>
                       <TableHead className="text-right">Monthly Fee</TableHead>
                       <TableHead>Billing</TableHead>
-                      <TableHead>Next Billing</TableHead>
+                      <TableHead>Next Invoice</TableHead>
+                      <TableHead>Paid Access Until</TableHead>
                       <TableHead>State</TableHead>
                       <TableHead>Days Left</TableHead>
                       <TableHead className="w-[180px]">Actions</TableHead>
@@ -446,6 +441,9 @@ export default function PlatformDashboard() {
                           </TableCell>
                           <TableCell className="text-sm">
                             {nextBilling ? format(new Date(nextBilling), "dd MMM yyyy") : "-"}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {school.subscription_renewal_date ? format(new Date(`${school.subscription_renewal_date}T00:00:00Z`), 'dd MMM yyyy') : '-'}
                           </TableCell>
                           <TableCell>
                             <SystemStateBadge state={effectiveState} size="sm" />
