@@ -8,10 +8,13 @@ export function parseTeacherWorkbook(buffer: ArrayBuffer): { rows: RawRow[]; iss
   const candidates: { grid: unknown[][]; header: number; names: string[] }[] = [];
   for (const name of workbook.SheetNames) {
     const grid = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[name], { header: 1, raw: true, defval: '' });
-    const header = grid.findIndex(row => row.some(v => String(v).trim().toLowerCase() === 'full_name') || row.some(v => String(v).trim().toLowerCase() === 'email_address'));
+    const header = grid.findIndex(row => {
+      const labels = row.map(v => String(v).trim().toLowerCase());
+      return labels.includes('full_name') && labels.includes('email_address');
+    });
     if (header >= 0) candidates.push({ grid, header, names: grid[header].map(v => String(v).trim().toLowerCase()) });
   }
-  if (candidates.length !== 1) throw new Error('Use one teacher data sheet with full_name and email_address headers.');
+  if (candidates.length !== 1) throw new Error('Use one teacher data sheet with both full_name and email_address headers.');
   const { grid, header, names } = candidates[0];
   const issues: Issue[] = [];
   const issue = (field: string, problem: string, severity: 'error' | 'warning') => issues.push({ rowNumber: header + 1, field, problem, correction: 'Use the approved teacher template.', severity });
