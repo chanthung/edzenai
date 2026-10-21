@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Add compatible blank teacher template and saved, school-scoped teacher Excel export; verify downloads, parser compatibility and isolation without record changes.
+- [x] Add compatible blank teacher template and saved, school-scoped teacher Excel export. Both signed-in downloads verified (18 saved Cherry teachers), blank workbook rejected as empty, optional fields/parser and mixed-school guards tested; 67 tests and automatic build passed. No live import save or Excel desktop check performed; no record changes.
 
 - [x] Simplify teacher imports: flexible headers/manual mapping, permissive optional HR fields and unmatched emails, independent row safety/results, frozen post-save preview, Add User compatibility. Live mixed workbook saved 4 HR-only records, skipped 3, retained all existing rows/assignments/timetable/invitations, rejected cross-school request; test records cleaned up. 57 tests and automatic build passed. Live invitation acceptance not exercised.
 - [x] Stage 3 teacher import: optional email + HR-only teacher records. Pre-approval security audit passed (RLS/auth/uniqueness/triggers/FKs all NULL-safe); user approved; migration applied. Live verified: HR-only create (EMP-0004 auto-assigned), email update, invitation-required, invalid/duplicate blocking, Not invited badge, Edit Teacher guards, assignments/timetable untouched, cleanup done; 54 tests + build OK.
