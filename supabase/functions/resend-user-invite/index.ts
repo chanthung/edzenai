@@ -82,20 +82,36 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Regenerate token & extend expiry
-    const newToken = crypto.randomUUID();
-    const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-    const { error: updateErr } = await supabaseAdmin
-      .from('user_invites')
-      .update({ token: newToken, expires_at: newExpiry, last_sent_at: new Date().toISOString() })
-      .eq('id', inviteId);
-
-    if (updateErr) {
-      return new Response(JSON.stringify({ error: 'Failed to refresh invite' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    let newToken: string;
+    if (existing.target_teacher_id) {
+      // Targeted: preserve the exact target and revalidate under lock.
+      const { data: rs, error: rsErr } = await supabaseAdmin.rpc('resend_teacher_link_invite', {
+        _actor: callerUser.id, _invite: inviteId,
       });
+      const row = Array.isArray(rs) ? rs[0] : rs;
+      if (rsErr || !row) {
+        return new Response(JSON.stringify({ error: rsErr?.message || 'Failed to refresh invite' }), {
+          status: rsErr?.code === '42501' ? 403 : 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      newToken = row.invite_token;
+    } else {
+      // Regenerate token & extend expiry
+      newToken = crypto.randomUUID();
+      const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const { error: updateErr } = await supabaseAdmin
+        .from('user_invites')
+        .update({ token: newToken, expires_at: newExpiry, last_sent_at: new Date().toISOString() })
+        .eq('id', inviteId);
+
+      if (updateErr) {
+        return new Response(JSON.stringify({ error: 'Failed to refresh invite' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
+
 
     const { data: school } = await supabaseAdmin.from('schools').select('name').eq('id', existing.school_id).single();
     const schoolName = school?.name || 'your school';
