@@ -5,10 +5,10 @@ import { toast } from 'sonner';
 
 export interface Teacher {
   id: string;
-  user_id: string;
+  user_id: string | null;
   school_id: string;
   name: string;
-  email: string;
+  email: string | null;
   employee_id: string | null;
   role: string;
   is_active: boolean;

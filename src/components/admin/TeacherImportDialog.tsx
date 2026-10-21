@@ -62,7 +62,7 @@ export function TeacherImportDialog() {
       }
       if (body && Array.isArray(body.results)) {
         setResult(body); setApproved(false); setError(body.error ?? '');
-        if (body.updated > 0) await queryClient.invalidateQueries({ queryKey: ['teachers', school.id] });
+        if (body.updated > 0 || (body.created ?? 0) > 0) await queryClient.invalidateQueries({ queryKey: ['teachers', school.id] });
       } else {
         throw new Error(body?.error ?? 'Save outcome could not be confirmed. Refresh Users before retrying; do not assume records were saved.');
       }
@@ -78,7 +78,7 @@ export function TeacherImportDialog() {
     <Button variant="outline" disabled={isRestricted} onClick={() => { reset(); setOpen(true); }}><Upload className="h-4 w-4 mr-2" />Import Teachers</Button>
     <Dialog open={open} onOpenChange={v => { if (!busy) { setOpen(v); if (!v) reset(); } }}>
       <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader><DialogTitle>{result ? 'Import results' : 'Import Teachers'}</DialogTitle><DialogDescription>Existing Teacher accounts only. New teachers must first accept an invitation from Add User; then upload their matching school email again. Blank HR cells preserve saved values. Account names, login access and assignments stay unchanged.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{result ? 'Import results' : 'Import Teachers'}</DialogTitle><DialogDescription>Email is optional: rows without an email are saved as teacher records marked Not invited — they get no login access until you invite them via Add User. Rows with a new email need the Add User invitation first. Blank HR cells preserve saved values. Importing never creates accounts or changes assignments.</DialogDescription></DialogHeader>
         <div className="overflow-y-auto min-h-0 space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="outline" asChild><a href={template.url} download="EdZenAI_Teacher_Import_Template.xlsx"><Download className="h-4 w-4 mr-2" />Download template</a></Button>
@@ -87,17 +87,17 @@ export function TeacherImportDialog() {
           {filename && <p className="text-sm break-all">{filename} · {rows.length} detected records</p>}
           {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           {rows.length > 0 && <Alert><AlertDescription>
-            <strong>{outcomes.imported} imported · {outcomes.updated} updated · {outcomes.blocked} blocked · {outcomes.failed} failed</strong>
+            <strong>{outcomes.created} created · {outcomes.updated} updated · {outcomes.invitationRequired} awaiting invitation · {outcomes.blocked} blocked · {outcomes.failed} failed</strong>
             {!result && <span> · {outcomes.ready} ready for review. Uploading alone saves nothing.</span>}
-            {result && <p>{result.updated > 0 ? 'Saved HR details are available in Edit Teacher. The Users list has been refreshed.' : 'No records were confirmed saved.'}</p>}
+            {result && <p>{result.updated + result.created > 0 ? 'Saved records are available in the Users list (refreshed). Created records show as Not invited until you invite them via Add User.' : 'No records were confirmed saved.'}</p>}
           </AlertDescription></Alert>}
           {result && <div className="overflow-x-auto border rounded-xl"><Table><TableHeader><TableRow><TableHead>Excel row</TableHead><TableHead>Teacher</TableHead><TableHead>Result</TableHead><TableHead>Reason / next action</TableHead></TableRow></TableHeader><TableBody>{result.results.map((r, i) => <TableRow key={`${r.rowNumber}-${i}`}><TableCell>{r.rowNumber}</TableCell><TableCell>{rows.find(row => row.rowNumber === r.rowNumber)?.values.full_name}</TableCell><TableCell className="capitalize">{r.status}</TableCell><TableCell className="min-w-64">{r.reasons.join(' ')}</TableCell></TableRow>)}</TableBody></Table></div>}
           {rows.length > 0 && <>
-            <p className="text-sm font-medium">{checked.filter(r => r.teacher && r.teacher.role === 'teacher').length} existing matches · {issues.filter(i => i.severity === 'error').length} errors · {issues.filter(i => i.severity === 'warning').length} warnings</p>
+            <p className="text-sm font-medium">{checked.filter(r => r.action === 'update').length} existing matches · {checked.filter(r => r.action === 'create').length} new records · {checked.filter(r => r.action === 'invitation_required').length} needing invitation · {issues.filter(i => i.severity === 'error').length} errors · {issues.filter(i => i.severity === 'warning').length} warnings</p>
             <div className="overflow-x-auto border rounded-xl">
               <Table><TableHeader><TableRow><TableHead>Row / Match</TableHead>{COLUMNS.map(c => <TableHead key={c}>{c}</TableHead>)}</TableRow></TableHeader>
                 <TableBody>{checked.map((row, index) => <TableRow key={row.rowNumber}>
-                  <TableCell className="min-w-40 align-top">{row.rowNumber}<p className="text-xs text-muted-foreground">{row.teacher?.role === 'teacher' ? `${row.teacher.name} · ${row.teacher.employee_id ?? 'No ID'}` : 'Unmatched account'}</p><p className="text-xs capitalize">{outcomes.results.find(r => r.rowNumber === row.rowNumber)?.status}</p></TableCell>
+                  <TableCell className="min-w-40 align-top">{row.rowNumber}<p className="text-xs text-muted-foreground">{row.teacher?.role === 'teacher' ? `${row.teacher.name} · ${row.teacher.employee_id ?? 'No ID'}` : row.action === 'create' ? 'New record · Not invited' : row.action === 'invitation_required' ? 'New teacher · invitation required' : 'Unmatched'}</p><p className="text-xs capitalize">{outcomes.results.find(r => r.rowNumber === row.rowNumber)?.status.replace('_', ' ')}</p></TableCell>
                   {COLUMNS.map(c => <TableCell key={c} className="min-w-44 align-top"><Input aria-label={`Row ${row.rowNumber} ${c}`} value={row.values[c] ?? ''} disabled={busy || !!result || c === 'employee_id'} onChange={e => { setApproved(false); setRows(previous => previous.map((r, i) => i === index ? { ...r, values: { ...r.values, [c]: e.target.value } } : r)); }} /></TableCell>)}
                 </TableRow>)}</TableBody></Table>
             </div>
@@ -109,7 +109,7 @@ export function TeacherImportDialog() {
           {result && (result.failed > 0 || result.blocked > 0) && <Button variant="outline" onClick={report}><Download className="mr-2 h-4 w-4" />Download save results</Button>}
         </div>
         <div className="border-t pt-4 space-y-3">
-          {!result && rows.length > 0 && <label className="flex items-start gap-2 text-sm"><Checkbox checked={approved} disabled={hasErrors || busy} onCheckedChange={v => setApproved(v === true)} />I have reviewed all rows and approve updating these existing teachers.</label>}
+          {!result && rows.length > 0 && <label className="flex items-start gap-2 text-sm"><Checkbox checked={approved} disabled={hasErrors || busy} onCheckedChange={v => setApproved(v === true)} />I have reviewed all rows and approve these teacher record changes. I understand importing never grants login access.</label>}
           <div className="flex justify-end gap-2"><Button variant="outline" disabled={busy} onClick={() => { setOpen(false); reset(); }}>{result ? 'Close' : 'Cancel'}</Button>
             {result && <Button variant="outline" onClick={() => { setResult(null); setError(''); setApproved(false); void queryClient.invalidateQueries({ queryKey: ['teachers', school?.id] }); }}>Review again</Button>}
             {!result && <Button onClick={() => void save()} disabled={busy || isLoading || isRestricted || !rows.length || hasErrors || !approved}>{busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Confirm import</Button>}
