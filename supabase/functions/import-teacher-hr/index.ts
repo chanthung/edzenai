@@ -1,0 +1,53 @@
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { z } from 'npm:zod@3';
+import { COLUMNS, validateRows, type ExistingTeacher } from './validation.ts';
+
+const values = z.object(Object.fromEntries(COLUMNS.map(key => [key, z.string().max(1000).optional()]))).strict();
+const bodySchema = z.object({
+  schoolId: z.string().uuid(),
+  rows: z.array(z.object({ rowNumber: z.number().int().positive(), values, expectedUpdatedAt: z.string().optional() }).strict()).min(1).max(500),
+}).strict();
+const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+Deno.serve(async req => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return response({ error: 'Method not allowed' }, 405);
+  try {
+    const authorization = req.headers.get('Authorization');
+    if (!authorization?.startsWith('Bearer ')) return response({ error: 'Sign in required.' }, 401);
+    const url = Deno.env.get('SUPABASE_URL'); const key = Deno.env.get('SUPABASE_ANON_KEY');
+    if (!url || !key) return response({ error: 'Import unavailable.' }, 500);
+    const client = createClient(url, key, { global: { headers: { Authorization: authorization } } });
+    const { data: auth, error: authError } = await client.auth.getClaims(authorization.slice(7));
+    if (authError || !auth?.claims?.sub) return response({ error: 'Sign in required.' }, 401);
+    const parsed = bodySchema.safeParse(await req.json());
+    if (!parsed.success) return response({ error: 'Invalid import request.' }, 400);
+    const { schoolId, rows } = parsed.data;
+    // The browser's school is a selector, never an authority. Verify exact membership.
+    const { data: membership, error: memberError } = await client.from('school_admins').select('school_id').eq('user_id', auth.claims.sub).eq('school_id', schoolId).maybeSingle();
+    if (memberError || !membership) return response({ error: 'Only an administrator of this school can import teachers.' }, 403);
+    const [restricted, blocked] = await Promise.all([
+      client.rpc('is_school_restricted', { _school_id: membership.school_id }),
+      client.rpc('is_school_access_blocked', { _school_id: membership.school_id }),
+    ]);
+    if (restricted.error || blocked.error || restricted.data !== false || blocked.data !== false) return response({ error: 'School changes are currently restricted.' }, 403);
+    const { data: teachers, error } = await client.from('school_teachers').select('*').eq('school_id', membership.school_id);
+    if (error) return response({ error: 'Could not read school teachers.' }, 500);
+    const checked = validateRows(rows, (teachers ?? []) as ExistingTeacher[]);
+    const issues = checked.flatMap(row => row.issues);
+    if (issues.some(issue => issue.severity === 'error')) return response({ error: 'Correct the workbook before importing. No records were changed.', issues }, 400);
+    // Recheck dates on the server and reject stale previews before the first write.
+    if (checked.some((row, i) => !rows[i].expectedUpdatedAt || rows[i].expectedUpdatedAt !== row.teacher?.updated_at)) return response({ error: 'Teacher records changed since preview. Reload and review again.' }, 409);
+    const results: { rowNumber: number; success: boolean; error?: string }[] = [];
+    for (const row of checked) {
+      if (!row.teacher) continue;
+      const { data, error: updateError } = await client.from('school_teachers').update(row.updates)
+        .eq('id', row.teacher.id).eq('school_id', membership.school_id).eq('role', 'teacher')
+        .eq('updated_at', row.teacher.updated_at).select('id');
+      results.push({ rowNumber: row.rowNumber, success: !updateError && data?.length === 1,
+        ...(updateError || data?.length !== 1 ? { error: 'Update failed or record changed. Review and retry this row.' } : {}) });
+    }
+    return response({ updated: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length, results });
+  } catch { return response({ error: 'Import could not be processed.' }, 400); }
+});
