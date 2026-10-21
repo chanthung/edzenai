@@ -103,6 +103,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Stage 2: targeted invitation → link the exact existing teacher record in
+    // one database transaction. Never fall back to inserting a teacher.
+    if (invite.target_teacher_id) {
+      const { error: linkErr } = await supabaseAdmin.rpc('complete_teacher_link_invite', {
+        _token: token, _account: authData.user.id,
+      });
+      if (linkErr) {
+        console.error('Targeted link failed:', linkErr.message);
+        const { error: cleanupErr } = await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        if (cleanupErr) {
+          console.error('Account cleanup failed after link failure:', cleanupErr.message);
+          return new Response(JSON.stringify({ error: 'Linking failed and the new account could not be removed automatically. Please contact your school administrator.' }), {
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ error: linkErr.message || 'Could not link your account to the teacher record' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ success: true, email: invite.email, role: 'teacher', linked: true }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const newUserId = authData.user.id;
     const appRole = invite.role === 'accountant' ? 'accountant' : 'teacher';
 

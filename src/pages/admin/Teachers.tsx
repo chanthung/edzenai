@@ -30,6 +30,7 @@ import { useSchoolTeachingAssignments } from "@/hooks/useTeachingAssignments";
 import { TeachingChips, groupAssignments, type SubjectGroup } from "@/components/admin/teaching/TeachingChips";
 import { TeachingAssignmentsMatrix } from "@/components/admin/teaching/TeachingAssignmentsMatrix";
 import { FieldHelp } from "@/components/ui/field-help";
+import { LinkExistingTeacherPanel } from "@/components/admin/LinkExistingTeacherPanel";
 import { getAccountLinkStatus, ACCOUNT_STATUS_LABEL } from "@/lib/teacher-account-status";
 import { formatDistanceToNow } from "date-fns";
 
@@ -47,6 +48,7 @@ export default function Teachers() {
     delivery: "email" as DeliveryMethod,
     phone: "",
   });
+  const [teacherMode, setTeacherMode] = useState<'new' | 'link'>('new');
   const [addSelectedSubjects, setAddSelectedSubjects] = useState<string[]>([]);
   const [addSelectedClassSections, setAddSelectedClassSections] = useState<Set<string>>(new Set());
 
@@ -97,6 +99,7 @@ export default function Teachers() {
 
   const resetForm = () => {
     setFormData({ name: "", email: "", employee_id: "", role: "teacher", delivery: "email", phone: "" });
+    setTeacherMode('new');
     setAddSelectedSubjects([]);
     setAddSelectedClassSections(new Set());
   };
@@ -184,6 +187,32 @@ export default function Teachers() {
                   </p>
                 </div>
 
+                {formData.role === 'teacher' && (
+                  <div className="space-y-2">
+                    <Label>Teacher</Label>
+                    <ToggleGroup type="single" value={teacherMode} onValueChange={(v) => v && setTeacherMode(v as 'new' | 'link')} className="justify-start flex-wrap">
+                      <ToggleGroupItem value="new">Invite a new teacher</ToggleGroupItem>
+                      <ToggleGroupItem value="link">Link an existing teacher</ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+                )}
+
+                {formData.role === 'teacher' && teacherMode === 'link' ? (
+                  <LinkExistingTeacherPanel
+                    teachers={teachers}
+                    invites={invites}
+                    isSending={inviteUser.isPending}
+                    onCancel={() => setDialogOpen(false)}
+                    onSend={async ({ teacher, email, delivery, phone }) => {
+                      await inviteUser.mutateAsync({
+                        name: teacher.name, email, role: 'teacher',
+                        delivery_method: delivery, phone, target_teacher_id: teacher.id,
+                      });
+                      resetForm();
+                      setDialogOpen(false);
+                    }}
+                  />
+                ) : (<>
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <div className="relative">
@@ -278,6 +307,7 @@ export default function Teachers() {
                     {inviteUser.isPending ? "Sending..." : "Send Invite"}
                   </Button>
                 </div>
+                </>)}
               </form>
             </DialogContent>
           </Dialog>

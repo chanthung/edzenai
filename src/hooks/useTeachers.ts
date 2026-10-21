@@ -49,6 +49,7 @@ export interface UserInvite {
   expires_at: string;
   accepted_at: string | null;
   last_sent_at: string;
+  target_teacher_id?: string | null;
   created_at: string;
 }
 
@@ -101,18 +102,27 @@ export function useTeachers() {
       delivery_method: 'email' | 'whatsapp' | 'both';
       phone?: string | null;
       assignments?: InviteAssignment[];
+      /** Stage 2: link this existing HR-only record (server re-verifies everything). */
+      target_teacher_id?: string | null;
     }) => {
       if (!school?.id) throw new Error('No school found');
       const { data, error } = await supabase.functions.invoke('create-user-invite', {
         body: { ...params },
       });
-      if (error) throw error;
+      if (error) {
+        // Surface the server's plain-language reason (e.g. already pending, email conflict).
+        const body = await (error as any)?.context?.json?.().catch(() => null);
+        throw new Error(body?.error || error.message);
+      }
       if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['user-invites', school?.id] });
-      toast.success(`Invite sent to ${vars.email}`);
+      queryClient.invalidateQueries({ queryKey: ['teachers', school?.id] });
+      toast.success(vars.target_teacher_id
+        ? `Invitation sent to ${vars.email}. Login access starts only after the teacher accepts.`
+        : `Invite sent to ${vars.email}`);
     },
     onError: (err: Error) => {
       toast.error(err.message || 'Failed to send invite');
@@ -124,7 +134,10 @@ export function useTeachers() {
       const { data, error } = await supabase.functions.invoke('resend-user-invite', {
         body: { inviteId },
       });
-      if (error) throw error;
+      if (error) {
+        const body = await (error as any)?.context?.json?.().catch(() => null);
+        throw new Error(body?.error || error.message);
+      }
       if (data?.error) throw new Error(data.error);
       return data;
     },
@@ -171,7 +184,12 @@ export function useTeachers() {
   const deleteTeacher = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('school_teachers').delete().eq('id', id);
-      if (error) throw error;
+      if (error) {
+        if (/user_invites_target_teacher_school_fk/.test(error.message)) {
+          throw new Error('This teacher has a pending invitation. Cancel the pending invitation first.');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers', school?.id] });

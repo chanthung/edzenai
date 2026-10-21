@@ -3033,6 +3033,8 @@ export type Database = {
           phone: string | null
           role: string
           school_id: string
+          target_teacher_email: string | null
+          target_teacher_id: string | null
           token: string
           updated_at: string
         }
@@ -3051,6 +3053,8 @@ export type Database = {
           phone?: string | null
           role: string
           school_id: string
+          target_teacher_email?: string | null
+          target_teacher_id?: string | null
           token?: string
           updated_at?: string
         }
@@ -3069,6 +3073,8 @@ export type Database = {
           phone?: string | null
           role?: string
           school_id?: string
+          target_teacher_email?: string | null
+          target_teacher_id?: string | null
           token?: string
           updated_at?: string
         }
@@ -3079,6 +3085,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "schools"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invites_target_teacher_school_fk"
+            columns: ["school_id", "target_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "school_teachers"
+            referencedColumns: ["school_id", "id"]
           },
         ]
       }
@@ -3209,6 +3222,10 @@ export type Database = {
           is_duplicate: boolean
         }[]
       }
+      complete_teacher_link_invite: {
+        Args: { _account: string; _token: string }
+        Returns: string
+      }
       compute_lifecycle_stage: {
         Args: { _anchor_date: string }
         Returns: string
@@ -3316,6 +3333,20 @@ export type Database = {
       is_school_admin: { Args: { _school_id: string }; Returns: boolean }
       is_school_restricted: { Args: { _school_id: string }; Returns: boolean }
       is_school_teacher: { Args: { _school_id: string }; Returns: boolean }
+      issue_teacher_link_invite: {
+        Args: {
+          _actor: string
+          _delivery?: Database["public"]["Enums"]["invite_delivery_method"]
+          _email: string
+          _phone?: string
+          _teacher: string
+        }
+        Returns: {
+          invite_expires_at: string
+          invite_id: string
+          invite_token: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -3335,6 +3366,13 @@ export type Database = {
           read_ct: number
         }[]
       }
+      resend_teacher_link_invite: {
+        Args: { _actor: string; _invite: string }
+        Returns: {
+          invite_expires_at: string
+          invite_token: string
+        }[]
+      }
       resolve_referral_code: {
         Args: { _code: string }
         Returns: {
@@ -3343,6 +3381,7 @@ export type Database = {
           referral_code: string
         }[]
       }
+      teacher_link_email: { Args: { _email: string }; Returns: string }
       timetable_assert_subject_school: {
         Args: { _school_id: string; _subject_id: string }
         Returns: undefined

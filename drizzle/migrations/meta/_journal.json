@@ -57,6 +57,13 @@
       "when": 1792550305830,
       "tag": "0007_teacher_records_optional_email_account",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792558784378,
+      "tag": "0008_stage2_targeted_teacher_invites",
+      "breakpoints": true
     }
   ]
 }
