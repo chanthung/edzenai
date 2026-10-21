@@ -21,6 +21,7 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { EditTeacherDialog } from "@/components/admin/EditTeacherDialog";
 import { TeacherImportDialog } from "@/components/admin/TeacherImportDialog";
+import { TeacherDownloadActions } from "@/components/admin/TeacherDownloadActions";
 import { Plus, UserPlus, Mail, User, Pencil, BookOpen, School, Send, Phone, RefreshCw, X, Clock, IdCard, CalendarDays } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,7 +34,7 @@ import { formatDistanceToNow } from "date-fns";
 type DeliveryMethod = 'email' | 'whatsapp' | 'both';
 
 export default function Teachers() {
-  const { teachers, invites, isLoading, inviteUser, updateTeacher, resendInvite, cancelInvite } = useTeachers();
+  const { teachers, invites, isLoading, error, inviteUser, updateTeacher, resendInvite, cancelInvite } = useTeachers();
   const { isRestricted } = useSubscriptionStatus();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -152,7 +153,8 @@ export default function Teachers() {
 
   return (
     <AdminLayout>
-      <PageHeader title="Users" description="Invite teachers and accountants — they'll set their own password">
+      <PageHeader title="Users" description="Invite teachers and accountants — they'll set their own password" className="mb-6 max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] lg:max-w-full sm:flex-col sm:items-start [&>div:last-child]:flex-wrap [&>div:last-child]:max-w-full">
+        <TeacherDownloadActions teachers={teachers} isLoading={isLoading} error={error} />
         <TeacherImportDialog />
         <RestrictedButton isRestricted={isRestricted}>
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>

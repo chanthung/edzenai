@@ -17,7 +17,7 @@ import { COLUMNS, parseTeacherWorkbook, validateRows, previewOutcomes, summarize
 import { exportToXLSX } from '@/lib/export-utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { ColumnMapping } from '@/lib/teacher-import';
-import template from '@/assets/teacher-import-template.asset.json';
+import { TeacherTemplateDownload } from '@/components/admin/TeacherDownloadActions';
 
 export function TeacherImportDialog() {
   const { isSchoolAdmin } = useUserRole();
@@ -109,7 +109,7 @@ export function TeacherImportDialog() {
         <DialogHeader><DialogTitle>{result ? 'Import results' : 'Import Teachers'}</DialogTitle><DialogDescription>New records are marked Not invited, with or without an email. Blank cells preserve existing details; unsupported optional values are skipped.</DialogDescription></DialogHeader>
         <div className="overflow-y-auto min-h-0 space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="outline" asChild><a href={template.url} download="EdZenAI_Teacher_Import_Template.xlsx"><Download className="h-4 w-4 mr-2" />Download template</a></Button>
+            <TeacherTemplateDownload />
             <Input aria-label="Teacher workbook" type="file" accept=".xlsx" disabled={busy || isLoading} className="max-w-sm" onChange={e => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
           </div>
           {headers.length > 0 && !result && <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{headers.map((header, index) => <label key={index} className="space-y-1 text-sm"><span className="block break-words">{header || `Column ${index + 1}`}</span><Select value={mapping[index] ?? 'skip'} disabled={busy} onValueChange={v => remap(index, v)}><SelectTrigger aria-label={`Map ${header || index + 1}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="skip">Skip column</SelectItem>{COLUMNS.map(c => <SelectItem key={c} value={c}>{c.replace(/_/g, ' ')}</SelectItem>)}</SelectContent></Select></label>)}</div>}
