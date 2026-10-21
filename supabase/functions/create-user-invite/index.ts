@@ -80,6 +80,59 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+
+    // Stage 2: invite an existing HR-only teacher record. The target ID is only a
+    // request; the server-only operation verifies the caller's school membership,
+    // eligibility and email identity under lock. No account is linked here.
+    if (body?.target_teacher_id !== undefined && body?.target_teacher_id !== null) {
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const targetId = String(body.target_teacher_id);
+      const targetEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+      const dm = body.delivery_method ?? 'email';
+      const ph = typeof body.phone === 'string' && body.phone.trim() ? body.phone.trim() : null;
+      if (!UUID_RE.test(targetId)) {
+        return new Response(JSON.stringify({ error: 'Invalid teacher selection' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail) || targetEmail.length > 254) {
+        return new Response(JSON.stringify({ error: 'Enter a valid invitation email' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (!['email', 'whatsapp', 'both'].includes(dm)) {
+        return new Response(JSON.stringify({ error: 'Invalid delivery method' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const { data: issued, error: issueErr } = await supabaseAdmin.rpc('issue_teacher_link_invite', {
+        _actor: callerUser.id, _teacher: targetId, _email: targetEmail, _delivery: dm, _phone: ph,
+      });
+      const row = Array.isArray(issued) ? issued[0] : issued;
+      if (issueErr || !row) {
+        const msg = issueErr?.message ?? 'Failed to create invitation';
+        const status = issueErr?.code === '42501' ? 403 : 409;
+        const friendly = /duplicate key|one_pending_teacher_target/i.test(msg)
+          ? 'An invitation is already pending for this teacher. Use Resend or Cancel.'
+          : msg;
+        return new Response(JSON.stringify({ error: friendly }), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const { data: tRow } = await supabaseAdmin.from('school_teachers').select('name, school_id').eq('id', targetId).single();
+      const { data: sch } = await supabaseAdmin.from('schools').select('name').eq('id', tRow?.school_id).single();
+      const tName = tRow?.name ?? 'there';
+      const sName = sch?.name || 'your school';
+      const url = `${APP_URL}/auth/accept-invite?token=${row.invite_token}`;
+      const inviter = callerUser.user_metadata?.full_name || callerUser.email || 'Your school admin';
+      let emailOk = true; let waOk = true; let waError: string | undefined;
+      if (dm === 'email' || dm === 'both') {
+        const { error: eErr } = await supabaseAdmin.functions.invoke('send-transactional-email', {
+          body: { templateName: 'user-invite', recipientEmail: targetEmail, idempotencyKey: `invite-${row.invite_id}`,
+            templateData: { name: tName, schoolName: sName, roleLabel: 'Teacher', inviteUrl: url, expiresInDays: 7, invitedByName: inviter } },
+        });
+        if (eErr) { console.error('Email send error:', eErr); emailOk = false; }
+      }
+      if ((dm === 'whatsapp' || dm === 'both') && ph) {
+        const r = await sendWhatsApp(ph, `Hi ${tName}, you've been invited to join ${sName} on EdZen AI as a Teacher.\n\nSet your password & activate your account here:\n${url}\n\n⏰ This link expires in 7 days.`, sName);
+        waOk = r.ok; waError = r.error;
+      }
+      return new Response(JSON.stringify({ success: true, inviteId: row.invite_id, expiresAt: row.invite_expires_at, targeted: true, delivery: { emailOk, waOk, waError } }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const {
       name,
       email,
@@ -89,6 +142,7 @@ Deno.serve(async (req) => {
       phone = null,
       assignments = [],
     } = body;
+
 
     if (!name?.trim() || !email?.trim()) {
       return new Response(JSON.stringify({ error: 'Name and email are required' }), {
