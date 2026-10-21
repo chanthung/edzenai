@@ -380,7 +380,7 @@ export default function Teachers() {
         </Card>
       )}
 
-      <Tabs defaultValue="users">
+      <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") === "assignments" ? "assignments" : "users"}>
         <TabsList className="mb-4">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="assignments">Teaching Assignments</TabsTrigger>
