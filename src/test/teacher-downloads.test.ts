@@ -7,6 +7,13 @@ import type { Teacher } from '@/hooks/useTeachers';
 
 const teacher: Teacher = { id: 'private-id', school_id: 'school-a', user_id: null, name: 'Saved Teacher', email: null, employee_id: 'EMP-0042', role: 'teacher', is_active: false, created_at: '', updated_at: '', gender: 'female', qualification: 'M.Ed', experience_years: 0, employment_type: 'part_time', employment_status: 'on_leave' };
 describe('teacher downloads', () => {
+  it('ships an empty two-sheet workbook with importer-compatible headers', () => {
+    const wb = XLSX.read(readFileSync('public/downloads/EdZenAI_Teacher_Import_Template.xlsx'), { type: 'buffer' });
+    expect(wb.SheetNames).toEqual(['Read Me', 'Teacher Data']);
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets['Teacher Data'], { header: 1, blankrows: false });
+    expect(rows).toEqual([[...TEACHER_DOWNLOAD_HEADERS]]);
+    expect(() => parseTeacherWorkbook(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }))).toThrow('No staff records found');
+  });
   it('uses exactly the twelve supported import fields without manual mapping', () => {
     expect(TEACHER_DOWNLOAD_HEADERS.map(matchTeacherHeader)).toEqual(['full_name', 'email_address', 'employee_id', 'date_of_birth', 'gender', 'date_of_joining', 'experience_years', 'designation', 'department', 'qualification', 'employment_type', 'status']);
   });

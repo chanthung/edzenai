@@ -6,7 +6,6 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useSchool } from '@/hooks/useSchool';
 import type { Teacher } from '@/hooks/useTeachers';
 import { deliverTeacherFile, teacherExportBlob } from '@/lib/teacher-downloads';
-import template from '@/assets/teacher-download-template.asset.json';
 
 export function TeacherTemplateDownload() {
   const [blob, setBlob] = useState<Blob | null>(null);
@@ -15,7 +14,7 @@ export function TeacherTemplateDownload() {
   useEffect(() => {
     const controller = new AbortController();
     setError(false);
-    void fetch(template.url, { signal: controller.signal }).then(async response => {
+    void fetch('/downloads/EdZenAI_Teacher_Import_Template.xlsx', { signal: controller.signal }).then(async response => {
       if (!response.ok) throw new Error('Template unavailable');
       const bytes = await response.arrayBuffer();
       if (bytes.byteLength < 4 || new Uint8Array(bytes)[0] !== 0x50 || new Uint8Array(bytes)[1] !== 0x4b) throw new Error('Invalid template');
