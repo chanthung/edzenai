@@ -30,10 +30,10 @@ describe('Add User invitation workflow boundaries', () => {
   it('sends an unused new-teacher email without a target, including after selecting an existing teacher', async () => {
     render(<Teachers />);
     fireEvent.click(screen.getByRole('button', { name: 'Add User' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Link an existing teacher' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Link an existing teacher' }));
     fireEvent.click(screen.getByRole('button', { name: /Existing Teacher Not invited/ }));
     fireEvent.change(screen.getByLabelText('Invitation email'), { target: { value: 'old-choice@example.test' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Invite a new teacher' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Invite a new teacher' }));
     fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'New Teacher' } });
     fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'unused@example.test' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send Invite' }));
@@ -46,7 +46,7 @@ describe('Add User invitation workflow boundaries', () => {
   it('links only the selected HR record and does not also submit the legacy form', async () => {
     render(<Teachers />);
     fireEvent.click(screen.getByRole('button', { name: 'Add User' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Link an existing teacher' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Link an existing teacher' }));
     fireEvent.click(screen.getByRole('button', { name: /Existing Teacher Not invited/ }));
     fireEvent.change(screen.getByLabelText('Invitation email'), { target: { value: 'link@example.test' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send Invite' }));
