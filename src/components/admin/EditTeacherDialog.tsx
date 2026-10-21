@@ -40,7 +40,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
   useEffect(() => {
     if (teacher) {
       setEditName(teacher.name);
-      setEditEmail(teacher.email);
+      setEditEmail(teacher.email ?? "");
       setHr({
         date_of_joining: teacher.date_of_joining ?? null,
         date_of_birth: teacher.date_of_birth ?? null,
@@ -114,7 +114,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
   };
 
   const handleSendPasswordReset = async () => {
-    if (!teacher) return;
+    if (!teacher?.user_id || !teacher.email) return;
     setSendingReset(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(teacher.email, {
