@@ -118,19 +118,50 @@ Deno.serve(async (req) => {
       });
     }
 
-    // school_teachers record
-    const { data: teacherRow, error: teacherErr } = await supabaseAdmin
-      .from('school_teachers')
-      .insert({
-        user_id: newUserId,
-        school_id: invite.school_id,
-        name: invite.name,
-        email: invite.email,
-        role: invite.role,
-        employee_id: invite.employee_id ?? null,
-      })
-      .select('id')
-      .single();
+    // Link an existing HR-only record (imported without an account) when exactly one
+    // matches — by Employee ID first, then by exact name. Never overwrite its Employee ID
+    // or HR details; only attach the account and email.
+    let linkedId: string | null = null;
+    if (invite.employee_id) {
+      const { data: byEmp } = await supabaseAdmin
+        .from('school_teachers').select('id')
+        .eq('school_id', invite.school_id).is('user_id', null)
+        .ilike('employee_id', invite.employee_id);
+      if (byEmp?.length === 1) linkedId = byEmp[0].id;
+    }
+    if (!linkedId) {
+      const { data: byName } = await supabaseAdmin
+        .from('school_teachers').select('id')
+        .eq('school_id', invite.school_id).is('user_id', null)
+        .ilike('name', invite.name.trim());
+      if (byName?.length === 1) linkedId = byName[0].id;
+    }
+
+    let teacherRow: { id: string } | null = null;
+    let teacherErr: unknown = null;
+    if (linkedId) {
+      const { data, error } = await supabaseAdmin
+        .from('school_teachers')
+        .update({ user_id: newUserId, email: invite.email, role: invite.role })
+        .eq('id', linkedId).is('user_id', null)
+        .select('id')
+        .single();
+      teacherRow = data; teacherErr = error;
+    } else {
+      const { data, error } = await supabaseAdmin
+        .from('school_teachers')
+        .insert({
+          user_id: newUserId,
+          school_id: invite.school_id,
+          name: invite.name,
+          email: invite.email,
+          role: invite.role,
+          employee_id: invite.employee_id ?? null,
+        })
+        .select('id')
+        .single();
+      teacherRow = data; teacherErr = error;
+    }
 
     if (teacherErr || !teacherRow) {
       console.error('Teacher record error:', teacherErr);

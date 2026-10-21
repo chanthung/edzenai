@@ -3,8 +3,10 @@ import * as XLSX from 'xlsx';
 import { COLUMNS, parseTeacherWorkbook, validateRows, previewOutcomes, summarizeOutcomes, type RawRow, type ExistingTeacher } from '@/lib/teacher-import';
 
 const teacher: ExistingTeacher = { id: 'teacher', name: 'Existing', email: 'teacher@school.in', role: 'teacher', user_id: 'user', employee_id: 'EMP-0001', updated_at: '2026-01-01' };
-const row = (values: RawRow['values'] = {}): RawRow => ({ rowNumber: 5, values: { full_name: 'Teacher', email_address: teacher.email, ...values } });
+const hrOnly: ExistingTeacher = { id: 'hr-only', name: 'No Account', email: null, role: 'teacher', user_id: null, employee_id: 'EMP-0002', updated_at: '2026-01-01' };
+const row = (values: RawRow['values'] = {}): RawRow => ({ rowNumber: 5, values: { full_name: 'Teacher', email_address: teacher.email!, ...values } });
 const errors = (r: RawRow, teachers = [teacher]) => validateRows([r], teachers, '2026-10-21')[0].issues.filter(i => i.severity === 'error');
+const warnings = (r: RawRow, teachers = [teacher]) => validateRows([r], teachers, '2026-10-21')[0].issues.filter(i => i.severity === 'warning');
 const workbook = (grid: unknown[][]) => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(grid), 'Teachers'); return XLSX.write(wb, { type: 'array', bookType: 'xlsx' }); };
 
 describe('existing teacher import safeguards', () => {
@@ -14,7 +16,12 @@ describe('existing teacher import safeguards', () => {
     expect(checked.updates).toEqual({ employment_status: 'inactive' });
     expect(checked.teacher?.employee_id).toBe('EMP-0001');
   });
-  it('blocks unmatched school records', () => expect(errors(row(), [])).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'email_address', problem: 'No existing school teacher matches.' })])));
+  it('flags a valid unmatched email as invitation required, not an error', () => {
+    const checked = validateRows([row({ email_address: 'new@school.in' })], [teacher])[0];
+    expect(checked.action).toBe('invitation_required');
+    expect(checked.issues.every(i => i.severity === 'warning')).toBe(true);
+    expect(checked.issues.some(i => i.problem === 'No existing teacher matches this email.')).toBe(true);
+  });
   it('blocks accountants', () => expect(errors(row(), [{ ...teacher, role: 'accountant' }])).toEqual(expect.arrayContaining([expect.objectContaining({ problem: 'Matching user is not a Teacher.' })])));
   it('blocks ambiguous school-local emails', () => expect(errors(row(), [teacher, { ...teacher, id: 'second' }])).toEqual(expect.arrayContaining([expect.objectContaining({ problem: 'Multiple school records match this email.' })])));
   it('blocks duplicate workbook emails regardless of case', () => {
@@ -29,31 +36,79 @@ describe('existing teacher import safeguards', () => {
   it('blocks joining before birth', () => expect(errors(row({ date_of_birth: '1990-05-01', date_of_joining: '1989-01-01' }))).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'date_of_joining' })])));
   it('checks partial dates against preserved values', () => expect(errors(row({ date_of_joining: '1989-01-01' }), [{ ...teacher, date_of_birth: '1990-05-01' } as ExistingTeacher])).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'date_of_joining' })])));
   it.each([{ gender: 'unknown' }, { employment_type: 'permanent' }, { status: 'disabled' }])('blocks uncontrolled values %j', values => expect(errors(row(values))).not.toEqual([]));
+});
+
+describe('email-optional HR-only import', () => {
+  const noEmail = (values: RawRow['values'] = {}): RawRow => ({ rowNumber: 5, values: { full_name: 'New Teacher', ...values } });
+  it('creates an HR-only record for a name with no email', () => {
+    const checked = validateRows([noEmail({ department: 'Science' })], [teacher])[0];
+    expect(checked.action).toBe('create');
+    expect(checked.issues.filter(i => i.severity === 'error')).toEqual([]);
+    expect(checked.updates).toEqual({ department: 'Science' });
+  });
+  it('matches an existing teacher by Employee ID when email is blank', () => {
+    const checked = validateRows([noEmail({ employee_id: 'emp-0002', qualification: 'M.Sc' })], [teacher, hrOnly])[0];
+    expect(checked.action).toBe('update');
+    expect(checked.teacher?.id).toBe('hr-only');
+    expect(checked.updates).toEqual({ qualification: 'M.Sc' });
+  });
+  it('blocks an Employee ID that matches no teacher', () => expect(errors(noEmail({ employee_id: 'EMP-9999' }), [teacher])).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'employee_id', problem: 'No existing teacher matches this Employee ID.' })])));
+  it('warns on duplicate blank-email names within the workbook', () => {
+    const result = validateRows([noEmail(), { ...noEmail(), rowNumber: 6 }], [teacher]);
+    expect(result.every(r => r.issues.some(i => i.problem === 'Duplicate name in workbook.' && i.severity === 'warning'))).toBe(true);
+    expect(result.every(r => r.action === 'create')).toBe(true);
+  });
+  it('warns when the name matches an existing teacher but never auto-merges', () => {
+    const checked = validateRows([{ rowNumber: 5, values: { full_name: 'Existing' } }], [teacher])[0];
+    expect(checked.action).toBe('create');
+    expect(checked.issues.some(i => i.severity === 'warning' && i.problem.includes('already exists'))).toBe(true);
+  });
+  it('never matches against HR-only records with null emails', () => {
+    const checked = validateRows([row({ email_address: 'someone@school.in' })], [hrOnly])[0];
+    expect(checked.action).toBe('invitation_required');
+    expect(checked.teacher).toBeNull();
+  });
+  it('warns when an email matches a record that has no linked account', () => {
+    const linked = { ...hrOnly, email: 'later@school.in' };
+    expect(warnings(row({ email_address: 'later@school.in' }), [linked]).some(i => i.problem === 'This record has no linked account yet.')).toBe(true);
+  });
+  it('still requires a name for HR-only rows', () => expect(errors({ rowNumber: 5, values: {} }, [teacher])).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'full_name' })])));
+});
+
+describe('workbook parsing with optional email column', () => {
   it('detects headers below title rows and preserves Excel row numbers', () => {
     const parsed = parseTeacherWorkbook(workbook([['Title'], ['Instructions'], [], [...COLUMNS], COLUMNS.map(c => row().values[c] ?? '')]));
     expect(parsed.rows[0].rowNumber).toBe(5); expect(parsed.issues).toEqual([]);
+  });
+  it('accepts a workbook without the email column and explains it', () => {
+    const parsed = parseTeacherWorkbook(workbook([['full_name', 'department'], ['Teacher', 'Science']]));
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.issues).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'email_address', severity: 'warning' })]));
   });
   it('warns for unknown and missing optional columns', () => {
     const parsed = parseTeacherWorkbook(workbook([['full_name', 'email_address', 'phone'], ['Teacher', teacher.email, '123']]));
     expect(parsed.issues).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'phone', severity: 'warning' }), expect.objectContaining({ field: 'gender', severity: 'warning' })]));
     expect(parsed.rows[0].values).not.toHaveProperty('phone');
   });
-  it('blocks missing required headers', () => expect(() => parseTeacherWorkbook(workbook([['full_name'], ['Teacher']]))).toThrow('both full_name and email_address'));
+  it('blocks a workbook without the required name header', () => expect(() => parseTeacherWorkbook(workbook([['email_address'], ['a@b.co']]))).toThrow('full_name'));
   it('ignores the approved field guide sheet', () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['full_name', 'email_address'], ['Teacher', teacher.email]]), 'Teachers');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['full_name', 'Description'], ['email_address', 'Description']]), 'Field Guide');
     expect(parseTeacherWorkbook(XLSX.write(wb, { type: 'array', bookType: 'xlsx' })).rows).toHaveLength(1);
   });
-  it('does not count ready or blocked preview rows as saved', () => {
+});
+
+describe('outcome accounting', () => {
+  it('does not count ready, blocked or invitation rows as saved', () => {
     const checked = validateRows([row({ department: 'English' }), { ...row({ email_address: 'new@school.in' }), rowNumber: 6 }], [teacher]);
-    expect(summarizeOutcomes(previewOutcomes(checked))).toMatchObject({ imported: 0, updated: 0, blocked: 1, failed: 0, ready: 1 });
+    expect(summarizeOutcomes(previewOutcomes(checked))).toMatchObject({ imported: 0, created: 0, updated: 0, blocked: 0, failed: 0, ready: 1, invitationRequired: 1 });
   });
   it('counts blocked rows once even with multiple validation errors', () => {
     expect(summarizeOutcomes(previewOutcomes(validateRows([row({ email_address: 'invalid', experience_years: '-1' })], [teacher])))).toMatchObject({ blocked: 1, updated: 0, failed: 0 });
   });
-  it('reports actual successful, failed and unattempted rows without inventing imports', () => {
-    expect(summarizeOutcomes([{ rowNumber: 5, status: 'updated', reasons: [] }, { rowNumber: 6, status: 'failed', reasons: ['write failed'] }, { rowNumber: 7, status: 'blocked', reasons: ['not attempted'] }])).toMatchObject({ imported: 0, updated: 1, failed: 1, blocked: 1 });
+  it('reports actual created, updated, failed and unattempted rows without inventing imports', () => {
+    expect(summarizeOutcomes([{ rowNumber: 5, status: 'created', reasons: [] }, { rowNumber: 6, status: 'updated', reasons: [] }, { rowNumber: 7, status: 'failed', reasons: ['write failed'] }, { rowNumber: 8, status: 'blocked', reasons: ['not attempted'] }])).toMatchObject({ imported: 1, created: 1, updated: 1, failed: 1, blocked: 1 });
   });
   it('uses full name only for preview, never updates the account name', () => {
     expect(validateRows([row({ full_name: 'Different workbook name', qualification: 'M.A.' })], [teacher])[0].updates).toEqual({ qualification: 'M.A.' });
