@@ -61,7 +61,12 @@ export function TeacherAvailabilitySection() {
   return (
     <Card className="rounded-xl">
       <CardHeader>
-        <CardTitle>Teacher availability</CardTitle>
+        <CardTitle className="flex items-center gap-1.5">Teacher availability
+          <FieldHelp label="Help about Teacher availability">
+            <p>By default every teacher is available for every period. Mark only the periods a teacher cannot teach, with an optional reason.</p>
+            <p>If no periods appear, configure Periods &amp; time slots first — availability is recorded against those slots for the selected academic year.</p>
+          </FieldHelp>
+        </CardTitle>
         <CardDescription>
           Teachers come from your existing staff records. By default everyone is available — mark
           only the periods a teacher cannot teach.
