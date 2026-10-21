@@ -3,8 +3,18 @@ export type Column = typeof COLUMNS[number];
 export type RawRow = { rowNumber: number; values: Partial<Record<Column, string>> };
 export type ExistingTeacher = { id: string; email: string; name: string; role: string; user_id: string; updated_at: string; employee_id: string | null };
 export type Issue = { rowNumber: number; field: string; problem: string; correction: string; severity: 'error' | 'warning' };
-export type Updates = { name: string; date_of_joining?: string; date_of_birth?: string; gender?: string; designation?: string; department?: string; qualification?: string; experience_years?: number; employment_type?: string; employment_status?: string };
+export type Updates = { date_of_joining?: string; date_of_birth?: string; gender?: string; designation?: string; department?: string; qualification?: string; experience_years?: number; employment_type?: string; employment_status?: string };
 export type CheckedRow = RawRow & { teacher: ExistingTeacher | null; updates: Updates; issues: Issue[] };
+export type RowOutcome = { rowNumber: number; status: 'updated' | 'blocked' | 'failed' | 'ready'; reasons: string[] };
+export type ImportResult = { imported: number; updated: number; blocked: number; failed: number; ready: number; results: RowOutcome[]; error?: string };
+export function summarizeOutcomes(results: RowOutcome[], error?: string): ImportResult {
+  return { imported: 0, updated: results.filter(r => r.status === 'updated').length, blocked: results.filter(r => r.status === 'blocked').length,
+    failed: results.filter(r => r.status === 'failed').length, ready: results.filter(r => r.status === 'ready').length, results, ...(error ? { error } : {}) };
+}
+export function previewOutcomes(rows: CheckedRow[]): RowOutcome[] {
+  return rows.map(row => ({ rowNumber: row.rowNumber, status: row.issues.some(i => i.severity === 'error') ? 'blocked' : 'ready',
+    reasons: row.issues.filter(i => i.severity === 'error').map(i => `${i.field}: ${i.problem} ${i.correction}`) }));
+}
 
 export function validateRows(rows: RawRow[], teachers: ExistingTeacher[], today = new Date().toISOString().slice(0, 10)): CheckedRow[] {
   const emails = new Map<string, number>();
@@ -16,8 +26,9 @@ export function validateRows(rows: RawRow[], teachers: ExistingTeacher[], today 
     const email = (v.email_address ?? '').trim().toLowerCase();
     const matches = teachers.filter(t => t.email.trim().toLowerCase() === email);
     const teacher = matches.length === 1 ? matches[0] : null;
-    const updates: Updates = { name: (v.full_name ?? '').trim() };
-    if (!updates.name || updates.name.length > 200) add('full_name', 'Name is required and must be at most 200 characters.', 'Enter the teacher’s full name.');
+    const updates: Updates = {};
+    const name = (v.full_name ?? '').trim();
+    if (!name || name.length > 200) add('full_name', 'Name is required and must be at most 200 characters.', 'Enter the teacher’s full name.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) add('email_address', 'A valid email is required.', 'Use the email of an existing school teacher.');
     if (/@(?:[^@.]+\.)*(?:example\.(?:com|net|org)|test|invalid|localhost)$/i.test(email)) add('email_address', 'Placeholder email cannot be linked.', 'Replace it with the existing teacher’s real email.');
     if ((emails.get(email) ?? 0) > 1) add('email_address', 'Duplicate email in workbook.', 'Keep one row per teacher.');
