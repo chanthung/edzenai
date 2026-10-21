@@ -37,7 +37,7 @@ export function TeacherImportDialog() {
   const [result, setResult] = useState<ImportResult | null>(null);
   const checked = useMemo(() => validateRows(rows, teachers), [rows, teachers]);
   const issues = [...workbookIssues, ...checked.flatMap(r => r.issues)];
-  const warningRows = checked.filter(r => r.issues.some(i => i.severity === 'warning')).length;
+  const warningRows = checked.filter(r => workbookIssues.length > 0 || r.issues.some(i => i.severity === 'warning')).length;
   const preview = summarizeOutcomes(previewOutcomes(checked));
   const outcomes = result ?? preview;
   const reset = () => { setRows([]); setBuffer(null); setHeaders([]); setMapping([]); setWorkbookIssues([]); setFilename(''); setError(''); setApproved(false); setResult(null); };
@@ -96,7 +96,7 @@ export function TeacherImportDialog() {
             <Button variant="outline" asChild><a href={template.url} download="EdZenAI_Teacher_Import_Template.xlsx"><Download className="h-4 w-4 mr-2" />Download template</a></Button>
             <Input aria-label="Teacher workbook" type="file" accept=".xlsx" disabled={busy || isLoading} className="max-w-sm" onChange={e => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
           </div>
-          {headers.length > 0 && !result && <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{headers.map((header, index) => <label key={index} className="space-y-1 text-sm"><span className="block break-words">{header || `Column ${index + 1}`}</span><Select value={mapping[index] ?? 'skip'} disabled={busy} onValueChange={v => remap(index, v)}><SelectTrigger aria-label={`Map ${header || index + 1}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="skip">Skip column</SelectItem>{COLUMNS.map(c => <SelectItem key={c} value={c}>{c.replaceAll('_', ' ')}</SelectItem>)}</SelectContent></Select></label>)}</div>}
+          {headers.length > 0 && !result && <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{headers.map((header, index) => <label key={index} className="space-y-1 text-sm"><span className="block break-words">{header || `Column ${index + 1}`}</span><Select value={mapping[index] ?? 'skip'} disabled={busy} onValueChange={v => remap(index, v)}><SelectTrigger aria-label={`Map ${header || index + 1}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="skip">Skip column</SelectItem>{COLUMNS.map(c => <SelectItem key={c} value={c}>{c.replace(/_/g, ' ')}</SelectItem>)}</SelectContent></Select></label>)}</div>}
           {filename && <p className="text-sm break-all">{filename} · {rows.length} detected records</p>}
           {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
           {rows.length > 0 && <Alert><AlertDescription>
@@ -109,7 +109,7 @@ export function TeacherImportDialog() {
             <p className="text-sm font-medium">{checked.filter(r => r.action === 'update').length} existing matches · {checked.filter(r => r.action === 'create').length} new records · {issues.filter(i => i.severity === 'error').length} errors · {issues.filter(i => i.severity === 'warning').length} warnings</p>
             <div className="overflow-x-auto border rounded-xl">
               <Table><TableHeader><TableRow><TableHead>Row / Match</TableHead>{COLUMNS.map(c => <TableHead key={c}>{c}</TableHead>)}</TableRow></TableHeader>
-                <TableBody>{checked.map((row, index) => <TableRow key={row.rowNumber} className={row.action === null ? 'status-overdue' : row.issues.some(i => i.severity === 'warning') ? 'status-due' : 'status-paid'}>
+                <TableBody>{checked.map((row, index) => <TableRow key={row.rowNumber} className={row.action === null ? 'status-overdue' : workbookIssues.length > 0 || row.issues.some(i => i.severity === 'warning') ? 'status-due' : 'status-paid'}>
                   <TableCell className="min-w-40 align-top">{row.rowNumber}<p className="text-xs text-muted-foreground">{row.teacher?.role === 'teacher' ? `${row.teacher.name} · ${row.teacher.employee_id ?? 'No ID'}` : row.action === 'create' ? 'New record · Not invited' : row.action === 'invitation_required' ? 'New teacher · invitation required' : 'Unmatched'}</p><p className="text-xs capitalize">{outcomes.results.find(r => r.rowNumber === row.rowNumber)?.status.replace('_', ' ')}</p></TableCell>
                   {COLUMNS.map(c => <TableCell key={c} className="min-w-44 align-top"><Input aria-label={`Row ${row.rowNumber} ${c}`} value={row.values[c] ?? ''} disabled={busy || !!result} onChange={e => { setApproved(false); setRows(previous => previous.map((r, i) => i === index ? { ...r, values: { ...r.values, [c]: e.target.value } } : r)); }} /></TableCell>)}
                 </TableRow>)}</TableBody></Table>
