@@ -24,7 +24,7 @@ vi.mock("@/lib/teacher-import", async original => {
     validateRows: (rows: Array<{ rowNumber: number; values: Record<string, string> }>) =>
       rows.map(r => ({ ...r, action: "create", issues: [], teacher: undefined })),
     previewOutcomes: (checked: Array<{ rowNumber: number; action: string }>) =>
-      checked.map(r => ({ rowNumber: r.rowNumber, status: r.action === "create" ? "created" : r.action === "update" ? "updated" : "blocked", reasons: [] })),
+      checked.map(r => ({ rowNumber: r.rowNumber, status: r.action ? "ready" : "blocked", reasons: [] })),
   };
 });
 
