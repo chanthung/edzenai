@@ -1,7 +1,9 @@
 # Roadmap
 
 - [x] Stage 2 Phase A: inspect approved workbook, teacher schema, account/invitation paths, ID triggers, RLS and Excel dependency; existing teacher HR tests passed (9/9).
-- [ ] Stage 2 import implementation — blocked by the brief's stop condition: new HR records require an existing authenticated user; awaiting approval of an existing-teacher-only scope or separately confirmed supported invitation workflow.
+- [x] Stage 2 existing-teachers-only import: template download, editable validated preview, explicit confirmation and school-authorized HR updates; no accounts or invitations.
+- [x] Verify teacher import validation, cancellation, downloadable errors and unauthorized tenant rejection; 36 relevant tests passed and automatic type-check/build OK. Rejected/cancelled imports left teacher fields and assignment rows unchanged.
+- [ ] Verify successful import persistence and Edit Teacher read-back — blocked by Cherry School's server-side write restriction. No school state, subscription or security rules changed to bypass it.
 
 - [x] Verify Stage 1 teacher HR forms, persistence, validation, stable IDs, assignments and school isolation; fix only related defects and run tests. New invite acceptance was not exercised; automatic ID generation was checked through live trigger definitions and existing records.
 

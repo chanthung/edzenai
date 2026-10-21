@@ -20,6 +20,7 @@ import { useResolvedStudents } from "@/hooks/progress/useResolvedStudents";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { RestrictedButton } from "@/components/admin/RestrictedOverlay";
 import { EditTeacherDialog } from "@/components/admin/EditTeacherDialog";
+import { TeacherImportDialog } from "@/components/admin/TeacherImportDialog";
 import { Plus, UserPlus, Mail, User, Pencil, BookOpen, School, Send, Phone, RefreshCw, X, Clock, IdCard, CalendarDays } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -152,6 +153,7 @@ export default function Teachers() {
   return (
     <AdminLayout>
       <PageHeader title="Users" description="Invite teachers and accountants — they'll set their own password">
+        <TeacherImportDialog />
         <RestrictedButton isRestricted={isRestricted}>
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
