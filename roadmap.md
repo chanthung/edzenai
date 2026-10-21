@@ -1,6 +1,5 @@
 # Roadmap
 
-- [ ] Stage 2 explicit existing HR-only teacher linking through Add User; blocked on approval of additive invitation target storage and atomic link migration. Preserve IDs, HR, assignments and timetables; verify invitation acceptance only after implementation.
 - [x] Pre-approval Stage 2 review: identity-only email snapshot replaces blanket timestamp; effective catalog privileges/RLS/triggers/lifecycle audited; full review-only SQL includes issuance/resend/atomic completion and proposed narrowing of unsafe public invite SELECT. 21 existing tests passed. No migration or linking implementation applied; runtime concurrency/acceptance remain unverified.
 
 - [x] Context-sensitive help UX: shared FieldHelp/FieldHint/SystemGenerated component applied to Edit Teacher, HR fields, teacher import, Teaching Assignments matrix and timetable Subject Requirements/Teacher Availability. Live-verified popovers in scrollable dialog and at 375px; 71 tests and build passed. No behavior/schema changes.
@@ -31,4 +30,4 @@
 - [x] Implement the nine timetable_* tables, tenant triggers, composite FKs, RLS, least-privilege timetable_service role and tenant-context functions
 
 - [x] Teacher account-linking UX Stage 1: Account column in Users shows Account linked / Invitation pending / Invitation expired / Not invited from persisted state (user_id + unaccepted invites matched by normalized email), with FieldHelp guidance for unlinked records; active switch and employment status unchanged. Live-verified on Cherry (16 Not invited, 3 Account linked, popover OK); 77 tests and build passed. Limitation: email-less HR-only records cannot be matched to invites. Linking workflow (Stage 2) not started.
-- [ ] Stage 2 implementation (approved via brief v3): apply reviewed migration, targeted invite issue/resend/accept, Add User "Link an existing teacher", status by target ID, tests, Preview verification, final report.
+- [x] Stage 2 implementation (approved via brief v3): apply reviewed migration, targeted invite issue/resend/accept, Add User "Link an existing teacher", status by target ID, tests, Preview verification, final report. Done: migration applied, functions deployed, 87 tests + build OK, controlled live checks passed. Not verified: real end-to-end acceptance (would create a permanent login account).
