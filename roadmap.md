@@ -1,6 +1,7 @@
 # Roadmap
 
 - [ ] Stage 3 teacher import: optional email + HR-only teacher records. BLOCKER: school_teachers.email and user_id are NOT NULL — schema relaxation proposed, awaiting user approval before implementing.
+- [ ] Pre-approval security/backward-compat audit of the nullable email/user_id migration: RLS, grants, auth checks, unique constraints, triggers, FKs, all code reading/writing those columns. Report findings; do not apply migration until approved.
 - [x] Correct confirmed Cherry paid renewal through 29 Dec 2027; distinguish invoice/access dates, align explicit renewal lifecycle saves and Global Admin badges with authoritative state. Controlled import and retry HTTP 200, Edit Teacher read-back without reload, restored original HR, unchanged assignments/timetable, cross-school HTTP 403; 44 tests and build OK.
 - [x] Rechecked current Cherry authorization with a real controlled Excel request and retry on 21 Oct 2026: membership valid, access block false, import HTTP 403 because authoritative restriction remains true; 41 teacher tests passed and automatic build OK.
 - [x] Complete successful Cherry Excel save, retry and Edit Teacher read-back after user-confirmed legitimate renewal correction; no enforcement bypass.
