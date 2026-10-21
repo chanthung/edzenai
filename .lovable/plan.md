@@ -8,6 +8,7 @@
 - Existing teacher self-access requires `user_id = auth.uid()`; NULL cannot grant access. School-scoped RLS and Employee ID generation/locking remain unchanged.
 - Employee IDs are school-unique; account IDs are unique within a school. Outstanding invitations have no target uniqueness protection. Effective catalog checks confirm anon/authenticated/service_role have table CRUD privileges, constrained by enabled RLS.
 - Security finding: the public pending-invitation SELECT policy does not require a token and can expose pending invitation credentials. Its removal is proposed for explicit review; admin/server policies and grants remain intact. Public acceptance already reads through the token-validated server GET endpoint.
+- Final access review: AcceptInvite uses only server GET/POST for invitation validation/acceptance, not direct invitation-table reads. Resend validates JWT and exact school membership server-side. Users status/list and cancellation use authenticated table SELECT/DELETE; the retained school-admin ALL policy covers both, and existing effective SELECT/DELETE privileges were confirmed. These findings establish compatibility by source/catalog inspection; post-migration browser/RLS tests will verify runtime behavior.
 
 ## What changes after approval
 
@@ -50,16 +51,59 @@ CREATE UNIQUE INDEX user_invites_one_pending_teacher_target
 - Validation also covers direct invitation writes. Existing table privileges stay unchanged; no broader grants. Remove only the unsafe public-pending SELECT policy, subject to approval, retaining school-admin/server access. This narrows access and is the only proposed RLS policy change.
 - Resend uses a service-only operation preserving the exact target and snapshot with email → teacher → invitation locks and revalidation. Cancelled/expired tokens cannot complete; resend rotates the token of a still-pending invite. Unique pending-target indexing plus serialized email checks prevent duplicate targeted sends; completion locks permit only one link/acceptance winner. Legacy races are not claimed fixed.
 - Complete review-only SQL, including validation, issuance, resend, completion, execution revocations and the proposed public-policy removal, is supplied in `EdZenAI-Stage2-Proposed-Migration_v2.sql` in Files. No SQL has been executed. The composite reference restricts deleting/moving a targeted teacher while referenced invitations exist; it never cascades teacher/assignment deletion.
+- The v2 SQL's permanent reference restriction is superseded by the terminal-invitation cleanup below. Include it in the final migration; do not apply v2 alone.
+
+### Cancelled, expired and completed target references
+
+- Cancel uses the existing authorized invitation DELETE. The row and token cease to exist, freeing the target's pending-invitation slot. Acceptance/resend must re-read after locking, so cancellation cannot race into a later link; if completion wins first, cancellation must not be reported as undoing that account link.
+- Expiry alone does not erase the target or turn it into a legacy invitation. Keep the expired row so the existing expired status and Resend/Cancel actions continue working. It cannot be accepted; its uniqueness slot remains occupied until cancellation or exact-target resend. A fresh send cannot create a second outstanding invitation.
+- Before an authorized teacher deletion, remove only that teacher's expired-unaccepted and already-accepted targeted invitation rows. Leave live pending rows protected by the foreign key and return a clear “Cancel the pending invitation first” message. Cancel is available immediately; expired/accepted references do not keep a teacher undeletable forever.
+- Cleanup never deletes a teacher or assignment itself, never changes Employee IDs/HR/timetable data, and never nulls a target into the legacy fallback path. A caller's teacher DELETE remains subject to existing RLS. Ordinary deletion's pre-existing assignment behavior is not broadened or changed.
+- Serialize/recheck cleanup and completion; a locking conflict fails safely for retry rather than reporting partial success. No background cleanup job, new retention policy or cascading teacher delete is added.
+
+Additional final migration SQL:
+
+```sql
+CREATE FUNCTION public.cleanup_terminal_teacher_link_invites()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  IF auth.role() IS DISTINCT FROM 'service_role'
+     AND NOT EXISTS (
+       SELECT 1 FROM public.get_user_school_ids() AS s(school_id)
+       WHERE s.school_id = OLD.school_id
+     ) THEN
+    RAISE EXCEPTION 'Teacher deletion not authorized'
+      USING ERRCODE = '42501';
+  END IF;
+  DELETE FROM public.user_invites
+  WHERE target_teacher_id = OLD.id
+    AND school_id = OLD.school_id
+    AND (accepted_at IS NOT NULL
+         OR expires_at <= pg_catalog.clock_timestamp());
+  -- Any live pending reference still blocks DELETE via the composite FK.
+  -- If DELETE is blocked, this transaction rolls back the cleanup too.
+  RETURN OLD;
+END $$;
+REVOKE ALL ON FUNCTION public.cleanup_terminal_teacher_link_invites()
+  FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER cleanup_terminal_teacher_link_invites
+BEFORE DELETE ON public.school_teachers
+FOR EACH ROW
+EXECUTE FUNCTION public.cleanup_terminal_teacher_link_invites();
+```
 
 Approval covers this additive target storage, validation and atomic completion design; no migration has been applied.
 
 ## Verification
 
 - Focused tests: eligibility/school/role checks, missing email, target-based pending/expired status, duplicate invitations, changed/already-linked targets, acceptance replay/failure and unchanged IDs/HR/assignments.
+- Final requested tests: anonymous invitation-list denial; token-based public GET/POST; authorized admin resend/cancel/status; cross-school denial without broader grants; cancelled/expired token rejection; duplicate pending targets; expired/accepted-only reference cleanup allowing deletion of an assignment-free controlled test teacher; live pending reference blocking deletion; cancel/accept/resend races and rollback. Verify no cascades or writes to unrelated records.
 - Run relevant teacher/invitation/status tests and inspect automatic type-check/build results.
 - Pre-approval checks completed: live schema/index/constraint/trigger/RLS/effective privilege reads and invitation-flow source audit; 21 existing tests passed across four files. Latest available build log is OK. Proposed functions, concurrency, Preview linking and end-to-end acceptance have not been executed or verified.
 - Signed-in Preview: select a real HR-only record, verify read-only prefill and back/cancel, valid email entry, server-confirmed pending status without premature linking, refreshed Users list and cross-school denial.
 - End-to-end acceptance: use a controlled test record and safe non-delivering test setup when available, confirm the original record reads back linked and HR/IDs/assignments/timetable data remain unchanged; clean up only test-created data. If safe account-creation verification is unavailable, explicitly report acceptance as unverified, not completed.
 - Report exact files/database changes, actual checks and limitations. Stage 2 only: no import enhancements, eligibility, billing or timetable-engine changes.
 
-**Awaiting your approval before the database addition and Stage 2 implementation.**
+**Your conditional approval is incorporated. In the current plan-review mode, approve this final revision to proceed with the minimal migration and Stage 2 implementation; no migration or linking change has yet been applied.**
