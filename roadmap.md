@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Stage 2 teacher Excel import — Phase A inspection in progress; new HR records require an existing authenticated user. Stop before implementation if safe account linking is unavailable, per the uploaded brief.
+- [x] Stage 2 Phase A: inspect approved workbook, teacher schema, account/invitation paths, ID triggers, RLS and Excel dependency; existing teacher HR tests passed (9/9).
+- [ ] Stage 2 import implementation — blocked by the brief's stop condition: new HR records require an existing authenticated user; awaiting approval of an existing-teacher-only scope or separately confirmed supported invitation workflow.
 
 - [x] Verify Stage 1 teacher HR forms, persistence, validation, stable IDs, assignments and school isolation; fix only related defects and run tests. New invite acceptance was not exercised; automatic ID generation was checked through live trigger definitions and existing records.
 
