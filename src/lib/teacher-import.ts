@@ -2,49 +2,54 @@ import * as XLSX from 'xlsx';
 import { COLUMNS, type Column, type RawRow, type Issue } from '../../supabase/functions/import-teacher-hr/validation';
 export { COLUMNS, validateRows, previewOutcomes, summarizeOutcomes } from '../../supabase/functions/import-teacher-hr/validation';
 export type { RawRow, Issue, CheckedRow, ExistingTeacher, ImportResult, RowOutcome } from '../../supabase/functions/import-teacher-hr/validation';
-
-export function parseTeacherWorkbook(buffer: ArrayBuffer): { rows: RawRow[]; issues: Issue[] } {
+export type ColumnMapping = (Column | null)[];
+const aliases: Record<string, Column> = {
+  name: 'full_name', full_name: 'full_name', teacher_name: 'full_name', staff_name: 'full_name',
+  email: 'email_address', email_address: 'email_address', employee_id: 'employee_id', emp_id: 'employee_id',
+  joining_date: 'date_of_joining', dob: 'date_of_birth', birth_date: 'date_of_birth',
+  experience: 'experience_years', employment_status: 'status',
+};
+export function matchTeacherHeader(value: string): Column | null {
+  const key = value.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  return COLUMNS.includes(key as Column) ? key as Column : aliases[key] ?? null;
+}
+export function parseTeacherWorkbook(buffer: ArrayBuffer, mappingOverride?: ColumnMapping): { rows: RawRow[]; issues: Issue[]; headers: string[]; mapping: ColumnMapping } {
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
-  const candidates: { grid: unknown[][]; header: number; names: string[] }[] = [];
-  for (const name of workbook.SheetNames) {
+  const candidates = workbook.SheetNames.map(name => {
     const grid = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[name], { header: 1, raw: true, defval: '' });
-    const header = grid.findIndex(row => {
-      const labels = row.map(v => String(v).trim().toLowerCase());
-      return labels.includes('full_name');
-    });
-    if (header >= 0) candidates.push({ grid, header, names: grid[header].map(v => String(v).trim().toLowerCase()) });
-  }
-  if (!candidates.length) throw new Error('Use one teacher data sheet with a full_name header.');
-  // When several sheets carry a full_name header (e.g. the approved Field Guide), the data sheet is the one with the most recognized columns.
-  const scored = candidates.map(c => ({ ...c, score: c.names.filter(n => COLUMNS.includes(n as Column)).length }));
-  const best = Math.max(...scored.map(c => c.score));
-  const top = scored.filter(c => c.score === best);
-  if (top.length !== 1) throw new Error('Use one teacher data sheet with a full_name header.');
-  const { grid, header, names } = top[0];
+    const named = grid.findIndex(row => row.some(v => matchTeacherHeader(String(v)) === 'full_name'));
+    const header = named >= 0 ? named : grid.findIndex(row => row.some(v => String(v ?? '').trim()));
+    const headers = (grid[header] ?? []).map(v => String(v ?? '').trim());
+    return { grid, header, headers, score: headers.filter(v => matchTeacherHeader(v)).length };
+  }).filter(c => c.header >= 0);
+  candidates.sort((a, b) => b.score - a.score);
+  const selected = candidates[0];
+  if (!selected) throw new Error('No data found in workbook.');
+  if (candidates[1]?.score === selected.score) throw new Error('Use one staff data sheet; multiple sheets are equally likely.');
+  const { grid, header, headers } = selected;
+  const mapping = mappingOverride ?? headers.map(matchTeacherHeader);
   const issues: Issue[] = [];
-  const issue = (field: string, problem: string, severity: 'error' | 'warning') => issues.push({ rowNumber: header + 1, field, problem, correction: 'Use the approved teacher template.', severity });
-  for (const name of names.filter(Boolean)) {
-    if (!COLUMNS.includes(name as Column)) issue(name, 'Unknown column will not be imported.', 'warning');
-    if (names.filter(n => n === name).length > 1) issue(name, 'Duplicate column header.', 'error');
+  for (const field of COLUMNS) {
+    if (mapping.filter(c => c === field).length > 1) throw new Error(`Map only one column to ${field}, and skip the others.`);
   }
-  for (const name of COLUMNS) if (!names.includes(name)) issue(name, name === 'email_address' ? 'Email column is missing; rows will be imported as HR-only records without login accounts.' : 'Expected column is missing.', name === 'full_name' ? 'error' : 'warning');
+  headers.forEach((name, index) => { if (!mapping[index]) issues.push({ rowNumber: header + 1, field: name || `Column ${index + 1}`, problem: 'Column is skipped.', correction: 'Map it to a supported field if needed.', severity: 'warning' }); });
   const rows: RawRow[] = [];
   grid.slice(header + 1).forEach((cells, index) => {
     if (!cells.some(v => String(v ?? '').trim())) return;
     const values: RawRow['values'] = {};
-    names.forEach((name, column) => {
-      if (!COLUMNS.includes(name as Column)) return;
+    mapping.forEach((name, column) => {
+      if (!name) return;
       const cell = cells[column];
-      let value = String(cell ?? '').trim();
+      let value = String(cell ?? '');
       if ((name === 'date_of_birth' || name === 'date_of_joining') && typeof cell === 'number') {
         const d = XLSX.SSF.parse_date_code(cell, { date1904: workbook.Workbook?.WBProps?.date1904 });
         value = d ? `${String(d.y).padStart(4, '0')}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}` : value;
       }
-      values[name as Column] = value;
+      values[name] = value;
     });
     rows.push({ rowNumber: header + index + 2, values });
   });
-  if (!rows.length) throw new Error('No teacher records found.');
-  if (rows.length > 500) throw new Error('Import at most 500 teacher records at a time.');
-  return { rows, issues };
+  if (!rows.length) throw new Error('No staff records found.');
+  if (rows.length > 500) throw new Error('Import at most 500 staff records at a time.');
+  return { rows, issues, headers, mapping };
 }

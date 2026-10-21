@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { canInviteExistingHrRecord } from './hr-record-compatibility.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -113,16 +114,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check for existing active user with this email in this school
-    const { data: existingTeacher } = await supabaseAdmin
+    // Existing linked accounts remain blocked. A unique matching HR-only
+    // record may receive an explicit invitation via the unchanged Add User flow.
+    const { data: existingTeachers, error: existingError } = await supabaseAdmin
       .from('school_teachers')
-      .select('id')
+      .select('user_id, name, role')
       .eq('school_id', schoolAdmin.school_id)
-      .eq('email', email.trim().toLowerCase())
-      .maybeSingle();
+      .eq('email', email.trim().toLowerCase());
 
-    if (existingTeacher) {
-      return new Response(JSON.stringify({ error: 'A user with this email already exists in your school' }), {
+    if (existingError || !canInviteExistingHrRecord(existingTeachers ?? [], name, role)) {
+      return new Response(JSON.stringify({ error: 'This email belongs to an existing account or needs identity review. For an unlinked record, use its exact name and existing role.' }), {
         status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
