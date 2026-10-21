@@ -42,7 +42,7 @@ describe('existing teacher import safeguards', () => {
   it('ignores the approved field guide sheet', () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['full_name', 'email_address'], ['Teacher', teacher.email]]), 'Teachers');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.ao_to_sheet ? XLSX.utils.aoa_to_sheet([['full_name', 'Description'], ['email_address', 'Description']]) : XLSX.utils.aoa_to_sheet([['full_name', 'Description'], ['email_address', 'Description']]), 'Field Guide');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['full_name', 'Description'], ['email_address', 'Description']]), 'Field Guide');
     expect(parseTeacherWorkbook(XLSX.write(wb, { type: 'array', bookType: 'xlsx' })).rows).toHaveLength(1);
   });
 });
