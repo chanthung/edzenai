@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Recheck current Cherry authorization and complete a controlled Excel save, retry and Edit Teacher read-back; preserve all school restrictions and assignments.
+- [x] Rechecked current Cherry authorization with a real controlled Excel request and retry on 21 Oct 2026: membership valid, access block false, import HTTP 403 because authoritative restriction remains true; 41 teacher tests passed and automatic build OK.
+- [ ] Complete a successful Cherry Excel save, retry and Edit Teacher read-back — blocked by current authoritative effective state `terminated` with renewal date 29 May 2026. Requires the actual renewal correction to reach this app's school record; no enforcement bypass approved or applied.
 
 - [x] Fix Stage 2 visibility reporting: traced upload-to-list, added accurate row-level saved/blocked/failed results and explicit invitation guidance without bypassing restrictions.
 - [x] Verified invalid/unmatched rows, controlled restricted HR update and unauthorized school write with no data changes; 41 tests passed and automatic build/typecheck OK.
