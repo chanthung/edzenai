@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3';
-import { COLUMNS, validateRows, type ExistingTeacher } from './validation.ts';
+import { COLUMNS, validateRows, previewOutcomes, summarizeOutcomes, type RowOutcome, type ExistingTeacher } from './validation.ts';
 
 const values = z.object(Object.fromEntries(COLUMNS.map(key => [key, z.string().max(1000).optional()]))).strict();
 const bodySchema = z.object({
@@ -24,30 +24,42 @@ Deno.serve(async req => {
     const parsed = bodySchema.safeParse(await req.json());
     if (!parsed.success) return response({ error: 'Invalid import request.' }, 400);
     const { schoolId, rows } = parsed.data;
+    const reject = (error: string, status: number) => response(summarizeOutcomes(rows.map(row => ({ rowNumber: row.rowNumber, status: 'blocked', reasons: [error] })), error), status);
     // The browser's school is a selector, never an authority. Verify exact membership.
     const { data: membership, error: memberError } = await client.from('school_admins').select('school_id').eq('user_id', auth.claims.sub).eq('school_id', schoolId).maybeSingle();
-    if (memberError || !membership) return response({ error: 'Only an administrator of this school can import teachers.' }, 403);
+    if (memberError || !membership) return reject('Only an administrator of this school can import teachers. No records were saved.', 403);
     const [restricted, blocked] = await Promise.all([
       client.rpc('is_school_restricted', { _school_id: membership.school_id }),
       client.rpc('is_school_access_blocked', { _school_id: membership.school_id }),
     ]);
-    if (restricted.error || blocked.error || restricted.data !== false || blocked.data !== false) return response({ error: 'School changes are currently restricted.' }, 403);
+    if (restricted.error || blocked.error || restricted.data !== false || blocked.data !== false) return reject('School changes are currently restricted. No records were saved.', 403);
     const { data: teachers, error } = await client.from('school_teachers').select('*').eq('school_id', membership.school_id);
     if (error) return response({ error: 'Could not read school teachers.' }, 500);
     const checked = validateRows(rows, (teachers ?? []) as ExistingTeacher[]);
     const issues = checked.flatMap(row => row.issues);
-    if (issues.some(issue => issue.severity === 'error')) return response({ error: 'Correct the workbook before importing. No records were changed.', issues }, 400);
+    if (issues.some(issue => issue.severity === 'error')) {
+      const outcomes = previewOutcomes(checked).map(row => row.status === 'ready' ? { ...row, status: 'blocked' as const, reasons: ['Not saved: another workbook row needs correction.'] } : row);
+      return response({ ...summarizeOutcomes(outcomes, 'Correct the workbook before importing. No records were saved.'), issues }, 400);
+    }
     // Recheck dates on the server and reject stale previews before the first write.
-    if (checked.some((row, i) => !rows[i].expectedUpdatedAt || rows[i].expectedUpdatedAt !== row.teacher?.updated_at)) return response({ error: 'Teacher records changed since preview. Reload and review again.' }, 409);
-    const results: { rowNumber: number; success: boolean; error?: string }[] = [];
+    if (checked.some((row, i) => !rows[i].expectedUpdatedAt || rows[i].expectedUpdatedAt !== row.teacher?.updated_at)) return reject('Teacher records changed since preview. Reload and review again. No records were saved.', 409);
+    const results: RowOutcome[] = [];
     for (const row of checked) {
       if (!row.teacher) continue;
+      if (results.some(r => r.status === 'failed')) {
+        results.push({ rowNumber: row.rowNumber, status: 'blocked', reasons: ['Not attempted: an earlier update failed. Review saved rows before retrying.'] });
+        continue;
+      }
+      if (!Object.keys(row.updates).length) {
+        results.push({ rowNumber: row.rowNumber, status: 'blocked', reasons: ['No non-blank supported HR fields to update. Existing values were preserved.'] });
+        continue;
+      }
       const { data, error: updateError } = await client.from('school_teachers').update(row.updates)
         .eq('id', row.teacher.id).eq('school_id', membership.school_id).eq('role', 'teacher')
         .eq('updated_at', row.teacher.updated_at).select('id');
-      results.push({ rowNumber: row.rowNumber, success: !updateError && data?.length === 1,
-        ...(updateError || data?.length !== 1 ? { error: 'Update failed or record changed. Review and retry this row.' } : {}) });
+      results.push({ rowNumber: row.rowNumber, status: !updateError && data?.length === 1 ? 'updated' : 'failed',
+        reasons: [!updateError && data?.length === 1 ? 'HR fields saved. Account, Employee ID and assignments unchanged.' : 'Update failed or record changed. This row was not saved.'] });
     }
-    return response({ updated: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length, results });
+    return response(summarizeOutcomes(results));
   } catch { return response({ error: 'Import could not be processed.' }, 400); }
 });

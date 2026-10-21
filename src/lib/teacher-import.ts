@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { COLUMNS, type Column, type RawRow, type Issue } from '../../supabase/functions/import-teacher-hr/validation';
-export { COLUMNS, validateRows } from '../../supabase/functions/import-teacher-hr/validation';
-export type { RawRow, Issue, CheckedRow, ExistingTeacher } from '../../supabase/functions/import-teacher-hr/validation';
+export { COLUMNS, validateRows, previewOutcomes, summarizeOutcomes } from '../../supabase/functions/import-teacher-hr/validation';
+export type { RawRow, Issue, CheckedRow, ExistingTeacher, ImportResult, RowOutcome } from '../../supabase/functions/import-teacher-hr/validation';
 
 export function parseTeacherWorkbook(buffer: ArrayBuffer): { rows: RawRow[]; issues: Issue[] } {
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });

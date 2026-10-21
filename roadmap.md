@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Fix Stage 2 visibility reporting: trace upload-to-list, show row-level saved/blocked/failed results and explicit invitation guidance without bypassing restrictions.
+- [ ] Verify controlled HR update, invalid/unmatched rows and unauthorized school writes; document actual outcomes and blocked checks.
+
 - [x] Stage 2 Phase A: inspect approved workbook, teacher schema, account/invitation paths, ID triggers, RLS and Excel dependency; existing teacher HR tests passed (9/9).
 - [x] Stage 2 existing-teachers-only import: template download, editable validated preview, explicit confirmation and school-authorized HR updates; no accounts or invitations.
 - [x] Verify teacher import validation, cancellation, downloadable errors and unauthorized tenant rejection; 36 relevant tests passed and automatic type-check/build OK. Rejected/cancelled imports left teacher fields and assignment rows unchanged.
