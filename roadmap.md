@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Investigate invitation 409 regression without deployment/migration: trace actual requests, live trigger and UI routing; add focused regression coverage and report whether a fix is justified.
+
 - [x] Pre-approval Stage 2 review: identity-only email snapshot replaces blanket timestamp; effective catalog privileges/RLS/triggers/lifecycle audited; full review-only SQL includes issuance/resend/atomic completion and proposed narrowing of unsafe public invite SELECT. 21 existing tests passed. No migration or linking implementation applied; runtime concurrency/acceptance remain unverified.
 
 - [x] Context-sensitive help UX: shared FieldHelp/FieldHint/SystemGenerated component applied to Edit Teacher, HR fields, teacher import, Teaching Assignments matrix and timetable Subject Requirements/Teacher Availability. Live-verified popovers in scrollable dialog and at 375px; 71 tests and build passed. No behavior/schema changes.
