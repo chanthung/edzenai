@@ -380,7 +380,7 @@ export default function Teachers() {
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Teaching</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Account</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
