@@ -16,6 +16,7 @@ import { Loader2, Mail, User, BookOpen, ChevronRight, IdCard, CalendarDays, Aler
 import { cn } from "@/lib/utils";
 import { sortClassNames } from "@/lib/class-sort";
 import { useCurrentAcademicYearContext } from "@/hooks/useAcademicYears";
+import { FieldHelp, SystemGenerated } from "@/components/ui/field-help";
 
 interface EditTeacherDialogProps {
   teacher: Teacher | null;
@@ -177,12 +178,23 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-6 py-4">
           <div className="space-y-2">
-            <Label><User className="h-4 w-4 inline mr-1" />Full Name</Label>
+            <Label><User className="h-4 w-4 inline mr-1" />Full Name{" "}
+              <FieldHelp label="Help about Full Name">
+                <p>Use the teacher's name exactly as recorded by the school.</p>
+                <p>If you are unsure, check the school's HR register or official staff records. No external verification is required.</p>
+              </FieldHelp>
+            </Label>
             <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Teacher's name" />
           </div>
 
           <div className="space-y-2">
-            <Label><Mail className="h-4 w-4 inline mr-1" />Email Address</Label>
+            <Label><Mail className="h-4 w-4 inline mr-1" />Email Address{" "}
+              <FieldHelp label="Help about Email Address">
+                <p>Email is optional — a teacher record can exist without it as an HR-only record.</p>
+                <p>An email is only needed when the school is ready to invite the teacher to sign in, using Add User on the Users page.</p>
+                <p>Use the teacher's real email address; never enter a guessed or placeholder address.</p>
+              </FieldHelp>
+            </Label>
             {hasAccount ? (
               <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="teacher@school.com" />
             ) : (
@@ -191,16 +203,29 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
           </div>
 
           <div className="space-y-2">
-            <Label><IdCard className="h-4 w-4 inline mr-1" />Employee ID</Label>
+            <Label><IdCard className="h-4 w-4 inline mr-1" />Employee ID{" "}
+              <FieldHelp label="Help about Employee ID">
+                <p>EdZenAI generates this ID automatically when the teacher record is created — you never need to enter one.</p>
+                <p>The ID is permanent and cannot be edited, so it stays consistent across imports, reports and academic years.</p>
+              </FieldHelp>
+            </Label>
             <Input value={teacher?.employee_id ?? "Assigned automatically"} readOnly disabled />
-            <p className="text-xs text-muted-foreground">Assigned automatically and never changes.</p>
+            <div className="flex items-center gap-2">
+              <SystemGenerated>Assigned automatically — never changes</SystemGenerated>
+            </div>
           </div>
 
           <TeacherHrSection value={hr} onChange={setHr} />
 
           {/* Subject-Class Assignments */}
           <div className="space-y-2">
-            <Label><BookOpen className="h-4 w-4 inline mr-1" />Assigned Subjects &amp; Classes</Label>
+            <Label><BookOpen className="h-4 w-4 inline mr-1" />Assigned Subjects &amp; Classes{" "}
+              <FieldHelp label="Help about Assigned Subjects and Classes">
+                <p>These are the subject–class combinations this teacher actually teaches in the current academic year — separate from their qualifications, which are recorded under Identity &amp; Employment.</p>
+                <p>If nothing is assigned yet, tick the relevant subjects and classes here, or use the Teaching Assignments matrix on the Users page to assign teachers across all subjects at once.</p>
+                <p>Assignments are saved per academic year and never change a teacher's login access.</p>
+              </FieldHelp>
+            </Label>
             {currentYear.name && (
               <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
                 <CalendarDays className="h-4 w-4 text-primary" />
