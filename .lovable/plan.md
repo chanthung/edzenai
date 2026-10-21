@@ -1,50 +1,62 @@
-# Getting More Visitors to EdZen AI
+# Stage 2: Link Existing HR-Only Teachers
 
-## What I found
+## Inspection findings
 
-**Your site's health (checked today):**
-- Homepage, Pricing, and Signup pages all load correctly on edzenai.com.
-- Visitors can sign up (Start Free Trial), book a demo, and contact you — nothing is broken.
-- Your page titles, descriptions, and structured data are already well set up.
+- The stable teacher-record key is `school_teachers.id`; the login-account link is `school_teachers.user_id`.
+- Invitations have no explicit teacher-record target. Acceptance guesses by Employee ID/name and may insert another record if the intended record changes.
+- Linking, assigning the existing role and marking acceptance currently use separate writes. The targeted path needs atomic completion to prevent partial or duplicate links.
+- Existing teacher self-access requires `user_id = auth.uid()`; NULL cannot grant access. School-scoped RLS and Employee ID generation/locking remain unchanged.
+- Employee IDs are school-unique; account IDs are unique within a school. Outstanding invitations have no target uniqueness protection. The grants inspection returned no rows, so effective grants require a further catalog check before migration.
 
-**The traffic picture (15 Sep – 15 Oct 2026):**
-- 17 visits in 30 days, all "Direct" (typed links or your own testing) — zero from Google search, zero from social, zero from other websites.
-- Semrush has no data for edzenai.com yet, and Google Search Console is not connected — so Google likely isn't sending you visitors because it barely knows the site exists.
+## What changes after approval
 
-**Who you're up against:** Indian school-software is a busy space (Teachmint, Entab, Fedena, plus newer AI-first tools like ScholaBook, School Matrix, OakSchool). They compete on fee collection, WhatsApp parent updates, and NEP 2020 report cards — exactly your strengths. Your edge: ₹7–10/student/month pricing, no-login parent portal, and AI insights.
+1. **Add User — Teacher only:** keep “Invite a new teacher” and add “Link an existing teacher.” Search current-school, unlinked Teacher records by name or Employee ID; identify missing email addresses. Selecting a record locks its name and Employee ID and prefills email when available. Allow a valid invitation email and a back action. Do not show assignment-editing controls for this path.
+2. **Send invitation:** authenticate the administrator and resolve their school on the server. Validate the exact target, email/account conflicts and outstanding invitations. Store the target without linking an account or changing the teacher. Reject duplicate targeted invitations; use existing Cancel/Resend instead of silently replacing them.
+3. **Accept invitation:** reuse the existing account-creation and invitation-verification experience. Recheck the exact record and fail clearly if it changed, was deleted or became linked. Atomically link the verified account, add its existing Teacher role to the protected role table and consume the invitation. Never fall back to inserting a teacher. Remove the newly created account if completion fails.
+4. **Preserve data:** update only account-link/email fields and login access needed to activate the accepted account. Preserve Employee ID, name, teacher role, HR details, assignments, academic-year scopes and all timetable records. Keep new-teacher and Accountant workflows unchanged.
+5. **Status and messages:** reuse Stage 1 labels and match targeted invitations by record ID, including records without saved emails. Retain email matching for legacy invitations. Refresh after sending and on window focus/return after acceptance. Show Account linked only from the persisted account link.
 
-**What school owners actually complain about (from Reddit and comparison sites):** fees stuck in paper registers and Excel, parents calling the office for balances, 25–40% of fees outstanding, and juggling 5–9 disconnected tools. These are the pains your homepage already speaks to.
+## Database addition for review — not applied
 
-## The plan (ordered by how soon each can bring visitors)
+An exact target must persist through acceptance. Reusing assignment JSON would mix identity with assignment data and provide no referential integrity.
 
-### 1. Connect Google Search Console and submit your sitemap
-Your sitemap exists but Google has no verified property for edzenai.com. This is the single biggest reason you get zero search traffic. I'll guide you through verification (you already have a verification meta tag in the site) and submit the sitemap. *Owner action needed: a few clicks in Google Search Console.*
+Proposed additive schema:
 
-### 2. List EdZen AI on software directories
-Free listings where schools actually compare tools:
-- **Capterra India** (capterra.in) — the main K-12/school-software comparison site in India
-- **AppAdvisor** (appadvisor.in) — 72 Indian school ERPs compared; EdZen AI is not listed
-- **G2** — global, builds trust and backlinks
+```sql
+ALTER TABLE public.user_invites
+  ADD COLUMN target_teacher_id uuid NULL,
+  ADD COLUMN target_teacher_updated_at timestamptz NULL;
 
-I'll prepare the listing text, screenshots, and details; you create the accounts and submit.
+CREATE UNIQUE INDEX school_teachers_school_record_key
+  ON public.school_teachers (school_id, id);
 
-### 3. Personal outreach to schools you can reach directly
-You already run Cherry School and Freen School on the platform — that's your proof. The fastest first customers come from people, not ads:
-- Draft a short WhatsApp/email message for school owners and principals you know (especially in Nagaland and the Northeast, where big vendors barely compete).
-- Ask your two existing schools for an honest quote or referral to one other school.
-- I'll draft the messages; you send them.
+ALTER TABLE public.user_invites
+  ADD CONSTRAINT user_invites_target_teacher_school_fk
+  FOREIGN KEY (school_id, target_teacher_id)
+  REFERENCES public.school_teachers (school_id, id);
 
-### 4. Turn your existing SEO pages into a small content push
-You already have strong landing pages (fee collection, NEP 2020, vs Entab). Next: 2–3 short articles targeting what owners search, e.g. "how to reduce fee defaulters", "NEP 2020 report card format". I can write these as new pages on the site.
+CREATE UNIQUE INDEX user_invites_one_pending_teacher_target
+  ON public.user_invites (target_teacher_id)
+  WHERE target_teacher_id IS NOT NULL AND accepted_at IS NULL;
+```
 
-### 5. Paid ads — later, once the above is moving
-Google Ads on searches like "school fee management software India" can work, but only after Search Console shows the site is indexed and you have a directory presence. Not the first step.
+- Both fields are optional; existing invitations require no backfill and remain compatible.
+- The composite reference prevents cross-school targets; its supporting index adds no changes to teacher data. The pending-target index rejects concurrent invitations to the same record. Expired invitations must be resent or cancelled before replacement.
+- The timestamp is captured server-side and prevents linking after the selected record changes. Cancel and reselect after administrative review rather than silently accepting a changed identity.
+- The migration also adds targeted-invitation validation and narrowly scoped server-only operations for issuing and completing targeted invitations. They lock the target/invitation and serialize conflicting email/account attempts, recheck exact school-admin membership and school access, and reject duplicate accounts, changed targets, expired/used invitations and cross-school attempts.
+- Completion updates only account-link/email/login fields, inserts the existing Teacher role and marks acceptance in one transaction. No assignment writes occur on this path.
+- Privileged operations revoke execution from public, anonymous and authenticated clients; grant execution only to the server service role. Verified identities are passed by the authenticated server handler, never accepted directly from browser-supplied school/user IDs.
+- Validation must also cover direct invitation writes without weakening existing RLS. Existing table privileges stay unchanged; no broader access grants.
+- Resending a targeted invitation revalidates its target and conditionally updates an invitation still pending. It cannot silently refresh a stale identity snapshot.
 
-## What happens when you approve
-1. I save the full research and this plan to your project files so we track progress.
-2. We start with step 1 (Search Console) — I'll walk you through it.
-3. Then I prepare the directory listings and outreach messages.
+Approval covers this additive target storage, validation and atomic completion design; no migration has been applied.
 
-## Technical notes
-- No changes to the app are required for steps 1–3; step 4 adds static content pages using the existing `usePageMeta` + sitemap pattern.
-- Analytics baseline: 17 visits / 30 days, all Direct, 47% bounce — we'll judge results against this after changes.
+## Verification
+
+- Focused tests: eligibility/school/role checks, missing email, target-based pending/expired status, duplicate invitations, changed/already-linked targets, acceptance replay/failure and unchanged IDs/HR/assignments.
+- Run relevant teacher/invitation/status tests and inspect automatic type-check/build results.
+- Signed-in Preview: select a real HR-only record, verify read-only prefill and back/cancel, valid email entry, server-confirmed pending status without premature linking, refreshed Users list and cross-school denial.
+- End-to-end acceptance: use a controlled test record and safe non-delivering test setup when available, confirm the original record reads back linked and HR/IDs/assignments/timetable data remain unchanged; clean up only test-created data. If safe account-creation verification is unavailable, explicitly report acceptance as unverified, not completed.
+- Report exact files/database changes, actual checks and limitations. Stage 2 only: no import enhancements, eligibility, billing or timetable-engine changes.
+
+**Awaiting your approval before the database addition and Stage 2 implementation.**
