@@ -153,7 +153,7 @@ export default function Teachers() {
 
   return (
     <AdminLayout>
-      <PageHeader title="Users" description="Invite teachers and accountants — they'll set their own password" className="mb-6 sm:flex-col sm:items-start [&>div:last-child]:flex-wrap [&>div:last-child]:max-w-full">
+      <PageHeader title="Users" description="Invite teachers and accountants — they'll set their own password" className="mb-6 max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] lg:max-w-full sm:flex-col sm:items-start [&>div:last-child]:flex-wrap [&>div:last-child]:max-w-full">
         <TeacherDownloadActions teachers={teachers} isLoading={isLoading} error={error} />
         <TeacherImportDialog />
         <RestrictedButton isRestricted={isRestricted}>
