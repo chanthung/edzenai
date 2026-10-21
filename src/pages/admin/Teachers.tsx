@@ -29,6 +29,8 @@ import { useCurrentAcademicYearContext } from "@/hooks/useAcademicYears";
 import { useSchoolTeachingAssignments } from "@/hooks/useTeachingAssignments";
 import { TeachingChips, groupAssignments, type SubjectGroup } from "@/components/admin/teaching/TeachingChips";
 import { TeachingAssignmentsMatrix } from "@/components/admin/teaching/TeachingAssignmentsMatrix";
+import { FieldHelp } from "@/components/ui/field-help";
+import { getAccountLinkStatus, ACCOUNT_STATUS_LABEL } from "@/lib/teacher-account-status";
 import { formatDistanceToNow } from "date-fns";
 
 type DeliveryMethod = 'email' | 'whatsapp' | 'both';
@@ -402,13 +404,38 @@ export default function Teachers() {
                           : <TeachingChips groups={teachingGroups.get(teacher.id) ?? []} />}
                     </TableCell>
                     <TableCell>
-                      {teacher.user_id ? (
-                        <Badge variant={teacher.is_active ? "default" : "secondary"}>
-                          {teacher.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-slate-400 text-slate-600">Not invited</Badge>
-                      )}
+                      {(() => {
+                        const status = getAccountLinkStatus(teacher, invites);
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            {status === 'linked' ? (
+                              <Badge variant={teacher.is_active ? "default" : "secondary"}>
+                                {ACCOUNT_STATUS_LABEL.linked}{teacher.is_active ? "" : " · Inactive"}
+                              </Badge>
+                            ) : status === 'invitation_pending' ? (
+                              <Badge variant="secondary" className="border border-amber-500/50 text-amber-700">{ACCOUNT_STATUS_LABEL.invitation_pending}</Badge>
+                            ) : status === 'invitation_expired' ? (
+                              <Badge variant="outline" className="border-destructive/60 text-destructive">{ACCOUNT_STATUS_LABEL.invitation_expired}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-slate-400 text-slate-600">{ACCOUNT_STATUS_LABEL.not_invited}</Badge>
+                            )}
+                            {status !== 'linked' && (
+                              <FieldHelp label={`Help about account status for ${teacher.name}`}>
+                                {status === 'not_invited' ? (
+                                  <>
+                                    <p>This teacher record has no login account yet{teacher.email ? "" : " and no email on file"}.</p>
+                                    <p>You can invite them later via <span className="font-medium text-foreground">Add User</span>. When they accept, the account links to this existing record — keeping the Employee ID and HR details.</p>
+                                  </>
+                                ) : status === 'invitation_pending' ? (
+                                  <p>An invitation was sent to this teacher's email but has not been accepted yet. You can resend or cancel it from Pending Invites above.</p>
+                                ) : (
+                                  <p>The invitation sent to this teacher's email has expired. Resend it from Pending Invites above, or cancel it and send a fresh invite via Add User.</p>
+                                )}
+                              </FieldHelp>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>{new Date(teacher.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
