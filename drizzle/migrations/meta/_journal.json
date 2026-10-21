@@ -50,6 +50,13 @@
       "when": 1792485489669,
       "tag": "0006_teacher_hr_fields_stage1",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792550305830,
+      "tag": "0007_teacher_records_optional_email_account",
+      "breakpoints": true
     }
   ]
 }

@@ -1514,7 +1514,7 @@ export type Database = {
           date_of_joining: string | null
           department: string | null
           designation: string | null
-          email: string
+          email: string | null
           employee_id: string | null
           employment_status: string | null
           employment_type: string | null
@@ -1527,7 +1527,7 @@ export type Database = {
           role: string
           school_id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1535,7 +1535,7 @@ export type Database = {
           date_of_joining?: string | null
           department?: string | null
           designation?: string | null
-          email: string
+          email?: string | null
           employee_id?: string | null
           employment_status?: string | null
           employment_type?: string | null
@@ -1548,7 +1548,7 @@ export type Database = {
           role?: string
           school_id: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1556,7 +1556,7 @@ export type Database = {
           date_of_joining?: string | null
           department?: string | null
           designation?: string | null
-          email?: string
+          email?: string | null
           employee_id?: string | null
           employment_status?: string | null
           employment_type?: string | null
@@ -1569,7 +1569,7 @@ export type Database = {
           role?: string
           school_id?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
