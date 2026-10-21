@@ -41,7 +41,11 @@ async function importFile() {
   fireEvent.change(screen.getByLabelText("Teacher workbook"), { target: { files: [fakeFile] } });
   await screen.findByText(/16 detected records/i);
   fireEvent.click(screen.getByRole("checkbox"));
-  fireEvent.click(screen.getByRole("button", { name: /confirm import/i }));
+  const confirmBtn = screen.getByRole("button", { name: /confirm import/i });
+  console.log('CONFIRM_DISABLED=', (confirmBtn as HTMLButtonElement).disabled, 'CHECKED=', (screen.getByRole("checkbox") as HTMLInputElement).getAttribute('data-state'));
+  fireEvent.click(confirmBtn);
+  await new Promise(r => setTimeout(r, 50));
+  console.log('INVOKE_CALLS=', JSON.stringify(mocks.invoke.mock.calls), 'TOASTS=', mocks.toast.success.mock.calls.length, mocks.toast.warning.mock.calls.length, mocks.toast.error.mock.calls.length);
 }
 
 describe("Teacher import result notifications", () => {
