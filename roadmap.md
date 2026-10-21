@@ -1,6 +1,7 @@
 # Roadmap
 
 - [ ] Stage 2 explicit existing HR-only teacher linking through Add User; blocked on approval of additive invitation target storage and atomic link migration. Preserve IDs, HR, assignments and timetables; verify invitation acceptance only after implementation.
+- [ ] Before Stage 2 approval: incorporate identity-only change checks, verify effective privileges/lifecycle/concurrency, and present complete final migration SQL without applying it.
 
 - [x] Context-sensitive help UX: shared FieldHelp/FieldHint/SystemGenerated component applied to Edit Teacher, HR fields, teacher import, Teaching Assignments matrix and timetable Subject Requirements/Teacher Availability. Live-verified popovers in scrollable dialog and at 375px; 71 tests and build passed. No behavior/schema changes.
 - [x] Add compatible blank teacher template and saved, school-scoped teacher Excel export. Both signed-in downloads verified (18 saved Cherry teachers), blank workbook rejected as empty, optional fields/parser and mixed-school guards tested; 67 tests and automatic build passed. No live import save or Excel desktop check performed; no record changes.
