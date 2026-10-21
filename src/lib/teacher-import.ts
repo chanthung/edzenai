@@ -14,8 +14,13 @@ export function parseTeacherWorkbook(buffer: ArrayBuffer): { rows: RawRow[]; iss
     });
     if (header >= 0) candidates.push({ grid, header, names: grid[header].map(v => String(v).trim().toLowerCase()) });
   }
-  if (candidates.length !== 1) throw new Error('Use one teacher data sheet with a full_name header.');
-  const { grid, header, names } = candidates[0];
+  if (!candidates.length) throw new Error('Use one teacher data sheet with a full_name header.');
+  // When several sheets carry a full_name header (e.g. the approved Field Guide), the data sheet is the one with the most recognized columns.
+  const scored = candidates.map(c => ({ ...c, score: c.names.filter(n => COLUMNS.includes(n as Column)).length }));
+  const best = Math.max(...scored.map(c => c.score));
+  const top = scored.filter(c => c.score === best);
+  if (top.length !== 1) throw new Error('Use one teacher data sheet with a full_name header.');
+  const { grid, header, names } = top[0];
   const issues: Issue[] = [];
   const issue = (field: string, problem: string, severity: 'error' | 'warning') => issues.push({ rowNumber: header + 1, field, problem, correction: 'Use the approved teacher template.', severity });
   for (const name of names.filter(Boolean)) {
