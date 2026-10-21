@@ -203,7 +203,8 @@ Deno.serve(async (req) => {
       .delete()
       .eq('school_id', schoolAdmin.school_id)
       .eq('email', email.trim().toLowerCase())
-      .is('accepted_at', null);
+      .is('accepted_at', null)
+      .is('target_teacher_id', null);
 
     // Get school name & inviter name
     const [{ data: school }, { data: inviter }] = await Promise.all([
@@ -231,6 +232,11 @@ Deno.serve(async (req) => {
 
     if (inviteError || !invite) {
       console.error('Invite create error:', inviteError);
+      if (/Conflicting invitation/i.test(inviteError?.message ?? '')) {
+        return new Response(JSON.stringify({ error: 'An invitation to link an existing teacher is already pending for this email. Use Resend or Cancel.' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       return new Response(JSON.stringify({ error: 'Failed to create invite' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
