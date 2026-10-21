@@ -63,8 +63,10 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
     setExpandedSubjects(subjectIds);
   }, [assignments]);
 
+  const hasAccount = !!teacher?.user_id;
+
   const handleSave = async () => {
-    if (!teacher || loadingSubjectAssignments || loadingSubjects || !editName.trim() || !editEmail.trim()) return;
+    if (!teacher || loadingSubjectAssignments || loadingSubjects || !editName.trim() || (hasAccount && !editEmail.trim())) return;
     const hrError = validateHr(hr);
     if (hrError) { toast.error(hrError); return; }
 
@@ -84,7 +86,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
       return;
     }
 
-    if (editEmail.trim() !== teacher.email) {
+    if (hasAccount && teacher.email && editEmail.trim() !== teacher.email) {
       const { error } = await supabase
         .from('school_teachers')
         .update({ email: editEmail.trim() })
@@ -181,7 +183,11 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
 
           <div className="space-y-2">
             <Label><Mail className="h-4 w-4 inline mr-1" />Email Address</Label>
-            <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="teacher@school.com" />
+            {hasAccount ? (
+              <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="teacher@school.com" />
+            ) : (
+              <p className="text-xs text-muted-foreground rounded-md border bg-muted/40 px-3 py-2">No login account yet. Use Add User to invite this teacher with their email — their record and Employee ID will be linked automatically.</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -273,6 +279,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
           </div>
 
           {/* Password Reset */}
+          {hasAccount && (
           <div className="border-t pt-4 space-y-3">
             <Label className="text-muted-foreground text-sm font-medium">Password Reset</Label>
             <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
@@ -289,6 +296,7 @@ export function EditTeacherDialog({ teacher, open, onOpenChange }: EditTeacherDi
               </Button>
             </div>
           </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

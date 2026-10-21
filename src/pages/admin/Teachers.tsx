@@ -354,7 +354,7 @@ export default function Teachers() {
         <TabsContent value="users">
       <Card>
         <CardHeader>
-          <CardTitle>Active Users</CardTitle>
+          <CardTitle>Users &amp; Teacher Records</CardTitle>
           {currentYear.name && (
             <p className="text-xs text-muted-foreground">Teaching shows assignments for {currentYear.name} (Current).</p>
           )}
@@ -386,7 +386,7 @@ export default function Teachers() {
                   <TableRow key={teacher.id}>
                     <TableCell className="font-medium">{teacher.name}</TableCell>
                     <TableCell className="text-sm">{teacher.employee_id || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell>{teacher.email}</TableCell>
+                    <TableCell>{teacher.email ?? <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={teacher.role === 'accountant' ? 'border-amber-500 text-amber-700' : 'border-blue-500 text-blue-700'}>
                         {roleLabel(teacher.role)}
@@ -400,9 +400,13 @@ export default function Teachers() {
                           : <TeachingChips groups={teachingGroups.get(teacher.id) ?? []} />}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={teacher.is_active ? "default" : "secondary"}>
-                        {teacher.is_active ? "Active" : "Inactive"}
-                      </Badge>
+                      {teacher.user_id ? (
+                        <Badge variant={teacher.is_active ? "default" : "secondary"}>
+                          {teacher.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-slate-400 text-slate-600">Not invited</Badge>
+                      )}
                     </TableCell>
                     <TableCell>{new Date(teacher.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
@@ -418,7 +422,7 @@ export default function Teachers() {
                         <Button variant="ghost" size="icon" onClick={() => handleEditTeacher(teacher)} disabled={isRestricted}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Switch checked={teacher.is_active} onCheckedChange={() => handleToggleActive(teacher)} disabled={updateTeacher.isPending || isRestricted} />
+                        <Switch checked={teacher.is_active} onCheckedChange={() => handleToggleActive(teacher)} disabled={!teacher.user_id || updateTeacher.isPending || isRestricted} title={teacher.user_id ? undefined : "No login account yet — invite via Add User"} />
                       </div>
                     </TableCell>
                   </TableRow>
