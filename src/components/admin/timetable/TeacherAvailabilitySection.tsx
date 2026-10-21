@@ -22,6 +22,7 @@ import {
 } from "@/hooks/timetable/useTimetableConfigData";
 import { useActiveTeachers } from "@/hooks/timetable/useTimetableSourceData";
 import { cn } from "@/lib/utils";
+import { FieldHelp } from "@/components/ui/field-help";
 
 export function TeacherAvailabilitySection() {
   const { schoolId, academicYearId, canEdit } = useTimetableConfig();

@@ -25,6 +25,7 @@ import {
   useSchoolSubjects,
 } from "@/hooks/timetable/useTimetableSourceData";
 import { cn } from "@/lib/utils";
+import { FieldHelp } from "@/components/ui/field-help";
 
 type Draft = Partial<SubjectRequirement>;
 
@@ -187,7 +188,12 @@ export function SubjectRequirementsSection() {
 
       <Card className="rounded-xl">
         <CardHeader>
-          <CardTitle>Subject requirements</CardTitle>
+          <CardTitle className="flex items-center gap-1.5">Subject requirements
+            <FieldHelp label="Help about Subject requirements">
+              <p>Set how many periods per week each subject needs for a class. These values are your school's own choice.</p>
+              <p>If classes or subjects are missing, they come from your existing student enrollments, class setup and teacher assignments — add them there first, or use Initialize from Existing School Data to create the missing rows.</p>
+            </FieldHelp>
+          </CardTitle>
           <CardDescription>
             How much of each subject a class needs per week. Subjects and classes shown here come from
             your existing records. Periods per week are your own choice — nothing is assumed from any
